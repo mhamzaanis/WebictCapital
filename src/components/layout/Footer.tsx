@@ -6,7 +6,7 @@ const legalLinks = ['Webict Capital eVentCloud', 'Confidentiality', 'Our Commitm
 export function Footer() {
   return (
     <Box component="footer" sx={{ bgcolor: 'background.paper', borderTop: '1px solid', borderColor: 'divider', py: { xs: 6, md: 8 } }}>
-      <Container maxWidth="xl">
+      <Container maxWidth="xl" sx={{ px: { xs: 2, md: 3 } }}>
         <Grid container spacing={4} sx={{ mb: 6 }}>
           <Grid size={{ xs: 12, md: 3 }}>
             <Typography sx={{ fontFamily: '"Playfair Display", serif', fontSize: 20, mb: 2 }}>Webict Capital.</Typography>
@@ -35,7 +35,7 @@ export function Footer() {
           </Grid>
 
           {footerColumns.map((column) => (
-            <Grid key={column.title} size={{ xs: 6, md: 2.25 }}>
+            <Grid key={column.title} size={{ xs: 12, sm: 6, md: 2.25 }}>
               <Typography sx={{ fontWeight: 600, mb: 2, fontSize: 14 }}>{column.title}</Typography>
               <Stack spacing={1.2}>
                 {column.links.map((link) => (
@@ -61,7 +61,7 @@ export function Footer() {
               Webict Capital SAS LLC is authorised and regulated by the Financial Conduct Authority.
             </Typography>
           </Box>
-          <Stack direction="row" spacing={2} useFlexGap sx={{ flexWrap: 'wrap' }}>
+          <Stack direction="row" spacing={1.3} useFlexGap sx={{ flexWrap: 'wrap', width: { xs: '100%', md: 'auto' } }}>
             {legalLinks.map((item) => (
               <Link
                 key={item}

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded'
+import MenuRoundedIcon from '@mui/icons-material/MenuRounded'
 import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined'
-import { AppBar, Box, Container, IconButton, InputBase, Link, Modal, Stack, Toolbar, Typography } from '@mui/material'
+import { AppBar, Box, Container, Drawer, IconButton, InputBase, Link, Modal, Stack, Toolbar, Typography } from '@mui/material'
 import { Link as RouterLink, useLocation } from 'react-router-dom'
 import { navItems } from '../../content/siteContent'
 
@@ -9,6 +10,7 @@ export function NavBar() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isLearnOpen, setIsLearnOpen] = useState(false)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const { pathname } = useLocation()
   const hasOpenSubmenu = isLearnOpen
 
@@ -46,7 +48,7 @@ export function NavBar() {
           transition: 'background-color 220ms ease, border-color 220ms ease, box-shadow 220ms ease, backdrop-filter 220ms ease',
         }}
       >
-        <Container maxWidth="xl">
+        <Container maxWidth="xl" sx={{ px: { xs: 1.5, md: 3 } }}>
           <Toolbar disableGutters sx={{ minHeight: { xs: 64, md: 72 }, justifyContent: 'space-between', gap: 2 }}>
           <Link
             component={RouterLink}
@@ -64,17 +66,26 @@ export function NavBar() {
             <Typography
               sx={{
                 fontFamily: '"Playfair Display", serif',
-                fontSize: { xs: 32, md: 36 },
+                fontSize: { xs: 25, sm: 29, md: 36 },
                 lineHeight: 1,
                 letterSpacing: '-0.03em',
               }}
             >
               Webict Capital
-              <Box component="span" className="logo-dot" sx={{ color: 'primary.main', display: 'inline-block', fontSize: 50}}>
+              <Box component="span" className="logo-dot" sx={{ color: 'primary.main', display: 'inline-block', fontSize: { xs: 34, sm: 40, md: 50 } }}>
                 .
               </Box>
             </Typography>
           </Link>
+
+          <Stack direction="row" spacing={0.3} sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center' }}>
+            <IconButton aria-label="Search" onClick={() => setIsSearchOpen(true)} sx={{ color: 'text.secondary' }}>
+              <SearchOutlinedIcon sx={{ fontSize: 20 }} />
+            </IconButton>
+            <IconButton aria-label="Open navigation menu" onClick={() => setIsMobileMenuOpen(true)} sx={{ color: 'text.secondary' }}>
+              <MenuRoundedIcon sx={{ fontSize: 23 }} />
+            </IconButton>
+          </Stack>
 
             <Stack direction="row" spacing={{ xs: 2.5, md: 4.6 }} sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
             {navItems.map((item) => (
@@ -285,6 +296,55 @@ export function NavBar() {
           </Box>
         </Box>
       </Modal>
+
+      <Drawer anchor="right" open={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)}>
+        <Box sx={{ width: 290, height: '100%', bgcolor: '#f9fbff', px: 2.2, py: 1.8 }}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.6 }}>
+            <Typography sx={{ fontFamily: '"Playfair Display", serif', fontSize: 24, color: '#122544' }}>Menu</Typography>
+            <IconButton aria-label="Close navigation menu" onClick={() => setIsMobileMenuOpen(false)}>
+              <CloseRoundedIcon />
+            </IconButton>
+          </Stack>
+
+          <Stack spacing={0.35}>
+            {navItems.map((item) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                underline="none"
+                onClick={() => setIsMobileMenuOpen(false)}
+                sx={{
+                  px: 1,
+                  py: 1.05,
+                  borderRadius: 1,
+                  color: 'text.primary',
+                  fontSize: 16,
+                  '&:hover': { bgcolor: '#eaf2ff' },
+                }}
+              >
+                {item.label}
+              </Link>
+            ))}
+            <Link
+              component={RouterLink}
+              to="/glossary"
+              underline="none"
+              onClick={() => setIsMobileMenuOpen(false)}
+              sx={{
+                px: 1,
+                py: 1.05,
+                borderRadius: 1,
+                color: pathname.startsWith('/glossary') ? '#123570' : 'text.primary',
+                fontSize: 16,
+                fontWeight: pathname.startsWith('/glossary') ? 700 : 500,
+                '&:hover': { bgcolor: '#eaf2ff' },
+              }}
+            >
+              Learn / Glossary
+            </Link>
+          </Stack>
+        </Box>
+      </Drawer>
     </>
   )
 }

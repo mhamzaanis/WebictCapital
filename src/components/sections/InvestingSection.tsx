@@ -11,21 +11,21 @@ export function InvestingSection() {
           to: { opacity: 1, transform: 'translateY(0)' },
         },
         bgcolor: 'background.paper',
-        py: { xs: 8, md: 10 },
+        py: { xs: 6.5, md: 10 },
       }}
     >
-      <Container maxWidth="md" sx={{ textAlign: 'center' }}>
-        <Typography variant="h2" sx={{ fontSize: { xs: '2rem', md: '2.6rem' }, lineHeight: 1.2, letterSpacing: '-0.02em', mb: 2.5, animation: 'fadeRise 560ms ease both' }}>
+      <Container maxWidth="md" sx={{ textAlign: 'center', px: { xs: 2, md: 3 } }}>
+        <Typography variant="h2" sx={{ fontSize: { xs: '1.6rem', sm: '1.8rem', md: '2.6rem' }, lineHeight: { xs: 1.26, md: 1.2 }, letterSpacing: '-0.02em', mb: 2.2, animation: 'fadeRise 560ms ease both' }}>
           Investing in companies and the <Box component="em">people building them</Box>
         </Typography>
-        <Typography sx={{ maxWidth: 560, mx: 'auto', color: 'text.secondary', mb: 2 }}>
+        <Typography sx={{ maxWidth: 560, mx: 'auto', color: 'text.secondary', mb: 2, fontSize: { xs: 14.5, md: 16 }, lineHeight: 1.65 }}>
           We care about and support founders as people, not just CEOs or business leaders. Because building a successful company requires more than performance at work.
         </Typography>
         <Link href="#" underline="hover" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, color: 'text.secondary', fontSize: 13 }}>
           Wellbeing Platform <ArrowForwardIcon sx={{ fontSize: 16 }} />
         </Link>
 
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }, gap: 2, mt: 6 }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }, gap: { xs: 1.3, md: 2 }, mt: { xs: 4, md: 6 } }}>
           {[0, 1, 2].map((item) => (
             <Box
               key={item}

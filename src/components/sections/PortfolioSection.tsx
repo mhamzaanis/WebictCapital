@@ -35,9 +35,9 @@ export function PortfolioSection() {
         backgroundImage: 'linear-gradient(180deg, #f0f6ff 0%, #ffffff 18%)',
       }}
     >
-      <Container maxWidth="xl">
+      <Container maxWidth="xl" sx={{ px: { xs: 2, md: 3 } }}>
         <Box sx={{ textAlign: 'center', mb: { xs: 6, md: 7.5 }, animation: 'cardReveal 620ms ease both' }}>
-          <Typography variant="h2" sx={{ fontSize: { xs: '2rem', md: '2.75rem' }, lineHeight: 1.15, letterSpacing: '-0.02em', mb: 2.5 }}>
+          <Typography variant="h2" sx={{ fontSize: { xs: '1.7rem', sm: '1.9rem', md: '2.75rem' }, lineHeight: { xs: 1.22, md: 1.15 }, letterSpacing: '-0.02em', mb: 2.3 }}>
             Two decades.
             <br />
             Hundreds of Europe&apos;s <Box component="em" sx={{ textDecoration: 'underline', textDecorationColor: 'primary.main' }}>best founders</Box>
@@ -61,7 +61,7 @@ export function PortfolioSection() {
               href={item.href ?? '#'}
               sx={{
                 bgcolor: 'background.paper',
-                minHeight: 280,
+                minHeight: { xs: 180, sm: 230, md: 280 },
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',

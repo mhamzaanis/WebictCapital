@@ -11,14 +11,15 @@ export function CtaSection() {
           to: { opacity: 1, transform: 'translateY(0)' },
         },
         mb: { xs: 6, md: 10 },
+        px: { xs: 2, md: 3 },
       }}
     >
       <Box
         sx={{
           bgcolor: '#1a1a1a',
           borderRadius: 1,
-          px: { xs: 3, md: 8 },
-          py: { xs: 5, md: 7 },
+          px: { xs: 2.2, md: 8 },
+          py: { xs: 4.2, md: 7 },
           display: 'grid',
           gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
           gap: { xs: 4, md: 8 },
@@ -31,7 +32,7 @@ export function CtaSection() {
           },
         }}
       >
-        <Typography variant="h2" sx={{ color: 'common.white', fontSize: { xs: '2.2rem', md: '3.2rem' }, lineHeight: 1.1, letterSpacing: '-0.02em' }}>
+        <Typography variant="h2" sx={{ color: 'common.white', fontSize: { xs: '1.7rem', sm: '1.9rem', md: '3.2rem' }, lineHeight: { xs: 1.2, md: 1.1 }, letterSpacing: '-0.02em' }}>
           Stay in touch with Webict Capital
         </Typography>
 
@@ -40,7 +41,7 @@ export function CtaSection() {
             Sign up for our newsletter to stay up to date on news from Webict Capital, and our portfolio.
           </Typography>
 
-          <Box sx={{ display: 'flex', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 1, overflow: 'hidden', transition: 'border-color 0.25s ease', '&:focus-within': { borderColor: 'rgba(21,101,192,0.85)' } }}>
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, border: '1px solid rgba(255,255,255,0.2)', borderRadius: 1, overflow: 'hidden', transition: 'border-color 0.25s ease', '&:focus-within': { borderColor: 'rgba(21,101,192,0.85)' } }}>
             <InputBase
               fullWidth
               placeholder="Enter your email here"
@@ -49,7 +50,8 @@ export function CtaSection() {
             />
             <Button
               sx={{
-                minWidth: 54,
+                minWidth: { xs: '100%', sm: 54 },
+                py: { xs: 1, sm: 0 },
                 borderRadius: 0,
                 bgcolor: 'primary.main',
                 color: 'common.white',

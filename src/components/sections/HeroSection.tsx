@@ -27,16 +27,16 @@ export function HeroSection() {
             display: 'grid',
             gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) minmax(0, 620px)' },
             alignItems: 'center',
-            gap: { xs: 3.5, md: 5 },
+            gap: { xs: 3, md: 5 },
           }}
         >
-          <Stack spacing={3} sx={{ maxWidth: 620, animation: 'fadeRise 680ms ease both' }}>
+          <Stack spacing={{ xs: 2.2, md: 3 }} sx={{ maxWidth: 620, animation: 'fadeRise 680ms ease both' }}>
 
             <Typography
               variant="h1"
               sx={{
-                fontSize: { xs: '2.1rem', md: '3.5rem' },
-                lineHeight: 1.06,
+                fontSize: { xs: '1.7rem', sm: '2rem', md: '3.5rem' },
+                lineHeight: { xs: 1.12, md: 1.06 },
                 letterSpacing: '-0.03em',
                 color: '#0c1320',
               }}
@@ -47,8 +47,8 @@ export function HeroSection() {
             <Typography
               sx={{
                 maxWidth: 560,
-                fontSize: { xs: 16, md: 19 },
-                lineHeight: 1.52,
+                fontSize: { xs: 15.2, sm: 16.5, md: 19 },
+                lineHeight: { xs: 1.58, md: 1.52 },
                 color: '#253750',
               }}
             >
@@ -65,14 +65,14 @@ export function HeroSection() {
                     left: 0,
                     right: 0,
                     bottom: { xs: 1, md: 2 },
-                    height: { xs: 12, md: 14 },
+                    height: { xs: 10, md: 14 },
                     backgroundRepeat: 'no-repeat',
                     backgroundSize: '100% 100%',
                     pointerEvents: 'none',
                     transformOrigin: 'left center',
                     animation: 'zigLineDraw 820ms cubic-bezier(0.22, 1, 0.5, 1) 140ms both',
                     backgroundImage:
-                      "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 16' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='ink' x1='0%25' y1='0%25' x2='100%25' y2='0%25'%3E%3Cstop offset='0%25' stop-color='%231a365d' stop-opacity='1'/%3E%3Cstop offset='72%25' stop-color='%231f5fbf' stop-opacity='0.95'/%3E%3Cstop offset='100%25' stop-color='%231f5fbf' stop-opacity='0.18'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M4 10 L28 8 L52 11 L78 8.5 L104 10.8 L130 8.4 L156 10.6 L184 8.3 L212 10.2 L242 8.6 L270 10.1 L296 9' fill='none' stroke='url(%23ink)' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\")",
+                      "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 16' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='ink' x1='0%25' y1='0%25' x2='100%25' y2='0%25'%3E%3Cstop offset='0%25' stop-color='%231a365d' stop-opacity='1'/%3E%3Cstop offset='72%25' stop-color='%231f5fbf' stop-opacity='0.95'/%3E%3Cstop offset='100%25' stop-color='%231f5fbf' stop-opacity='0.18'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M4 10 L28 8 L52 11 L78 8.5 L104 10.8 L130 8.4 L156 10.6 L184 8.3 L212 10.2 L242 8.6 L270 10.1 L296 9' fill='none' stroke='url(%23ink)' stroke-width='7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\")",
                   },
                 }}
               >
@@ -86,12 +86,13 @@ export function HeroSection() {
               <Typography sx={{ fontSize: 13, color: '#40506a' }}>Founder, Webict Capital</Typography>
             </Box>
 
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.4} sx={{ pt: 0.5, width: 'fit-content' }}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.2} sx={{ pt: 0.2, width: { xs: '100%', sm: 'fit-content' } }}>
               <Button
                 href="#"
                 variant="outlined"
                 size="large"
                 sx={{
+                  width: { xs: '100%', sm: 'auto' },
                   minWidth: 148,
                   px: 2.1,
                   py: 1.15,
@@ -111,12 +112,12 @@ export function HeroSection() {
             </Stack>
           </Stack>
 
-          <Box sx={{ animation: 'fadeRise 760ms ease both', animationDelay: '120ms' }}>
+          <Box sx={{ animation: 'fadeRise 760ms ease both', animationDelay: '120ms', mt: { xs: 0.4, md: 0 } }}>
             <Box
               sx={{
                 position: 'relative',
                 width: '100%',
-                minHeight: { xs: 270, sm: 340, md: 430 },
+                minHeight: { xs: 238, sm: 340, md: 430 },
                 borderRadius: { xs: 2, md: 2.5 },
                 overflow: 'hidden',
                 border: '1px solid #b8cff3',

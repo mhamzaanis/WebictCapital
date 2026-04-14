@@ -117,13 +117,13 @@ export function GlossaryPage() {
 
           <Box
             sx={{
-              // border: '1px solid',
-              // borderColor: palette.line,
-              // bgcolor: palette.white,
-              // borderRadius: 1.5,
+              border: '1px solid',
+              borderColor: palette.line,
+              bgcolor: palette.white,
+              borderRadius: 1.5,
               overflow: 'visible',
-              // p: { xs: 0.75, md: 1 },
-              // boxShadow: '0 10px 28px rgba(12, 39, 88, 0.08)',
+              p: { xs: 0.75, md: 1 },
+              boxShadow: '0 10px 28px rgba(12, 39, 88, 0.08)',
             }}
           >
             {filteredTerms.map((item) => {
@@ -196,7 +196,8 @@ export function GlossaryPage() {
                       },
                     }}
                   >
-                    <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <Box sx={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                      <Box component="table" sx={{ width: '100%', minWidth: { xs: 620, md: 0 }, borderCollapse: 'collapse' }}>
                       <Box component="thead" sx={{ bgcolor: '#f1f6ff' }}>
                         <Box component="tr">
                           <Box
@@ -302,6 +303,7 @@ export function GlossaryPage() {
                           </Box>
                         </Box>
                       </Box>
+                    </Box>
                     </Box>
                   </AccordionDetails>
                 </Accordion>
