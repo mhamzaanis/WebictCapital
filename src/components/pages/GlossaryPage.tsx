@@ -67,6 +67,7 @@ export function GlossaryPage() {
             sx={{
               display: 'flex',
               flexWrap: 'wrap',
+              justifyContent: 'center',
               gap: 0.65,
               pb: 0.5,
               px: { xs: 0.25, md: 0.5 },
