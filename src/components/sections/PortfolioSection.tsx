@@ -31,11 +31,12 @@ export function PortfolioSection() {
           '0%, 100%': { transform: 'scale(1)' },
           '50%': { transform: 'scale(1.18)' },
         },
-        py: { xs: 7, md: 10 },
+        py: { xs: 9, md: 12 },
+        backgroundImage: 'linear-gradient(180deg, #f0f6ff 0%, #ffffff 18%)',
       }}
     >
       <Container maxWidth="xl">
-        <Box sx={{ textAlign: 'center', mb: 6, animation: 'cardReveal 620ms ease both' }}>
+        <Box sx={{ textAlign: 'center', mb: { xs: 6, md: 7.5 }, animation: 'cardReveal 620ms ease both' }}>
           <Typography variant="h2" sx={{ fontSize: { xs: '2rem', md: '2.75rem' }, lineHeight: 1.15, letterSpacing: '-0.02em', mb: 2.5 }}>
             Two decades.
             <br />

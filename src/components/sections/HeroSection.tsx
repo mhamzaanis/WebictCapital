@@ -1,4 +1,5 @@
-import { Box, Container, Stack, Typography } from '@mui/material'
+import { Box, Button, Container, Stack, Typography } from '@mui/material'
+import { Link as RouterLink } from 'react-router-dom'
 
 export function HeroSection() {
   return (
@@ -27,29 +28,41 @@ export function HeroSection() {
           }}
         >
           <Stack spacing={3} sx={{ maxWidth: 620, animation: 'fadeRise 680ms ease both' }}>
-            <Box
-              sx={{
-                display: 'inline-flex',
-                width: 'fit-content',
-                px: 1.35,
-                py: 0.45,
-                borderRadius: 999,
-                bgcolor: '#dcebff',
-                border: '1px solid #bad4fb',
-              }}
-            >
-              <Typography sx={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#123570' }}>
-                PSX Training Session
-              </Typography>
-            </Box>
 
             <Typography
               variant="h1"
               sx={{
-                fontSize: { xs: '2rem', md: '3.3rem' },
-                lineHeight: 1.08,
+                fontSize: { xs: '2.1rem', md: '3.5rem' },
+                lineHeight: 1.06,
                 letterSpacing: '-0.03em',
                 color: '#0c1320',
+              }}
+            >
+              Learn. Invest. Lead.
+            </Typography>
+
+            <Typography
+              sx={{
+                position: 'relative',
+                display: 'inline-block',
+                maxWidth: 560,
+                pb: { xs: 1.6, md: 1.9 },
+                fontSize: { xs: 16, md: 19 },
+                lineHeight: 1.52,
+                color: '#253750',
+                '&::after': {
+                  content: '""',
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  bottom: { xs: 2, md: 4 },
+                  height: { xs: 14, md: 18 },
+                  backgroundRepeat: 'no-repeat',
+                  backgroundSize: '100% 100%',
+                  pointerEvents: 'none',
+                  backgroundImage:
+                    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 28' preserveAspectRatio='none'%3E%3Cpath d='M4 20 C 44 12, 76 26, 112 18 C 150 10, 182 25, 222 16 C 246 10, 268 18, 296 12' fill='none' stroke='%230f2a5f' stroke-width='6' stroke-linecap='round'/%3E%3Cpath d='M6 24 C 46 16, 78 30, 114 22 C 152 14, 184 29, 224 20 C 248 14, 270 22, 294 16' fill='none' stroke='%231f5fbf' stroke-width='3.2' stroke-linecap='round' opacity='0.95'/%3E%3C/svg%3E\")",
+                },
               }}
             >
               "Markets reward discipline. Education is where confident investing begins."
@@ -59,6 +72,30 @@ export function HeroSection() {
               <Typography sx={{ fontSize: 16, fontWeight: 700, color: '#0f2a5f' }}>Asaad Sohail</Typography>
               <Typography sx={{ fontSize: 13, color: '#40506a' }}>Founder, Webict Capital</Typography>
             </Box>
+
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.4} sx={{ pt: 0.5, width: 'fit-content' }}>
+              <Button
+                href="#"
+                variant="outlined"
+                size="large"
+                sx={{
+                  minWidth: 148,
+                  px: 2.1,
+                  py: 1.15,
+                  borderRadius: 1,
+                  textTransform: 'none',
+                  fontWeight: 700,
+                  color: '#0f2a5f',
+                  borderColor: '#9ab8ea',
+                  '&:hover': {
+                    borderColor: '#0f2a5f',
+                    bgcolor: '#eaf2ff',
+                  },
+                }}
+              >
+                Contact Us
+              </Button>
+            </Stack>
           </Stack>
 
           <Box sx={{ animation: 'fadeRise 760ms ease both', animationDelay: '120ms' }}>

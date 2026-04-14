@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
+import CloseRoundedIcon from '@mui/icons-material/CloseRounded'
 import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined'
-import { AppBar, Box, Container, IconButton, Link, Stack, Toolbar, Typography } from '@mui/material'
+import { AppBar, Box, Container, IconButton, InputBase, Link, Modal, Stack, Toolbar, Typography } from '@mui/material'
 import { Link as RouterLink, useLocation } from 'react-router-dom'
 import { navItems } from '../../content/siteContent'
 
 export function NavBar() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isLearnOpen, setIsLearnOpen] = useState(false)
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
   const { pathname } = useLocation()
   const hasOpenSubmenu = isLearnOpen
 
@@ -74,11 +76,7 @@ export function NavBar() {
             </Typography>
           </Link>
 
-            <Stack
-              direction="row"
-              spacing={{ xs: 2, md: 4 }}
-              sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}
-            >
+            <Stack direction="row" spacing={{ xs: 2.5, md: 4.6 }} sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
             {navItems.map((item) => (
               <Link
                 key={item.label}
@@ -89,25 +87,27 @@ export function NavBar() {
                   fontSize: { md: 15, lg: 16 },
                   fontWeight: 500,
                   position: 'relative',
-                  pb: 0.75,
+                  px: 0.35,
+                  py: 0.4,
                   transition: 'color 0.25s ease',
                   '&::after': {
                     content: '""',
                     position: 'absolute',
-                    left: '50%',
-                    bottom: -7,
-                    width: 6,
-                    height: 6,
-                    borderRadius: '50%',
+                    left: 2,
+                    right: 2,
+                    bottom: -5,
+                    height: 2,
+                    borderRadius: 2,
                     bgcolor: 'primary.main',
                     opacity: 0,
-                    transform: 'translate(-50%, 10px)',
+                    transform: 'scaleX(0.25)',
+                    transformOrigin: 'center',
                     transition: 'transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease',
                   },
                   '&:hover': { color: 'text.primary' },
                   '&:hover::after': {
                     opacity: 1,
-                    transform: 'translate(-50%, 0)',
+                    transform: 'scaleX(1)',
                   },
                 }}
               >
@@ -129,19 +129,21 @@ export function NavBar() {
                   fontSize: { md: 15, lg: 16 },
                   fontWeight: 500,
                   position: 'relative',
-                  pb: 0.75,
+                  px: 0.35,
+                  py: 0.4,
                   transition: 'color 0.25s ease',
                   '&::after': {
                     content: '""',
                     position: 'absolute',
-                    left: '50%',
-                    bottom: -7,
-                    width: 6,
-                    height: 6,
-                    borderRadius: '50%',
+                    left: 2,
+                    right: 2,
+                    bottom: -5,
+                    height: 2,
+                    borderRadius: 2,
                     bgcolor: 'primary.main',
                     opacity: pathname.startsWith('/glossary') || isLearnOpen ? 1 : 0,
-                    transform: pathname.startsWith('/glossary') || isLearnOpen ? 'translate(-50%, 0)' : 'translate(-50%, 10px)',
+                    transform: pathname.startsWith('/glossary') || isLearnOpen ? 'scaleX(1)' : 'scaleX(0.25)',
+                    transformOrigin: 'center',
                     transition: 'transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease',
                   },
                   '&:hover': { color: 'text.primary' },
@@ -208,6 +210,7 @@ export function NavBar() {
 
               <IconButton
                 aria-label="Search"
+                onClick={() => setIsSearchOpen(true)}
                 sx={{
                   color: 'text.secondary',
                   transition: 'color 0.25s ease, transform 0.25s ease',
@@ -237,6 +240,51 @@ export function NavBar() {
           zIndex: theme.zIndex.appBar - 1,
         })}
       />
+
+      <Modal open={isSearchOpen} onClose={() => setIsSearchOpen(false)}>
+        <Box
+          sx={{
+            position: 'fixed',
+            inset: 0,
+            bgcolor: 'rgba(11, 21, 36, 0.38)',
+            backdropFilter: 'blur(6px)',
+            display: 'grid',
+            placeItems: 'start center',
+            pt: { xs: '18vh', md: '22vh' },
+            px: 2,
+          }}
+        >
+          <Box
+            sx={{
+              width: 'min(760px, 100%)',
+              bgcolor: 'common.white',
+              border: '1px solid',
+              borderColor: '#c9d9f2',
+              borderRadius: 1.4,
+              boxShadow: '0 26px 42px rgba(9, 24, 51, 0.24)',
+              p: { xs: 1.2, md: 1.5 },
+            }}
+          >
+            <Stack direction="row" alignItems="center" spacing={1.1}>
+              <SearchOutlinedIcon sx={{ color: '#36527d' }} />
+              <InputBase
+                autoFocus
+                placeholder="Search articles, glossary terms, resources..."
+                inputProps={{ 'aria-label': 'Search content' }}
+                sx={{
+                  flex: 1,
+                  fontSize: { xs: 15, md: 17 },
+                  color: '#12233f',
+                  '& input::placeholder': { color: '#6b7b92', opacity: 1 },
+                }}
+              />
+              <IconButton aria-label="Close search" onClick={() => setIsSearchOpen(false)}>
+                <CloseRoundedIcon sx={{ color: '#36527d' }} />
+              </IconButton>
+            </Stack>
+          </Box>
+        </Box>
+      </Modal>
     </>
   )
 }
