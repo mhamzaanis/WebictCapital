@@ -276,7 +276,7 @@ export function NavBar() {
               p: { xs: 1.2, md: 1.5 },
             }}
           >
-            <Stack direction="row" alignItems="center" spacing={1.1}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.1 }}>
               <SearchOutlinedIcon sx={{ color: '#36527d' }} />
               <InputBase
                 autoFocus
@@ -292,19 +292,19 @@ export function NavBar() {
               <IconButton aria-label="Close search" onClick={() => setIsSearchOpen(false)}>
                 <CloseRoundedIcon sx={{ color: '#36527d' }} />
               </IconButton>
-            </Stack>
+            </Box>
           </Box>
         </Box>
       </Modal>
 
       <Drawer anchor="right" open={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)}>
         <Box sx={{ width: 290, height: '100%', bgcolor: '#f9fbff', px: 2.2, py: 1.8 }}>
-          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.6 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.6 }}>
             <Typography sx={{ fontFamily: '"Playfair Display", serif', fontSize: 24, color: '#122544' }}>Menu</Typography>
             <IconButton aria-label="Close navigation menu" onClick={() => setIsMobileMenuOpen(false)}>
               <CloseRoundedIcon />
             </IconButton>
-          </Stack>
+          </Box>
 
           <Stack spacing={0.35}>
             {navItems.map((item) => (
