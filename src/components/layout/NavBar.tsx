@@ -26,9 +26,9 @@ export function NavBar() {
       sx={{
         '@keyframes dotBounce': {
           '0%, 100%': { transform: 'translateY(0)' },
-          '35%': { transform: 'translateY(-5px)' },
+          '35%': { transform: 'translateY(-9px)' },
           '70%': { transform: 'translateY(0)' },
-          '85%': { transform: 'translateY(-2px)' },
+          '85%': { transform: 'translateY(-4px)' },
         },
         bgcolor: isScrolled ? 'rgba(255,255,255,0.95)' : 'transparent',
         color: 'text.primary',
@@ -62,7 +62,7 @@ export function NavBar() {
               }}
             >
               Webict Capital
-              <Box component="span" className="logo-dot" sx={{ color: 'primary.main', display: 'inline-block' }}>
+              <Box component="span" className="logo-dot" sx={{ color: 'primary.main', display: 'inline-block', fontSize: 50}}>
                 .
               </Box>
             </Typography>
