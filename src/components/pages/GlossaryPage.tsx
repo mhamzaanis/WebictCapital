@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
 import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded'
-import SearchRoundedIcon from '@mui/icons-material/SearchRounded'
-import { Accordion, AccordionDetails, AccordionSummary, Box, Container, InputAdornment, Stack, TextField, Typography } from '@mui/material'
+import { Accordion, AccordionDetails, AccordionSummary, Box, Container, Stack, Typography } from '@mui/material'
 import { glossaryEntries } from '../../content/glossaryData'
 
 const ALL_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
@@ -21,26 +20,13 @@ export function GlossaryPage() {
   const glossaryTerms = glossaryEntries
   const [activeLetter, setActiveLetter] = useState<string>('A')
   const [openTerm, setOpenTerm] = useState<string | null>(null)
-  const [searchQuery, setSearchQuery] = useState('')
 
   const availableLetters = useMemo(() => new Set(glossaryTerms.map((item) => item.letter)), [glossaryTerms])
 
-  const filteredTerms = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase()
-    const letterTerms = glossaryTerms.filter((item) => item.letter === activeLetter)
-
-    if (!query) {
-      return letterTerms
-    }
-
-    return letterTerms.filter((item) => {
-      return (
-        item.term.toLowerCase().includes(query) ||
-        item.meaning.toLowerCase().includes(query) ||
-        item.description.toLowerCase().includes(query)
-      )
-    })
-  }, [activeLetter, glossaryTerms, searchQuery])
+  const filteredTerms = useMemo(
+    () => glossaryTerms.filter((item) => item.letter === activeLetter),
+    [activeLetter, glossaryTerms],
+  )
 
   return (
     <Box
@@ -76,38 +62,6 @@ export function GlossaryPage() {
           >
             Glossary
           </Typography>
-
-          <TextField
-            fullWidth
-            size="small"
-            value={searchQuery}
-            onChange={(event) => {
-              setSearchQuery(event.target.value)
-              setOpenTerm(null)
-            }}
-            placeholder="Search term, meaning, or description"
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchRoundedIcon sx={{ color: palette.cobalt }} fontSize="small" />
-                </InputAdornment>
-              ),
-            }}
-            sx={{
-              maxWidth: { xs: '100%', md: 520 },
-              '& .MuiOutlinedInput-root': {
-                bgcolor: palette.white,
-                borderRadius: 1.25,
-                '& fieldset': { borderColor: palette.line },
-                '&:hover fieldset': { borderColor: palette.cobalt },
-                '&.Mui-focused fieldset': { borderColor: palette.navy, borderWidth: 1 },
-              },
-              '& .MuiInputBase-input::placeholder': {
-                color: '#72829f',
-                opacity: 1,
-              },
-            }}
-          />
 
           <Box
             sx={{
@@ -171,24 +125,6 @@ export function GlossaryPage() {
               // boxShadow: '0 10px 28px rgba(12, 39, 88, 0.08)',
             }}
           >
-            {filteredTerms.length === 0 && (
-              <Box
-                sx={{
-                  border: '1px solid',
-                  borderColor: palette.line,
-                  borderRadius: 1.25,
-                  bgcolor: palette.white,
-                  px: { xs: 2, md: 2.5 },
-                  py: { xs: 1.8, md: 2.1 },
-                  color: palette.body,
-                  fontSize: 14,
-                }}
-              >
-                No terms found for letter {activeLetter}
-                {searchQuery.trim() ? ` with "${searchQuery.trim()}".` : '.'}
-              </Box>
-            )}
-
             {filteredTerms.map((item) => {
               const isExpanded = item.term === openTerm
               const entryKey = `${item.letter}-${item.term}`
