@@ -7,6 +7,10 @@ export type PortfolioItem = {
   name: string
   variant?: 'light' | 'italic' | 'compact' | 'wide' | 'stacked'
   badge?: string
+  location?: string
+  description?: string
+  stage?: string
+  href?: string
 }
 
 export type NewsCard = {

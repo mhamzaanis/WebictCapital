@@ -21,7 +21,13 @@ export function Footer() {
             </Typography>
             <Stack spacing={0.5} sx={{ mt: 2.5 }}>
               {['Twitter', 'LinkedIn', 'Medium'].map((item) => (
-                <Link key={item} href="#" underline="hover" color="text.secondary" sx={{ fontSize: 13 }}>
+                <Link
+                  key={item}
+                  href="#"
+                  underline="hover"
+                  color="text.secondary"
+                  sx={{ fontSize: 13, transition: 'color 0.25s ease, transform 0.25s ease', '&:hover': { color: 'primary.main', transform: 'translateX(2px)' } }}
+                >
                   {item}
                 </Link>
               ))}
@@ -33,7 +39,13 @@ export function Footer() {
               <Typography sx={{ fontWeight: 600, mb: 2, fontSize: 14 }}>{column.title}</Typography>
               <Stack spacing={1.2}>
                 {column.links.map((link) => (
-                  <Link key={link.label} href={link.href} underline="hover" color="text.secondary" sx={{ fontSize: 13 }}>
+                  <Link
+                    key={link.label}
+                    href={link.href}
+                    underline="hover"
+                    color="text.secondary"
+                    sx={{ fontSize: 13, transition: 'color 0.25s ease, transform 0.25s ease', '&:hover': { color: 'primary.main', transform: 'translateX(2px)' } }}
+                  >
                     {link.label}
                   </Link>
                 ))}
@@ -51,7 +63,13 @@ export function Footer() {
           </Box>
           <Stack direction="row" spacing={2} useFlexGap sx={{ flexWrap: 'wrap' }}>
             {legalLinks.map((item) => (
-              <Link key={item} href="#" underline="hover" color="text.secondary" sx={{ fontSize: 12 }}>
+              <Link
+                key={item}
+                href="#"
+                underline="hover"
+                color="text.secondary"
+                sx={{ fontSize: 12, transition: 'color 0.25s ease', '&:hover': { color: 'primary.main' } }}
+              >
                 {item}
               </Link>
             ))}

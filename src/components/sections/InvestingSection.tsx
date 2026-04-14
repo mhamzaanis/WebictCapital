@@ -3,9 +3,19 @@ import { Box, Container, Link, Typography } from '@mui/material'
 
 export function InvestingSection() {
   return (
-    <Box component="section" sx={{ bgcolor: 'background.paper', py: { xs: 8, md: 10 } }}>
+    <Box
+      component="section"
+      sx={{
+        '@keyframes fadeRise': {
+          from: { opacity: 0, transform: 'translateY(18px)' },
+          to: { opacity: 1, transform: 'translateY(0)' },
+        },
+        bgcolor: 'background.paper',
+        py: { xs: 8, md: 10 },
+      }}
+    >
       <Container maxWidth="md" sx={{ textAlign: 'center' }}>
-        <Typography variant="h2" sx={{ fontSize: { xs: '2rem', md: '2.6rem' }, lineHeight: 1.2, letterSpacing: '-0.02em', mb: 2.5 }}>
+        <Typography variant="h2" sx={{ fontSize: { xs: '2rem', md: '2.6rem' }, lineHeight: 1.2, letterSpacing: '-0.02em', mb: 2.5, animation: 'fadeRise 560ms ease both' }}>
           Investing in companies and the <Box component="em">people building them</Box>
         </Typography>
         <Typography sx={{ maxWidth: 560, mx: 'auto', color: 'text.secondary', mb: 2 }}>
@@ -32,6 +42,8 @@ export function InvestingSection() {
                     : item === 1
                       ? 'linear-gradient(135deg, #ccd3db 0%, #a5b0be 100%)'
                       : 'linear-gradient(135deg, #e0e4e9 0%, #c3cad3 100%)',
+                transition: 'transform 0.28s ease, box-shadow 0.28s ease',
+                '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 12px 20px rgba(0,0,0,0.1)' },
               }}
             >
               <Box component="svg" width="80" height="120" viewBox="0 0 80 120">

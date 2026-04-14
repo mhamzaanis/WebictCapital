@@ -5,8 +5,16 @@ export function HeroSection() {
     <Box
       component="section"
       sx={{
-        mt: '56px',
-        pt: { xs: 6, md: 10 },
+        '@keyframes fadeRise': {
+          from: { opacity: 0, transform: 'translateY(22px)' },
+          to: { opacity: 1, transform: 'translateY(0)' },
+        },
+        '@keyframes heroFloat': {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-6px)' },
+        },
+        mt: 0,
+        pt: { xs: 'calc(64px + 1.25rem)', md: 'calc(72px + 2.25rem)' },
         bgcolor: '#f4f6f8',
         overflow: 'hidden',
       }}
@@ -20,7 +28,7 @@ export function HeroSection() {
             gap: 4,
           }}
         >
-          <Stack spacing={5} sx={{ pb: { xs: 6, md: 8 }, maxWidth: 560 }}>
+          <Stack spacing={5} sx={{ pb: { xs: 6, md: 8 }, maxWidth: 560, animation: 'fadeRise 680ms ease both' }}>
             <Typography variant="h1" sx={{ fontSize: { xs: '2.4rem', md: '4rem' }, lineHeight: 1.08, letterSpacing: '-0.03em' }}>
               The best way to change the world is to <Box component="em">build a business</Box>
             </Typography>
@@ -31,7 +39,7 @@ export function HeroSection() {
             </Box>
           </Stack>
 
-          <Box sx={{ display: { xs: 'none', md: 'flex' }, justifyContent: 'center', alignItems: 'end' }}>
+          <Box sx={{ display: { xs: 'none', md: 'flex' }, justifyContent: 'center', alignItems: 'end', animation: 'fadeRise 760ms ease both', animationDelay: '120ms' }}>
             <Box
               sx={{
                 width: 360,
@@ -41,6 +49,14 @@ export function HeroSection() {
                 display: 'flex',
                 alignItems: 'flex-end',
                 justifyContent: 'center',
+                transition: 'transform 0.35s ease, box-shadow 0.35s ease',
+                '&:hover': {
+                  transform: 'translateY(-4px)',
+                  boxShadow: '0 16px 30px rgba(0,0,0,0.12)',
+                },
+                '&:hover svg': {
+                  animation: 'heroFloat 2.3s ease-in-out infinite',
+                },
               }}
             >
               <Box component="svg" viewBox="0 0 240 380" sx={{ width: 240, height: 380, opacity: 0.85 }}>

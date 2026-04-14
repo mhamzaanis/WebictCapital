@@ -4,7 +4,16 @@ import { featuredNews, newsCards } from '../../content/siteContent'
 
 export function NewsSection() {
   return (
-    <Box component="section" sx={{ py: { xs: 8, md: 10 } }}>
+    <Box
+      component="section"
+      sx={{
+        '@keyframes fadeRise': {
+          from: { opacity: 0, transform: 'translateY(18px)' },
+          to: { opacity: 1, transform: 'translateY(0)' },
+        },
+        py: { xs: 8, md: 10 },
+      }}
+    >
       <Container maxWidth="xl">
         <Box
           sx={{
@@ -16,6 +25,7 @@ export function NewsSection() {
             borderColor: 'divider',
             pb: 6,
             mb: 6,
+            animation: 'fadeRise 620ms ease both',
           }}
         >
           <Box>
@@ -39,6 +49,11 @@ export function NewsSection() {
               display: 'flex',
               alignItems: 'flex-end',
               p: 2.5,
+              transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                boxShadow: '0 14px 24px rgba(0,0,0,0.16)',
+              },
             }}
           >
             <Typography sx={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
@@ -48,8 +63,23 @@ export function NewsSection() {
         </Box>
 
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 4 }}>
-          {newsCards.map((card) => (
-            <Box key={card.title}>
+          {newsCards.map((card, index) => (
+            <Box
+              key={card.title}
+              sx={{
+                p: 2,
+                borderRadius: 1,
+                border: '1px solid transparent',
+                transition: 'transform 0.25s ease, border-color 0.25s ease, background-color 0.25s ease',
+                animation: 'fadeRise 540ms ease both',
+                animationDelay: `${index * 80}ms`,
+                '&:hover': {
+                  transform: 'translateY(-3px)',
+                  borderColor: 'divider',
+                  bgcolor: '#fbfcfe',
+                },
+              }}
+            >
               <Typography sx={{ textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: 11, color: '#9a9a9a', mb: 1.25 }}>
                 {card.category} {card.date}
               </Typography>
