@@ -18,6 +18,38 @@ body,
   min-height: 100%;
 }
 
+/* Keep scrolling native, but reveal a minimal scrollbar only on hover. */
+html {
+  scrollbar-width: none;
+  scrollbar-color: transparent transparent;
+}
+
+html:hover {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(16, 18, 20, 0.35) transparent;
+}
+
+html::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+html:hover::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+html::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+html::-webkit-scrollbar-thumb {
+  background-color: rgba(16, 18, 20, 0.35);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
 a {
   color: inherit;
 }
