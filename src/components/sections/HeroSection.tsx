@@ -1,5 +1,4 @@
 import { Box, Button, Container, Stack, Typography } from '@mui/material'
-import { Link as RouterLink } from 'react-router-dom'
 
 export function HeroSection() {
   return (
@@ -9,6 +8,10 @@ export function HeroSection() {
         '@keyframes fadeRise': {
           from: { opacity: 0, transform: 'translateY(22px)' },
           to: { opacity: 1, transform: 'translateY(0)' },
+        },
+        '@keyframes zigLineDraw': {
+          from: { opacity: 0, transform: 'scaleX(0.15) translateX(-4px)' },
+          to: { opacity: 1, transform: 'scaleX(1) translateX(0)' },
         },
         mt: 0,
         pt: { xs: 'calc(64px + 1.25rem)', md: 'calc(72px + 2.25rem)' },
@@ -43,29 +46,39 @@ export function HeroSection() {
 
             <Typography
               sx={{
-                position: 'relative',
-                display: 'inline-block',
                 maxWidth: 560,
-                pb: { xs: 1.6, md: 1.9 },
                 fontSize: { xs: 16, md: 19 },
                 lineHeight: 1.52,
                 color: '#253750',
-                '&::after': {
-                  content: '""',
-                  position: 'absolute',
-                  left: 0,
-                  right: 0,
-                  bottom: { xs: 2, md: 4 },
-                  height: { xs: 14, md: 18 },
-                  backgroundRepeat: 'no-repeat',
-                  backgroundSize: '100% 100%',
-                  pointerEvents: 'none',
-                  backgroundImage:
-                    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 28' preserveAspectRatio='none'%3E%3Cpath d='M4 20 C 44 12, 76 26, 112 18 C 150 10, 182 25, 222 16 C 246 10, 268 18, 296 12' fill='none' stroke='%230f2a5f' stroke-width='6' stroke-linecap='round'/%3E%3Cpath d='M6 24 C 46 16, 78 30, 114 22 C 152 14, 184 29, 224 20 C 248 14, 270 22, 294 16' fill='none' stroke='%231f5fbf' stroke-width='3.2' stroke-linecap='round' opacity='0.95'/%3E%3C/svg%3E\")",
-                },
               }}
             >
-              "Markets reward discipline. Education is where confident investing begins."
+              {'"Markets reward discipline. '}
+              <Box
+                component="span"
+                sx={{
+                  position: 'relative',
+                  display: 'inline-block',
+                  pb: { xs: 1.2, md: 1.35 },
+                  '&::after': {
+                    content: '""',
+                    position: 'absolute',
+                    left: 0,
+                    right: 0,
+                    bottom: { xs: 1, md: 2 },
+                    height: { xs: 12, md: 14 },
+                    backgroundRepeat: 'no-repeat',
+                    backgroundSize: '100% 100%',
+                    pointerEvents: 'none',
+                    transformOrigin: 'left center',
+                    animation: 'zigLineDraw 820ms cubic-bezier(0.22, 1, 0.5, 1) 140ms both',
+                    backgroundImage:
+                      "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 16' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='ink' x1='0%25' y1='0%25' x2='100%25' y2='0%25'%3E%3Cstop offset='0%25' stop-color='%231a365d' stop-opacity='1'/%3E%3Cstop offset='72%25' stop-color='%231f5fbf' stop-opacity='0.95'/%3E%3Cstop offset='100%25' stop-color='%231f5fbf' stop-opacity='0.18'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M4 10 L28 8 L52 11 L78 8.5 L104 10.8 L130 8.4 L156 10.6 L184 8.3 L212 10.2 L242 8.6 L270 10.1 L296 9' fill='none' stroke='url(%23ink)' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\")",
+                  },
+                }}
+              >
+                Education is where confident investing begins.
+              </Box>
+              {'"'}
             </Typography>
 
             <Box>
