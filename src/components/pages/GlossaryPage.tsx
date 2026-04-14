@@ -1,28 +1,46 @@
 import { useMemo, useState } from 'react'
 import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded'
-import { Accordion, AccordionDetails, AccordionSummary, Box, Container, Stack, Typography } from '@mui/material'
+import SearchRoundedIcon from '@mui/icons-material/SearchRounded'
+import { Accordion, AccordionDetails, AccordionSummary, Box, Container, InputAdornment, Stack, TextField, Typography } from '@mui/material'
 import { glossaryEntries } from '../../content/glossaryData'
 
 const ALL_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
 
 export function GlossaryPage() {
+  const palette = {
+    ink: '#0b1220',
+    navy: '#0f2a5f',
+    cobalt: '#1f5fbf',
+    sky: '#eaf2ff',
+    cloud: '#f5f9ff',
+    line: '#c8d9f3',
+    body: '#2f3f59',
+    white: '#ffffff',
+  }
+
   const glossaryTerms = glossaryEntries
   const [activeLetter, setActiveLetter] = useState<string>('A')
   const [openTerm, setOpenTerm] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
 
   const availableLetters = useMemo(() => new Set(glossaryTerms.map((item) => item.letter)), [glossaryTerms])
 
-  const filteredTerms = useMemo(
-    () => glossaryTerms.filter((item) => item.letter === activeLetter),
-    [activeLetter, glossaryTerms],
-  )
+  const filteredTerms = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    const letterTerms = glossaryTerms.filter((item) => item.letter === activeLetter)
 
-  const expandedTerm = useMemo(() => {
-    if (openTerm && filteredTerms.some((item) => item.term === openTerm)) {
-      return openTerm
+    if (!query) {
+      return letterTerms
     }
-    return filteredTerms[0]?.term ?? null
-  }, [filteredTerms, openTerm])
+
+    return letterTerms.filter((item) => {
+      return (
+        item.term.toLowerCase().includes(query) ||
+        item.meaning.toLowerCase().includes(query) ||
+        item.description.toLowerCase().includes(query)
+      )
+    })
+  }, [activeLetter, glossaryTerms, searchQuery])
 
   return (
     <Box
@@ -30,23 +48,76 @@ export function GlossaryPage() {
       sx={{
         pt: { xs: 'calc(64px + 1.35rem)', md: 'calc(72px + 1.75rem)' },
         pb: { xs: 7, md: 11 },
-        bgcolor: '#f2f3f5',
+        bgcolor: palette.cloud,
+        backgroundImage: 'linear-gradient(180deg, #ffffff 0%, #eef5ff 62%, #e6f0ff 100%)',
       }}
     >
-      <Container maxWidth="xl" sx={{ maxWidth: '1280px !important' }}>
-        <Stack spacing={3}>
+      <Container
+        maxWidth="xl"
+        sx={{
+          maxWidth: '1280px !important',
+          px: { xs: 2, md: 3.5 },
+        }}
+      >
+        <Stack
+          spacing={3.5}
+          sx={{
+            py: { xs: 2.5, md: 3.5 },
+          }}
+        >
           <Typography
             variant="h1"
             sx={{
               fontSize: { xs: '1.75rem', md: '2.35rem' },
               lineHeight: 1.1,
               letterSpacing: '-0.02em',
+              color: palette.ink,
             }}
           >
             Glossary
           </Typography>
 
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, pb: 0.5 }}>
+          <TextField
+            fullWidth
+            size="small"
+            value={searchQuery}
+            onChange={(event) => {
+              setSearchQuery(event.target.value)
+              setOpenTerm(null)
+            }}
+            placeholder="Search term, meaning, or description"
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchRoundedIcon sx={{ color: palette.cobalt }} fontSize="small" />
+                </InputAdornment>
+              ),
+            }}
+            sx={{
+              maxWidth: { xs: '100%', md: 520 },
+              '& .MuiOutlinedInput-root': {
+                bgcolor: palette.white,
+                borderRadius: 1.25,
+                '& fieldset': { borderColor: palette.line },
+                '&:hover fieldset': { borderColor: palette.cobalt },
+                '&.Mui-focused fieldset': { borderColor: palette.navy, borderWidth: 1 },
+              },
+              '& .MuiInputBase-input::placeholder': {
+                color: '#72829f',
+                opacity: 1,
+              },
+            }}
+          />
+
+          <Box
+            sx={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 0.65,
+              pb: 0.5,
+              px: { xs: 0.25, md: 0.5 },
+            }}
+          >
             {ALL_LETTERS.map((letter) => {
               const isActive = letter === activeLetter
               const isEnabled = availableLetters.has(letter)
@@ -65,9 +136,9 @@ export function GlossaryPage() {
                     width: 30,
                     height: 30,
                     border: '1px solid',
-                    borderColor: isActive ? '#101214' : '#cfd5dd',
-                    bgcolor: isActive ? '#101214' : 'common.white',
-                    color: isActive ? 'common.white' : isEnabled ? '#4c535b' : '#9ca3ad',
+                    borderColor: isActive ? palette.navy : palette.line,
+                    bgcolor: isActive ? palette.navy : palette.white,
+                    color: isActive ? palette.white : isEnabled ? palette.body : '#97a3b8',
                     fontSize: 12,
                     fontWeight: 600,
                     lineHeight: 1,
@@ -76,8 +147,9 @@ export function GlossaryPage() {
                     transition: 'all 180ms ease',
                     '&:hover': isEnabled
                       ? {
-                          borderColor: '#101214',
-                          color: isActive ? 'common.white' : '#101214',
+                          borderColor: palette.cobalt,
+                          color: isActive ? palette.white : palette.navy,
+                          bgcolor: isActive ? palette.navy : palette.sky,
                         }
                       : undefined,
                   }}
@@ -88,35 +160,70 @@ export function GlossaryPage() {
             })}
           </Box>
 
-          <Box sx={{ border: '1px solid', borderColor: '#d2d7df', bgcolor: 'common.white' }}>
-            {filteredTerms.map((item, index) => {
-              const isExpanded = item.term === expandedTerm
+          <Box
+            sx={{
+              // border: '1px solid',
+              // borderColor: palette.line,
+              // bgcolor: palette.white,
+              // borderRadius: 1.5,
+              overflow: 'visible',
+              // p: { xs: 0.75, md: 1 },
+              // boxShadow: '0 10px 28px rgba(12, 39, 88, 0.08)',
+            }}
+          >
+            {filteredTerms.length === 0 && (
+              <Box
+                sx={{
+                  border: '1px solid',
+                  borderColor: palette.line,
+                  borderRadius: 1.25,
+                  bgcolor: palette.white,
+                  px: { xs: 2, md: 2.5 },
+                  py: { xs: 1.8, md: 2.1 },
+                  color: palette.body,
+                  fontSize: 14,
+                }}
+              >
+                No terms found for letter {activeLetter}
+                {searchQuery.trim() ? ` with "${searchQuery.trim()}".` : '.'}
+              </Box>
+            )}
+
+            {filteredTerms.map((item) => {
+              const isExpanded = item.term === openTerm
+              const entryKey = `${item.letter}-${item.term}`
 
               return (
                 <Accordion
-                  key={item.term}
+                  key={entryKey}
                   disableGutters
                   square
                   expanded={isExpanded}
                   onChange={(_, expanded) => setOpenTerm(expanded ? item.term : null)}
                   sx={{
                     boxShadow: 'none',
-                    borderTop: index === 0 ? 'none' : '1px solid',
-                    borderColor: '#e0e5eb',
+                    border: '1px solid',
+                    borderColor: palette.line,
+                    borderRadius: 1.25,
+                    overflow: 'hidden',
                     '&::before': { display: 'none' },
-                    bgcolor: 'common.white',
+                    bgcolor: palette.white,
+                    mb: 1,
+                    '&:last-of-type': { mb: 0 },
+                    '&.Mui-expanded': { m: 0, mb: 1 },
+                    '&.Mui-expanded:last-of-type': { mb: 0 },
                     transition: 'background-color 220ms ease',
                   }}
                 >
                   <AccordionSummary
-                    expandIcon={<ExpandMoreRoundedIcon sx={{ color: '#5d6670' }} />}
-                    aria-controls={`glossary-panel-${index}`}
-                    id={`glossary-header-${index}`}
+                    expandIcon={<ExpandMoreRoundedIcon sx={{ color: palette.cobalt }} />}
+                    aria-controls={`glossary-panel-${entryKey}`}
+                    id={`glossary-header-${entryKey}`}
                     sx={{
                       minHeight: 0,
                       px: { xs: 1.5, md: 2 },
-                      py: 0.6,
-                      bgcolor: isExpanded ? '#f7f8fa' : 'common.white',
+                      py: 0.95,
+                      bgcolor: isExpanded ? palette.sky : palette.white,
                       transition: 'background-color 180ms ease',
                       '& .MuiAccordionSummary-content': {
                         my: 0.4,
@@ -124,13 +231,13 @@ export function GlossaryPage() {
                       '& .MuiAccordionSummary-expandIconWrapper': {
                         transition: 'transform 240ms cubic-bezier(0.22, 1, 0.36, 1)',
                       },
-                      '&:hover': { bgcolor: '#f7f8fa' },
+                      '&:hover': { bgcolor: palette.sky },
                     }}
                   >
                     <Typography
                       sx={{
-                        color: '#20252b',
-                        fontSize: { xs: 14, md: 15 },
+                        color: palette.ink,
+                        fontSize: { xs: 14.5, md: 15.5 },
                         fontWeight: isExpanded ? 600 : 500,
                         transition: 'font-weight 180ms ease',
                       }}
@@ -144,7 +251,7 @@ export function GlossaryPage() {
                       px: 0,
                       py: 0,
                       borderTop: '1px solid',
-                      borderColor: '#e0e5eb',
+                      borderColor: palette.line,
                       animation: isExpanded ? 'accordionFadeIn 240ms ease' : 'none',
                       '@keyframes accordionFadeIn': {
                         from: { opacity: 0, transform: 'translateY(-4px)' },
@@ -153,21 +260,21 @@ export function GlossaryPage() {
                     }}
                   >
                     <Box component="table" sx={{ width: '100%', borderCollapse: 'collapse' }}>
-                      <Box component="thead" sx={{ bgcolor: '#fafbfc' }}>
+                      <Box component="thead" sx={{ bgcolor: '#f1f6ff' }}>
                         <Box component="tr">
                           <Box
                             component="th"
                             sx={{
                               width: { xs: '32%', md: '22%' },
                               px: { xs: 1.5, md: 2 },
-                              py: 1,
+                              py: 1.2,
                               textAlign: 'left',
                               borderBottom: '1px solid',
                               borderRight: '1px solid',
-                              borderColor: '#e0e5eb',
+                              borderColor: palette.line,
                               fontSize: 11,
                               fontWeight: 700,
-                              color: '#3a4048',
+                              color: palette.navy,
                               letterSpacing: '0.02em',
                               textTransform: 'uppercase',
                             }}
@@ -179,14 +286,14 @@ export function GlossaryPage() {
                             sx={{
                               width: { xs: '30%', md: '28%' },
                               px: { xs: 1.5, md: 2 },
-                              py: 1,
+                              py: 1.2,
                               textAlign: 'left',
                               borderBottom: '1px solid',
                               borderRight: '1px solid',
-                              borderColor: '#e0e5eb',
+                              borderColor: palette.line,
                               fontSize: 11,
                               fontWeight: 700,
-                              color: '#3a4048',
+                              color: palette.navy,
                               letterSpacing: '0.02em',
                               textTransform: 'uppercase',
                             }}
@@ -197,13 +304,13 @@ export function GlossaryPage() {
                             component="th"
                             sx={{
                               px: { xs: 1.5, md: 2 },
-                              py: 1,
+                              py: 1.2,
                               textAlign: 'left',
                               borderBottom: '1px solid',
-                              borderColor: '#e0e5eb',
+                              borderColor: palette.line,
                               fontSize: 11,
                               fontWeight: 700,
-                              color: '#3a4048',
+                              color: palette.navy,
                               letterSpacing: '0.02em',
                               textTransform: 'uppercase',
                             }}
@@ -219,12 +326,12 @@ export function GlossaryPage() {
                             component="td"
                             sx={{
                               px: { xs: 1.5, md: 2 },
-                              py: 1.5,
+                              py: 1.8,
                               verticalAlign: 'top',
                               borderRight: '1px solid',
-                              borderColor: '#e0e5eb',
+                              borderColor: palette.line,
                               fontSize: 12,
-                              color: '#20252b',
+                              color: palette.ink,
                               fontWeight: 600,
                             }}
                           >
@@ -234,17 +341,26 @@ export function GlossaryPage() {
                             component="td"
                             sx={{
                               px: { xs: 1.5, md: 2 },
-                              py: 1.5,
+                              py: 1.8,
                               verticalAlign: 'top',
                               borderRight: '1px solid',
-                              borderColor: '#e0e5eb',
+                              borderColor: palette.line,
                               fontSize: 12,
-                              color: '#4c535b',
+                              color: palette.body,
                             }}
                           >
                             {item.meaning}
                           </Box>
-                          <Box component="td" sx={{ px: { xs: 1.5, md: 2 }, py: 1.5, verticalAlign: 'top', fontSize: 12, color: '#4c535b' }}>
+                          <Box
+                            component="td"
+                            sx={{
+                              px: { xs: 1.5, md: 2 },
+                              py: 1.8,
+                              verticalAlign: 'top',
+                              fontSize: 12,
+                              color: palette.body,
+                            }}
+                          >
                             {item.description}
                           </Box>
                         </Box>
