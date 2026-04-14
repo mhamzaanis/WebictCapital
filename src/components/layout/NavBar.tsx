@@ -8,6 +8,7 @@ export function NavBar() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isLearnOpen, setIsLearnOpen] = useState(false)
   const { pathname } = useLocation()
+  const hasOpenSubmenu = isLearnOpen
 
   useEffect(() => {
     const onScroll = () => {
@@ -23,27 +24,28 @@ export function NavBar() {
   }, [])
 
   return (
-    <AppBar
-      position="fixed"
-      elevation={0}
-      sx={{
-        '@keyframes dotBounce': {
-          '0%, 100%': { transform: 'translateY(0)' },
-          '35%': { transform: 'translateY(-9px)' },
-          '70%': { transform: 'translateY(0)' },
-          '85%': { transform: 'translateY(-4px)' },
-        },
-        bgcolor: isScrolled ? 'rgba(255,255,255,0.95)' : 'transparent',
-        color: 'text.primary',
-        borderBottom: '1px solid',
-        borderColor: isScrolled ? 'divider' : 'transparent',
-        backdropFilter: isScrolled ? 'blur(8px)' : 'none',
-        boxShadow: isScrolled ? '0 6px 20px rgba(0,0,0,0.06)' : 'none',
-        transition: 'background-color 220ms ease, border-color 220ms ease, box-shadow 220ms ease, backdrop-filter 220ms ease',
-      }}
-    >
-      <Container maxWidth="xl">
-        <Toolbar disableGutters sx={{ minHeight: { xs: 64, md: 72 }, justifyContent: 'space-between', gap: 2 }}>
+    <>
+      <AppBar
+        position="fixed"
+        elevation={0}
+        sx={{
+          '@keyframes dotBounce': {
+            '0%, 100%': { transform: 'translateY(0)' },
+            '35%': { transform: 'translateY(-9px)' },
+            '70%': { transform: 'translateY(0)' },
+            '85%': { transform: 'translateY(-4px)' },
+          },
+          bgcolor: hasOpenSubmenu ? 'rgba(255,255,255,0.98)' : isScrolled ? 'rgba(255,255,255,0.95)' : 'transparent',
+          color: 'text.primary',
+          borderBottom: '1px solid',
+          borderColor: hasOpenSubmenu || isScrolled ? 'divider' : 'transparent',
+          backdropFilter: hasOpenSubmenu ? 'blur(12px)' : isScrolled ? 'blur(8px)' : 'none',
+          boxShadow: hasOpenSubmenu ? '0 14px 28px rgba(0,0,0,0.12)' : isScrolled ? '0 6px 20px rgba(0,0,0,0.06)' : 'none',
+          transition: 'background-color 220ms ease, border-color 220ms ease, box-shadow 220ms ease, backdrop-filter 220ms ease',
+        }}
+      >
+        <Container maxWidth="xl">
+          <Toolbar disableGutters sx={{ minHeight: { xs: 64, md: 72 }, justifyContent: 'space-between', gap: 2 }}>
           <Link
             component={RouterLink}
             to="/"
@@ -72,11 +74,11 @@ export function NavBar() {
             </Typography>
           </Link>
 
-          <Stack
-            direction="row"
-            spacing={{ xs: 2, md: 4 }}
-            sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}
-          >
+            <Stack
+              direction="row"
+              spacing={{ xs: 2, md: 4 }}
+              sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}
+            >
             {navItems.map((item) => (
               <Link
                 key={item.label}
@@ -204,19 +206,37 @@ export function NavBar() {
               </Box>
             </Box>
 
-            <IconButton
-              aria-label="Search"
-              sx={{
-                color: 'text.secondary',
-                transition: 'color 0.25s ease, transform 0.25s ease',
-                '&:hover': { color: 'primary.main', transform: 'translateY(-1px)' },
-              }}
-            >
-              <SearchOutlinedIcon sx={{ fontSize: 20 }} />
-            </IconButton>
-          </Stack>
-        </Toolbar>
-      </Container>
-    </AppBar>
+              <IconButton
+                aria-label="Search"
+                sx={{
+                  color: 'text.secondary',
+                  transition: 'color 0.25s ease, transform 0.25s ease',
+                  '&:hover': { color: 'primary.main', transform: 'translateY(-1px)' },
+                }}
+              >
+                <SearchOutlinedIcon sx={{ fontSize: 20 }} />
+              </IconButton>
+            </Stack>
+          </Toolbar>
+        </Container>
+      </AppBar>
+
+      <Box
+        aria-hidden
+        sx={(theme) => ({
+          position: 'fixed',
+          top: { xs: 64, md: 72 },
+          left: 0,
+          right: 0,
+          bottom: 0,
+          opacity: hasOpenSubmenu ? 1 : 0,
+          pointerEvents: 'none',
+          backdropFilter: hasOpenSubmenu ? 'blur(8px)' : 'none',
+          backgroundColor: hasOpenSubmenu ? 'rgba(247, 248, 250, 0.2)' : 'transparent',
+          transition: 'opacity 220ms ease, backdrop-filter 220ms ease, background-color 220ms ease',
+          zIndex: theme.zIndex.appBar - 1,
+        })}
+      />
+    </>
   )
 }
