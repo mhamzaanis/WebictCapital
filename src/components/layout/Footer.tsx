@@ -1,0 +1,63 @@
+import { Box, Container, Grid, Link, Stack, Typography } from '@mui/material'
+import { footerColumns } from '../../content/siteContent'
+
+const legalLinks = ['Webict Capital eVentCloud', 'Confidentiality', 'Our Commitment', 'Code of conduct', 'Legal']
+
+export function Footer() {
+  return (
+    <Box component="footer" sx={{ bgcolor: 'background.paper', borderTop: '1px solid', borderColor: 'divider', py: { xs: 6, md: 8 } }}>
+      <Container maxWidth="xl">
+        <Grid container spacing={4} sx={{ mb: 6 }}>
+          <Grid size={{ xs: 12, md: 3 }}>
+            <Typography sx={{ fontFamily: '"Playfair Display", serif', fontSize: 20, mb: 2 }}>Webict Capital.</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.8 }}>
+              The Stables, 23, Britannia Street,
+              <br />
+              London WC1X 9JB, UK
+              <br />
+              +44 (0) 20 7016 6800
+              <br />
+              +44 (0) 20 7016 6811
+            </Typography>
+            <Stack spacing={0.5} sx={{ mt: 2.5 }}>
+              {['Twitter', 'LinkedIn', 'Medium'].map((item) => (
+                <Link key={item} href="#" underline="hover" color="text.secondary" sx={{ fontSize: 13 }}>
+                  {item}
+                </Link>
+              ))}
+            </Stack>
+          </Grid>
+
+          {footerColumns.map((column) => (
+            <Grid key={column.title} size={{ xs: 6, md: 2.25 }}>
+              <Typography sx={{ fontWeight: 600, mb: 2, fontSize: 14 }}>{column.title}</Typography>
+              <Stack spacing={1.2}>
+                {column.links.map((link) => (
+                  <Link key={link.label} href={link.href} underline="hover" color="text.secondary" sx={{ fontSize: 13 }}>
+                    {link.label}
+                  </Link>
+                ))}
+              </Stack>
+            </Grid>
+          ))}
+        </Grid>
+
+        <Box sx={{ borderTop: '1px solid', borderColor: 'divider', pt: 3, display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'space-between' }}>
+          <Box>
+            <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>© Webict Capital. All rights reserved.</Typography>
+            <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>
+              Webict Capital SAS LLC is authorised and regulated by the Financial Conduct Authority.
+            </Typography>
+          </Box>
+          <Stack direction="row" spacing={2} useFlexGap sx={{ flexWrap: 'wrap' }}>
+            {legalLinks.map((item) => (
+              <Link key={item} href="#" underline="hover" color="text.secondary" sx={{ fontSize: 12 }}>
+                {item}
+              </Link>
+            ))}
+          </Stack>
+        </Box>
+      </Container>
+    </Box>
+  )
+}
