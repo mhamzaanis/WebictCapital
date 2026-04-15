@@ -234,7 +234,7 @@ export function HeroSection() {
               <Stack spacing={{ xs: 3, md: 3.8 }} sx={{ maxWidth: 640 }}>
 
                 {/* Badge */}
-                <Box
+                {/* <Box
                   component={motion.div}
                   variants={{ hidden: { opacity: 0, y: -10, scale: 0.94 }, visible: { opacity: 1, y: 0, scale: 1 } }}
                   transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
@@ -262,7 +262,7 @@ export function HeroSection() {
                       PSX-Focused Investment Education
                     </Typography>
                   </Box>
-                </Box>
+                </Box> */}
 
                 {/* Headline with typing animation */}
                 <Box

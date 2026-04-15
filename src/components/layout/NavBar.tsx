@@ -1,20 +1,28 @@
 import { useEffect, useState } from 'react'
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded'
 import MenuRoundedIcon from '@mui/icons-material/MenuRounded'
-import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined'
-import { AppBar, Box, Container, Drawer, IconButton, InputBase, Link, Modal, Stack, Toolbar, Typography } from '@mui/material'
+// import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined'
+import { AppBar, Box, Container, Drawer, IconButton, Link, Stack, Toolbar, Typography } from '@mui/material'
 import { motion, useReducedMotion } from 'motion/react'
 import { Link as RouterLink, useLocation } from 'react-router-dom'
 import { navItems } from '../../content/siteContent'
 
 export function NavBar() {
   const [isScrolled, setIsScrolled] = useState(false)
-  const [isLearnOpen, setIsLearnOpen] = useState(false)
-  const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [openDropdownLabel, setOpenDropdownLabel] = useState<string | null>(null)
+  // const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const { pathname } = useLocation()
-  const hasOpenSubmenu = isLearnOpen
+  const hasOpenSubmenu = Boolean(openDropdownLabel)
   const reduceMotion = useReducedMotion()
+
+  const isInternalHref = (href: string) => href.startsWith('/')
+  const getPathFromHref = (href: string) => href.split('#')[0] || '/'
+  const isActiveHref = (href: string) => {
+    if (!isInternalHref(href)) return false
+    const targetPath = getPathFromHref(href)
+    return pathname === targetPath || (targetPath !== '/' && pathname.startsWith(targetPath))
+  }
 
   useEffect(() => {
     const onScroll = () => {
@@ -84,154 +92,180 @@ export function NavBar() {
           </Link>
 
           <Stack direction="row" spacing={0.3} sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center' }}>
-            <IconButton aria-label="Search" onClick={() => setIsSearchOpen(true)} sx={{ color: 'text.secondary' }}>
+            {/* <IconButton aria-label="Search" onClick={() => setIsSearchOpen(true)} sx={{ color: 'text.secondary' }}>
               <SearchOutlinedIcon sx={{ fontSize: 20 }} />
-            </IconButton>
+            </IconButton> */}
             <IconButton aria-label="Open navigation menu" onClick={() => setIsMobileMenuOpen(true)} sx={{ color: 'text.secondary' }}>
               <MenuRoundedIcon sx={{ fontSize: 23 }} />
             </IconButton>
           </Stack>
 
             <Stack direction="row" spacing={{ xs: 2.5, md: 4.6 }} sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
-            {navItems.map((item, index) => (
-              <Box
-                key={item.label}
-                component={motion.div}
-                initial={reduceMotion ? false : { opacity: 0, y: -8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.12 + index * 0.04, duration: 0.3 }}
-              >
-              <Link
-                href={item.href}
-                underline="none"
-                color="text.secondary"
-                sx={{
-                  fontSize: { md: 15, lg: 16 },
-                  fontWeight: 500,
-                  position: 'relative',
-                  px: 0.35,
-                  py: 0.4,
-                  transition: 'color 0.25s ease',
-                  '&::after': {
-                    content: '""',
-                    position: 'absolute',
-                    left: 2,
-                    right: 2,
-                    bottom: -5,
-                    height: 2,
-                    borderRadius: 2,
-                    bgcolor: 'primary.main',
-                    opacity: 0,
-                    transform: 'scaleX(0.25)',
-                    transformOrigin: 'center',
-                    transition: 'transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease',
-                  },
-                  '&:hover': { color: 'text.primary' },
-                  '&:hover::after': {
-                    opacity: 1,
-                    transform: 'scaleX(1)',
-                  },
-                }}
-              >
-                {item.label}
-              </Link>
-              </Box>
-            ))}
+            {navItems.map((item, index) => {
+              const hasChildren = Boolean(item.children?.length)
+              const isDropdownOpen = openDropdownLabel === item.label
+              const isItemActive = isActiveHref(item.href) || (item.children?.some((child) => isActiveHref(child.href)) ?? false)
 
-            <Box
-              onMouseEnter={() => setIsLearnOpen(true)}
-              onMouseLeave={() => setIsLearnOpen(false)}
-              sx={{ position: 'relative', '&::after': { content: '""', position: 'absolute', top: '100%', left: 0, right: 0, height: 8 } }}
-            >
-              <Link
-                component={RouterLink}
-                to="/glossary"
-                underline="none"
-                color={pathname.startsWith('/glossary') ? 'text.primary' : 'text.secondary'}
-                sx={{
-                  fontSize: { md: 15, lg: 16 },
-                  fontWeight: 500,
-                  position: 'relative',
-                  px: 0.35,
-                  py: 0.4,
-                  transition: 'color 0.25s ease',
-                  '&::after': {
-                    content: '""',
-                    position: 'absolute',
-                    left: 2,
-                    right: 2,
-                    bottom: -5,
-                    height: 2,
-                    borderRadius: 2,
-                    bgcolor: 'primary.main',
-                    opacity: pathname.startsWith('/glossary') || isLearnOpen ? 1 : 0,
-                    transform: pathname.startsWith('/glossary') || isLearnOpen ? 'scaleX(1)' : 'scaleX(0.25)',
-                    transformOrigin: 'center',
-                    transition: 'transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease',
-                  },
-                  '&:hover': { color: 'text.primary' },
-                }}
-              >
-                Learn
-              </Link>
+              if (hasChildren) {
+                return (
+                  <Box
+                    key={item.label}
+                    component={motion.div}
+                    initial={reduceMotion ? false : { opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.12 + index * 0.04, duration: 0.3 }}
+                    onMouseEnter={() => setOpenDropdownLabel(item.label)}
+                    onMouseLeave={() => setOpenDropdownLabel(null)}
+                    sx={{ position: 'relative', '&::after': { content: '""', position: 'absolute', top: '100%', left: 0, right: 0, height: 8 } }}
+                  >
+                    <Link
+                      component={isInternalHref(item.href) ? RouterLink : 'a'}
+                      to={isInternalHref(item.href) ? item.href : undefined}
+                      href={!isInternalHref(item.href) ? item.href : undefined}
+                      onClick={(event) => {
+                        event.preventDefault()
+                        setOpenDropdownLabel((current) => (current === item.label ? null : item.label))
+                      }}
+                      underline="none"
+                      color={isItemActive ? 'text.primary' : 'text.secondary'}
+                      sx={{
+                        fontSize: { md: 15, lg: 16 },
+                        fontWeight: 500,
+                        position: 'relative',
+                        px: 0.35,
+                        py: 0.4,
+                        transition: 'color 0.25s ease',
+                        '&::after': {
+                          content: '""',
+                          position: 'absolute',
+                          left: 2,
+                          right: 2,
+                          bottom: -5,
+                          height: 2,
+                          borderRadius: 2,
+                          bgcolor: 'primary.main',
+                          opacity: isItemActive || isDropdownOpen ? 1 : 0,
+                          transform: isItemActive || isDropdownOpen ? 'scaleX(1)' : 'scaleX(0.25)',
+                          transformOrigin: 'center',
+                          transition: 'transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease',
+                        },
+                        '&:hover': { color: 'text.primary' },
+                      }}
+                    >
+                      {item.label}
+                    </Link>
 
-              <Box
-                sx={{
-                  position: 'absolute',
-                  top: 'calc(100% + 8px)',
-                  left: '50%',
-                  transform: isLearnOpen ? 'translate(-50%, 0)' : 'translate(-50%, -6px)',
-                  opacity: isLearnOpen ? 1 : 0,
-                  pointerEvents: isLearnOpen ? 'auto' : 'none',
-                  minWidth: 220,
-                  bgcolor: 'rgba(255,255,255,0.98)',
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  boxShadow: '0 18px 32px rgba(0,0,0,0.12)',
-                  borderRadius: 1,
-                  overflow: 'hidden',
-                  transition: 'opacity 180ms ease, transform 180ms ease',
-                  zIndex: 10,
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: -7,
-                    left: '50%',
-                    width: 14,
-                    height: 14,
-                    bgcolor: 'common.white',
-                    borderTop: '1px solid',
-                    borderLeft: '1px solid',
-                    borderColor: 'divider',
-                    transform: 'translateX(-50%) rotate(45deg)',
-                  },
-                }}
-              >
-                <Link
-                  component={RouterLink}
-                  to="/glossary"
-                  underline="none"
-                  color="text.primary"
-                  onClick={() => setIsLearnOpen(false)}
-                  sx={{
-                    position: 'relative',
-                    zIndex: 1,
-                    display: 'block',
-                    px: 2.25,
-                    py: 1.6,
-                    fontSize: 15,
-                    fontWeight: 500,
-                    bgcolor: 'common.white',
-                    transition: 'background-color 0.2s ease, color 0.2s ease',
-                    '&:hover': { bgcolor: '#f4f6f8', color: 'text.primary' },
-                  }}
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        top: 'calc(100% + 8px)',
+                        left: '50%',
+                        transform: isDropdownOpen ? 'translate(-50%, 0)' : 'translate(-50%, -6px)',
+                        opacity: isDropdownOpen ? 1 : 0,
+                        pointerEvents: isDropdownOpen ? 'auto' : 'none',
+                        minWidth: 220,
+                        bgcolor: 'rgba(255,255,255,0.98)',
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        boxShadow: '0 18px 32px rgba(0,0,0,0.12)',
+                        borderRadius: 1,
+                        overflow: 'hidden',
+                        transition: 'opacity 180ms ease, transform 180ms ease',
+                        zIndex: 10,
+                        '&::before': {
+                          content: '""',
+                          position: 'absolute',
+                          top: -7,
+                          left: '50%',
+                          width: 14,
+                          height: 14,
+                          bgcolor: 'common.white',
+                          borderTop: '1px solid',
+                          borderLeft: '1px solid',
+                          borderColor: 'divider',
+                          transform: 'translateX(-50%) rotate(45deg)',
+                        },
+                      }}
+                    >
+                      {item.children?.map((child) => (
+                        <Link
+                          key={child.label}
+                          component={isInternalHref(child.href) ? RouterLink : 'a'}
+                          to={isInternalHref(child.href) ? child.href : undefined}
+                          href={!isInternalHref(child.href) ? child.href : undefined}
+                          underline="none"
+                          color="text.primary"
+                          onClick={() => setOpenDropdownLabel(null)}
+                          sx={{
+                            position: 'relative',
+                            zIndex: 1,
+                            display: 'block',
+                            px: 2.25,
+                            py: 1.6,
+                            fontSize: 15,
+                            fontWeight: 500,
+                            bgcolor: 'common.white',
+                            transition: 'background-color 0.2s ease, color 0.2s ease',
+                            '&:hover': { bgcolor: '#f4f6f8', color: 'text.primary' },
+                          }}
+                        >
+                          {child.label}
+                        </Link>
+                      ))}
+                    </Box>
+                  </Box>
+                )
+              }
+
+              return (
+                <Box
+                  key={item.label}
+                  component={motion.div}
+                  initial={reduceMotion ? false : { opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.12 + index * 0.04, duration: 0.3 }}
                 >
-                  Glossary
-                </Link>
-              </Box>
-            </Box>
+                  <Link
+                    component={isInternalHref(item.href) ? RouterLink : 'a'}
+                    to={isInternalHref(item.href) ? item.href : undefined}
+                    href={!isInternalHref(item.href) ? item.href : undefined}
+                    underline="none"
+                    color={isItemActive ? 'text.primary' : 'text.secondary'}
+                    sx={{
+                      fontSize: { md: 15, lg: 16 },
+                      fontWeight: 500,
+                      position: 'relative',
+                      px: 0.35,
+                      py: 0.4,
+                      transition: 'color 0.25s ease',
+                      '&::after': {
+                        content: '""',
+                        position: 'absolute',
+                        left: 2,
+                        right: 2,
+                        bottom: -5,
+                        height: 2,
+                        borderRadius: 2,
+                        bgcolor: 'primary.main',
+                        opacity: isItemActive ? 1 : 0,
+                        transform: isItemActive ? 'scaleX(1)' : 'scaleX(0.25)',
+                        transformOrigin: 'center',
+                        transition: 'transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease',
+                      },
+                      '&:hover': { color: 'text.primary' },
+                      '&:hover::after': {
+                        opacity: 1,
+                        transform: 'scaleX(1)',
+                      },
+                    }}
+                  >
+                    {item.label}
+                  </Link>
+                </Box>
+              )
+            })}
 
-              <IconButton
+              {/* <IconButton
                 aria-label="Search"
                 onClick={() => setIsSearchOpen(true)}
                 sx={{
@@ -241,7 +275,7 @@ export function NavBar() {
                 }}
               >
                 <SearchOutlinedIcon sx={{ fontSize: 20 }} />
-              </IconButton>
+              </IconButton> */}
             </Stack>
           </Toolbar>
         </Container>
@@ -265,7 +299,7 @@ export function NavBar() {
         })}
       />
 
-      <Modal open={isSearchOpen} onClose={() => setIsSearchOpen(false)}>
+      {/* <Modal open={isSearchOpen} onClose={() => setIsSearchOpen(false)}>
         <Box
           sx={{
             position: 'fixed',
@@ -312,7 +346,7 @@ export function NavBar() {
             </Box>
           </Box>
         </Box>
-      </Modal>
+      </Modal> */}
 
       <Drawer anchor="right" open={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)}>
         <Box sx={{ width: 290, height: '100%', bgcolor: '#f9fbff', px: 2.2, py: 1.8 }}>
@@ -325,40 +359,27 @@ export function NavBar() {
 
           <Stack spacing={0.35}>
             {navItems.map((item) => (
-              <Link
-                key={item.label}
-                href={item.href}
-                underline="none"
-                onClick={() => setIsMobileMenuOpen(false)}
-                sx={{
-                  px: 1,
-                  py: 1.05,
-                  borderRadius: 1,
-                  color: 'text.primary',
-                  fontSize: 16,
-                  '&:hover': { bgcolor: '#eaf2ff' },
-                }}
-              >
-                {item.label}
-              </Link>
+              <Box key={item.label}>
+                <Link
+                  component={isInternalHref(item.href) ? RouterLink : 'a'}
+                  to={isInternalHref(item.href) ? item.href : undefined}
+                  href={!isInternalHref(item.href) ? item.href : undefined}
+                  underline="none"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  sx={{
+                    px: 1,
+                    py: 1.05,
+                    borderRadius: 1,
+                    color: isActiveHref(item.href) || (item.children?.some((child) => isActiveHref(child.href)) ?? false) ? '#123570' : 'text.primary',
+                    fontSize: 16,
+                    fontWeight: isActiveHref(item.href) || (item.children?.some((child) => isActiveHref(child.href)) ?? false) ? 700 : 500,
+                    '&:hover': { bgcolor: '#eaf2ff' },
+                  }}
+                >
+                  {item.children?.length ? `${item.label} / ${item.children[0].label}` : item.label}
+                </Link>
+              </Box>
             ))}
-            <Link
-              component={RouterLink}
-              to="/glossary"
-              underline="none"
-              onClick={() => setIsMobileMenuOpen(false)}
-              sx={{
-                px: 1,
-                py: 1.05,
-                borderRadius: 1,
-                color: pathname.startsWith('/glossary') ? '#123570' : 'text.primary',
-                fontSize: 16,
-                fontWeight: pathname.startsWith('/glossary') ? 700 : 500,
-                '&:hover': { bgcolor: '#eaf2ff' },
-              }}
-            >
-              Learn / Glossary
-            </Link>
           </Stack>
         </Box>
       </Drawer>

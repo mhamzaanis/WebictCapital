@@ -34,11 +34,61 @@ export function PortfolioSection() {
           '0%, 100%': { transform: 'scale(1)' },
           '50%': { transform: 'scale(1.18)' },
         },
-        py: { xs: 9, md: 12 },
-        backgroundImage: 'linear-gradient(180deg, #f0f6ff 0%, #ffffff 18%)',
+        py: { xs: 8, md: 11 },
+        position: 'relative',
+        overflow: 'hidden',
+        backgroundImage: 'linear-gradient(180deg, #edf5ff 0%, #ffffff 24%, #f7fbff 100%)',
       }}
     >
+      <Box
+        aria-hidden
+        sx={{
+          position: 'absolute',
+          inset: 0,
+          pointerEvents: 'none',
+          backgroundImage:
+            'linear-gradient(rgba(30,80,160,0.045) 1px, transparent 1px), linear-gradient(90deg, rgba(30,80,160,0.045) 1px, transparent 1px)',
+          backgroundSize: '68px 68px',
+          maskImage: 'linear-gradient(to bottom, transparent 0%, black 22%, black 80%, transparent 100%)',
+        }}
+      />
+
+      <Box
+        component={motion.div}
+        animate={reduceMotion ? {} : { scale: [1, 1.08, 1], opacity: [0.12, 0.2, 0.12] }}
+        transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
+        sx={{
+          position: 'absolute',
+          width: { xs: 320, md: 500 },
+          height: { xs: 320, md: 500 },
+          borderRadius: '50%',
+          top: { xs: -120, md: -180 },
+          right: { xs: -120, md: -180 },
+          background: 'radial-gradient(circle, rgba(31,95,191,0.16) 0%, transparent 72%)',
+          pointerEvents: 'none',
+        }}
+      />
+
       <Container maxWidth="xl" sx={{ px: { xs: 2, md: 3 } }}>
+        <MotionReveal amount={0.24}>
+          <Box sx={{ mb: { xs: 3.2, md: 4.4 }, maxWidth: 700 }}>
+            <Typography
+              variant="h2"
+              sx={{
+                fontSize: { xs: '1.7rem', sm: '2rem', md: '2.8rem' },
+                lineHeight: { xs: 1.15, md: 1.08 },
+                letterSpacing: '-0.02em',
+                color: '#0b1320',
+              }}
+            >
+              Portfolio Highlights
+            </Typography>
+            <Typography sx={{ mt: 1, color: '#30445f', fontSize: { xs: 14.5, md: 16.5 }, lineHeight: 1.7 }}>
+              Companies backed with long-term conviction, operator empathy, and disciplined capital.
+            </Typography>
+          </Box>
+        </MotionReveal>
+
         <Box
           sx={{
             display: 'grid', 
@@ -56,7 +106,7 @@ export function PortfolioSection() {
               transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
               href={item.href ?? '#'}
               sx={{
-                bgcolor: 'background.paper',
+                bgcolor: '#ffffff',
                 minHeight: { xs: 180, sm: 230, md: 280 },
                 display: 'flex',
                 alignItems: 'center',
@@ -65,12 +115,13 @@ export function PortfolioSection() {
                 px: 2,
                 textAlign: 'center',
                 textDecoration: 'none',
-                borderRadius: 2,
+                borderRadius: 2.2,
+                border: '1px solid rgba(162,190,230,0.42)',
                 overflow: 'hidden',
                 transition: 'transform 0.28s ease, box-shadow 0.28s ease',
                 animation: 'cardReveal 540ms ease both',
                 animationDelay: `${index * 45}ms`,
-                '&:hover': { boxShadow: '0 18px 30px rgba(6, 26, 59, 0.2)' },
+                '&:hover': { boxShadow: '0 20px 34px rgba(12, 36, 80, 0.18)' },
                 '&:hover .portfolio-dot': { animation: 'pulseDot 650ms ease' },
                 '&:hover .portfolio-overlay, &:focus-visible .portfolio-overlay': {
                   opacity: 1,

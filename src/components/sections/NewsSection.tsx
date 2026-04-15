@@ -15,10 +15,22 @@ export function NewsSection() {
           from: { opacity: 0, transform: 'translateY(18px)' },
           to: { opacity: 1, transform: 'translateY(0)' },
         },
-        py: { xs: 6.5, md: 10 },
+        py: { xs: 7, md: 10 },
+        backgroundImage: 'linear-gradient(180deg, #f8fbff 0%, #ffffff 30%, #f8fbff 100%)',
       }}
     >
       <Container maxWidth="xl" sx={{ px: { xs: 2, md: 3 } }}>
+        <MotionReveal amount={0.2}>
+          <Box sx={{ mb: { xs: 3.2, md: 4.2 }, maxWidth: 740 }}>
+            <Typography variant="h2" sx={{ fontSize: { xs: '1.65rem', md: '2.6rem' }, lineHeight: 1.1, letterSpacing: '-0.02em', color: '#0b1320' }}>
+              News and Insights
+            </Typography>
+            <Typography sx={{ mt: 1, color: '#324760', fontSize: { xs: 14.5, md: 16 }, lineHeight: 1.7 }}>
+              Portfolio milestones, ecosystem updates, and institutional perspectives from Webict Capital.
+            </Typography>
+          </Box>
+        </MotionReveal>
+
         <MotionReveal y={20} duration={0.62}>
         <Box
           sx={{
@@ -27,10 +39,14 @@ export function NewsSection() {
             gap: { xs: 2.8, md: 5 },
             alignItems: 'center',
             borderBottom: '1px solid',
-            borderColor: 'divider',
+            borderColor: '#d7e4f8',
             pb: { xs: 4, md: 6 },
             mb: { xs: 4, md: 6 },
             animation: 'fadeRise 620ms ease both',
+            borderRadius: 1.5,
+            p: { xs: 2, md: 2.5 },
+            bgcolor: 'rgba(255,255,255,0.82)',
+            boxShadow: '0 10px 26px rgba(12,39,88,0.06)',
           }}
         >
           <Box>
@@ -53,7 +69,8 @@ export function NewsSection() {
               sx={{
                 aspectRatio: { xs: '16 / 10', md: '4 / 3' },
               borderRadius: 1,
-              background: 'linear-gradient(135deg, #1a1f26 0%, #0f3f78 100%)',
+              border: '1px solid rgba(155,186,230,0.4)',
+              background: 'linear-gradient(135deg, #0f243f 0%, #114887 100%)',
               display: 'flex',
               alignItems: 'flex-end',
               p: 2.5,
@@ -80,15 +97,16 @@ export function NewsSection() {
               transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
               sx={{
                 p: { xs: 1.5, md: 2 },
-                borderRadius: 1,
-                border: '1px solid transparent',
+                borderRadius: 1.4,
+                border: '1px solid #dce8f8',
+                bgcolor: '#ffffff',
                 transition: 'transform 0.25s ease, border-color 0.25s ease, background-color 0.25s ease',
                 animation: 'fadeRise 540ms ease both',
                 animationDelay: `${index * 80}ms`,
                 '&:hover': {
                   transform: 'translateY(-3px)',
-                  borderColor: 'divider',
-                  bgcolor: '#fbfcfe',
+                  borderColor: '#adc8eb',
+                  bgcolor: '#f7fbff',
                 },
               }}
             >

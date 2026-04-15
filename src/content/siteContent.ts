@@ -1,11 +1,20 @@
 import type { FooterColumn, NavItem, NewsCard, PortfolioItem } from '../types/content'
 
 export const navItems: NavItem[] = [
-  { label: 'About us', href: '#' },
+  {
+    label: 'Learn',
+    href: '/glossary',
+    children: [
+      { label: 'Glossary', href: '/glossary' },
+      {label: 'Masterclasses', href: '/masterclasses'},
+      {label: 'Webinars', href: ''},
+    ],
+  },
+  // { label: 'Companies', href: '#' },
+  { label: 'Advisory', href: '#' },
   { label: 'Our team', href: '#' },
-  { label: 'Companies', href: '#' },
-  { label: 'Resources', href: '#' },
   { label: 'News', href: '#' },
+  { label: 'About us', href: '/about' },
 ]
 
 export const portfolioItems: PortfolioItem[] = [
@@ -113,11 +122,11 @@ export const footerColumns: FooterColumn[] = [
   {
     title: 'Webict Capital',
     links: [
-      { label: 'About Us', href: '#' },
+      { label: 'About Us', href: '/about' },
       { label: 'Sustainability', href: '#' },
       { label: 'Our Team', href: '#' },
       { label: 'Recruitments & Events', href: '#' },
-      { label: 'Contact', href: '#' },
+      { label: 'Contact', href: '/about#contact' },
     ],
   },
   {

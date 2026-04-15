@@ -24,8 +24,9 @@ export function CtaSection() {
         whileHover={reduceMotion ? undefined : { y: -5 }}
         transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
         sx={{
-          bgcolor: '#1a1a1a',
-          borderRadius: 1,
+          bgcolor: '#132a4f',
+          borderRadius: 2,
+          border: '1px solid rgba(140,176,225,0.42)',
           px: { xs: 2.2, md: 8 },
           py: { xs: 4.2, md: 7 },
           display: 'grid',
@@ -39,10 +40,17 @@ export function CtaSection() {
             content: '""',
             position: 'absolute',
             inset: -2,
-            background: 'linear-gradient(115deg, rgba(34,96,175,0.42), rgba(34,96,175,0), rgba(34,96,175,0.35))',
+            background: 'linear-gradient(115deg, rgba(45,115,206,0.46), rgba(45,115,206,0), rgba(45,115,206,0.36))',
             filter: 'blur(26px)',
             opacity: 0.6,
             animation: 'ctaGlow 5.4s ease-in-out infinite',
+            pointerEvents: 'none',
+          },
+          '&::after': {
+            content: '""',
+            position: 'absolute',
+            inset: 0,
+            background: 'linear-gradient(145deg, rgba(7,15,30,0.55) 0%, rgba(15,42,95,0.2) 56%, rgba(22,74,144,0.32) 100%)',
             pointerEvents: 'none',
           },
           '@keyframes ctaGlow': {
@@ -51,15 +59,15 @@ export function CtaSection() {
           },
           transition: 'transform 0.3s ease, box-shadow 0.3s ease',
           '&:hover': {
-            boxShadow: '0 18px 30px rgba(0,0,0,0.22)',
+            boxShadow: '0 22px 38px rgba(8, 26, 59, 0.35)',
           },
         }}
       >
-        <Typography variant="h2" sx={{ color: 'common.white', fontSize: { xs: '1.7rem', sm: '1.9rem', md: '3.2rem' }, lineHeight: { xs: 1.2, md: 1.1 }, letterSpacing: '-0.02em' }}>
+        <Typography variant="h2" sx={{ position: 'relative', zIndex: 1, color: 'common.white', fontSize: { xs: '1.7rem', sm: '1.9rem', md: '3.2rem' }, lineHeight: { xs: 1.2, md: 1.1 }, letterSpacing: '-0.02em' }}>
           Stay in touch with Webict Capital
         </Typography>
 
-        <Box>
+        <Box sx={{ position: 'relative', zIndex: 1 }}>
           <Typography sx={{ color: 'rgba(255,255,255,0.65)', mb: 3, lineHeight: 1.7 }}>
             Sign up for our newsletter to stay up to date on news from Webict Capital, and our portfolio.
           </Typography>
