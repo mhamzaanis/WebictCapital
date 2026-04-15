@@ -344,7 +344,7 @@ export function HeroSection() {
                   variants={{ hidden: { opacity: 0, x: -14 }, visible: { opacity: 1, x: 0 } }}
                   transition={{ duration: 0.48, ease: [0.22, 1, 0.36, 1] }}
                 >
-                  <Stack direction="row" spacing={1.4} alignItems="center">
+                  <Stack direction="row" spacing={1.4} sx={{ alignItems: 'center' }}>
                     <Box
                       sx={{
                         width: 40,
