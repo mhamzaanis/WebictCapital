@@ -1,8 +1,12 @@
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import { Box, Container, Link, Typography } from '@mui/material'
+import { motion, useReducedMotion } from 'motion/react'
 import { featuredNews, newsCards } from '../../content/siteContent'
+import { MotionReveal, MotionStagger } from '../animations/MotionReveal'
 
 export function NewsSection() {
+  const reduceMotion = useReducedMotion()
+
   return (
     <Box
       component="section"
@@ -15,6 +19,7 @@ export function NewsSection() {
       }}
     >
       <Container maxWidth="xl" sx={{ px: { xs: 2, md: 3 } }}>
+        <MotionReveal y={20} duration={0.62}>
         <Box
           sx={{
             display: 'grid',
@@ -42,6 +47,9 @@ export function NewsSection() {
           </Box>
 
           <Box
+              component={motion.div}
+              whileHover={reduceMotion ? undefined : { y: -6, scale: 1.01 }}
+              transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
               sx={{
                 aspectRatio: { xs: '16 / 10', md: '4 / 3' },
               borderRadius: 1,
@@ -51,7 +59,6 @@ export function NewsSection() {
               p: 2.5,
               transition: 'transform 0.3s ease, box-shadow 0.3s ease',
               '&:hover': {
-                transform: 'translateY(-4px)',
                 boxShadow: '0 14px 24px rgba(0,0,0,0.16)',
               },
             }}
@@ -61,11 +68,16 @@ export function NewsSection() {
             </Typography>
           </Box>
         </Box>
+        </MotionReveal>
 
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: { xs: 2.2, md: 4 } }}>
+          <MotionStagger delayChildren={0.04} staggerChildren={0.08} amount={0.1}>
           {newsCards.map((card, index) => (
+            <MotionReveal key={card.title} delay={index * 0.08} amount={0.16} y={20}>
             <Box
-              key={card.title}
+              component={motion.div}
+              whileHover={reduceMotion ? undefined : { y: -5 }}
+              transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
               sx={{
                 p: { xs: 1.5, md: 2 },
                 borderRadius: 1,
@@ -90,7 +102,9 @@ export function NewsSection() {
                 {card.linkLabel} <ArrowForwardIcon sx={{ fontSize: 16 }} />
               </Link>
             </Box>
+            </MotionReveal>
           ))}
+          </MotionStagger>
         </Box>
       </Container>
     </Box>

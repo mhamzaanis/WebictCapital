@@ -1,7 +1,8 @@
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import NorthEastIcon from '@mui/icons-material/NorthEast'
-import { Box, Container, Link, Typography } from '@mui/material'
+import { Box, Container, Typography } from '@mui/material'
+import { motion, useReducedMotion } from 'motion/react'
 import { portfolioItems } from '../../content/siteContent'
+import { MotionReveal } from '../animations/MotionReveal'
 
 function getCardStyles(variant?: string) {
   switch (variant) {
@@ -19,6 +20,8 @@ function getCardStyles(variant?: string) {
 }
 
 export function PortfolioSection() {
+  const reduceMotion = useReducedMotion()
+
   return (
     <Box
       component="section"
@@ -36,28 +39,21 @@ export function PortfolioSection() {
       }}
     >
       <Container maxWidth="xl" sx={{ px: { xs: 2, md: 3 } }}>
-        <Box sx={{ textAlign: 'center', mb: { xs: 6, md: 7.5 }, animation: 'cardReveal 620ms ease both' }}>
-          <Typography variant="h2" sx={{ fontSize: { xs: '1.7rem', sm: '1.9rem', md: '2.75rem' }, lineHeight: { xs: 1.22, md: 1.15 }, letterSpacing: '-0.02em', mb: 2.3 }}>
-            Two decades.
-            <br />
-            Hundreds of Europe&apos;s <Box component="em" sx={{ textDecoration: 'underline', textDecorationColor: 'primary.main' }}>best founders</Box>
-          </Typography>
-          <Link href="#" underline="hover" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, color: 'text.secondary', fontSize: 13 }}>
-            Meet the portfolio <ArrowForwardIcon sx={{ fontSize: 16 }} />
-          </Link>
-        </Box>
-
         <Box
           sx={{
-            display: 'grid',
+            display: 'grid', 
             gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
             gap: 2,
+            perspective: '1400px',
           }}
         >
           {portfolioItems.map((item, index) => (
+            <MotionReveal key={item.name} delay={index * 0.04} amount={0.12} y={22} scale={0.985} blur={1.4}>
             <Box
-              key={item.name}
-              component="a"
+              component={motion.a}
+              whileHover={reduceMotion ? undefined : { y: -6, rotateX: 1.1, rotateY: -1.1, scale: 1.012 }}
+              whileTap={reduceMotion ? undefined : { scale: 0.992 }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
               href={item.href ?? '#'}
               sx={{
                 bgcolor: 'background.paper',
@@ -74,7 +70,7 @@ export function PortfolioSection() {
                 transition: 'transform 0.28s ease, box-shadow 0.28s ease',
                 animation: 'cardReveal 540ms ease both',
                 animationDelay: `${index * 45}ms`,
-                '&:hover': { transform: 'translateY(-3px)', boxShadow: '0 12px 24px rgba(0,0,0,0.14)' },
+                '&:hover': { boxShadow: '0 18px 30px rgba(6, 26, 59, 0.2)' },
                 '&:hover .portfolio-dot': { animation: 'pulseDot 650ms ease' },
                 '&:hover .portfolio-overlay, &:focus-visible .portfolio-overlay': {
                   opacity: 1,
@@ -143,6 +139,7 @@ export function PortfolioSection() {
                 </Box>
               </Box>
             </Box>
+            </MotionReveal>
           ))}
         </Box>
       </Container>

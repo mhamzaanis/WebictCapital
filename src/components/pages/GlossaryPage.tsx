@@ -1,11 +1,15 @@
 import { useMemo, useState } from 'react'
 import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded'
 import { Accordion, AccordionDetails, AccordionSummary, Box, Container, Stack, Typography } from '@mui/material'
+import { motion, useReducedMotion } from 'motion/react'
 import { glossaryEntries } from './glossary'
+import { MotionReveal } from '../animations/MotionReveal'
 
 const ALL_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
 
 export function GlossaryPage() {
+  const reduceMotion = useReducedMotion()
+
   const palette = {
     ink: '#0b1220',
     navy: '#0f2a5f',
@@ -51,6 +55,7 @@ export function GlossaryPage() {
             py: { xs: 2.5, md: 3.5 },
           }}
         >
+          <MotionReveal>
           <Typography
             variant="h1"
             sx={{
@@ -62,7 +67,9 @@ export function GlossaryPage() {
           >
             Glossary
           </Typography>
+          </MotionReveal>
 
+          <MotionReveal delay={0.06}>
           <Box
             sx={{
               display: 'flex',
@@ -80,7 +87,9 @@ export function GlossaryPage() {
               return (
                 <Box
                   key={letter}
-                  component="button"
+                  component={motion.button}
+                  whileHover={isEnabled && !reduceMotion ? { y: -2, scale: 1.06 } : undefined}
+                  whileTap={isEnabled && !reduceMotion ? { scale: 0.96 } : undefined}
                   type="button"
                   disabled={!isEnabled}
                   onClick={() => {
@@ -114,8 +123,13 @@ export function GlossaryPage() {
               )
             })}
           </Box>
+          </MotionReveal>
 
           <Box
+            component={motion.div}
+            whileInView={reduceMotion ? undefined : { opacity: [0.92, 1], y: [8, 0] }}
+            viewport={{ once: true, amount: 0.2 }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
             sx={{
               border: '1px solid',
               borderColor: palette.line,
@@ -126,13 +140,13 @@ export function GlossaryPage() {
               boxShadow: '0 10px 28px rgba(12, 39, 88, 0.08)',
             }}
           >
-            {filteredTerms.map((item) => {
+            {filteredTerms.map((item, index) => {
               const isExpanded = item.term === openTerm
               const entryKey = `${item.letter}-${item.term}`
 
               return (
+                <MotionReveal key={entryKey} delay={Math.min(index * 0.02, 0.24)} amount={0.08}>
                 <Accordion
-                  key={entryKey}
                   disableGutters
                   square
                   expanded={isExpanded}
@@ -307,6 +321,7 @@ export function GlossaryPage() {
                     </Box>
                   </AccordionDetails>
                 </Accordion>
+                </MotionReveal>
               )
             })}
           </Box>

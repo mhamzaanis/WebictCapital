@@ -3,6 +3,7 @@ import CloseRoundedIcon from '@mui/icons-material/CloseRounded'
 import MenuRoundedIcon from '@mui/icons-material/MenuRounded'
 import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined'
 import { AppBar, Box, Container, Drawer, IconButton, InputBase, Link, Modal, Stack, Toolbar, Typography } from '@mui/material'
+import { motion, useReducedMotion } from 'motion/react'
 import { Link as RouterLink, useLocation } from 'react-router-dom'
 import { navItems } from '../../content/siteContent'
 
@@ -13,6 +14,7 @@ export function NavBar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const { pathname } = useLocation()
   const hasOpenSubmenu = isLearnOpen
+  const reduceMotion = useReducedMotion()
 
   useEffect(() => {
     const onScroll = () => {
@@ -29,10 +31,13 @@ export function NavBar() {
 
   return (
     <>
-      <AppBar
-        position="fixed"
-        elevation={0}
-        sx={{
+      <Box
+        component={motion.div}
+        initial={reduceMotion ? false : { opacity: 0, y: -22 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      >
+      <AppBar position="fixed" elevation={0} sx={{
           '@keyframes dotBounce': {
             '0%, 100%': { transform: 'translateY(0)' },
             '35%': { transform: 'translateY(-9px)' },
@@ -88,9 +93,15 @@ export function NavBar() {
           </Stack>
 
             <Stack direction="row" spacing={{ xs: 2.5, md: 4.6 }} sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
-            {navItems.map((item) => (
-              <Link
+            {navItems.map((item, index) => (
+              <Box
                 key={item.label}
+                component={motion.div}
+                initial={reduceMotion ? false : { opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.12 + index * 0.04, duration: 0.3 }}
+              >
+              <Link
                 href={item.href}
                 underline="none"
                 color="text.secondary"
@@ -124,6 +135,7 @@ export function NavBar() {
               >
                 {item.label}
               </Link>
+              </Box>
             ))}
 
             <Box
@@ -234,6 +246,7 @@ export function NavBar() {
           </Toolbar>
         </Container>
       </AppBar>
+      </Box>
 
       <Box
         aria-hidden
@@ -266,6 +279,10 @@ export function NavBar() {
           }}
         >
           <Box
+            component={motion.div}
+            initial={reduceMotion ? false : { opacity: 0, y: -14, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
             sx={{
               width: 'min(760px, 100%)',
               bgcolor: 'common.white',

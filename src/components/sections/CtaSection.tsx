@@ -1,7 +1,11 @@
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import { Box, Button, Container, InputBase, Typography } from '@mui/material'
+import { motion, useReducedMotion } from 'motion/react'
+import { MotionReveal } from '../animations/MotionReveal'
 
 export function CtaSection() {
+  const reduceMotion = useReducedMotion()
+
   return (
     <Container
       maxWidth="xl"
@@ -14,7 +18,11 @@ export function CtaSection() {
         px: { xs: 2, md: 3 },
       }}
     >
+      <MotionReveal amount={0.2} duration={0.62} y={24}>
       <Box
+        component={motion.div}
+        whileHover={reduceMotion ? undefined : { y: -5 }}
+        transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
         sx={{
           bgcolor: '#1a1a1a',
           borderRadius: 1,
@@ -25,9 +33,24 @@ export function CtaSection() {
           gap: { xs: 4, md: 8 },
           alignItems: 'center',
           animation: 'fadeRise 620ms ease both',
+          position: 'relative',
+          overflow: 'hidden',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            inset: -2,
+            background: 'linear-gradient(115deg, rgba(34,96,175,0.42), rgba(34,96,175,0), rgba(34,96,175,0.35))',
+            filter: 'blur(26px)',
+            opacity: 0.6,
+            animation: 'ctaGlow 5.4s ease-in-out infinite',
+            pointerEvents: 'none',
+          },
+          '@keyframes ctaGlow': {
+            '0%, 100%': { transform: 'translateX(-8%) scale(1)' },
+            '50%': { transform: 'translateX(8%) scale(1.04)' },
+          },
           transition: 'transform 0.3s ease, box-shadow 0.3s ease',
           '&:hover': {
-            transform: 'translateY(-2px)',
             boxShadow: '0 18px 30px rgba(0,0,0,0.22)',
           },
         }}
@@ -49,6 +72,9 @@ export function CtaSection() {
               sx={{ px: 2, py: 1.2, color: 'common.white', '& input::placeholder': { color: 'rgba(255,255,255,0.35)', opacity: 1 } }}
             />
             <Button
+              component={motion.button}
+              whileHover={reduceMotion ? undefined : { scale: 1.04 }}
+              whileTap={reduceMotion ? undefined : { scale: 0.97 }}
               sx={{
                 minWidth: { xs: '100%', sm: 54 },
                 py: { xs: 1, sm: 0 },
@@ -70,6 +96,7 @@ export function CtaSection() {
           </Typography>
         </Box>
       </Box>
+      </MotionReveal>
     </Container>
   )
 }
