@@ -18,23 +18,13 @@ body,
   min-height: 100%;
 }
 
-/* Keep scrolling native, but reveal a minimal scrollbar only on hover. */
+/* Keep scrolling native with a minimal always-visible scrollbar. */
 html {
-  scrollbar-width: none;
-  scrollbar-color: transparent transparent;
-}
-
-html:hover {
   scrollbar-width: thin;
   scrollbar-color: rgba(16, 18, 20, 0.35) transparent;
 }
 
 html::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-}
-
-html:hover::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }

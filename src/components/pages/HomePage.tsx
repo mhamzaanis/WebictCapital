@@ -87,6 +87,43 @@ function TypingHeadline() {
   )
 }
 
+function AnimatedStatValue({ value }: { value: string }) {
+  const reduce = useReducedMotion()
+  const [display, setDisplay] = useState(0)
+  const numericValue = Number.parseFloat(value.replace(/[^\d.]/g, '')) || 0
+  const suffix = value.replace(/[\d.]/g, '')
+
+  useEffect(() => {
+    if (reduce) {
+      setDisplay(numericValue)
+      return
+    }
+
+    let frame = 0
+    const duration = 1200
+    const start = performance.now()
+
+    const tick = (time: number) => {
+      const progress = Math.min((time - start) / duration, 1)
+      const eased = 1 - Math.pow(1 - progress, 3)
+      setDisplay(numericValue * eased)
+      if (progress < 1) frame = requestAnimationFrame(tick)
+    }
+
+    frame = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(frame)
+  }, [numericValue, reduce])
+
+  const shown = Number.isInteger(numericValue) ? Math.round(display) : Number(display.toFixed(1))
+
+  return (
+    <>
+      {shown}
+      {suffix}
+    </>
+  )
+}
+
 
 function getCardStyles(variant?: string) {
   switch (variant) {
@@ -168,59 +205,44 @@ export function HomePage() {
                   </Box>
 
                   {/* Quote */}
-                  <Box
-                    component={motion.div}
-                    variants={{ hidden: { opacity: 0, y: 14 }, visible: { opacity: 1, y: 0 } }}
-                    transition={{ duration: 0.52, ease: [0.22, 1, 0.36, 1] }}
-                  >
-                    <Box
-                      sx={{
-                        pl: { xs: 2.2, md: 2.8 },
-                        borderLeft: '2px solid rgba(37,99,235,0.4)',
-                        position: 'relative',
-                        '&::before': {
-                          content: '"\\201C"',
-                          position: 'absolute',
-                          top: -4, left: 8,
-                          fontSize: 48,
-                          lineHeight: 1,
-                          color: 'rgba(37,99,235,0.15)',
-                          fontFamily: 'Georgia, serif',
-                          pointerEvents: 'none',
-                        },
-                      }}
-                    >
-                      <Typography
-                        sx={{
-                          maxWidth: 540,
-                          fontSize: { xs: 15, sm: 16, md: 18.5 },
-                          lineHeight: { xs: 1.66, md: 1.6 },
-                          color: '#1e3252',
-                          fontStyle: 'italic',
-                          fontWeight: 400,
-                        }}
-                      >
-                        Markets reward discipline.{' '}
-                        <Box component="span" sx={{ fontWeight: 600, color: '#0f2a5f', fontStyle: 'normal' }}>
-                          Education is where confident investing begins.
-                        </Box>
-                        {' '}
-                        <Box
-                          component="span"
-                          sx={{
-                            display: 'inline-block',
-                            width: '100%',
-                            height: '2px',
-                            mt: 1,
-                            background: 'linear-gradient(90deg, rgba(37,99,235,0.6) 0%, transparent 100%)',
-                            borderRadius: 4,
-                            transformOrigin: 'left',
-                            animation: 'lineGrow 1.2s cubic-bezier(0.22, 1, 0.5, 1) 600ms both',
-                          }}
-                        />
-                      </Typography>
-                    </Box>
-                  </Box>
+                  <Box component={motion.div} variants={{ hidden: { opacity: 0, y: 14 }, visible: { opacity: 1, y: 0 } }}>
+            <Typography
+              sx={{
+                maxWidth: 560,
+                fontSize: { xs: 15.2, sm: 16.5, md: 19 },
+                lineHeight: { xs: 1.58, md: 1.52 },
+                color: '#253750',
+              }}
+            >
+              {'"Markets reward discipline. '}
+              <Box
+                component="span"
+                sx={{
+                  position: 'relative',
+                  display: 'inline-block',
+                  pb: { xs: 1.2, md: 1.35 },
+                  '&::after': {
+                    content: '""',
+                    position: 'absolute',
+                    left: 0,
+                    right: 0,
+                    bottom: { xs: 1, md: 2 },
+                    height: { xs: 10, md: 14 },
+                    backgroundRepeat: 'no-repeat',
+                    backgroundSize: '100% 100%',
+                    pointerEvents: 'none',
+                    transformOrigin: 'left center',
+                    animation: 'zigLineDraw 820ms cubic-bezier(0.22, 1, 0.5, 1) 140ms both',
+                    backgroundImage:
+                      "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 16' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='ink' x1='0%25' y1='0%25' x2='100%25' y2='0%25'%3E%3Cstop offset='0%25' stop-color='%231a365d' stop-opacity='1'/%3E%3Cstop offset='72%25' stop-color='%231f5fbf' stop-opacity='0.95'/%3E%3Cstop offset='100%25' stop-color='%231f5fbf' stop-opacity='0.18'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M4 10 L28 8 L52 11 L78 8.5 L104 10.8 L130 8.4 L156 10.6 L184 8.3 L212 10.2 L242 8.6 L270 10.1 L296 9' fill='none' stroke='url(%23ink)' stroke-width='7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\")",
+                  },
+                }}
+              >
+                Education is where confident investing begins.
+              </Box>
+              {'"'}
+            </Typography>
+            </Box>
 
                   {/* Author chip */}
                   <Box component={motion.div} variants={{ hidden: { opacity: 0, x: -14 }, visible: { opacity: 1, x: 0 } }}>
@@ -252,38 +274,6 @@ export function HomePage() {
                   {/* CTA buttons */}
                   <Box component={motion.div} variants={{ hidden: { opacity: 0, y: 14 }, visible: { opacity: 1, y: 0 } }}>
                     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.4} sx={{ pt: 0.4, width: { xs: '100%', sm: 'fit-content' } }}>
-                      {/* Primary */}
-                      <Box
-                        component={motion.div}
-                        whileHover={reduce ? undefined : { scale: 1.04, y: -3 }}
-                        whileTap={reduce ? undefined : { scale: 0.97 }}
-                        transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-                      >
-                        <Button
-                          href="#"
-                          variant="contained"
-                          size="large"
-                          sx={{
-                            width: { xs: '100%', sm: 'auto' },
-                            minWidth: 166,
-                            px: 3, py: 1.45,
-                            borderRadius: 1.2,
-                            textTransform: 'none',
-                            fontWeight: 700,
-                            fontSize: 15,
-                            background: 'linear-gradient(135deg, #0c2247 0%, #1349a8 100%)',
-                            color: '#fff',
-                            boxShadow: '0 6px 22px rgba(10,30,80,0.36)',
-                            letterSpacing: '0.01em',
-                            '&:hover': {
-                              background: 'linear-gradient(135deg, #122d5a 0%, #1a5ac0 100%)',
-                              boxShadow: '0 10px 32px rgba(10,30,80,0.46)',
-                            },
-                          }}
-                        >
-                          Get Started
-                        </Button>
-                      </Box>
 
                       {/* Secondary */}
                       <Box
@@ -293,7 +283,7 @@ export function HomePage() {
                         transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
                       >
                         <Button
-                          href="#"
+                          href="/about"
                           variant="outlined"
                           size="large"
                           sx={{
@@ -341,7 +331,7 @@ export function HomePage() {
                           }}
                         >
                           <Typography sx={{ fontSize: { xs: 20, md: 24 }, fontWeight: 800, color: '#08142b', lineHeight: 1, letterSpacing: '-0.02em' }}>
-                            {s.value}
+                            <AnimatedStatValue value={s.value} />
                           </Typography>
                           <Typography sx={{ fontSize: 11.5, color: '#617898', mt: 0.4, fontWeight: 500 }}>
                             {s.label}
@@ -1045,16 +1035,25 @@ export function HomePage() {
                   component={motion.div}
                   whileHover={reduce ? undefined : { scale: 1.05 }}
                   whileTap={reduce ? undefined : { scale: 0.96 }}
+                  sx={{
+                    display: 'flex',
+                    alignSelf: { xs: 'stretch', sm: 'stretch' },
+                    width: { xs: '100%', sm: 'auto' },
+                  }}
                 >
                   <Button
                     sx={{
                       minWidth: { xs: '100%', sm: 58 },
+                      width: { xs: '100%', sm: 'auto' },
+                      height: { xs: 'auto', sm: '100%' },
+                      minHeight: { xs: 48, sm: '100%' },
                       py: { xs: 1.2, sm: 0 },
                       px: { xs: 0, sm: 2 },
                       borderRadius: 0,
                       background: 'linear-gradient(135deg, #1349a8, #2563eb)',
                       color: '#fff',
                       flexShrink: 0,
+                      alignSelf: 'stretch',
                       transition: 'filter 0.24s ease',
                       '&:hover': { filter: 'brightness(1.12)' },
                       '&:hover .cta-arr': { transform: 'translateX(3px)' },
