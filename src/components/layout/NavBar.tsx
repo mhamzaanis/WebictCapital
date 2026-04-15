@@ -77,8 +77,8 @@ export function NavBar() {
             }}
           >
             <Typography
+              variant="h4"
               sx={{
-                fontFamily: '"Playfair Display", serif',
                 fontSize: { xs: 25, sm: 29, md: 36 },
                 lineHeight: 1,
                 letterSpacing: '-0.03em',
@@ -351,7 +351,7 @@ export function NavBar() {
       <Drawer anchor="right" open={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)}>
         <Box sx={{ width: 290, height: '100%', bgcolor: '#f9fbff', px: 2.2, py: 1.8 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.6 }}>
-            <Typography sx={{ fontFamily: '"Playfair Display", serif', fontSize: 24, color: '#122544' }}>Menu</Typography>
+            <Typography variant="h5" sx={{ fontSize: 24, color: '#122544' }}>Menu</Typography>
             <IconButton aria-label="Close navigation menu" onClick={() => setIsMobileMenuOpen(false)}>
               <CloseRoundedIcon />
             </IconButton>

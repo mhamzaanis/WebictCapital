@@ -34,6 +34,14 @@ export const siteTheme = createTheme({
       fontFamily: '"Playfair Display", serif',
       fontWeight: 500,
     },
+    h5: {
+      fontFamily: '"Playfair Display", serif',
+      fontWeight: 500,
+    },
+    h6: {
+      fontFamily: '"Playfair Display", serif',
+      fontWeight: 500,
+    },
   },
   shape: {
     borderRadius: 4,

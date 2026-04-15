@@ -181,7 +181,7 @@ export function AboutPage() {
                   }}
                 >
                   <MotionReveal>
-                    <Typography sx={{ fontFamily: '"Playfair Display", serif', fontSize: { xs: 28, md: 34 }, lineHeight: 1.1, mb: 1.2 }}>
+                    <Typography variant="h3" sx={{ fontSize: { xs: 28, md: 34 }, lineHeight: 1.1, mb: 1.2 }}>
                       Contact Us
                     </Typography>
                     <Typography sx={{ color: 'rgba(255,255,255,0.84)', fontSize: 14.5, lineHeight: 1.7, maxWidth: 420 }}>

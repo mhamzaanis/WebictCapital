@@ -19,7 +19,7 @@ export function Footer() {
       <Container maxWidth="xl" sx={{ px: { xs: 2, md: 3 } }}>
         <Grid container spacing={4} sx={{ mb: 6 }}>
           <Grid size={{ xs: 12, md: 3 }} component={motion.div} initial={reduceMotion ? false : { opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.16 }} transition={{ duration: 0.45 }}>
-            <Typography sx={{ fontFamily: '"Playfair Display", serif', fontSize: 20, mb: 2 }}>Webict Capital.</Typography>
+            <Typography variant="h5" sx={{ fontSize: 20, mb: 2 }}>Webict Capital.</Typography>
             <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.8 }}>
               The Stables, 23, Britannia Street,
               <br />
