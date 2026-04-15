@@ -6,20 +6,7 @@ import { useEffect, useRef, useState } from 'react'
 import { featuredNews, newsCards, portfolioItems } from '../../content/siteContent'
 import { MotionReveal, MotionStagger } from '../animations/MotionReveal'
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-
 const TYPING_WORDS = ['Learn.', 'Invest.', 'Lead.']
-
-// const PARTICLES = [
-//   { x: 6,  y: 15, size: 2.5, delay: 0,    dur: 6.2 },
-//   { x: 92, y: 22, size: 2,   delay: 1.4,  dur: 5.8 },
-//   { x: 18, y: 78, size: 3,   delay: 0.7,  dur: 7.1 },
-//   { x: 85, y: 70, size: 2,   delay: 2.2,  dur: 6.5 },
-//   { x: 50, y: 90, size: 2.5, delay: 1.0,  dur: 5.4 },
-//   { x: 38, y: 8,  size: 2,   delay: 3.0,  dur: 6.8 },
-//   { x: 74, y: 48, size: 3,   delay: 0.4,  dur: 7.4 },
-//   { x: 62, y: 30, size: 1.5, delay: 1.8,  dur: 5.9 },
-// ]
 
 const STATS = [
   { value: '500+', label: 'Investors trained' },
@@ -100,63 +87,6 @@ function TypingHeadline() {
   )
 }
 
-// function Particle({ x, y, size, delay, dur }: { x: number; y: number; size: number; delay: number; dur: number }) {
-//   return (
-//     <Box
-//       component={motion.div}
-//       animate={{ y: [0, -22, 0], x: [0, 8, -5, 0], opacity: [0.12, 0.35, 0.12] }}
-//       transition={{ duration: dur, delay, repeat: Infinity, ease: 'easeInOut' }}
-//       sx={{
-//         position: 'absolute',
-//         left: `${x}%`, top: `${y}%`,
-//         width: size, height: size,
-//         borderRadius: '50%',
-//         bgcolor: '#3b82f6',
-//         pointerEvents: 'none',
-//         filter: 'blur(0.5px)',
-//       }}
-//     />
-//   )
-// }
-
-/** Thin horizontal rule with optional label */
-// function Divider({ label }: { label?: string }) {
-//   return (
-//     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, my: { xs: 4, md: 6 } }}>
-//       <Box sx={{ flex: 1, height: '1px', bgcolor: 'rgba(30,80,160,0.12)' }} />
-//       {label && (
-//         <Typography sx={{ fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#8faac8', fontWeight: 600 }}>
-//           {label}
-//         </Typography>
-//       )}
-//       <Box sx={{ flex: 1, height: '1px', bgcolor: 'rgba(30,80,160,0.12)' }} />
-//     </Box>
-//   )
-// }
-
-/** Reusable pill badge */
-// function Badge({ children }: { children: React.ReactNode }) {
-//   return (
-//     <Box
-//       sx={{
-//         display: 'inline-flex',
-//         alignItems: 'center',
-//         gap: 0.8,
-//         px: 1.4,
-//         py: 0.45,
-//         borderRadius: '100px',
-//         border: '1px solid rgba(37,99,235,0.28)',
-//         bgcolor: 'rgba(37,99,235,0.06)',
-//         mb: 2,
-//       }}
-//     >
-//       <Box sx={{ width: 5, height: 5, borderRadius: '50%', bgcolor: '#2563eb', flexShrink: 0 }} />
-//       <Typography sx={{ fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#1e4fac', fontWeight: 700 }}>
-//         {children}
-//       </Typography>
-//     </Box>
-//   )
-// }
 
 function getCardStyles(variant?: string) {
   switch (variant) {
@@ -193,55 +123,13 @@ export function HomePage() {
           mt: 0,
           pt: { xs: 'calc(64px + 2.5rem)', md: 'calc(72px + 4rem)' },
           pb: { xs: 8, md: 12 },
-          bgcolor: '#f9fbff',
-          background: 'linear-gradient(168deg, #ffffff 0%, #eef5ff 48%, #e0edff 100%)',
+          bgcolor: 'transparent',
           overflow: 'hidden',
           position: 'relative',
         }}
       >
-        {/* Ambient glow orbs */}
-        <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
-          <Box
-            component={motion.div}
-            animate={reduce ? {} : { scale: [1, 1.1, 1], opacity: [0.22, 0.38, 0.22] }}
-            transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
-            sx={{
-              position: 'absolute',
-              width: { xs: 480, md: 720 }, height: { xs: 480, md: 720 },
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(37,99,235,0.18) 0%, transparent 70%)',
-              top: { xs: -180, md: -240 }, left: { xs: -160, md: -200 },
-            }}
-          />
-          <Box
-            component={motion.div}
-            animate={reduce ? {} : { scale: [1, 1.12, 1], opacity: [0.1, 0.2, 0.1] }}
-            transition={{ duration: 13, repeat: Infinity, ease: 'easeInOut', delay: 3 }}
-            sx={{
-              position: 'absolute',
-              width: { xs: 360, md: 560 }, height: { xs: 360, md: 560 },
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(10,30,80,0.16) 0%, transparent 70%)',
-              bottom: { xs: -100, md: -120 }, right: { xs: -100, md: '10%' },
-            }}
-          />
-        </Box>
-
-        {/* Refined grid */}
-        <Box
-          aria-hidden
-          sx={{
-            position: 'absolute', inset: 0, pointerEvents: 'none',
-            backgroundImage:
-              'linear-gradient(rgba(30,80,160,0.035) 1px, transparent 1px),' +
-              'linear-gradient(90deg, rgba(30,80,160,0.035) 1px, transparent 1px)',
-            backgroundSize: '72px 72px',
-            maskImage: 'linear-gradient(to bottom, transparent 0%, black 28%, black 72%, transparent 100%)',
-          }}
-        />
-
-        {/* Floating dots */}
-        {/* {!reduce && PARTICLES.map((p, i) => <Particle key={i} {...p} />)} */}
+        
+        
 
         <Container maxWidth="xl" sx={{ maxWidth: '1340px !important', px: { xs: 2.5, md: 5 }, position: 'relative', zIndex: 1 }}>
           <Box
@@ -336,7 +224,7 @@ export function HomePage() {
 
                   {/* Author chip */}
                   <Box component={motion.div} variants={{ hidden: { opacity: 0, x: -14 }, visible: { opacity: 1, x: 0 } }}>
-                    <Stack direction="row" spacing={1.5} alignItems="center">
+                    <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
                       <Box
                         sx={{
                           width: 42, height: 42, borderRadius: '50%',
@@ -572,27 +460,16 @@ export function HomePage() {
           py: { xs: 9, md: 13 },
           position: 'relative',
           overflow: 'hidden',
-          bgcolor: '#fafcff',
-          backgroundImage: 'linear-gradient(180deg, #edf5ff 0%, #ffffff 20%, #f7fbff 100%)',
+          bgcolor: 'transparent',
+          backgroundImage: 'none',
         }}
       >
         {/* Grid bg */}
-        <Box
-          aria-hidden
-          sx={{
-            position: 'absolute', inset: 0, pointerEvents: 'none',
-            backgroundImage:
-              'linear-gradient(rgba(30,80,160,0.04) 1px, transparent 1px),' +
-              'linear-gradient(90deg, rgba(30,80,160,0.04) 1px, transparent 1px)',
-            backgroundSize: '72px 72px',
-            maskImage: 'linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%)',
-          }}
-        />
 
         <Container maxWidth="xl" sx={{ px: { xs: 2.5, md: 5 }, position: 'relative', zIndex: 1 }}>
           <MotionReveal amount={0.2}>
             <Box sx={{ mb: { xs: 4, md: 6 } }}>
-              {/* <Badge>Portfolio</Badge> */}
+             
               <Typography
                 variant="h2"
                 sx={{
@@ -731,26 +608,13 @@ export function HomePage() {
         component="section"
         sx={{
           '@keyframes slideUp': { from: { opacity: 0, transform: 'translateY(20px)' }, to: { opacity: 1, transform: 'translateY(0)' } },
-          bgcolor: '#f6faff',
-          backgroundImage: 'linear-gradient(180deg, #ffffff 0%, #eef5ff 55%, #f6faff 100%)',
+          bgcolor: 'transparent',
+          backgroundImage: 'none',
           py: { xs: 8, md: 12 },
           position: 'relative',
           overflow: 'hidden',
         }}
       >
-        {/* Ambient */}
-        <Box
-          component={motion.div}
-          aria-hidden
-          animate={reduce ? {} : { x: [0, 20, 0], y: [0, -18, 0] }}
-          transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut' }}
-          sx={{
-            position: 'absolute', top: -100, left: '8%',
-            width: 280, height: 280, borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(21,101,192,0.12) 0%, transparent 72%)',
-            pointerEvents: 'none',
-          }}
-        />
 
         <Container maxWidth="lg" sx={{ px: { xs: 2.5, md: 5 }, position: 'relative', zIndex: 1 }}>
           <MotionReveal>
@@ -873,7 +737,7 @@ export function HomePage() {
         sx={{
           '@keyframes fadeIn': { from: { opacity: 0, transform: 'translateY(18px)' }, to: { opacity: 1, transform: 'translateY(0)' } },
           py: { xs: 8, md: 13 },
-          backgroundImage: 'linear-gradient(180deg, #f7fbff 0%, #ffffff 28%, #f7fbff 100%)',
+          backgroundImage: 'none',
         }}
       >
         <Container maxWidth="xl" sx={{ px: { xs: 2.5, md: 5 } }}>
