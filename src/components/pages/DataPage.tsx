@@ -102,10 +102,13 @@ const SLOTS: SlotKey[] = ['day1', 'day2', 'day3']
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function toNum(val: string | number | null | undefined): number {
+function toNum(val: unknown): number {
 	if (val === null || val === undefined || val === '') return NaN
-	if (typeof val === 'number') return val
-	return parseFloat(val.replace(/,/g, ''))
+	if (typeof val === 'number') return Number.isFinite(val) ? val : NaN
+	if (typeof val === 'string') return parseFloat(val.replace(/,/g, '').trim())
+
+	const n = Number(val)
+	return Number.isFinite(n) ? n : NaN
 }
 
 function fmtNum(val: string | number | null | undefined): string {
@@ -157,8 +160,8 @@ function normalizeData(data: RawPsxData): PsxData {
 function compareCells(a: PsxStock, b: PsxStock, key: SortKey): number {
 	const numericKeys: SortKey[] = ['turnover', 'prev_rate', 'open', 'high', 'low', 'last_rate', 'change']
 	if (numericKeys.includes(key)) {
-		const an = toNum(a[key] as string)
-		const bn = toNum(b[key] as string)
+		const an = toNum(a[key])
+		const bn = toNum(b[key])
 		if (!isNaN(an) && !isNaN(bn)) return an - bn
 	}
 	return (a[key] ?? '').toString().localeCompare((b[key] ?? '').toString())
