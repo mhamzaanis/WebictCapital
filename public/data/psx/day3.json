@@ -1,7 +1,7 @@
 {
   "date": "2026-04-14",
   "source": "PDF",
-  "total_stocks": 610,
+  "total_stocks": 1074,
   "stocks": [
     {
       "symbol": "HGFA",
@@ -4965,6 +4965,39 @@
       "change": "0.93"
     },
     {
+      "symbol": "ACPL-CAPR",
+      "company": "ACPL-CAPR",
+      "turnover": "0",
+      "prev_rate": "273.24",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "274.98",
+      "change": "1.74"
+    },
+    {
+      "symbol": "ACPL-CJUN",
+      "company": "ACPL-CJUN",
+      "turnover": "0",
+      "prev_rate": "280.33",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "282.13",
+      "change": "1.8"
+    },
+    {
+      "symbol": "ACPL-CMAY",
+      "company": "ACPL-CMAY",
+      "turnover": "0",
+      "prev_rate": "277.18",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "278.95",
+      "change": "1.77"
+    },
+    {
       "symbol": "AGHA-APR",
       "company": "AGHA-APR",
       "turnover": "205",
@@ -4974,6 +5007,28 @@
       "low": "6.75",
       "last_rate": "6.88",
       "change": "0.17"
+    },
+    {
+      "symbol": "AGHA-JUN",
+      "company": "AGHA-JUN",
+      "turnover": "0",
+      "prev_rate": "6.88",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "7.04",
+      "change": "0.16"
+    },
+    {
+      "symbol": "AGHA-MAY",
+      "company": "AGHA-MAY",
+      "turnover": "0",
+      "prev_rate": "6.81",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "6.96",
+      "change": "0.15"
     },
     {
       "symbol": "AGL-APR",
@@ -4987,6 +5042,28 @@
       "change": "3.03"
     },
     {
+      "symbol": "AGL-JUN",
+      "company": "AGL-JUN",
+      "turnover": "0",
+      "prev_rate": "47.97",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "51.77",
+      "change": "3.8"
+    },
+    {
+      "symbol": "AGL-MAY",
+      "company": "AGL-MAY",
+      "turnover": "0",
+      "prev_rate": "47.43",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "51.19",
+      "change": "3.76"
+    },
+    {
       "symbol": "AGP-APRB",
       "company": "AGP-APRB",
       "turnover": "13",
@@ -4996,6 +5073,28 @@
       "low": "183.1",
       "last_rate": "189.2",
       "change": "7.42"
+    },
+    {
+      "symbol": "AGP-JUNB",
+      "company": "AGP-JUNB",
+      "turnover": "0",
+      "prev_rate": "186.5",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "194.48",
+      "change": "7.98"
+    },
+    {
+      "symbol": "AGP-MAYB",
+      "company": "AGP-MAYB",
+      "turnover": "0",
+      "prev_rate": "184.41",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "192.3",
+      "change": "7.89"
     },
     {
       "symbol": "AICL-APR",
@@ -5020,6 +5119,28 @@
       "change": "1.7"
     },
     {
+      "symbol": "AICL-JUN",
+      "company": "AICL-JUN",
+      "turnover": "0",
+      "prev_rate": "75.88",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "78.37",
+      "change": "2.49"
+    },
+    {
+      "symbol": "AICL-JUNB",
+      "company": "AICL-JUNB",
+      "turnover": "0",
+      "prev_rate": "76.22",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "78.72",
+      "change": "2.5"
+    },
+    {
       "symbol": "AICL-MAY",
       "company": "AICL-MAY",
       "turnover": "4",
@@ -5029,6 +5150,17 @@
       "low": "78.5",
       "last_rate": "78.5",
       "change": "1.5"
+    },
+    {
+      "symbol": "AICL-MAYB",
+      "company": "AICL-MAYB",
+      "turnover": "0",
+      "prev_rate": "76.5",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "77.83",
+      "change": "1.33"
     },
     {
       "symbol": "AIRLINK-APR",
@@ -5042,6 +5174,61 @@
       "change": "6.13"
     },
     {
+      "symbol": "AIRLINK-CAPR",
+      "company": "AIRLINK-CAPR",
+      "turnover": "0",
+      "prev_rate": "134.95",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "141.09",
+      "change": "6.14"
+    },
+    {
+      "symbol": "AIRLINK-CJUN",
+      "company": "AIRLINK-CJUN",
+      "turnover": "0",
+      "prev_rate": "138.46",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "144.76",
+      "change": "6.3"
+    },
+    {
+      "symbol": "AIRLINK-CMAY",
+      "company": "AIRLINK-CMAY",
+      "turnover": "0",
+      "prev_rate": "136.9",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "143.13",
+      "change": "6.23"
+    },
+    {
+      "symbol": "AIRLINK-JUN",
+      "company": "AIRLINK-JUN",
+      "turnover": "0",
+      "prev_rate": "138.46",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "144.76",
+      "change": "6.3"
+    },
+    {
+      "symbol": "AIRLINK-MAY",
+      "company": "AIRLINK-MAY",
+      "turnover": "0",
+      "prev_rate": "136.9",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "143.13",
+      "change": "6.23"
+    },
+    {
       "symbol": "AKBL-APRB",
       "company": "AKBL-APRB",
       "turnover": "449",
@@ -5051,6 +5238,94 @@
       "low": "93.08",
       "last_rate": "94.98",
       "change": "4.12"
+    },
+    {
+      "symbol": "AKBL-CAPRN1",
+      "company": "AKBL-CAPRN1",
+      "turnover": "0",
+      "prev_rate": "91.16",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "94.94",
+      "change": "3.78"
+    },
+    {
+      "symbol": "AKBL-CJUN",
+      "company": "AKBL-CJUN",
+      "turnover": "0",
+      "prev_rate": "93.53",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "97.41",
+      "change": "3.88"
+    },
+    {
+      "symbol": "AKBL-CMAYN1",
+      "company": "AKBL-CMAYN1",
+      "turnover": "0",
+      "prev_rate": "92.48",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "96.31",
+      "change": "3.83"
+    },
+    {
+      "symbol": "AKBL-JUN",
+      "company": "AKBL-JUN",
+      "turnover": "0",
+      "prev_rate": "93.53",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "97.41",
+      "change": "3.88"
+    },
+    {
+      "symbol": "AKBL-MAY",
+      "company": "AKBL-MAY",
+      "turnover": "0",
+      "prev_rate": "92.48",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "96.31",
+      "change": "3.83"
+    },
+    {
+      "symbol": "ANL-CAPR",
+      "company": "ANL-CAPR",
+      "turnover": "0",
+      "prev_rate": "9.56",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "9.77",
+      "change": "0.21"
+    },
+    {
+      "symbol": "ANL-CJUN",
+      "company": "ANL-CJUN",
+      "turnover": "0",
+      "prev_rate": "9.81",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "10.02",
+      "change": "0.21"
+    },
+    {
+      "symbol": "ANL-CMAY",
+      "company": "ANL-CMAY",
+      "turnover": "0",
+      "prev_rate": "9.7",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "9.91",
+      "change": "0.21"
     },
     {
       "symbol": "ASL-APR",
@@ -5064,6 +5339,28 @@
       "change": "0.02"
     },
     {
+      "symbol": "ASL-JUN",
+      "company": "ASL-JUN",
+      "turnover": "0",
+      "prev_rate": "11.28",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "11.44",
+      "change": "0.16"
+    },
+    {
+      "symbol": "ASL-MAY",
+      "company": "ASL-MAY",
+      "turnover": "0",
+      "prev_rate": "11.15",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "11.31",
+      "change": "0.16"
+    },
+    {
       "symbol": "ATRL-APRB",
       "company": "ATRL-APRB",
       "turnover": "472",
@@ -5075,6 +5372,61 @@
       "change": "16.13"
     },
     {
+      "symbol": "ATRL-CAPRN1",
+      "company": "ATRL-CAPRN1",
+      "turnover": "0",
+      "prev_rate": "831.15",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "848.88",
+      "change": "17.73"
+    },
+    {
+      "symbol": "ATRL-CJUN",
+      "company": "ATRL-CJUN",
+      "turnover": "0",
+      "prev_rate": "852.73",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "870.93",
+      "change": "18.2"
+    },
+    {
+      "symbol": "ATRL-CMAYN1",
+      "company": "ATRL-CMAYN1",
+      "turnover": "0",
+      "prev_rate": "843.14",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "861.13",
+      "change": "17.99"
+    },
+    {
+      "symbol": "ATRL-JUN",
+      "company": "ATRL-JUN",
+      "turnover": "0",
+      "prev_rate": "852.73",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "870.93",
+      "change": "18.2"
+    },
+    {
+      "symbol": "ATRL-MAY",
+      "company": "ATRL-MAY",
+      "turnover": "0",
+      "prev_rate": "843.14",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "861.13",
+      "change": "17.99"
+    },
+    {
       "symbol": "AVN-APR",
       "company": "AVN-APR",
       "turnover": "240",
@@ -5084,6 +5436,61 @@
       "low": "31.63",
       "last_rate": "31.95",
       "change": "0.57"
+    },
+    {
+      "symbol": "AVN-CAPR",
+      "company": "AVN-CAPR",
+      "turnover": "0",
+      "prev_rate": "31.47",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "31.85",
+      "change": "0.38"
+    },
+    {
+      "symbol": "AVN-CJUN",
+      "company": "AVN-CJUN",
+      "turnover": "0",
+      "prev_rate": "32.29",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "32.68",
+      "change": "0.39"
+    },
+    {
+      "symbol": "AVN-CMAY",
+      "company": "AVN-CMAY",
+      "turnover": "0",
+      "prev_rate": "31.93",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "32.31",
+      "change": "0.38"
+    },
+    {
+      "symbol": "AVN-JUN",
+      "company": "AVN-JUN",
+      "turnover": "0",
+      "prev_rate": "32.29",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "32.68",
+      "change": "0.39"
+    },
+    {
+      "symbol": "AVN-MAY",
+      "company": "AVN-MAY",
+      "turnover": "0",
+      "prev_rate": "31.93",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "32.31",
+      "change": "0.38"
     },
     {
       "symbol": "BAFL-APRB",
@@ -5108,6 +5515,248 @@
       "change": "1.72"
     },
     {
+      "symbol": "BAFL-CAPRN1",
+      "company": "BAFL-CAPRN1",
+      "turnover": "0",
+      "prev_rate": "118.96",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "121.84",
+      "change": "2.88"
+    },
+    {
+      "symbol": "BAFL-CJUN",
+      "company": "BAFL-CJUN",
+      "turnover": "0",
+      "prev_rate": "122.05",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "125.01",
+      "change": "2.96"
+    },
+    {
+      "symbol": "BAFL-CMAYN1",
+      "company": "BAFL-CMAYN1",
+      "turnover": "0",
+      "prev_rate": "120.68",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "123.6",
+      "change": "2.92"
+    },
+    {
+      "symbol": "BAFL-JUN",
+      "company": "BAFL-JUN",
+      "turnover": "0",
+      "prev_rate": "118.52",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "121.39",
+      "change": "2.87"
+    },
+    {
+      "symbol": "BAFL-JUNB",
+      "company": "BAFL-JUNB",
+      "turnover": "0",
+      "prev_rate": "61.02",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "62.5",
+      "change": "1.48"
+    },
+    {
+      "symbol": "BAFL-MAYB",
+      "company": "BAFL-MAYB",
+      "turnover": "0",
+      "prev_rate": "117.5",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "121.39",
+      "change": "3.89"
+    },
+    {
+      "symbol": "BAFL-MAYC",
+      "company": "BAFL-MAYC",
+      "turnover": "0",
+      "prev_rate": "60.34",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "61.8",
+      "change": "1.46"
+    },
+    {
+      "symbol": "BAHL-APRB",
+      "company": "BAHL-APRB",
+      "turnover": "0",
+      "prev_rate": "182.99",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "175.57",
+      "change": "-7.42"
+    },
+    {
+      "symbol": "BAHL-CAPRN1",
+      "company": "BAHL-CAPRN1",
+      "turnover": "0",
+      "prev_rate": "172.86",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "175.57",
+      "change": "2.71"
+    },
+    {
+      "symbol": "BAHL-CJUN",
+      "company": "BAHL-CJUN",
+      "turnover": "0",
+      "prev_rate": "177.35",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "180.13",
+      "change": "2.78"
+    },
+    {
+      "symbol": "BAHL-CMAYN1",
+      "company": "BAHL-CMAYN1",
+      "turnover": "0",
+      "prev_rate": "175.36",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "178.11",
+      "change": "2.75"
+    },
+    {
+      "symbol": "BAHL-JUN",
+      "company": "BAHL-JUN",
+      "turnover": "0",
+      "prev_rate": "177.35",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "180.13",
+      "change": "2.78"
+    },
+    {
+      "symbol": "BAHL-MAY",
+      "company": "BAHL-MAY",
+      "turnover": "0",
+      "prev_rate": "175.36",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "178.11",
+      "change": "2.75"
+    },
+    {
+      "symbol": "BBFL-CAPR",
+      "company": "BBFL-CAPR",
+      "turnover": "0",
+      "prev_rate": "38.33",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "39.47",
+      "change": "1.14"
+    },
+    {
+      "symbol": "BBFL-CJUN",
+      "company": "BBFL-CJUN",
+      "turnover": "0",
+      "prev_rate": "39.33",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "40.5",
+      "change": "1.17"
+    },
+    {
+      "symbol": "BBFL-CMAY",
+      "company": "BBFL-CMAY",
+      "turnover": "0",
+      "prev_rate": "38.89",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "40.04",
+      "change": "1.15"
+    },
+    {
+      "symbol": "BFAGRO-CAPR",
+      "company": "BFAGRO-CAPR",
+      "turnover": "0",
+      "prev_rate": "33.46",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "34.76",
+      "change": "1.3"
+    },
+    {
+      "symbol": "BFAGRO-CJUN",
+      "company": "BFAGRO-CJUN",
+      "turnover": "0",
+      "prev_rate": "34.33",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "35.67",
+      "change": "1.34"
+    },
+    {
+      "symbol": "BFAGRO-CMAY",
+      "company": "BFAGRO-CMAY",
+      "turnover": "0",
+      "prev_rate": "33.94",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "35.26",
+      "change": "1.32"
+    },
+    {
+      "symbol": "BFBIO-CAPR",
+      "company": "BFBIO-CAPR",
+      "turnover": "0",
+      "prev_rate": "143.36",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "152.38",
+      "change": "9.02"
+    },
+    {
+      "symbol": "BFBIO-CJUN",
+      "company": "BFBIO-CJUN",
+      "turnover": "0",
+      "prev_rate": "147.08",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "156.34",
+      "change": "9.26"
+    },
+    {
+      "symbol": "BFBIO-CMAY",
+      "company": "BFBIO-CMAY",
+      "turnover": "0",
+      "prev_rate": "145.43",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "154.58",
+      "change": "9.15"
+    },
+    {
       "symbol": "BIPL-APRB",
       "company": "BIPL-APRB",
       "turnover": "127",
@@ -5117,6 +5766,160 @@
       "low": "26.81",
       "last_rate": "27.7",
       "change": "1.4"
+    },
+    {
+      "symbol": "BIPL-CAPRN1",
+      "company": "BIPL-CAPRN1",
+      "turnover": "0",
+      "prev_rate": "26.34",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "27.81",
+      "change": "1.47"
+    },
+    {
+      "symbol": "BIPL-CJUN",
+      "company": "BIPL-CJUN",
+      "turnover": "0",
+      "prev_rate": "27.02",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "28.54",
+      "change": "1.52"
+    },
+    {
+      "symbol": "BIPL-CMAYN1",
+      "company": "BIPL-CMAYN1",
+      "turnover": "0",
+      "prev_rate": "26.72",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "28.22",
+      "change": "1.5"
+    },
+    {
+      "symbol": "BIPL-JUN",
+      "company": "BIPL-JUN",
+      "turnover": "0",
+      "prev_rate": "27.02",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "28.54",
+      "change": "1.52"
+    },
+    {
+      "symbol": "BIPL-MAYB",
+      "company": "BIPL-MAYB",
+      "turnover": "0",
+      "prev_rate": "26.72",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "28.22",
+      "change": "1.5"
+    },
+    {
+      "symbol": "BML-APR",
+      "company": "BML-APR",
+      "turnover": "0",
+      "prev_rate": "62.25",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "62.65",
+      "change": "0.4"
+    },
+    {
+      "symbol": "BML-JUN",
+      "company": "BML-JUN",
+      "turnover": "0",
+      "prev_rate": "64.16",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "64.28",
+      "change": "0.12"
+    },
+    {
+      "symbol": "BML-MAY",
+      "company": "BML-MAY",
+      "turnover": "0",
+      "prev_rate": "63.44",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "63.55",
+      "change": "0.11"
+    },
+    {
+      "symbol": "BNL-APR",
+      "company": "BNL-APR",
+      "turnover": "0",
+      "prev_rate": "8.07",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "8.18",
+      "change": "0.11"
+    },
+    {
+      "symbol": "BNL-CAPR",
+      "company": "BNL-CAPR",
+      "turnover": "0",
+      "prev_rate": "8.01",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "8.18",
+      "change": "0.17"
+    },
+    {
+      "symbol": "BNL-CJUN",
+      "company": "BNL-CJUN",
+      "turnover": "0",
+      "prev_rate": "8.21",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "8.4",
+      "change": "0.19"
+    },
+    {
+      "symbol": "BNL-CMAY",
+      "company": "BNL-CMAY",
+      "turnover": "0",
+      "prev_rate": "8.12",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "8.3",
+      "change": "0.18"
+    },
+    {
+      "symbol": "BNL-JUN",
+      "company": "BNL-JUN",
+      "turnover": "0",
+      "prev_rate": "8.21",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "8.4",
+      "change": "0.19"
+    },
+    {
+      "symbol": "BNL-MAY",
+      "company": "BNL-MAY",
+      "turnover": "0",
+      "prev_rate": "8.12",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "8.3",
+      "change": "0.18"
     },
     {
       "symbol": "BOP-APRB",
@@ -5130,6 +5933,50 @@
       "change": "2.87"
     },
     {
+      "symbol": "BOP-CAPRN1",
+      "company": "BOP-CAPRN1",
+      "turnover": "0",
+      "prev_rate": "28.92",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "31.79",
+      "change": "2.87"
+    },
+    {
+      "symbol": "BOP-CJUN",
+      "company": "BOP-CJUN",
+      "turnover": "0",
+      "prev_rate": "29.67",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "32.62",
+      "change": "2.95"
+    },
+    {
+      "symbol": "BOP-CMAYN1",
+      "company": "BOP-CMAYN1",
+      "turnover": "0",
+      "prev_rate": "29.34",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "32.25",
+      "change": "2.91"
+    },
+    {
+      "symbol": "BOP-JUN",
+      "company": "BOP-JUN",
+      "turnover": "0",
+      "prev_rate": "29.67",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "32.62",
+      "change": "2.95"
+    },
+    {
       "symbol": "BOP-MAYB",
       "company": "BOP-MAYB",
       "turnover": "300",
@@ -5139,6 +5986,39 @@
       "low": "31.5",
       "last_rate": "31.99",
       "change": "2.65"
+    },
+    {
+      "symbol": "CEPB-CAPR",
+      "company": "CEPB-CAPR",
+      "turnover": "0",
+      "prev_rate": "29.44",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "30.24",
+      "change": "0.8"
+    },
+    {
+      "symbol": "CEPB-CJUN",
+      "company": "CEPB-CJUN",
+      "turnover": "0",
+      "prev_rate": "30.21",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "31.03",
+      "change": "0.82"
+    },
+    {
+      "symbol": "CEPB-CMAY",
+      "company": "CEPB-CMAY",
+      "turnover": "0",
+      "prev_rate": "29.87",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "30.68",
+      "change": "0.81"
     },
     {
       "symbol": "CHCC-APRB",
@@ -5152,6 +6032,28 @@
       "change": "18.48"
     },
     {
+      "symbol": "CHCC-JUN",
+      "company": "CHCC-JUN",
+      "turnover": "0",
+      "prev_rate": "288.76",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "310.14",
+      "change": "21.38"
+    },
+    {
+      "symbol": "CHCC-MAY",
+      "company": "CHCC-MAY",
+      "turnover": "0",
+      "prev_rate": "285.52",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "306.65",
+      "change": "21.13"
+    },
+    {
       "symbol": "CNERGY-APR",
       "company": "CNERGY-APR",
       "turnover": "18130",
@@ -5161,6 +6063,50 @@
       "low": "7.28",
       "last_rate": "7.34",
       "change": "0.11"
+    },
+    {
+      "symbol": "CNERGY-CAPR",
+      "company": "CNERGY-CAPR",
+      "turnover": "0",
+      "prev_rate": "7.24",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "7.36",
+      "change": "0.12"
+    },
+    {
+      "symbol": "CNERGY-CJUN",
+      "company": "CNERGY-CJUN",
+      "turnover": "0",
+      "prev_rate": "7.43",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "7.55",
+      "change": "0.12"
+    },
+    {
+      "symbol": "CNERGY-CMAY",
+      "company": "CNERGY-CMAY",
+      "turnover": "0",
+      "prev_rate": "7.35",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "7.47",
+      "change": "0.12"
+    },
+    {
+      "symbol": "CNERGY-JUN",
+      "company": "CNERGY-JUN",
+      "turnover": "0",
+      "prev_rate": "7.43",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "7.55",
+      "change": "0.12"
     },
     {
       "symbol": "CNERGY-MAY",
@@ -5185,6 +6131,61 @@
       "change": "2.66"
     },
     {
+      "symbol": "CPHL-CAPR",
+      "company": "CPHL-CAPR",
+      "turnover": "0",
+      "prev_rate": "77.64",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "80.29",
+      "change": "2.65"
+    },
+    {
+      "symbol": "CPHL-CJUN",
+      "company": "CPHL-CJUN",
+      "turnover": "0",
+      "prev_rate": "79.66",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "82.38",
+      "change": "2.72"
+    },
+    {
+      "symbol": "CPHL-CMAY",
+      "company": "CPHL-CMAY",
+      "turnover": "0",
+      "prev_rate": "78.76",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "81.45",
+      "change": "2.69"
+    },
+    {
+      "symbol": "CPHL-JUN",
+      "company": "CPHL-JUN",
+      "turnover": "0",
+      "prev_rate": "79.66",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "82.38",
+      "change": "2.72"
+    },
+    {
+      "symbol": "CPHL-MAY",
+      "company": "CPHL-MAY",
+      "turnover": "0",
+      "prev_rate": "78.76",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "81.45",
+      "change": "2.69"
+    },
+    {
       "symbol": "CSAP-APRB",
       "company": "CSAP-APRB",
       "turnover": "288",
@@ -5207,6 +6208,39 @@
       "change": "0.41"
     },
     {
+      "symbol": "DCL-JUN",
+      "company": "DCL-JUN",
+      "turnover": "0",
+      "prev_rate": "8.32",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "8.76",
+      "change": "0.44"
+    },
+    {
+      "symbol": "DCL-MAY",
+      "company": "DCL-MAY",
+      "turnover": "0",
+      "prev_rate": "8.22",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "8.66",
+      "change": "0.44"
+    },
+    {
+      "symbol": "DCR-APRB",
+      "company": "DCR-APRB",
+      "turnover": "0",
+      "prev_rate": "35.56",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "35.22",
+      "change": "-0.34"
+    },
+    {
       "symbol": "DGKC-APR",
       "company": "DGKC-APR",
       "turnover": "7956",
@@ -5216,6 +6250,61 @@
       "low": "183.01",
       "last_rate": "191.63",
       "change": "14.24"
+    },
+    {
+      "symbol": "DGKC-CAPR",
+      "company": "DGKC-CAPR",
+      "turnover": "0",
+      "prev_rate": "177.68",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "191.35",
+      "change": "13.67"
+    },
+    {
+      "symbol": "DGKC-CJUN",
+      "company": "DGKC-CJUN",
+      "turnover": "0",
+      "prev_rate": "182.29",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "196.32",
+      "change": "14.03"
+    },
+    {
+      "symbol": "DGKC-CMAY",
+      "company": "DGKC-CMAY",
+      "turnover": "0",
+      "prev_rate": "180.24",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "194.11",
+      "change": "13.87"
+    },
+    {
+      "symbol": "DGKC-JUN",
+      "company": "DGKC-JUN",
+      "turnover": "0",
+      "prev_rate": "182.29",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "196.32",
+      "change": "14.03"
+    },
+    {
+      "symbol": "DGKC-MAY",
+      "company": "DGKC-MAY",
+      "turnover": "0",
+      "prev_rate": "180.24",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "194.11",
+      "change": "13.87"
     },
     {
       "symbol": "EFERT-APRB",
@@ -5229,6 +6318,61 @@
       "change": "3.51"
     },
     {
+      "symbol": "EFERT-CAPRN1",
+      "company": "EFERT-CAPRN1",
+      "turnover": "0",
+      "prev_rate": "205.81",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "208.68",
+      "change": "2.87"
+    },
+    {
+      "symbol": "EFERT-CJUN",
+      "company": "EFERT-CJUN",
+      "turnover": "0",
+      "prev_rate": "211.16",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "214.1",
+      "change": "2.94"
+    },
+    {
+      "symbol": "EFERT-CMAYN1",
+      "company": "EFERT-CMAYN1",
+      "turnover": "0",
+      "prev_rate": "208.78",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "211.69",
+      "change": "2.91"
+    },
+    {
+      "symbol": "EFERT-JUN",
+      "company": "EFERT-JUN",
+      "turnover": "0",
+      "prev_rate": "211.16",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "214.1",
+      "change": "2.94"
+    },
+    {
+      "symbol": "EFERT-MAYB",
+      "company": "EFERT-MAYB",
+      "turnover": "0",
+      "prev_rate": "208.78",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "211.69",
+      "change": "2.91"
+    },
+    {
       "symbol": "ENGROH-APR",
       "company": "ENGROH-APR",
       "turnover": "390",
@@ -5238,6 +6382,28 @@
       "low": "275.81",
       "last_rate": "279.83",
       "change": "8.44"
+    },
+    {
+      "symbol": "ENGROH-JUN",
+      "company": "ENGROH-JUN",
+      "turnover": "0",
+      "prev_rate": "277.98",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "287.5",
+      "change": "9.52"
+    },
+    {
+      "symbol": "ENGROH-MAY",
+      "company": "ENGROH-MAY",
+      "turnover": "0",
+      "prev_rate": "274.86",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "284.27",
+      "change": "9.41"
     },
     {
       "symbol": "EPCL-APR",
@@ -5251,6 +6417,61 @@
       "change": "0.67"
     },
     {
+      "symbol": "EPCL-CAPR",
+      "company": "EPCL-CAPR",
+      "turnover": "0",
+      "prev_rate": "35.14",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "35.6",
+      "change": "0.46"
+    },
+    {
+      "symbol": "EPCL-CJUN",
+      "company": "EPCL-CJUN",
+      "turnover": "0",
+      "prev_rate": "36.05",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "36.52",
+      "change": "0.47"
+    },
+    {
+      "symbol": "EPCL-CMAY",
+      "company": "EPCL-CMAY",
+      "turnover": "0",
+      "prev_rate": "35.65",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "36.11",
+      "change": "0.46"
+    },
+    {
+      "symbol": "EPCL-JUN",
+      "company": "EPCL-JUN",
+      "turnover": "0",
+      "prev_rate": "36.05",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "36.52",
+      "change": "0.47"
+    },
+    {
+      "symbol": "EPCL-MAY",
+      "company": "EPCL-MAY",
+      "turnover": "0",
+      "prev_rate": "35.65",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "36.11",
+      "change": "0.46"
+    },
+    {
       "symbol": "FABL-APRB",
       "company": "FABL-APRB",
       "turnover": "334",
@@ -5260,6 +6481,61 @@
       "low": "92.17",
       "last_rate": "92.9",
       "change": "2.57"
+    },
+    {
+      "symbol": "FABL-CAPRN1",
+      "company": "FABL-CAPRN1",
+      "turnover": "0",
+      "prev_rate": "90.42",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "93.03",
+      "change": "2.61"
+    },
+    {
+      "symbol": "FABL-CJUN",
+      "company": "FABL-CJUN",
+      "turnover": "0",
+      "prev_rate": "92.77",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "95.45",
+      "change": "2.68"
+    },
+    {
+      "symbol": "FABL-CMAYN1",
+      "company": "FABL-CMAYN1",
+      "turnover": "0",
+      "prev_rate": "91.72",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "94.38",
+      "change": "2.66"
+    },
+    {
+      "symbol": "FABL-JUN",
+      "company": "FABL-JUN",
+      "turnover": "0",
+      "prev_rate": "92.77",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "95.45",
+      "change": "2.68"
+    },
+    {
+      "symbol": "FABL-MAYB",
+      "company": "FABL-MAYB",
+      "turnover": "0",
+      "prev_rate": "91.72",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "94.38",
+      "change": "2.66"
     },
     {
       "symbol": "FATIMA-APRB",
@@ -5273,6 +6549,61 @@
       "change": "7.5"
     },
     {
+      "symbol": "FATIMA-CAPRN1",
+      "company": "FATIMA-CAPRN1",
+      "turnover": "0",
+      "prev_rate": "137.68",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "144.94",
+      "change": "7.26"
+    },
+    {
+      "symbol": "FATIMA-CJUN",
+      "company": "FATIMA-CJUN",
+      "turnover": "0",
+      "prev_rate": "141.26",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "148.7",
+      "change": "7.44"
+    },
+    {
+      "symbol": "FATIMA-CMAYN1",
+      "company": "FATIMA-CMAYN1",
+      "turnover": "0",
+      "prev_rate": "139.67",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "147.03",
+      "change": "7.36"
+    },
+    {
+      "symbol": "FATIMA-JUN",
+      "company": "FATIMA-JUN",
+      "turnover": "0",
+      "prev_rate": "141.26",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "148.7",
+      "change": "7.44"
+    },
+    {
+      "symbol": "FATIMA-MAYB",
+      "company": "FATIMA-MAYB",
+      "turnover": "0",
+      "prev_rate": "139.67",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "147.03",
+      "change": "7.36"
+    },
+    {
       "symbol": "FCCL-APR",
       "company": "FCCL-APR",
       "turnover": "5380",
@@ -5282,6 +6613,61 @@
       "low": "49.5",
       "last_rate": "51.89",
       "change": "3.9"
+    },
+    {
+      "symbol": "FCCL-CAPR",
+      "company": "FCCL-CAPR",
+      "turnover": "0",
+      "prev_rate": "48.04",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "51.84",
+      "change": "3.8"
+    },
+    {
+      "symbol": "FCCL-CJUN",
+      "company": "FCCL-CJUN",
+      "turnover": "0",
+      "prev_rate": "49.28",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "53.19",
+      "change": "3.91"
+    },
+    {
+      "symbol": "FCCL-CMAY",
+      "company": "FCCL-CMAY",
+      "turnover": "0",
+      "prev_rate": "48.73",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "52.59",
+      "change": "3.86"
+    },
+    {
+      "symbol": "FCCL-JUN",
+      "company": "FCCL-JUN",
+      "turnover": "0",
+      "prev_rate": "49.28",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "53.19",
+      "change": "3.91"
+    },
+    {
+      "symbol": "FCCL-MAY",
+      "company": "FCCL-MAY",
+      "turnover": "0",
+      "prev_rate": "50.01",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "52.59",
+      "change": "2.58"
     },
     {
       "symbol": "FCEPL-APR",
@@ -5306,6 +6692,72 @@
       "change": "3.74"
     },
     {
+      "symbol": "FCEPL-CAPR",
+      "company": "FCEPL-CAPR",
+      "turnover": "0",
+      "prev_rate": "79.77",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "83.4",
+      "change": "3.63"
+    },
+    {
+      "symbol": "FCEPL-CJUN",
+      "company": "FCEPL-CJUN",
+      "turnover": "0",
+      "prev_rate": "81.84",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "85.57",
+      "change": "3.73"
+    },
+    {
+      "symbol": "FCEPL-CMAY",
+      "company": "FCEPL-CMAY",
+      "turnover": "0",
+      "prev_rate": "80.92",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "84.61",
+      "change": "3.69"
+    },
+    {
+      "symbol": "FCEPL-JUN",
+      "company": "FCEPL-JUN",
+      "turnover": "0",
+      "prev_rate": "79.48",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "83.09",
+      "change": "3.61"
+    },
+    {
+      "symbol": "FCEPL-JUNB",
+      "company": "FCEPL-JUNB",
+      "turnover": "0",
+      "prev_rate": "78.21",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "81.78",
+      "change": "3.57"
+    },
+    {
+      "symbol": "FCEPL-MAY",
+      "company": "FCEPL-MAY",
+      "turnover": "0",
+      "prev_rate": "79.48",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "83.09",
+      "change": "3.61"
+    },
+    {
       "symbol": "FCEPL-MAYB",
       "company": "FCEPL-MAYB",
       "turnover": "10",
@@ -5328,6 +6780,94 @@
       "change": "0.86"
     },
     {
+      "symbol": "FCL-CAPR",
+      "company": "FCL-CAPR",
+      "turnover": "0",
+      "prev_rate": "21.18",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "21.95",
+      "change": "0.77"
+    },
+    {
+      "symbol": "FCL-CJUN",
+      "company": "FCL-CJUN",
+      "turnover": "0",
+      "prev_rate": "21.73",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "22.52",
+      "change": "0.79"
+    },
+    {
+      "symbol": "FCL-CMAY",
+      "company": "FCL-CMAY",
+      "turnover": "0",
+      "prev_rate": "21.48",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "22.27",
+      "change": "0.79"
+    },
+    {
+      "symbol": "FCL-JUN",
+      "company": "FCL-JUN",
+      "turnover": "0",
+      "prev_rate": "21.73",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "22.52",
+      "change": "0.79"
+    },
+    {
+      "symbol": "FCL-MAY",
+      "company": "FCL-MAY",
+      "turnover": "0",
+      "prev_rate": "21.48",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "22.27",
+      "change": "0.79"
+    },
+    {
+      "symbol": "FDPL-APR",
+      "company": "FDPL-APR",
+      "turnover": "0",
+      "prev_rate": "4.17",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "4.24",
+      "change": "0.07"
+    },
+    {
+      "symbol": "FDPL-JUN",
+      "company": "FDPL-JUN",
+      "turnover": "0",
+      "prev_rate": "4.28",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "4.35",
+      "change": "0.07"
+    },
+    {
+      "symbol": "FDPL-MAY",
+      "company": "FDPL-MAY",
+      "turnover": "0",
+      "prev_rate": "4.23",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "4.3",
+      "change": "0.07"
+    },
+    {
       "symbol": "FFC-APRB",
       "company": "FFC-APRB",
       "turnover": "252",
@@ -5339,6 +6879,61 @@
       "change": "12.48"
     },
     {
+      "symbol": "FFC-CAPRN1",
+      "company": "FFC-CAPRN1",
+      "turnover": "0",
+      "prev_rate": "516.42",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "528.87",
+      "change": "12.45"
+    },
+    {
+      "symbol": "FFC-CJUN",
+      "company": "FFC-CJUN",
+      "turnover": "0",
+      "prev_rate": "529.83",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "542.61",
+      "change": "12.78"
+    },
+    {
+      "symbol": "FFC-CMAYN1",
+      "company": "FFC-CMAYN1",
+      "turnover": "0",
+      "prev_rate": "523.87",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "536.5",
+      "change": "12.63"
+    },
+    {
+      "symbol": "FFC-JUN",
+      "company": "FFC-JUN",
+      "turnover": "0",
+      "prev_rate": "529.83",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "542.61",
+      "change": "12.78"
+    },
+    {
+      "symbol": "FFC-MAY",
+      "company": "FFC-MAY",
+      "turnover": "0",
+      "prev_rate": "523.87",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "536.5",
+      "change": "12.63"
+    },
+    {
       "symbol": "FFL-APR",
       "company": "FFL-APR",
       "turnover": "7616",
@@ -5348,6 +6943,61 @@
       "low": "15.8",
       "last_rate": "16.79",
       "change": "1.22"
+    },
+    {
+      "symbol": "FFL-CAPR",
+      "company": "FFL-CAPR",
+      "turnover": "0",
+      "prev_rate": "15.56",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "16.77",
+      "change": "1.21"
+    },
+    {
+      "symbol": "FFL-CJUN",
+      "company": "FFL-CJUN",
+      "turnover": "0",
+      "prev_rate": "15.96",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "17.2",
+      "change": "1.24"
+    },
+    {
+      "symbol": "FFL-CMAY",
+      "company": "FFL-CMAY",
+      "turnover": "0",
+      "prev_rate": "15.78",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "17.01",
+      "change": "1.23"
+    },
+    {
+      "symbol": "FFL-JUN",
+      "company": "FFL-JUN",
+      "turnover": "0",
+      "prev_rate": "15.96",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "17.2",
+      "change": "1.24"
+    },
+    {
+      "symbol": "FFL-MAY",
+      "company": "FFL-MAY",
+      "turnover": "0",
+      "prev_rate": "15.78",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "17.01",
+      "change": "1.23"
     },
     {
       "symbol": "FLYNG-APR",
@@ -5372,6 +7022,61 @@
       "change": "36.26"
     },
     {
+      "symbol": "GAL-CAPR",
+      "company": "GAL-CAPR",
+      "turnover": "0",
+      "prev_rate": "363.05",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "399.19",
+      "change": "36.14"
+    },
+    {
+      "symbol": "GAL-CJUN",
+      "company": "GAL-CJUN",
+      "turnover": "0",
+      "prev_rate": "372.47",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "409.55",
+      "change": "37.08"
+    },
+    {
+      "symbol": "GAL-CMAY",
+      "company": "GAL-CMAY",
+      "turnover": "0",
+      "prev_rate": "368.28",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "404.95",
+      "change": "36.67"
+    },
+    {
+      "symbol": "GAL-JUN",
+      "company": "GAL-JUN",
+      "turnover": "0",
+      "prev_rate": "372.47",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "409.55",
+      "change": "37.08"
+    },
+    {
+      "symbol": "GAL-MAY",
+      "company": "GAL-MAY",
+      "turnover": "0",
+      "prev_rate": "368.28",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "404.95",
+      "change": "36.67"
+    },
+    {
       "symbol": "GATM-APR",
       "company": "GATM-APR",
       "turnover": "1218",
@@ -5381,6 +7086,61 @@
       "low": "23",
       "last_rate": "23.49",
       "change": "0.7"
+    },
+    {
+      "symbol": "GATM-CAPR",
+      "company": "GATM-CAPR",
+      "turnover": "0",
+      "prev_rate": "22.86",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "23.71",
+      "change": "0.85"
+    },
+    {
+      "symbol": "GATM-CJUN",
+      "company": "GATM-CJUN",
+      "turnover": "0",
+      "prev_rate": "23.46",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "24.32",
+      "change": "0.86"
+    },
+    {
+      "symbol": "GATM-CMAY",
+      "company": "GATM-CMAY",
+      "turnover": "0",
+      "prev_rate": "23.19",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "24.05",
+      "change": "0.86"
+    },
+    {
+      "symbol": "GATM-JUN",
+      "company": "GATM-JUN",
+      "turnover": "0",
+      "prev_rate": "23.46",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "24.32",
+      "change": "0.86"
+    },
+    {
+      "symbol": "GATM-MAY",
+      "company": "GATM-MAY",
+      "turnover": "0",
+      "prev_rate": "23.19",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "24.05",
+      "change": "0.86"
     },
     {
       "symbol": "GCIL-APR",
@@ -5394,6 +7154,94 @@
       "change": "1.11"
     },
     {
+      "symbol": "GCIL-CAPR",
+      "company": "GCIL-CAPR",
+      "turnover": "0",
+      "prev_rate": "27.83",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "29.08",
+      "change": "1.25"
+    },
+    {
+      "symbol": "GCIL-CJUN",
+      "company": "GCIL-CJUN",
+      "turnover": "0",
+      "prev_rate": "28.55",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "29.84",
+      "change": "1.29"
+    },
+    {
+      "symbol": "GCIL-CMAY",
+      "company": "GCIL-CMAY",
+      "turnover": "0",
+      "prev_rate": "28.23",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "29.5",
+      "change": "1.27"
+    },
+    {
+      "symbol": "GCIL-JUN",
+      "company": "GCIL-JUN",
+      "turnover": "0",
+      "prev_rate": "28.55",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "29.84",
+      "change": "1.29"
+    },
+    {
+      "symbol": "GCIL-MAY",
+      "company": "GCIL-MAY",
+      "turnover": "0",
+      "prev_rate": "28.23",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "29.5",
+      "change": "1.27"
+    },
+    {
+      "symbol": "GCWL-CAPR",
+      "company": "GCWL-CAPR",
+      "turnover": "0",
+      "prev_rate": "16.71",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "17.12",
+      "change": "0.41"
+    },
+    {
+      "symbol": "GCWL-CJUN",
+      "company": "GCWL-CJUN",
+      "turnover": "0",
+      "prev_rate": "17.14",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "17.57",
+      "change": "0.43"
+    },
+    {
+      "symbol": "GCWL-CMAY",
+      "company": "GCWL-CMAY",
+      "turnover": "0",
+      "prev_rate": "16.95",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "17.37",
+      "change": "0.42"
+    },
+    {
       "symbol": "GGL-APR",
       "company": "GGL-APR",
       "turnover": "464",
@@ -5403,6 +7251,94 @@
       "low": "17.5",
       "last_rate": "18.03",
       "change": "0.77"
+    },
+    {
+      "symbol": "GGL-CAPR",
+      "company": "GGL-CAPR",
+      "turnover": "0",
+      "prev_rate": "17.31",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "17.99",
+      "change": "0.68"
+    },
+    {
+      "symbol": "GGL-CJUN",
+      "company": "GGL-CJUN",
+      "turnover": "0",
+      "prev_rate": "17.76",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "18.46",
+      "change": "0.7"
+    },
+    {
+      "symbol": "GGL-CMAY",
+      "company": "GGL-CMAY",
+      "turnover": "0",
+      "prev_rate": "17.56",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "18.25",
+      "change": "0.69"
+    },
+    {
+      "symbol": "GGL-JUN",
+      "company": "GGL-JUN",
+      "turnover": "0",
+      "prev_rate": "17.76",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "18.46",
+      "change": "0.7"
+    },
+    {
+      "symbol": "GGL-MAY",
+      "company": "GGL-MAY",
+      "turnover": "0",
+      "prev_rate": "17.56",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "18.25",
+      "change": "0.69"
+    },
+    {
+      "symbol": "GHGL-APRB",
+      "company": "GHGL-APRB",
+      "turnover": "0",
+      "prev_rate": "35.84",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "37.87",
+      "change": "2.03"
+    },
+    {
+      "symbol": "GHGL-JUN",
+      "company": "GHGL-JUN",
+      "turnover": "0",
+      "prev_rate": "36.77",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "38.85",
+      "change": "2.08"
+    },
+    {
+      "symbol": "GHGL-MAY",
+      "company": "GHGL-MAY",
+      "turnover": "0",
+      "prev_rate": "36.36",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "38.41",
+      "change": "2.05"
     },
     {
       "symbol": "GHNI-APR",
@@ -5416,6 +7352,61 @@
       "change": "64.34"
     },
     {
+      "symbol": "GHNI-CAPR",
+      "company": "GHNI-CAPR",
+      "turnover": "0",
+      "prev_rate": "709.13",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "775.45",
+      "change": "66.32"
+    },
+    {
+      "symbol": "GHNI-CJUN",
+      "company": "GHNI-CJUN",
+      "turnover": "0",
+      "prev_rate": "727.55",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "795.59",
+      "change": "68.04"
+    },
+    {
+      "symbol": "GHNI-CMAY",
+      "company": "GHNI-CMAY",
+      "turnover": "0",
+      "prev_rate": "719.36",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "786.64",
+      "change": "67.28"
+    },
+    {
+      "symbol": "GHNI-JUN",
+      "company": "GHNI-JUN",
+      "turnover": "0",
+      "prev_rate": "727.55",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "795.59",
+      "change": "68.04"
+    },
+    {
+      "symbol": "GHNI-MAY",
+      "company": "GHNI-MAY",
+      "turnover": "0",
+      "prev_rate": "719.36",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "786.64",
+      "change": "67.28"
+    },
+    {
       "symbol": "GLAXO-APR",
       "company": "GLAXO-APR",
       "turnover": "2",
@@ -5425,6 +7416,61 @@
       "low": "372",
       "last_rate": "372",
       "change": "16.2"
+    },
+    {
+      "symbol": "GLAXO-JUN",
+      "company": "GLAXO-JUN",
+      "turnover": "0",
+      "prev_rate": "365.05",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "381.64",
+      "change": "16.59"
+    },
+    {
+      "symbol": "GLAXO-MAY",
+      "company": "GLAXO-MAY",
+      "turnover": "0",
+      "prev_rate": "360.94",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "377.35",
+      "change": "16.41"
+    },
+    {
+      "symbol": "GWLC-CAPR",
+      "company": "GWLC-CAPR",
+      "turnover": "0",
+      "prev_rate": "49.06",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "51.21",
+      "change": "2.15"
+    },
+    {
+      "symbol": "GWLC-CJUN",
+      "company": "GWLC-CJUN",
+      "turnover": "0",
+      "prev_rate": "50.34",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "52.54",
+      "change": "2.2"
+    },
+    {
+      "symbol": "GWLC-CMAY",
+      "company": "GWLC-CMAY",
+      "turnover": "0",
+      "prev_rate": "49.77",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "51.95",
+      "change": "2.18"
     },
     {
       "symbol": "HBL-APRB",
@@ -5438,6 +7484,94 @@
       "change": "7.5"
     },
     {
+      "symbol": "HBL-CAPRN1",
+      "company": "HBL-CAPRN1",
+      "turnover": "0",
+      "prev_rate": "295.55",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "302.41",
+      "change": "6.86"
+    },
+    {
+      "symbol": "HBL-CJUN",
+      "company": "HBL-CJUN",
+      "turnover": "0",
+      "prev_rate": "303.22",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "310.26",
+      "change": "7.04"
+    },
+    {
+      "symbol": "HBL-CMAYN1",
+      "company": "HBL-CMAYN1",
+      "turnover": "0",
+      "prev_rate": "299.81",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "306.77",
+      "change": "6.96"
+    },
+    {
+      "symbol": "HBL-JUN",
+      "company": "HBL-JUN",
+      "turnover": "0",
+      "prev_rate": "303.22",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "310.26",
+      "change": "7.04"
+    },
+    {
+      "symbol": "HBL-MAYB",
+      "company": "HBL-MAYB",
+      "turnover": "0",
+      "prev_rate": "299.81",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "306.77",
+      "change": "6.96"
+    },
+    {
+      "symbol": "HCAR-CAPR",
+      "company": "HCAR-CAPR",
+      "turnover": "0",
+      "prev_rate": "169.73",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "186.63",
+      "change": "16.9"
+    },
+    {
+      "symbol": "HCAR-CJUN",
+      "company": "HCAR-CJUN",
+      "turnover": "0",
+      "prev_rate": "174.14",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "191.48",
+      "change": "17.34"
+    },
+    {
+      "symbol": "HCAR-CMAY",
+      "company": "HCAR-CMAY",
+      "turnover": "0",
+      "prev_rate": "172.18",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "189.32",
+      "change": "17.14"
+    },
+    {
       "symbol": "HUBC-APRB",
       "company": "HUBC-APRB",
       "turnover": "1125",
@@ -5447,6 +7581,61 @@
       "low": "210.65",
       "last_rate": "214.03",
       "change": "7.28"
+    },
+    {
+      "symbol": "HUBC-CAPRN1",
+      "company": "HUBC-CAPRN1",
+      "turnover": "0",
+      "prev_rate": "207.44",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "213.82",
+      "change": "6.38"
+    },
+    {
+      "symbol": "HUBC-CJUN",
+      "company": "HUBC-CJUN",
+      "turnover": "0",
+      "prev_rate": "212.83",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "219.38",
+      "change": "6.55"
+    },
+    {
+      "symbol": "HUBC-CMAYN1",
+      "company": "HUBC-CMAYN1",
+      "turnover": "0",
+      "prev_rate": "210.43",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "216.91",
+      "change": "6.48"
+    },
+    {
+      "symbol": "HUBC-JUN",
+      "company": "HUBC-JUN",
+      "turnover": "0",
+      "prev_rate": "212.83",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "219.38",
+      "change": "6.55"
+    },
+    {
+      "symbol": "HUBC-MAY",
+      "company": "HUBC-MAY",
+      "turnover": "0",
+      "prev_rate": "209",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "216.91",
+      "change": "7.91"
     },
     {
       "symbol": "HUMNL-APR",
@@ -5460,6 +7649,50 @@
       "change": "0.17"
     },
     {
+      "symbol": "HUMNL-CAPR",
+      "company": "HUMNL-CAPR",
+      "turnover": "0",
+      "prev_rate": "10.71",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "10.88",
+      "change": "0.17"
+    },
+    {
+      "symbol": "HUMNL-CJUN",
+      "company": "HUMNL-CJUN",
+      "turnover": "0",
+      "prev_rate": "10.99",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "11.17",
+      "change": "0.18"
+    },
+    {
+      "symbol": "HUMNL-CMAY",
+      "company": "HUMNL-CMAY",
+      "turnover": "0",
+      "prev_rate": "10.86",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "11.04",
+      "change": "0.18"
+    },
+    {
+      "symbol": "HUMNL-JUN",
+      "company": "HUMNL-JUN",
+      "turnover": "0",
+      "prev_rate": "10.99",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "11.17",
+      "change": "0.18"
+    },
+    {
       "symbol": "HUMNL-MAY",
       "company": "HUMNL-MAY",
       "turnover": "21",
@@ -5469,6 +7702,39 @@
       "low": "10.95",
       "last_rate": "10.95",
       "change": "0.09"
+    },
+    {
+      "symbol": "IGIHL-CAPR",
+      "company": "IGIHL-CAPR",
+      "turnover": "0",
+      "prev_rate": "181.16",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "185.36",
+      "change": "4.2"
+    },
+    {
+      "symbol": "IGIHL-CJUN",
+      "company": "IGIHL-CJUN",
+      "turnover": "0",
+      "prev_rate": "185.86",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "190.18",
+      "change": "4.32"
+    },
+    {
+      "symbol": "IGIHL-CMAY",
+      "company": "IGIHL-CMAY",
+      "turnover": "0",
+      "prev_rate": "183.77",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "188.04",
+      "change": "4.27"
     },
     {
       "symbol": "ILP-APRB",
@@ -5482,6 +7748,28 @@
       "change": "2"
     },
     {
+      "symbol": "ILP-JUN",
+      "company": "ILP-JUN",
+      "turnover": "0",
+      "prev_rate": "81.79",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "83.46",
+      "change": "1.67"
+    },
+    {
+      "symbol": "ILP-MAY",
+      "company": "ILP-MAY",
+      "turnover": "0",
+      "prev_rate": "80.87",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "82.52",
+      "change": "1.65"
+    },
+    {
       "symbol": "IMAGE-APR",
       "company": "IMAGE-APR",
       "turnover": "412",
@@ -5491,6 +7779,61 @@
       "low": "23.35",
       "last_rate": "23.63",
       "change": "0.99"
+    },
+    {
+      "symbol": "IMAGE-CAPR",
+      "company": "IMAGE-CAPR",
+      "turnover": "0",
+      "prev_rate": "23.07",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "23.52",
+      "change": "0.45"
+    },
+    {
+      "symbol": "IMAGE-CJUN",
+      "company": "IMAGE-CJUN",
+      "turnover": "0",
+      "prev_rate": "23.67",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "24.13",
+      "change": "0.46"
+    },
+    {
+      "symbol": "IMAGE-CMAY",
+      "company": "IMAGE-CMAY",
+      "turnover": "0",
+      "prev_rate": "23.41",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "23.86",
+      "change": "0.45"
+    },
+    {
+      "symbol": "IMAGE-JUN",
+      "company": "IMAGE-JUN",
+      "turnover": "0",
+      "prev_rate": "23.67",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "24.13",
+      "change": "0.46"
+    },
+    {
+      "symbol": "IMAGE-MAY",
+      "company": "IMAGE-MAY",
+      "turnover": "0",
+      "prev_rate": "23.41",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "23.86",
+      "change": "0.45"
     },
     {
       "symbol": "INIL-APR",
@@ -5504,6 +7847,28 @@
       "change": "5.15"
     },
     {
+      "symbol": "INIL-JUN",
+      "company": "INIL-JUN",
+      "turnover": "0",
+      "prev_rate": "165.03",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "170.78",
+      "change": "5.75"
+    },
+    {
+      "symbol": "INIL-MAY",
+      "company": "INIL-MAY",
+      "turnover": "0",
+      "prev_rate": "163.17",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "168.86",
+      "change": "5.69"
+    },
+    {
       "symbol": "ISL-APR",
       "company": "ISL-APR",
       "turnover": "154",
@@ -5513,6 +7878,94 @@
       "low": "79.2",
       "last_rate": "80.39",
       "change": "3.3"
+    },
+    {
+      "symbol": "ISL-JUN",
+      "company": "ISL-JUN",
+      "turnover": "0",
+      "prev_rate": "79.05",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "82.53",
+      "change": "3.48"
+    },
+    {
+      "symbol": "ISL-MAY",
+      "company": "ISL-MAY",
+      "turnover": "0",
+      "prev_rate": "78.16",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "81.6",
+      "change": "3.44"
+    },
+    {
+      "symbol": "JSGBETF-APRB",
+      "company": "JSGBETF-APRB",
+      "turnover": "0",
+      "prev_rate": "37.25",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "38.37",
+      "change": "1.12"
+    },
+    {
+      "symbol": "JSGBETF-JUN",
+      "company": "JSGBETF-JUN",
+      "turnover": "0",
+      "prev_rate": "38.22",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "39.36",
+      "change": "1.14"
+    },
+    {
+      "symbol": "JSGBETF-MAY",
+      "company": "JSGBETF-MAY",
+      "turnover": "0",
+      "prev_rate": "37.79",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "38.92",
+      "change": "1.13"
+    },
+    {
+      "symbol": "JSMFETF-APR",
+      "company": "JSMFETF-APR",
+      "turnover": "0",
+      "prev_rate": "10.04",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "10.15",
+      "change": "0.11"
+    },
+    {
+      "symbol": "JSMFETF-JUN",
+      "company": "JSMFETF-JUN",
+      "turnover": "0",
+      "prev_rate": "10.3",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "10.42",
+      "change": "0.12"
+    },
+    {
+      "symbol": "JSMFETF-MAY",
+      "company": "JSMFETF-MAY",
+      "turnover": "0",
+      "prev_rate": "10.18",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "10.3",
+      "change": "0.12"
     },
     {
       "symbol": "JVDC-APR",
@@ -5526,6 +7979,61 @@
       "change": "9.12"
     },
     {
+      "symbol": "JVDC-CAPR",
+      "company": "JVDC-CAPR",
+      "turnover": "0",
+      "prev_rate": "118.6",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "126.87",
+      "change": "8.27"
+    },
+    {
+      "symbol": "JVDC-CJUN",
+      "company": "JVDC-CJUN",
+      "turnover": "0",
+      "prev_rate": "121.68",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "130.17",
+      "change": "8.49"
+    },
+    {
+      "symbol": "JVDC-CMAY",
+      "company": "JVDC-CMAY",
+      "turnover": "0",
+      "prev_rate": "120.31",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "128.7",
+      "change": "8.39"
+    },
+    {
+      "symbol": "JVDC-JUN",
+      "company": "JVDC-JUN",
+      "turnover": "0",
+      "prev_rate": "121.68",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "130.17",
+      "change": "8.49"
+    },
+    {
+      "symbol": "JVDC-MAY",
+      "company": "JVDC-MAY",
+      "turnover": "0",
+      "prev_rate": "120.31",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "128.7",
+      "change": "8.39"
+    },
+    {
       "symbol": "KAPCO-APRB",
       "company": "KAPCO-APRB",
       "turnover": "263",
@@ -5535,6 +8043,28 @@
       "low": "28.39",
       "last_rate": "28.55",
       "change": "0.35"
+    },
+    {
+      "symbol": "KAPCO-JUN",
+      "company": "KAPCO-JUN",
+      "turnover": "0",
+      "prev_rate": "29.03",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "29.3",
+      "change": "0.27"
+    },
+    {
+      "symbol": "KAPCO-MAY",
+      "company": "KAPCO-MAY",
+      "turnover": "0",
+      "prev_rate": "28.71",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "28.97",
+      "change": "0.26"
     },
     {
       "symbol": "KEL-APR",
@@ -5559,6 +8089,39 @@
       "change": "0.33"
     },
     {
+      "symbol": "KEL-CJUN",
+      "company": "KEL-CJUN",
+      "turnover": "0",
+      "prev_rate": "7.48",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "7.82",
+      "change": "0.34"
+    },
+    {
+      "symbol": "KEL-CMAY",
+      "company": "KEL-CMAY",
+      "turnover": "0",
+      "prev_rate": "7.4",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "7.73",
+      "change": "0.33"
+    },
+    {
+      "symbol": "KEL-JUN",
+      "company": "KEL-JUN",
+      "turnover": "0",
+      "prev_rate": "7.48",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "7.82",
+      "change": "0.34"
+    },
+    {
       "symbol": "KEL-MAY",
       "company": "KEL-MAY",
       "turnover": "2",
@@ -5581,6 +8144,28 @@
       "change": "4.18"
     },
     {
+      "symbol": "KOHC-JUN",
+      "company": "KOHC-JUN",
+      "turnover": "0",
+      "prev_rate": "89.37",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "95.35",
+      "change": "5.98"
+    },
+    {
+      "symbol": "KOHC-MAY",
+      "company": "KOHC-MAY",
+      "turnover": "0",
+      "prev_rate": "88.36",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "94.27",
+      "change": "5.91"
+    },
+    {
       "symbol": "KOSM-APR",
       "company": "KOSM-APR",
       "turnover": "7265",
@@ -5590,6 +8175,61 @@
       "low": "5.21",
       "last_rate": "5.39",
       "change": "0.27"
+    },
+    {
+      "symbol": "KOSM-JUN",
+      "company": "KOSM-JUN",
+      "turnover": "0",
+      "prev_rate": "5.27",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "5.51",
+      "change": "0.24"
+    },
+    {
+      "symbol": "KOSM-MAY",
+      "company": "KOSM-MAY",
+      "turnover": "0",
+      "prev_rate": "5.21",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "5.45",
+      "change": "0.24"
+    },
+    {
+      "symbol": "LOADS-CAPR",
+      "company": "LOADS-CAPR",
+      "turnover": "0",
+      "prev_rate": "11.85",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "12.3",
+      "change": "0.45"
+    },
+    {
+      "symbol": "LOADS-CJUN",
+      "company": "LOADS-CJUN",
+      "turnover": "0",
+      "prev_rate": "12.16",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "12.62",
+      "change": "0.46"
+    },
+    {
+      "symbol": "LOADS-CMAY",
+      "company": "LOADS-CMAY",
+      "turnover": "0",
+      "prev_rate": "12.02",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "12.48",
+      "change": "0.46"
     },
     {
       "symbol": "LOTCHEM-APR",
@@ -5603,6 +8243,61 @@
       "change": "0.77"
     },
     {
+      "symbol": "LOTCHEM-CAPR",
+      "company": "LOTCHEM-CAPR",
+      "turnover": "0",
+      "prev_rate": "24.2",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "24.97",
+      "change": "0.77"
+    },
+    {
+      "symbol": "LOTCHEM-CJUN",
+      "company": "LOTCHEM-CJUN",
+      "turnover": "0",
+      "prev_rate": "24.83",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "25.62",
+      "change": "0.79"
+    },
+    {
+      "symbol": "LOTCHEM-CMAY",
+      "company": "LOTCHEM-CMAY",
+      "turnover": "0",
+      "prev_rate": "24.55",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "25.33",
+      "change": "0.78"
+    },
+    {
+      "symbol": "LOTCHEM-JUN",
+      "company": "LOTCHEM-JUN",
+      "turnover": "0",
+      "prev_rate": "24.83",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "25.62",
+      "change": "0.79"
+    },
+    {
+      "symbol": "LOTCHEM-MAY",
+      "company": "LOTCHEM-MAY",
+      "turnover": "0",
+      "prev_rate": "24.55",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "25.33",
+      "change": "0.78"
+    },
+    {
       "symbol": "LUCK-APR",
       "company": "LUCK-APR",
       "turnover": "1069",
@@ -5612,6 +8307,28 @@
       "low": "422",
       "last_rate": "435.92",
       "change": "25.04"
+    },
+    {
+      "symbol": "LUCK-JUN",
+      "company": "LUCK-JUN",
+      "turnover": "0",
+      "prev_rate": "422.62",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "447.49",
+      "change": "24.87"
+    },
+    {
+      "symbol": "LUCK-MAY",
+      "company": "LUCK-MAY",
+      "turnover": "0",
+      "prev_rate": "417.87",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "442.45",
+      "change": "24.58"
     },
     {
       "symbol": "MARI-APR",
@@ -5625,6 +8342,28 @@
       "change": "9.06"
     },
     {
+      "symbol": "MARI-JUN",
+      "company": "MARI-JUN",
+      "turnover": "0",
+      "prev_rate": "665.94",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "676.51",
+      "change": "10.57"
+    },
+    {
+      "symbol": "MARI-MAY",
+      "company": "MARI-MAY",
+      "turnover": "0",
+      "prev_rate": "658.45",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "668.9",
+      "change": "10.45"
+    },
+    {
       "symbol": "MCB-APRB",
       "company": "MCB-APRB",
       "turnover": "11",
@@ -5634,6 +8373,61 @@
       "low": "406",
       "last_rate": "406",
       "change": "5.5"
+    },
+    {
+      "symbol": "MCB-CAPRN1",
+      "company": "MCB-CAPRN1",
+      "turnover": "0",
+      "prev_rate": "401.76",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "407.3",
+      "change": "5.54"
+    },
+    {
+      "symbol": "MCB-CJUN",
+      "company": "MCB-CJUN",
+      "turnover": "0",
+      "prev_rate": "412.19",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "417.88",
+      "change": "5.69"
+    },
+    {
+      "symbol": "MCB-CMAYN1",
+      "company": "MCB-CMAYN1",
+      "turnover": "0",
+      "prev_rate": "407.56",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "413.18",
+      "change": "5.62"
+    },
+    {
+      "symbol": "MCB-JUN",
+      "company": "MCB-JUN",
+      "turnover": "0",
+      "prev_rate": "412.19",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "417.88",
+      "change": "5.69"
+    },
+    {
+      "symbol": "MCB-MAYB",
+      "company": "MCB-MAYB",
+      "turnover": "0",
+      "prev_rate": "407.56",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "413.18",
+      "change": "5.62"
     },
     {
       "symbol": "MEBL-APRB",
@@ -5647,6 +8441,61 @@
       "change": "10.08"
     },
     {
+      "symbol": "MEBL-CAPRN1",
+      "company": "MEBL-CAPRN1",
+      "turnover": "0",
+      "prev_rate": "482.02",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "489.41",
+      "change": "7.39"
+    },
+    {
+      "symbol": "MEBL-CJUN",
+      "company": "MEBL-CJUN",
+      "turnover": "0",
+      "prev_rate": "494.53",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "502.12",
+      "change": "7.59"
+    },
+    {
+      "symbol": "MEBL-CMAYN1",
+      "company": "MEBL-CMAYN1",
+      "turnover": "0",
+      "prev_rate": "488.97",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "496.47",
+      "change": "7.5"
+    },
+    {
+      "symbol": "MEBL-JUN",
+      "company": "MEBL-JUN",
+      "turnover": "0",
+      "prev_rate": "494.53",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "502.12",
+      "change": "7.59"
+    },
+    {
+      "symbol": "MEBL-MAYB",
+      "company": "MEBL-MAYB",
+      "turnover": "0",
+      "prev_rate": "488.97",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "496.47",
+      "change": "7.5"
+    },
+    {
       "symbol": "MLCF-APR",
       "company": "MLCF-APR",
       "turnover": "11381",
@@ -5656,6 +8505,50 @@
       "low": "89.51",
       "last_rate": "94.07",
       "change": "6.86"
+    },
+    {
+      "symbol": "MLCF-CAPR",
+      "company": "MLCF-CAPR",
+      "turnover": "0",
+      "prev_rate": "87.26",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "94.19",
+      "change": "6.93"
+    },
+    {
+      "symbol": "MLCF-CJUN",
+      "company": "MLCF-CJUN",
+      "turnover": "0",
+      "prev_rate": "89.52",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "96.63",
+      "change": "7.11"
+    },
+    {
+      "symbol": "MLCF-CMAY",
+      "company": "MLCF-CMAY",
+      "turnover": "0",
+      "prev_rate": "88.51",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "95.55",
+      "change": "7.04"
+    },
+    {
+      "symbol": "MLCF-JUN",
+      "company": "MLCF-JUN",
+      "turnover": "0",
+      "prev_rate": "89.52",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "96.63",
+      "change": "7.11"
     },
     {
       "symbol": "MLCF-MAY",
@@ -5669,6 +8562,72 @@
       "change": "6.49"
     },
     {
+      "symbol": "MTL-APRB",
+      "company": "MTL-APRB",
+      "turnover": "0",
+      "prev_rate": "520",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "513.79",
+      "change": "-6.21"
+    },
+    {
+      "symbol": "MTL-CAPRN1",
+      "company": "MTL-CAPRN1",
+      "turnover": "0",
+      "prev_rate": "506.95",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "513.79",
+      "change": "6.84"
+    },
+    {
+      "symbol": "MTL-CJUN",
+      "company": "MTL-CJUN",
+      "turnover": "0",
+      "prev_rate": "520.11",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "527.13",
+      "change": "7.02"
+    },
+    {
+      "symbol": "MTL-CMAYN1",
+      "company": "MTL-CMAYN1",
+      "turnover": "0",
+      "prev_rate": "514.26",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "521.2",
+      "change": "6.94"
+    },
+    {
+      "symbol": "MTL-JUN",
+      "company": "MTL-JUN",
+      "turnover": "0",
+      "prev_rate": "520.11",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "527.13",
+      "change": "7.02"
+    },
+    {
+      "symbol": "MTL-MAY",
+      "company": "MTL-MAY",
+      "turnover": "0",
+      "prev_rate": "514.26",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "521.2",
+      "change": "6.94"
+    },
+    {
       "symbol": "MUGHAL-APR",
       "company": "MUGHAL-APR",
       "turnover": "620",
@@ -5680,6 +8639,160 @@
       "change": "3.22"
     },
     {
+      "symbol": "MUGHAL-CAPR",
+      "company": "MUGHAL-CAPR",
+      "turnover": "0",
+      "prev_rate": "70.36",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "74.02",
+      "change": "3.66"
+    },
+    {
+      "symbol": "MUGHAL-CJUN",
+      "company": "MUGHAL-CJUN",
+      "turnover": "0",
+      "prev_rate": "72.19",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "75.94",
+      "change": "3.75"
+    },
+    {
+      "symbol": "MUGHAL-CMAY",
+      "company": "MUGHAL-CMAY",
+      "turnover": "0",
+      "prev_rate": "71.37",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "75.08",
+      "change": "3.71"
+    },
+    {
+      "symbol": "MUGHAL-JUN",
+      "company": "MUGHAL-JUN",
+      "turnover": "0",
+      "prev_rate": "72.19",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "75.94",
+      "change": "3.75"
+    },
+    {
+      "symbol": "MUGHAL-MAY",
+      "company": "MUGHAL-MAY",
+      "turnover": "0",
+      "prev_rate": "71.37",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "75.08",
+      "change": "3.71"
+    },
+    {
+      "symbol": "MZNPETF-APR",
+      "company": "MZNPETF-APR",
+      "turnover": "0",
+      "prev_rate": "19.69",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "20.22",
+      "change": "0.53"
+    },
+    {
+      "symbol": "MZNPETF-JUN",
+      "company": "MZNPETF-JUN",
+      "turnover": "0",
+      "prev_rate": "20.2",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "20.75",
+      "change": "0.55"
+    },
+    {
+      "symbol": "MZNPETF-MAY",
+      "company": "MZNPETF-MAY",
+      "turnover": "0",
+      "prev_rate": "19.97",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "20.52",
+      "change": "0.55"
+    },
+    {
+      "symbol": "NATF-APRB",
+      "company": "NATF-APRB",
+      "turnover": "0",
+      "prev_rate": "361.19",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "371.21",
+      "change": "10.02"
+    },
+    {
+      "symbol": "NATF-CAPRN1",
+      "company": "NATF-CAPRN1",
+      "turnover": "0",
+      "prev_rate": "361.19",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "371.21",
+      "change": "10.02"
+    },
+    {
+      "symbol": "NATF-CJUN",
+      "company": "NATF-CJUN",
+      "turnover": "0",
+      "prev_rate": "370.56",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "380.85",
+      "change": "10.29"
+    },
+    {
+      "symbol": "NATF-CMAYN1",
+      "company": "NATF-CMAYN1",
+      "turnover": "0",
+      "prev_rate": "366.4",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "376.57",
+      "change": "10.17"
+    },
+    {
+      "symbol": "NATF-JUN",
+      "company": "NATF-JUN",
+      "turnover": "0",
+      "prev_rate": "370.56",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "380.85",
+      "change": "10.29"
+    },
+    {
+      "symbol": "NATF-MAY",
+      "company": "NATF-MAY",
+      "turnover": "0",
+      "prev_rate": "366.4",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "376.57",
+      "change": "10.17"
+    },
+    {
       "symbol": "NBP-APRB",
       "company": "NBP-APRB",
       "turnover": "4508",
@@ -5689,6 +8802,83 @@
       "low": "184",
       "last_rate": "189.44",
       "change": "9.58"
+    },
+    {
+      "symbol": "NBP-CAPRN1",
+      "company": "NBP-CAPRN1",
+      "turnover": "0",
+      "prev_rate": "180.55",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "189.42",
+      "change": "8.87"
+    },
+    {
+      "symbol": "NBP-CJUN",
+      "company": "NBP-CJUN",
+      "turnover": "0",
+      "prev_rate": "185.24",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "194.34",
+      "change": "9.1"
+    },
+    {
+      "symbol": "NBP-CMAYN1",
+      "company": "NBP-CMAYN1",
+      "turnover": "0",
+      "prev_rate": "183.15",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "192.15",
+      "change": "9"
+    },
+    {
+      "symbol": "NBPGETF-APR",
+      "company": "NBPGETF-APR",
+      "turnover": "0",
+      "prev_rate": "29.8",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "30.26",
+      "change": "0.46"
+    },
+    {
+      "symbol": "NBPGETF-JUN",
+      "company": "NBPGETF-JUN",
+      "turnover": "0",
+      "prev_rate": "30.57",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "31.05",
+      "change": "0.48"
+    },
+    {
+      "symbol": "NBPGETF-MAY",
+      "company": "NBPGETF-MAY",
+      "turnover": "0",
+      "prev_rate": "30.22",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "30.7",
+      "change": "0.48"
+    },
+    {
+      "symbol": "NBP-JUN",
+      "company": "NBP-JUN",
+      "turnover": "0",
+      "prev_rate": "185.24",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "194.34",
+      "change": "9.1"
     },
     {
       "symbol": "NBP-MAYB",
@@ -5713,6 +8903,61 @@
       "change": "4.44"
     },
     {
+      "symbol": "NCPL-CAPR",
+      "company": "NCPL-CAPR",
+      "turnover": "0",
+      "prev_rate": "64.1",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "68.43",
+      "change": "4.33"
+    },
+    {
+      "symbol": "NCPL-CJUN",
+      "company": "NCPL-CJUN",
+      "turnover": "0",
+      "prev_rate": "65.76",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "70.21",
+      "change": "4.45"
+    },
+    {
+      "symbol": "NCPL-CMAY",
+      "company": "NCPL-CMAY",
+      "turnover": "0",
+      "prev_rate": "65.03",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "69.42",
+      "change": "4.39"
+    },
+    {
+      "symbol": "NCPL-JUN",
+      "company": "NCPL-JUN",
+      "turnover": "0",
+      "prev_rate": "65.76",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "70.21",
+      "change": "4.45"
+    },
+    {
+      "symbol": "NCPL-MAY",
+      "company": "NCPL-MAY",
+      "turnover": "0",
+      "prev_rate": "66",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "69.42",
+      "change": "3.42"
+    },
+    {
       "symbol": "NETSOL-APR",
       "company": "NETSOL-APR",
       "turnover": "4543",
@@ -5722,6 +8967,72 @@
       "low": "122.05",
       "last_rate": "124.35",
       "change": "3.35"
+    },
+    {
+      "symbol": "NETSOL-CAPR",
+      "company": "NETSOL-CAPR",
+      "turnover": "0",
+      "prev_rate": "121.27",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "124.18",
+      "change": "2.91"
+    },
+    {
+      "symbol": "NETSOL-CJUN",
+      "company": "NETSOL-CJUN",
+      "turnover": "0",
+      "prev_rate": "124.42",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "127.41",
+      "change": "2.99"
+    },
+    {
+      "symbol": "NETSOL-CMAY",
+      "company": "NETSOL-CMAY",
+      "turnover": "0",
+      "prev_rate": "123.02",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "125.97",
+      "change": "2.95"
+    },
+    {
+      "symbol": "NITGETF-APR",
+      "company": "NITGETF-APR",
+      "turnover": "0",
+      "prev_rate": "35.45",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "36.27",
+      "change": "0.82"
+    },
+    {
+      "symbol": "NITGETF-JUN",
+      "company": "NITGETF-JUN",
+      "turnover": "0",
+      "prev_rate": "36.37",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "37.21",
+      "change": "0.84"
+    },
+    {
+      "symbol": "NITGETF-MAY",
+      "company": "NITGETF-MAY",
+      "turnover": "0",
+      "prev_rate": "35.96",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "36.79",
+      "change": "0.83"
     },
     {
       "symbol": "NML-APR",
@@ -5735,6 +9046,61 @@
       "change": "7.91"
     },
     {
+      "symbol": "NML-CAPR",
+      "company": "NML-CAPR",
+      "turnover": "0",
+      "prev_rate": "143.66",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "151.65",
+      "change": "7.99"
+    },
+    {
+      "symbol": "NML-CJUN",
+      "company": "NML-CJUN",
+      "turnover": "0",
+      "prev_rate": "147.39",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "155.58",
+      "change": "8.19"
+    },
+    {
+      "symbol": "NML-CMAY",
+      "company": "NML-CMAY",
+      "turnover": "0",
+      "prev_rate": "145.73",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "153.83",
+      "change": "8.1"
+    },
+    {
+      "symbol": "NML-JUN",
+      "company": "NML-JUN",
+      "turnover": "0",
+      "prev_rate": "147.39",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "155.58",
+      "change": "8.19"
+    },
+    {
+      "symbol": "NML-MAY",
+      "company": "NML-MAY",
+      "turnover": "0",
+      "prev_rate": "145.73",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "153.83",
+      "change": "8.1"
+    },
+    {
       "symbol": "NPL-APR",
       "company": "NPL-APR",
       "turnover": "8472",
@@ -5743,6 +9109,61 @@
       "high": "76.14",
       "low": "73.82",
       "last_rate": "75.53",
+      "change": "4.3"
+    },
+    {
+      "symbol": "NPL-CAPR",
+      "company": "NPL-CAPR",
+      "turnover": "0",
+      "prev_rate": "71.27",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "75.51",
+      "change": "4.24"
+    },
+    {
+      "symbol": "NPL-CJUN",
+      "company": "NPL-CJUN",
+      "turnover": "0",
+      "prev_rate": "73.12",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "77.47",
+      "change": "4.35"
+    },
+    {
+      "symbol": "NPL-CMAY",
+      "company": "NPL-CMAY",
+      "turnover": "0",
+      "prev_rate": "72.3",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "76.6",
+      "change": "4.3"
+    },
+    {
+      "symbol": "NPL-JUN",
+      "company": "NPL-JUN",
+      "turnover": "0",
+      "prev_rate": "73.12",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "77.47",
+      "change": "4.35"
+    },
+    {
+      "symbol": "NPL-MAY",
+      "company": "NPL-MAY",
+      "turnover": "0",
+      "prev_rate": "72.3",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "76.6",
       "change": "4.3"
     },
     {
@@ -5757,6 +9178,28 @@
       "change": "3.49"
     },
     {
+      "symbol": "NRL-JUN",
+      "company": "NRL-JUN",
+      "turnover": "0",
+      "prev_rate": "349.53",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "353",
+      "change": "3.47"
+    },
+    {
+      "symbol": "NRL-MAY",
+      "company": "NRL-MAY",
+      "turnover": "0",
+      "prev_rate": "345.6",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "349.03",
+      "change": "3.43"
+    },
+    {
       "symbol": "OGDC-APRB",
       "company": "OGDC-APRB",
       "turnover": "2760",
@@ -5768,6 +9211,61 @@
       "change": "6.23"
     },
     {
+      "symbol": "OGDC-CAPRN1",
+      "company": "OGDC-CAPRN1",
+      "turnover": "0",
+      "prev_rate": "294.82",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "300.87",
+      "change": "6.05"
+    },
+    {
+      "symbol": "OGDC-CJUN",
+      "company": "OGDC-CJUN",
+      "turnover": "0",
+      "prev_rate": "302.47",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "308.68",
+      "change": "6.21"
+    },
+    {
+      "symbol": "OGDC-CMAYN1",
+      "company": "OGDC-CMAYN1",
+      "turnover": "0",
+      "prev_rate": "299.07",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "305.21",
+      "change": "6.14"
+    },
+    {
+      "symbol": "OGDC-JUN",
+      "company": "OGDC-JUN",
+      "turnover": "0",
+      "prev_rate": "302.47",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "308.68",
+      "change": "6.21"
+    },
+    {
+      "symbol": "OGDC-MAY",
+      "company": "OGDC-MAY",
+      "turnover": "0",
+      "prev_rate": "299.07",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "305.21",
+      "change": "6.14"
+    },
+    {
       "symbol": "PACE-APR",
       "company": "PACE-APR",
       "turnover": "8359",
@@ -5777,6 +9275,50 @@
       "low": "10.41",
       "last_rate": "10.8",
       "change": "0.54"
+    },
+    {
+      "symbol": "PACE-CAPR",
+      "company": "PACE-CAPR",
+      "turnover": "0",
+      "prev_rate": "10.28",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "10.81",
+      "change": "0.53"
+    },
+    {
+      "symbol": "PACE-CJUN",
+      "company": "PACE-CJUN",
+      "turnover": "0",
+      "prev_rate": "10.54",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "11.1",
+      "change": "0.56"
+    },
+    {
+      "symbol": "PACE-CMAY",
+      "company": "PACE-CMAY",
+      "turnover": "0",
+      "prev_rate": "10.42",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "10.97",
+      "change": "0.55"
+    },
+    {
+      "symbol": "PACE-JUN",
+      "company": "PACE-JUN",
+      "turnover": "0",
+      "prev_rate": "10.54",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "11.1",
+      "change": "0.56"
     },
     {
       "symbol": "PACE-MAY",
@@ -5801,6 +9343,61 @@
       "change": "2.03"
     },
     {
+      "symbol": "PAEL-CAPR",
+      "company": "PAEL-CAPR",
+      "turnover": "0",
+      "prev_rate": "37.47",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "39.56",
+      "change": "2.09"
+    },
+    {
+      "symbol": "PAEL-CJUN",
+      "company": "PAEL-CJUN",
+      "turnover": "0",
+      "prev_rate": "38.44",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "40.59",
+      "change": "2.15"
+    },
+    {
+      "symbol": "PAEL-CMAY",
+      "company": "PAEL-CMAY",
+      "turnover": "0",
+      "prev_rate": "38.01",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "40.13",
+      "change": "2.12"
+    },
+    {
+      "symbol": "PAEL-JUN",
+      "company": "PAEL-JUN",
+      "turnover": "0",
+      "prev_rate": "38.44",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "40.59",
+      "change": "2.15"
+    },
+    {
+      "symbol": "PAEL-MAY",
+      "company": "PAEL-MAY",
+      "turnover": "0",
+      "prev_rate": "38",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "40.13",
+      "change": "2.13"
+    },
+    {
       "symbol": "PIAHCLA-APR",
       "company": "PIAHCLA-APR",
       "turnover": "1918",
@@ -5810,6 +9407,17 @@
       "low": "20.15",
       "last_rate": "20.37",
       "change": "0.59"
+    },
+    {
+      "symbol": "PIAHCLA-JUN",
+      "company": "PIAHCLA-JUN",
+      "turnover": "0",
+      "prev_rate": "20.31",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "20.89",
+      "change": "0.58"
     },
     {
       "symbol": "PIAHCLA-MAY",
@@ -5834,6 +9442,61 @@
       "change": "1.13"
     },
     {
+      "symbol": "PIBTL-CAPR",
+      "company": "PIBTL-CAPR",
+      "turnover": "0",
+      "prev_rate": "15.42",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "16.56",
+      "change": "1.14"
+    },
+    {
+      "symbol": "PIBTL-CJUN",
+      "company": "PIBTL-CJUN",
+      "turnover": "0",
+      "prev_rate": "15.82",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "16.99",
+      "change": "1.17"
+    },
+    {
+      "symbol": "PIBTL-CMAY",
+      "company": "PIBTL-CMAY",
+      "turnover": "0",
+      "prev_rate": "15.64",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "16.8",
+      "change": "1.16"
+    },
+    {
+      "symbol": "PIBTL-JUN",
+      "company": "PIBTL-JUN",
+      "turnover": "0",
+      "prev_rate": "15.82",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "16.99",
+      "change": "1.17"
+    },
+    {
+      "symbol": "PIBTL-MAY",
+      "company": "PIBTL-MAY",
+      "turnover": "0",
+      "prev_rate": "15.64",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "16.8",
+      "change": "1.16"
+    },
+    {
       "symbol": "PIOC-APR",
       "company": "PIOC-APR",
       "turnover": "42",
@@ -5843,6 +9506,127 @@
       "low": "248",
       "last_rate": "251.8",
       "change": "11.8"
+    },
+    {
+      "symbol": "PIOC-CAPR",
+      "company": "PIOC-CAPR",
+      "turnover": "0",
+      "prev_rate": "241.28",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "253.5",
+      "change": "12.22"
+    },
+    {
+      "symbol": "PIOC-CJUN",
+      "company": "PIOC-CJUN",
+      "turnover": "0",
+      "prev_rate": "247.55",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "260.08",
+      "change": "12.53"
+    },
+    {
+      "symbol": "PIOC-CMAY",
+      "company": "PIOC-CMAY",
+      "turnover": "0",
+      "prev_rate": "244.76",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "257.15",
+      "change": "12.39"
+    },
+    {
+      "symbol": "PIOC-JUN",
+      "company": "PIOC-JUN",
+      "turnover": "0",
+      "prev_rate": "247.55",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "260.08",
+      "change": "12.53"
+    },
+    {
+      "symbol": "PIOC-MAY",
+      "company": "PIOC-MAY",
+      "turnover": "0",
+      "prev_rate": "244.76",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "257.15",
+      "change": "12.39"
+    },
+    {
+      "symbol": "POL-APRB",
+      "company": "POL-APRB",
+      "turnover": "0",
+      "prev_rate": "638",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "654.09",
+      "change": "16.09"
+    },
+    {
+      "symbol": "POL-CAPRN1",
+      "company": "POL-CAPRN1",
+      "turnover": "0",
+      "prev_rate": "648.68",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "654.09",
+      "change": "5.41"
+    },
+    {
+      "symbol": "POL-CJUN",
+      "company": "POL-CJUN",
+      "turnover": "0",
+      "prev_rate": "665.52",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "671.08",
+      "change": "5.56"
+    },
+    {
+      "symbol": "POL-CMAYN1",
+      "company": "POL-CMAYN1",
+      "turnover": "0",
+      "prev_rate": "658.04",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "663.52",
+      "change": "5.48"
+    },
+    {
+      "symbol": "POL-JUN",
+      "company": "POL-JUN",
+      "turnover": "0",
+      "prev_rate": "665.52",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "671.08",
+      "change": "5.56"
+    },
+    {
+      "symbol": "POL-MAY",
+      "company": "POL-MAY",
+      "turnover": "0",
+      "prev_rate": "658.04",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "663.52",
+      "change": "5.48"
     },
     {
       "symbol": "POWER-APR",
@@ -5856,6 +9640,61 @@
       "change": "0.66"
     },
     {
+      "symbol": "POWER-CAPR",
+      "company": "POWER-CAPR",
+      "turnover": "0",
+      "prev_rate": "18.61",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "19.31",
+      "change": "0.7"
+    },
+    {
+      "symbol": "POWER-CJUN",
+      "company": "POWER-CJUN",
+      "turnover": "0",
+      "prev_rate": "19.1",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "19.81",
+      "change": "0.71"
+    },
+    {
+      "symbol": "POWER-CMAY",
+      "company": "POWER-CMAY",
+      "turnover": "0",
+      "prev_rate": "18.88",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "19.59",
+      "change": "0.71"
+    },
+    {
+      "symbol": "POWER-JUN",
+      "company": "POWER-JUN",
+      "turnover": "0",
+      "prev_rate": "19.1",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "19.81",
+      "change": "0.71"
+    },
+    {
+      "symbol": "POWER-MAY",
+      "company": "POWER-MAY",
+      "turnover": "0",
+      "prev_rate": "18.88",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "19.59",
+      "change": "0.71"
+    },
+    {
       "symbol": "PPL-APRB",
       "company": "PPL-APRB",
       "turnover": "2320",
@@ -5867,6 +9706,61 @@
       "change": "4.03"
     },
     {
+      "symbol": "PPL-CAPRN1",
+      "company": "PPL-CAPRN1",
+      "turnover": "0",
+      "prev_rate": "215.45",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "219.61",
+      "change": "4.16"
+    },
+    {
+      "symbol": "PPL-CJUN",
+      "company": "PPL-CJUN",
+      "turnover": "0",
+      "prev_rate": "221.04",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "225.31",
+      "change": "4.27"
+    },
+    {
+      "symbol": "PPL-CMAY",
+      "company": "PPL-CMAY",
+      "turnover": "0",
+      "prev_rate": "218.55",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "222.77",
+      "change": "4.22"
+    },
+    {
+      "symbol": "PPL-JUN",
+      "company": "PPL-JUN",
+      "turnover": "0",
+      "prev_rate": "221.04",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "225.31",
+      "change": "4.27"
+    },
+    {
+      "symbol": "PPL-MAY",
+      "company": "PPL-MAY",
+      "turnover": "0",
+      "prev_rate": "221",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "222.77",
+      "change": "1.77"
+    },
+    {
       "symbol": "PREMA-APR",
       "company": "PREMA-APR",
       "turnover": "1334",
@@ -5876,6 +9770,50 @@
       "low": "26.6",
       "last_rate": "28.84",
       "change": "2.62"
+    },
+    {
+      "symbol": "PREMA-CAPR",
+      "company": "PREMA-CAPR",
+      "turnover": "0",
+      "prev_rate": "26.23",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "28.84",
+      "change": "2.61"
+    },
+    {
+      "symbol": "PREMA-CJUN",
+      "company": "PREMA-CJUN",
+      "turnover": "0",
+      "prev_rate": "26.91",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "29.59",
+      "change": "2.68"
+    },
+    {
+      "symbol": "PREMA-CMAY",
+      "company": "PREMA-CMAY",
+      "turnover": "0",
+      "prev_rate": "26.61",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "29.26",
+      "change": "2.65"
+    },
+    {
+      "symbol": "PREMA-JUN",
+      "company": "PREMA-JUN",
+      "turnover": "0",
+      "prev_rate": "26.91",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "29.59",
+      "change": "2.68"
     },
     {
       "symbol": "PREMA-MAY",
@@ -5900,6 +9838,61 @@
       "change": "0.99"
     },
     {
+      "symbol": "PRL-CAPR",
+      "company": "PRL-CAPR",
+      "turnover": "0",
+      "prev_rate": "34.16",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "35.18",
+      "change": "1.02"
+    },
+    {
+      "symbol": "PRL-CJUN",
+      "company": "PRL-CJUN",
+      "turnover": "0",
+      "prev_rate": "35.05",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "36.09",
+      "change": "1.04"
+    },
+    {
+      "symbol": "PRL-CMAY",
+      "company": "PRL-CMAY",
+      "turnover": "0",
+      "prev_rate": "34.66",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "35.68",
+      "change": "1.02"
+    },
+    {
+      "symbol": "PRL-JUN",
+      "company": "PRL-JUN",
+      "turnover": "0",
+      "prev_rate": "35.05",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "36.09",
+      "change": "1.04"
+    },
+    {
+      "symbol": "PRL-MAY",
+      "company": "PRL-MAY",
+      "turnover": "0",
+      "prev_rate": "34.66",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "35.68",
+      "change": "1.02"
+    },
+    {
       "symbol": "PSO-APR",
       "company": "PSO-APR",
       "turnover": "1574",
@@ -5909,6 +9902,61 @@
       "low": "356.02",
       "last_rate": "363.46",
       "change": "12.37"
+    },
+    {
+      "symbol": "PSO-CAPR",
+      "company": "PSO-CAPR",
+      "turnover": "0",
+      "prev_rate": "351.72",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "363.72",
+      "change": "12"
+    },
+    {
+      "symbol": "PSO-CJUN",
+      "company": "PSO-CJUN",
+      "turnover": "0",
+      "prev_rate": "360.86",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "373.17",
+      "change": "12.31"
+    },
+    {
+      "symbol": "PSO-CMAY",
+      "company": "PSO-CMAY",
+      "turnover": "0",
+      "prev_rate": "356.8",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "368.97",
+      "change": "12.17"
+    },
+    {
+      "symbol": "PSO-JUN",
+      "company": "PSO-JUN",
+      "turnover": "0",
+      "prev_rate": "360.86",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "373.17",
+      "change": "12.31"
+    },
+    {
+      "symbol": "PSO-MAY",
+      "company": "PSO-MAY",
+      "turnover": "0",
+      "prev_rate": "356.8",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "368.97",
+      "change": "12.17"
     },
     {
       "symbol": "PTC-APR",
@@ -5933,6 +9981,50 @@
       "change": "2.37"
     },
     {
+      "symbol": "PTC-CJUN",
+      "company": "PTC-CJUN",
+      "turnover": "0",
+      "prev_rate": "53.81",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "56.24",
+      "change": "2.43"
+    },
+    {
+      "symbol": "PTC-CMAY",
+      "company": "PTC-CMAY",
+      "turnover": "0",
+      "prev_rate": "53.2",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "55.61",
+      "change": "2.41"
+    },
+    {
+      "symbol": "PTC-JUN",
+      "company": "PTC-JUN",
+      "turnover": "0",
+      "prev_rate": "53.81",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "56.24",
+      "change": "2.43"
+    },
+    {
+      "symbol": "PTC-MAY",
+      "company": "PTC-MAY",
+      "turnover": "0",
+      "prev_rate": "53",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "55.61",
+      "change": "2.61"
+    },
+    {
       "symbol": "SAZEW-APR",
       "company": "SAZEW-APR",
       "turnover": "577",
@@ -5942,6 +10034,50 @@
       "low": "1930",
       "last_rate": "2020.87",
       "change": "147.76"
+    },
+    {
+      "symbol": "SAZEW-CAPRN1",
+      "company": "SAZEW-CAPRN1",
+      "turnover": "0",
+      "prev_rate": "1876.84",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "2024.6",
+      "change": "147.76"
+    },
+    {
+      "symbol": "SAZEW-CJUN",
+      "company": "SAZEW-CJUN",
+      "turnover": "0",
+      "prev_rate": "1925.56",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "2077.18",
+      "change": "151.62"
+    },
+    {
+      "symbol": "SAZEW-CMAY",
+      "company": "SAZEW-CMAY",
+      "turnover": "0",
+      "prev_rate": "1903.91",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "2053.81",
+      "change": "149.9"
+    },
+    {
+      "symbol": "SAZEW-JUN",
+      "company": "SAZEW-JUN",
+      "turnover": "0",
+      "prev_rate": "1900",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "2077.18",
+      "change": "177.18"
     },
     {
       "symbol": "SAZEW-MAY",
@@ -5966,6 +10102,50 @@
       "change": "4.27"
     },
     {
+      "symbol": "SEARL-CAPR",
+      "company": "SEARL-CAPR",
+      "turnover": "0",
+      "prev_rate": "90.09",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "94.14",
+      "change": "4.05"
+    },
+    {
+      "symbol": "SEARL-CJUN",
+      "company": "SEARL-CJUN",
+      "turnover": "0",
+      "prev_rate": "92.43",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "96.58",
+      "change": "4.15"
+    },
+    {
+      "symbol": "SEARL-CMAY",
+      "company": "SEARL-CMAY",
+      "turnover": "0",
+      "prev_rate": "91.39",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "95.5",
+      "change": "4.11"
+    },
+    {
+      "symbol": "SEARL-JUN",
+      "company": "SEARL-JUN",
+      "turnover": "0",
+      "prev_rate": "92.43",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "96.58",
+      "change": "4.15"
+    },
+    {
       "symbol": "SEARL-MAY",
       "company": "SEARL-MAY",
       "turnover": "2",
@@ -5988,6 +10168,61 @@
       "change": "0.71"
     },
     {
+      "symbol": "SLGL-CAPR",
+      "company": "SLGL-CAPR",
+      "turnover": "0",
+      "prev_rate": "15.29",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "16.12",
+      "change": "0.83"
+    },
+    {
+      "symbol": "SLGL-CJUN",
+      "company": "SLGL-CJUN",
+      "turnover": "0",
+      "prev_rate": "15.69",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "16.54",
+      "change": "0.85"
+    },
+    {
+      "symbol": "SLGL-CMAY",
+      "company": "SLGL-CMAY",
+      "turnover": "0",
+      "prev_rate": "15.51",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "16.35",
+      "change": "0.84"
+    },
+    {
+      "symbol": "SLGL-JUN",
+      "company": "SLGL-JUN",
+      "turnover": "0",
+      "prev_rate": "15.69",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "16.54",
+      "change": "0.85"
+    },
+    {
+      "symbol": "SLGL-MAY",
+      "company": "SLGL-MAY",
+      "turnover": "0",
+      "prev_rate": "15.51",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "16.35",
+      "change": "0.84"
+    },
+    {
       "symbol": "SNBL-APRB",
       "company": "SNBL-APRB",
       "turnover": "29",
@@ -5997,6 +10232,28 @@
       "low": "18.46",
       "last_rate": "19.44",
       "change": "0.24"
+    },
+    {
+      "symbol": "SNBL-JUN",
+      "company": "SNBL-JUN",
+      "turnover": "0",
+      "prev_rate": "19.59",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "19.99",
+      "change": "0.4"
+    },
+    {
+      "symbol": "SNBL-MAY",
+      "company": "SNBL-MAY",
+      "turnover": "0",
+      "prev_rate": "19.37",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "19.76",
+      "change": "0.39"
     },
     {
       "symbol": "SNGP-APR",
@@ -6010,6 +10267,61 @@
       "change": "2.54"
     },
     {
+      "symbol": "SNGP-JUN",
+      "company": "SNGP-JUN",
+      "turnover": "0",
+      "prev_rate": "102.06",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "104.76",
+      "change": "2.7"
+    },
+    {
+      "symbol": "SNGP-MAY",
+      "company": "SNGP-MAY",
+      "turnover": "0",
+      "prev_rate": "100.92",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "103.58",
+      "change": "2.66"
+    },
+    {
+      "symbol": "SPEL-CAPR",
+      "company": "SPEL-CAPR",
+      "turnover": "0",
+      "prev_rate": "41.52",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "43.92",
+      "change": "2.4"
+    },
+    {
+      "symbol": "SPEL-CJUN",
+      "company": "SPEL-CJUN",
+      "turnover": "0",
+      "prev_rate": "42.6",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "45.06",
+      "change": "2.46"
+    },
+    {
+      "symbol": "SPEL-CMAY",
+      "company": "SPEL-CMAY",
+      "turnover": "0",
+      "prev_rate": "42.12",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "44.55",
+      "change": "2.43"
+    },
+    {
       "symbol": "SSGC-APR",
       "company": "SSGC-APR",
       "turnover": "20350",
@@ -6019,6 +10331,28 @@
       "low": "25.91",
       "last_rate": "26.05",
       "change": "0.81"
+    },
+    {
+      "symbol": "SSGC-JUN",
+      "company": "SSGC-JUN",
+      "turnover": "0",
+      "prev_rate": "25.92",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "26.73",
+      "change": "0.81"
+    },
+    {
+      "symbol": "SSGC-MAY",
+      "company": "SSGC-MAY",
+      "turnover": "0",
+      "prev_rate": "23.26",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "26.43",
+      "change": "3.17"
     },
     {
       "symbol": "SYM-APR",
@@ -6032,6 +10366,28 @@
       "change": "0.34"
     },
     {
+      "symbol": "SYM-JUN",
+      "company": "SYM-JUN",
+      "turnover": "0",
+      "prev_rate": "10.83",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "11.21",
+      "change": "0.38"
+    },
+    {
+      "symbol": "SYM-MAY",
+      "company": "SYM-MAY",
+      "turnover": "0",
+      "prev_rate": "10.71",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "11.08",
+      "change": "0.37"
+    },
+    {
       "symbol": "SYS-APR",
       "company": "SYS-APR",
       "turnover": "331",
@@ -6043,6 +10399,61 @@
       "change": "3.48"
     },
     {
+      "symbol": "SYS-JUN",
+      "company": "SYS-JUN",
+      "turnover": "0",
+      "prev_rate": "153.36",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "156.7",
+      "change": "3.34"
+    },
+    {
+      "symbol": "SYS-MAY",
+      "company": "SYS-MAY",
+      "turnover": "0",
+      "prev_rate": "151.63",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "154.93",
+      "change": "3.3"
+    },
+    {
+      "symbol": "TBL-CAPR",
+      "company": "TBL-CAPR",
+      "turnover": "0",
+      "prev_rate": "9.48",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "9.68",
+      "change": "0.2"
+    },
+    {
+      "symbol": "TBL-CJUN",
+      "company": "TBL-CJUN",
+      "turnover": "0",
+      "prev_rate": "9.73",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "9.93",
+      "change": "0.2"
+    },
+    {
+      "symbol": "TBL-CMAY",
+      "company": "TBL-CMAY",
+      "turnover": "0",
+      "prev_rate": "9.62",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "9.82",
+      "change": "0.2"
+    },
+    {
       "symbol": "TELE-APR",
       "company": "TELE-APR",
       "turnover": "12221",
@@ -6051,6 +10462,61 @@
       "high": "8.55",
       "low": "8.03",
       "last_rate": "8.31",
+      "change": "0.41"
+    },
+    {
+      "symbol": "TELE-CAPR",
+      "company": "TELE-CAPR",
+      "turnover": "0",
+      "prev_rate": "7.93",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "8.33",
+      "change": "0.4"
+    },
+    {
+      "symbol": "TELE-CJUN",
+      "company": "TELE-CJUN",
+      "turnover": "0",
+      "prev_rate": "8.13",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "8.55",
+      "change": "0.42"
+    },
+    {
+      "symbol": "TELE-CMAY",
+      "company": "TELE-CMAY",
+      "turnover": "0",
+      "prev_rate": "8.04",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "8.45",
+      "change": "0.41"
+    },
+    {
+      "symbol": "TELE-JUN",
+      "company": "TELE-JUN",
+      "turnover": "0",
+      "prev_rate": "8.13",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "8.55",
+      "change": "0.42"
+    },
+    {
+      "symbol": "TELE-MAY",
+      "company": "TELE-MAY",
+      "turnover": "0",
+      "prev_rate": "8.04",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "8.45",
       "change": "0.41"
     },
     {
@@ -6065,6 +10531,28 @@
       "change": "12.11"
     },
     {
+      "symbol": "TGL-JUN",
+      "company": "TGL-JUN",
+      "turnover": "0",
+      "prev_rate": "171.33",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "182.77",
+      "change": "11.44"
+    },
+    {
+      "symbol": "TGL-MAY",
+      "company": "TGL-MAY",
+      "turnover": "0",
+      "prev_rate": "169.41",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "180.71",
+      "change": "11.3"
+    },
+    {
       "symbol": "THCCL-APR",
       "company": "THCCL-APR",
       "turnover": "2543",
@@ -6074,6 +10562,61 @@
       "low": "57.6",
       "last_rate": "58.15",
       "change": "1.58"
+    },
+    {
+      "symbol": "THCCL-CAPR",
+      "company": "THCCL-CAPR",
+      "turnover": "0",
+      "prev_rate": "56.37",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "58.22",
+      "change": "1.85"
+    },
+    {
+      "symbol": "THCCL-CJUN",
+      "company": "THCCL-CJUN",
+      "turnover": "0",
+      "prev_rate": "57.83",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "59.73",
+      "change": "1.9"
+    },
+    {
+      "symbol": "THCCL-CMAY",
+      "company": "THCCL-CMAY",
+      "turnover": "0",
+      "prev_rate": "57.18",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "59.06",
+      "change": "1.88"
+    },
+    {
+      "symbol": "THCCL-JUN",
+      "company": "THCCL-JUN",
+      "turnover": "0",
+      "prev_rate": "57.83",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "59.73",
+      "change": "1.9"
+    },
+    {
+      "symbol": "THCCL-MAY",
+      "company": "THCCL-MAY",
+      "turnover": "0",
+      "prev_rate": "57.18",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "59.06",
+      "change": "1.88"
     },
     {
       "symbol": "TOMCL-APR",
@@ -6087,6 +10630,61 @@
       "change": "3.28"
     },
     {
+      "symbol": "TOMCL-CAPR",
+      "company": "TOMCL-CAPR",
+      "turnover": "0",
+      "prev_rate": "34.29",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "37.49",
+      "change": "3.2"
+    },
+    {
+      "symbol": "TOMCL-CJUN",
+      "company": "TOMCL-CJUN",
+      "turnover": "0",
+      "prev_rate": "35.18",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "38.47",
+      "change": "3.29"
+    },
+    {
+      "symbol": "TOMCL-CMAY",
+      "company": "TOMCL-CMAY",
+      "turnover": "0",
+      "prev_rate": "34.78",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "38.04",
+      "change": "3.26"
+    },
+    {
+      "symbol": "TOMCL-JUN",
+      "company": "TOMCL-JUN",
+      "turnover": "0",
+      "prev_rate": "35.18",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "38.47",
+      "change": "3.29"
+    },
+    {
+      "symbol": "TOMCL-MAY",
+      "company": "TOMCL-MAY",
+      "turnover": "0",
+      "prev_rate": "34.78",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "38.04",
+      "change": "3.26"
+    },
+    {
       "symbol": "TPLP-APR",
       "company": "TPLP-APR",
       "turnover": "5736",
@@ -6096,6 +10694,61 @@
       "low": "7",
       "last_rate": "7.33",
       "change": "0.44"
+    },
+    {
+      "symbol": "TPLP-CAPR",
+      "company": "TPLP-CAPR",
+      "turnover": "0",
+      "prev_rate": "6.9",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "7.36",
+      "change": "0.46"
+    },
+    {
+      "symbol": "TPLP-CJUN",
+      "company": "TPLP-CJUN",
+      "turnover": "0",
+      "prev_rate": "7.08",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "7.55",
+      "change": "0.47"
+    },
+    {
+      "symbol": "TPLP-CMAY",
+      "company": "TPLP-CMAY",
+      "turnover": "0",
+      "prev_rate": "7",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "7.47",
+      "change": "0.47"
+    },
+    {
+      "symbol": "TPLP-JUN",
+      "company": "TPLP-JUN",
+      "turnover": "0",
+      "prev_rate": "7.08",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "7.55",
+      "change": "0.47"
+    },
+    {
+      "symbol": "TPLP-MAY",
+      "company": "TPLP-MAY",
+      "turnover": "0",
+      "prev_rate": "7",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "7.47",
+      "change": "0.47"
     },
     {
       "symbol": "TREET-APR",
@@ -6109,6 +10762,61 @@
       "change": "1.32"
     },
     {
+      "symbol": "TREET-CAPR",
+      "company": "TREET-CAPR",
+      "turnover": "0",
+      "prev_rate": "23.21",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "24.56",
+      "change": "1.35"
+    },
+    {
+      "symbol": "TREET-CJUN",
+      "company": "TREET-CJUN",
+      "turnover": "0",
+      "prev_rate": "23.81",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "25.2",
+      "change": "1.39"
+    },
+    {
+      "symbol": "TREET-CMAY",
+      "company": "TREET-CMAY",
+      "turnover": "0",
+      "prev_rate": "23.54",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "24.92",
+      "change": "1.38"
+    },
+    {
+      "symbol": "TREET-JUN",
+      "company": "TREET-JUN",
+      "turnover": "0",
+      "prev_rate": "23.81",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "25.2",
+      "change": "1.39"
+    },
+    {
+      "symbol": "TREET-MAY",
+      "company": "TREET-MAY",
+      "turnover": "0",
+      "prev_rate": "23.54",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "24.92",
+      "change": "1.38"
+    },
+    {
       "symbol": "TRG-APR",
       "company": "TRG-APR",
       "turnover": "4453",
@@ -6118,6 +10826,61 @@
       "low": "56.51",
       "last_rate": "57.81",
       "change": "2.02"
+    },
+    {
+      "symbol": "TRG-CAPR",
+      "company": "TRG-CAPR",
+      "turnover": "0",
+      "prev_rate": "55.74",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "57.82",
+      "change": "2.08"
+    },
+    {
+      "symbol": "TRG-CJUN",
+      "company": "TRG-CJUN",
+      "turnover": "0",
+      "prev_rate": "57.19",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "59.32",
+      "change": "2.13"
+    },
+    {
+      "symbol": "TRG-CMAY",
+      "company": "TRG-CMAY",
+      "turnover": "0",
+      "prev_rate": "56.55",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "58.65",
+      "change": "2.1"
+    },
+    {
+      "symbol": "TRG-JUN",
+      "company": "TRG-JUN",
+      "turnover": "0",
+      "prev_rate": "57.19",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "59.32",
+      "change": "2.13"
+    },
+    {
+      "symbol": "TRG-MAY",
+      "company": "TRG-MAY",
+      "turnover": "0",
+      "prev_rate": "56.55",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "58.65",
+      "change": "2.1"
     },
     {
       "symbol": "UBL-APRB",
@@ -6131,6 +10894,94 @@
       "change": "13.76"
     },
     {
+      "symbol": "UBL-CAPRN1",
+      "company": "UBL-CAPRN1",
+      "turnover": "0",
+      "prev_rate": "344.29",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "357.4",
+      "change": "13.11"
+    },
+    {
+      "symbol": "UBL-CJUN",
+      "company": "UBL-CJUN",
+      "turnover": "0",
+      "prev_rate": "353.23",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "366.69",
+      "change": "13.46"
+    },
+    {
+      "symbol": "UBL-CMAYN1",
+      "company": "UBL-CMAYN1",
+      "turnover": "0",
+      "prev_rate": "349.26",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "362.56",
+      "change": "13.3"
+    },
+    {
+      "symbol": "UBL-JUN",
+      "company": "UBL-JUN",
+      "turnover": "0",
+      "prev_rate": "353.23",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "366.69",
+      "change": "13.46"
+    },
+    {
+      "symbol": "UBL-MAYB",
+      "company": "UBL-MAYB",
+      "turnover": "0",
+      "prev_rate": "349.26",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "362.56",
+      "change": "13.3"
+    },
+    {
+      "symbol": "UBLPETF-APR",
+      "company": "UBLPETF-APR",
+      "turnover": "0",
+      "prev_rate": "37.96",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "38.88",
+      "change": "0.92"
+    },
+    {
+      "symbol": "UBLPETF-JUN",
+      "company": "UBLPETF-JUN",
+      "turnover": "0",
+      "prev_rate": "38.95",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "39.89",
+      "change": "0.94"
+    },
+    {
+      "symbol": "UBLPETF-MAY",
+      "company": "UBLPETF-MAY",
+      "turnover": "0",
+      "prev_rate": "38.51",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "39.44",
+      "change": "0.93"
+    },
+    {
       "symbol": "UNITY-APR",
       "company": "UNITY-APR",
       "turnover": "2331",
@@ -6140,6 +10991,61 @@
       "low": "8.28",
       "last_rate": "8.37",
       "change": "0.15"
+    },
+    {
+      "symbol": "UNITY-CAPR",
+      "company": "UNITY-CAPR",
+      "turnover": "0",
+      "prev_rate": "8.22",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "8.38",
+      "change": "0.16"
+    },
+    {
+      "symbol": "UNITY-CJUN",
+      "company": "UNITY-CJUN",
+      "turnover": "0",
+      "prev_rate": "8.43",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "8.6",
+      "change": "0.17"
+    },
+    {
+      "symbol": "UNITY-CMAY",
+      "company": "UNITY-CMAY",
+      "turnover": "0",
+      "prev_rate": "8.34",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "8.51",
+      "change": "0.17"
+    },
+    {
+      "symbol": "UNITY-JUN",
+      "company": "UNITY-JUN",
+      "turnover": "0",
+      "prev_rate": "8.43",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "8.6",
+      "change": "0.17"
+    },
+    {
+      "symbol": "UNITY-MAY",
+      "company": "UNITY-MAY",
+      "turnover": "0",
+      "prev_rate": "8.34",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "8.51",
+      "change": "0.17"
     },
     {
       "symbol": "WAVESAPP-APR",
@@ -6164,6 +11070,50 @@
       "change": "0.43"
     },
     {
+      "symbol": "WAVES-CAPR",
+      "company": "WAVES-CAPR",
+      "turnover": "0",
+      "prev_rate": "9.72",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "10.13",
+      "change": "0.41"
+    },
+    {
+      "symbol": "WAVES-CJUN",
+      "company": "WAVES-CJUN",
+      "turnover": "0",
+      "prev_rate": "9.98",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "10.39",
+      "change": "0.41"
+    },
+    {
+      "symbol": "WAVES-CMAY",
+      "company": "WAVES-CMAY",
+      "turnover": "0",
+      "prev_rate": "9.86",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "10.28",
+      "change": "0.42"
+    },
+    {
+      "symbol": "WAVES-JUN",
+      "company": "WAVES-JUN",
+      "turnover": "0",
+      "prev_rate": "9.98",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "10.39",
+      "change": "0.41"
+    },
+    {
       "symbol": "WAVES-MAY",
       "company": "WAVES-MAY",
       "turnover": "7322",
@@ -6184,6 +11134,61 @@
       "low": "1.51",
       "last_rate": "1.54",
       "change": "0.06"
+    },
+    {
+      "symbol": "WTL-JUN",
+      "company": "WTL-JUN",
+      "turnover": "0",
+      "prev_rate": "1.52",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "1.59",
+      "change": "0.07"
+    },
+    {
+      "symbol": "WTL-MAY",
+      "company": "WTL-MAY",
+      "turnover": "0",
+      "prev_rate": "1.52",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "1.57",
+      "change": "0.05"
+    },
+    {
+      "symbol": "ZAL-CAPR",
+      "company": "ZAL-CAPR",
+      "turnover": "0",
+      "prev_rate": "43.3",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "45.52",
+      "change": "2.22"
+    },
+    {
+      "symbol": "ZAL-CJUN",
+      "company": "ZAL-CJUN",
+      "turnover": "0",
+      "prev_rate": "44.42",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "46.7",
+      "change": "2.28"
+    },
+    {
+      "symbol": "ZAL-CMAY",
+      "company": "ZAL-CMAY",
+      "turnover": "0",
+      "prev_rate": "43.92",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "46.17",
+      "change": "2.25"
     },
     {
       "symbol": "KELSC5",
@@ -6316,6 +11321,105 @@
       "low": "97.6",
       "last_rate": "97.6",
       "change": "-0.3"
+    },
+    {
+      "symbol": "BKTI-APR",
+      "company": "BKTI-APR",
+      "turnover": "0",
+      "prev_rate": "44340",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "45583",
+      "change": "1243"
+    },
+    {
+      "symbol": "BKTI-JUN",
+      "company": "BKTI-JUN",
+      "turnover": "0",
+      "prev_rate": "45187",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "46454",
+      "change": "1267"
+    },
+    {
+      "symbol": "BKTI-MAY",
+      "company": "BKTI-MAY",
+      "turnover": "0",
+      "prev_rate": "44810",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "46067",
+      "change": "1257"
+    },
+    {
+      "symbol": "KSE30-APR",
+      "company": "KSE30-APR",
+      "turnover": "0",
+      "prev_rate": "48626",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "50139",
+      "change": "1513"
+    },
+    {
+      "symbol": "KSE30-JUN",
+      "company": "KSE30-JUN",
+      "turnover": "0",
+      "prev_rate": "49556",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "51098",
+      "change": "1542"
+    },
+    {
+      "symbol": "KSE30-MAY",
+      "company": "KSE30-MAY",
+      "turnover": "0",
+      "prev_rate": "49143",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "50672",
+      "change": "1529"
+    },
+    {
+      "symbol": "OGTI-APR",
+      "company": "OGTI-APR",
+      "turnover": "0",
+      "prev_rate": "33439",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "34067",
+      "change": "628"
+    },
+    {
+      "symbol": "OGTI-JUN",
+      "company": "OGTI-JUN",
+      "turnover": "0",
+      "prev_rate": "34078",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "34719",
+      "change": "641"
+    },
+    {
+      "symbol": "OGTI-MAY",
+      "company": "OGTI-MAY",
+      "turnover": "0",
+      "prev_rate": "33794",
+      "open": "-",
+      "high": "0",
+      "low": "0",
+      "last_rate": "34429",
+      "change": "635"
     },
     {
       "symbol": "DFML",
@@ -6714,5 +11818,5 @@
       "change": "0.13"
     }
   ],
-  "last_updated_utc": "2026-04-16T13:27:58+00:00"
+  "last_updated_utc": "2026-04-16T15:03:03+00:00"
 }
