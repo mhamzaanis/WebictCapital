@@ -5,12 +5,13 @@ permissions:
 
 on:
   schedule:
-    - cron: '0 */3 * * *'  # Runs at the start of every 3rd hour (00:00, 03:00, etc.)
+    - cron: '*/5 * * * *'  # TEMP TEST: every 5 minutes
     # - cron: '7 13 * * 1-5'  # Production: 18:07 PKT Mon-Fri
-    push:
-    branches:
-      - main
   workflow_dispatch:
+
+concurrency:
+  group: psx-data-update
+  cancel-in-progress: true
 
 jobs:
   update:
