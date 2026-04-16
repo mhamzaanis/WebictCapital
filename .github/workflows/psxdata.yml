@@ -1,0 +1,33 @@
+name: Daily PSX Data Update
+
+on:
+  schedule:
+    - cron: '0 13 * * 1-5'   # 6 PM PKT = 13:00 UTC (Mon-Fri)
+  workflow_dispatch:         # allows manual trigger
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: pip install pdfplumber requests
+      
+      - name: Run parser
+        run: python scripts/parse_psx.py
+      
+      - name: Commit & push new data
+        run: |
+          git config user.name "PSX Bot"
+          git config user.email "bot@github.com"
+          git add data/
+          git commit -m "Daily PSX closing data - $(date +%Y-%m-%d)" || echo "No changes"
+          git push
