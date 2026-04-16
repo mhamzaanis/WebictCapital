@@ -23,27 +23,67 @@ import SearchIcon from '@mui/icons-material/Search'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 import TrendingDownIcon from '@mui/icons-material/TrendingDown'
 import RemoveIcon from '@mui/icons-material/Remove'
-import { useEffect, useMemo, useState, type SyntheticEvent } from 'react'
+import { useEffect, useMemo, useState, type ReactNode, type SyntheticEvent } from 'react'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
 type PsxStock = {
 	symbol: string
 	company: string
-	turnover: string
-	prev_rate: string
-	open: string
-	high: string
-	low: string
-	last_rate: string
-	change: string | null
+	turnover: string | number | null
+	prev_rate: string | number | null
+	open: string | number | null
+	high: string | number | null
+	low: string | number | null
+	last_rate: string | number | null
+	change: string | number | null
 }
 
 type PsxData = {
 	date: string
 	source: string
+	market?: {
+		open_kse100?: number
+		close_kse100?: number
+		curr_volume?: number
+		advances?: number
+		declines?: number
+		unchanged?: number
+		kse100_change?: number
+	}
 	total_stocks: number
 	stocks: PsxStock[]
+}
+
+type RawPsxStock = {
+	symbol: string
+	company: string
+	turnover?: string | number | null
+	prev_rate?: string | number | null
+	open?: string | number | null
+	open_rate?: string | number | null
+	high?: string | number | null
+	highest?: string | number | null
+	low?: string | number | null
+	lowest?: string | number | null
+	last_rate?: string | number | null
+	change?: string | number | null
+	diff?: string | number | null
+}
+
+type RawPsxData = {
+	date: string
+	source: string
+	market?: {
+		open_kse100?: number
+		close_kse100?: number
+		curr_volume?: number
+		advances?: number
+		declines?: number
+		unchanged?: number
+	}
+	total_stocks: number
+	stocks: RawPsxStock[]
 }
 
 type SlotKey = 'day1' | 'day2' | 'day3'
@@ -62,31 +102,56 @@ const SLOTS: SlotKey[] = ['day1', 'day2', 'day3']
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function toNum(val: string | null | undefined): number {
-	if (!val) return NaN
+function toNum(val: string | number | null | undefined): number {
+	if (val === null || val === undefined || val === '') return NaN
+	if (typeof val === 'number') return val
 	return parseFloat(val.replace(/,/g, ''))
 }
 
-function fmtNum(val: string | null | undefined): string {
-	if (!val) return '—'
+function fmtNum(val: string | number | null | undefined): string {
+	if (val === null || val === undefined || val === '') return '—'
 	const n = toNum(val)
-	return isNaN(n) ? val : n.toLocaleString()
+	return isNaN(n) ? String(val) : n.toLocaleString()
 }
 
-function changeVal(change: string | null | undefined): number {
+function changeVal(change: string | number | null | undefined): number {
 	return toNum(change)
 }
 
-function changeColor(change: string | null | undefined): string {
+function changeColor(change: string | number | null | undefined): string {
 	const n = changeVal(change)
 	if (isNaN(n) || n === 0) return '#64748b'
 	return n > 0 ? '#22c55e' : '#ef4444'
 }
 
-function changeSign(change: string | null | undefined): string {
+function changeSign(change: string | number | null | undefined): string {
 	const n = changeVal(change)
 	if (isNaN(n) || n === 0) return ''
 	return n > 0 ? '+' : ''
+}
+
+function normalizeStock(stock: RawPsxStock): PsxStock {
+	return {
+		symbol: stock.symbol,
+		company: stock.company,
+		turnover: stock.turnover ?? null,
+		prev_rate: stock.prev_rate ?? null,
+		open: stock.open ?? stock.open_rate ?? null,
+		high: stock.high ?? stock.highest ?? null,
+		low: stock.low ?? stock.lowest ?? null,
+		last_rate: stock.last_rate ?? null,
+		change: stock.change ?? stock.diff ?? null,
+	}
+}
+
+function normalizeData(data: RawPsxData): PsxData {
+	return {
+		date: data.date,
+		source: data.source,
+		market: data.market,
+		total_stocks: data.total_stocks,
+		stocks: data.stocks.map(normalizeStock),
+	}
 }
 
 function compareCells(a: PsxStock, b: PsxStock, key: SortKey): number {
@@ -158,9 +223,10 @@ export function DataPage() {
 			fetch(`${DATA_BASE}/${slot}.json`, { signal: controller.signal })
 				.then((res) => {
 					if (!res.ok) throw new Error(`HTTP ${res.status}`)
-					return res.json() as Promise<PsxData>
+					return res.json() as Promise<RawPsxData>
 				})
-				.then((data) => {
+				.then((rawData) => {
+					const data = normalizeData(rawData)
 					setSlotData((prev) => ({ ...prev, [slot]: data }))
 					setSlotStatus((prev) => ({ ...prev, [slot]: 'ok' }))
 				})
@@ -242,6 +308,15 @@ export function DataPage() {
 	}, [search, movementFilter, minTurnover, minLastRate, maxLastRate, rowsPerPage, activeTab])
 
 	const stats = useMemo(() => {
+		const market = activeData?.market
+		if (market) {
+			return {
+				gainers: market.advances ?? 0,
+				losers: market.declines ?? 0,
+				unchanged: market.unchanged ?? 0,
+			}
+		}
+
 		const gainers = stocks.filter((s) => changeVal(s.change) > 0).length
 		const losers = stocks.filter((s) => changeVal(s.change) < 0).length
 		const unchanged = stocks.filter((s) => {
@@ -249,9 +324,19 @@ export function DataPage() {
 			return !isNaN(n) && n === 0
 		}).length
 		return { gainers, losers, unchanged }
-	}, [stocks])
+	}, [stocks, activeData])
 
 	const marketSummary = useMemo(() => {
+		const market = activeData?.market
+		if (market) {
+			return {
+				KSE100_Open: market.open_kse100 ?? 0,
+				KSE100_Close: market.close_kse100 ?? 0,
+				Volume_Traded: market.curr_volume ?? 0,
+				KSE100_Change: market.kse100_change ?? (market.close_kse100 ?? 0) - (market.open_kse100 ?? 0),
+			}
+		}
+
 		let totalOpenPoints = 0
 		let totalClosePoints = 0
 		let totalVolume = 0
@@ -266,11 +351,21 @@ export function DataPage() {
 		})
 
 		return {
-			openPoints: totalOpenPoints,
-			closePoints: totalClosePoints,
-			volumeTraded: totalVolume,
+			KSE100_Open: totalOpenPoints,
+			KSE100_Close: totalClosePoints,
+			Volume_Traded: totalVolume,
+			KSE100_Change: totalClosePoints - totalOpenPoints,
 		}
-	}, [stocks])
+	}, [stocks, activeData])
+
+	const kseChangeColor =
+		marketSummary.KSE100_Change > 0
+			? '#22c55e'
+			: marketSummary.KSE100_Change < 0
+				? '#ef4444'
+				: '#64748b'
+
+	const statValueColor = '#0f2a5f'
 
 	const SortCell = ({
 		id,
@@ -425,16 +520,26 @@ export function DataPage() {
 								}}
 							>
 								{[
-									{ label: 'Date', value: activeData.date, mono: true, color: '#94a3b8' },
-									{ label: 'Total Stocks', value: activeData.total_stocks.toLocaleString(), color: '#94a3b8' },
-									{ label: 'Source', value: activeData.source, mono: true, color: '#94a3b8' },
-									{ label: 'Open Points', value: marketSummary.openPoints.toLocaleString(undefined, { maximumFractionDigits: 2 }), color: '#f59e0b' },
-									{ label: 'Close Points', value: marketSummary.closePoints.toLocaleString(undefined, { maximumFractionDigits: 2 }), color: '#1f5fbf' },
-									{ label: 'Volume Traded', value: marketSummary.volumeTraded.toLocaleString(), color: '#7c3aed' },
-									{ label: 'Advancing', value: stats.gainers.toLocaleString(), color: '#22c55e' },
-									{ label: 'Declining', value: stats.losers.toLocaleString(), color: '#ef4444' },
-									{ label: 'Unchanged', value: stats.unchanged.toLocaleString(), color: '#64748b' },
-								].map(({ label, value, mono, color }) => (
+										{ label: 'Date', value: activeData.date, color: statValueColor },
+										{ label: 'KSE 100 Open Points', value: marketSummary.KSE100_Open.toLocaleString(undefined, { maximumFractionDigits: 2 }), color: statValueColor },
+										{ label: 'KSE 100 Close Points', value: marketSummary.KSE100_Close.toLocaleString(undefined, { maximumFractionDigits: 2 }), color: statValueColor },
+										{
+											label: 'KSE 100 Change',
+											value: `${changeSign(marketSummary.KSE100_Change)}${marketSummary.KSE100_Change.toLocaleString(undefined, { maximumFractionDigits: 2 })}`,
+											color: kseChangeColor,
+											icon:
+												marketSummary.KSE100_Change > 0
+													? <TrendingUpIcon sx={{ fontSize: 18, color: kseChangeColor }} />
+													: marketSummary.KSE100_Change < 0
+														? <TrendingDownIcon sx={{ fontSize: 18, color: kseChangeColor }} />
+														: <RemoveIcon sx={{ fontSize: 18, color: kseChangeColor }} />,
+										},
+										{ label: 'Volume Traded', value: marketSummary.Volume_Traded.toLocaleString(), color: statValueColor },
+										{ label: 'Advancing', value: stats.gainers.toLocaleString(), color: statValueColor },
+										{ label: 'Declining', value: stats.losers.toLocaleString(), color: statValueColor },
+										{ label: 'Unchanged', value: stats.unchanged.toLocaleString(), color: statValueColor },
+									
+									].map(({ label, value, color, icon }: { label: string; value: string | number; color: string; icon?: ReactNode }) => (
 									<Paper
 										key={label}
 										sx={{
@@ -444,12 +549,15 @@ export function DataPage() {
 											borderRadius: 1.2,
 										}}
 									>
-										<Typography sx={{ color: '#6b84aa', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em', mb: 0.4 }}>
+										<Typography sx={{ color: '#6b84aa', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.1em', mb: 0.4, fontFamily: MONO }}>
 											{label}
 										</Typography>
-										<Typography sx={{ color, fontSize: { xs: 16, md: 20 }, fontWeight: 700, fontFamily: mono ? MONO : 'inherit' }}>
-											{value}
-										</Typography>
+										<Stack direction="row" spacing={0.7} sx={{ alignItems: 'center' }}>
+											{icon}
+											<Typography sx={{ color, fontSize: { xs: 16, md: 20 }, fontWeight: 700, fontFamily: MONO }}>
+												{value}
+											</Typography>
+										</Stack>
 									</Paper>
 								))}
 							</Box>
@@ -702,9 +810,9 @@ export function DataPage() {
 																<RemoveIcon sx={{ fontSize: 12 }} />
 															)}
 															<span>
-																{stock.change
-																	? `${changeSign(stock.change)}${stock.change}`
-																	: '—'}
+																{stock.change === null || stock.change === undefined || stock.change === ''
+																	? '—'
+																	: `${changeSign(stock.change)}${stock.change}`}
 															</span>
 														</Stack>
 													</TableCell>
