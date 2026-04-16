@@ -5,7 +5,7 @@ permissions:
 
 on:
   schedule:
-    - cron: '0 13 * * 1-5'   # 13:00 UTC = 18:00 PKT (UTC+5), Mon-Fri
+    - cron: '7 13 * * 1-5'   # 13:07 UTC = 18:07 PKT (UTC+5), Mon-Fri; avoids top-of-hour scheduler congestion
   workflow_dispatch:           # allow manual trigger from GitHub UI
 
 jobs:
