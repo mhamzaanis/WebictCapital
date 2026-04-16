@@ -15,7 +15,7 @@ import json
 import logging
 import re
 import sys
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 import pdfplumber
@@ -101,66 +101,66 @@ def _parse_pdf(content: bytes, day_str: str) -> dict | None:
         with pdfplumber.open(io.BytesIO(content)) as pdf:
             log.info("Parsing %d page(s)...", len(pdf.pages))
 
-            # Strategy 1: structured table extraction (when available)
-            for page_num, page in enumerate(pdf.pages, 1):
-                for table in (page.extract_tables() or []):
-                    if not table or len(table) < 2:
+            # Strategy 1 (primary): line parsing - currently most reliable for PSX PDFs.
+            for page in pdf.pages:
+                text = page.extract_text() or ""
+                for raw_line in text.splitlines():
+                    line = raw_line.strip()
+                    if not line:
                         continue
-                    for row in table:
-                        if not row:
-                            continue
-                        values = [(cell or "").strip() for cell in row]
-                        if not values[0]:
-                            continue
-                        if _is_header_row(values):
-                            continue
-                        if len(values) < 8:
-                            log.debug(
-                                "Page %d: short row (%d cols), skipping: %s",
-                                page_num, len(values), values,
-                            )
-                            continue
-                        push_row({
-                            "symbol":    values[0],
-                            "company":   values[1],
-                            "turnover":  values[2],
-                            "prev_rate": values[3],
-                            "open":      values[4],
-                            "high":      values[5],
-                            "low":       values[6],
-                            "last_rate": values[7],
-                            "change":    values[8] if len(values) > 8 else None,
-                        })
+                    if any(line.startswith(prefix) for prefix in SKIP_LINE_PREFIXES):
+                        continue
+                    if line.startswith("***") and line.endswith("***"):
+                        continue
 
-            # Strategy 2: line parsing fallback for PDFs where table extraction is empty
+                    match = LINE_ROW_RE.match(line)
+                    if not match:
+                        continue
+
+                    push_row({
+                        "symbol": match.group("symbol").strip(),
+                        "company": match.group("company").strip(),
+                        "turnover": match.group("turnover").replace(",", ""),
+                        "prev_rate": match.group("prev"),
+                        "open": match.group("open"),
+                        "high": match.group("high"),
+                        "low": match.group("low"),
+                        "last_rate": match.group("last"),
+                        "change": match.group("change"),
+                    })
+
+            # Strategy 2 (fallback): structured table extraction.
             if not stocks:
-                log.info("Table extraction returned no rows for %s; trying line parsing fallback", day_str)
-                for page in pdf.pages:
-                    text = page.extract_text() or ""
-                    for raw_line in text.splitlines():
-                        line = raw_line.strip()
-                        if not line:
+                log.info("Line parsing returned no rows for %s; trying table extraction fallback", day_str)
+                for page_num, page in enumerate(pdf.pages, 1):
+                    for table in (page.extract_tables() or []):
+                        if not table or len(table) < 2:
                             continue
-                        if any(line.startswith(prefix) for prefix in SKIP_LINE_PREFIXES):
-                            continue
-                        if line.startswith("***") and line.endswith("***"):
-                            continue
-
-                        match = LINE_ROW_RE.match(line)
-                        if not match:
-                            continue
-
-                        push_row({
-                            "symbol": match.group("symbol").strip(),
-                            "company": match.group("company").strip(),
-                            "turnover": match.group("turnover").replace(",", ""),
-                            "prev_rate": match.group("prev"),
-                            "open": match.group("open"),
-                            "high": match.group("high"),
-                            "low": match.group("low"),
-                            "last_rate": match.group("last"),
-                            "change": match.group("change"),
-                        })
+                        for row in table:
+                            if not row:
+                                continue
+                            values = [(cell or "").strip() for cell in row]
+                            if not values[0]:
+                                continue
+                            if _is_header_row(values):
+                                continue
+                            if len(values) < 8:
+                                log.debug(
+                                    "Page %d: short row (%d cols), skipping: %s",
+                                    page_num, len(values), values,
+                                )
+                                continue
+                            push_row({
+                                "symbol": values[0],
+                                "company": values[1],
+                                "turnover": values[2],
+                                "prev_rate": values[3],
+                                "open": values[4],
+                                "high": values[5],
+                                "low": values[6],
+                                "last_rate": values[7],
+                                "change": values[8] if len(values) > 8 else None,
+                            })
     except Exception as exc:
         log.error("PDF parse failed for %s: %s", day_str, exc, exc_info=True)
         return None
@@ -200,12 +200,21 @@ def run() -> None:
         log.error("Could not fetch any PSX closing data in the last %d days.", LOOKBACK_WINDOW_DAYS)
         sys.exit(1)
 
+    generated_at_utc = datetime.now(timezone.utc).isoformat(timespec="seconds")
+
     # Always overwrite day1/day2/day3
     for slot_name, data in zip(SLOTS, results):
         out_path = OUTPUT_DIR / slot_name
+        payload = {**data, "last_updated_utc": generated_at_utc}
         with open(out_path, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-        log.info("Wrote %d stocks -> %s  (date: %s)", data["total_stocks"], out_path, data["date"])
+            json.dump(payload, f, ensure_ascii=False, indent=2)
+        log.info(
+            "Wrote %d stocks -> %s  (date: %s, updated: %s)",
+            data["total_stocks"],
+            out_path,
+            data["date"],
+            generated_at_utc,
+        )
 
     # Remove stale slots if fewer than 3 trading days were found
     for slot_name in SLOTS[len(results):]:
