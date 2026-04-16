@@ -30,6 +30,8 @@ import { useEffect, useMemo, useState, type ReactNode, type SyntheticEvent } fro
 type PsxStock = {
 	symbol: string
 	company: string
+	section: string | null
+	industry: string | null
 	turnover: string | number | null
 	prev_rate: string | number | null
 	open: string | number | null
@@ -58,6 +60,9 @@ type PsxData = {
 type RawPsxStock = {
 	symbol: string
 	company: string
+	section?: string | null
+	industry?: string | null
+	sector?: string | null
 	turnover?: string | number | null
 	prev_rate?: string | number | null
 	open?: string | number | null
@@ -134,9 +139,14 @@ function changeSign(change: string | number | null | undefined): string {
 }
 
 function normalizeStock(stock: RawPsxStock): PsxStock {
+	const section = stock.section ?? stock.sector ?? null
+	const industry = stock.industry ?? section
+
 	return {
 		symbol: stock.symbol,
 		company: stock.company,
+		section,
+		industry,
 		turnover: stock.turnover ?? null,
 		prev_rate: stock.prev_rate ?? null,
 		open: stock.open ?? stock.open_rate ?? null,
@@ -212,9 +222,11 @@ export function DataPage() {
 	const [sortKey, setSortKey] = useState<SortKey>('symbol')
 	const [sortDir, setSortDir] = useState<SortDir>('asc')
 	const [movementFilter, setMovementFilter] = useState<MovementFilter>('all')
-	const [minTurnover, setMinTurnover] = useState('')
-	const [minLastRate, setMinLastRate] = useState('')
-	const [maxLastRate, setMaxLastRate] = useState('')
+	// const [sectionFilter, setSectionFilter] = useState('all')
+	const [industryFilter, setIndustryFilter] = useState('all')
+	// const [minTurnover, setMinTurnover] = useState('')
+	// const [minLastRate, setMinLastRate] = useState('')
+	// const [maxLastRate, setMaxLastRate] = useState('')
 	const [page, setPage] = useState(0)
 	const [rowsPerPage, setRowsPerPage] = useState(25)
 
@@ -249,9 +261,11 @@ export function DataPage() {
 		setSortKey('symbol')
 		setSortDir('asc')
 		setMovementFilter('all')
-		setMinTurnover('')
-		setMinLastRate('')
-		setMaxLastRate('')
+		// setSectionFilter('all')
+		setIndustryFilter('all')
+		// setMinTurnover('')
+		// setMinLastRate('')
+		// setMaxLastRate('')
 		setPage(0)
 	}
 
@@ -267,11 +281,16 @@ export function DataPage() {
 	const activeData = slotData[activeTab]
 	const stocks = activeData?.stocks ?? []
 
+	const industryOptions = useMemo(
+		() => Array.from(new Set(stocks.map((s) => s.industry).filter((s): s is string => Boolean(s)))).sort(),
+		[stocks],
+	)
+
 	const displayedStocks = useMemo(() => {
 		const q = search.trim().toLowerCase()
-		const minTurnoverNum = minTurnover.trim() === '' ? NaN : parseFloat(minTurnover)
-		const minLastNum = minLastRate.trim() === '' ? NaN : parseFloat(minLastRate)
-		const maxLastNum = maxLastRate.trim() === '' ? NaN : parseFloat(maxLastRate)
+		// const minTurnoverNum = minTurnover.trim() === '' ? NaN : parseFloat(minTurnover)
+		// const minLastNum = minLastRate.trim() === '' ? NaN : parseFloat(minLastRate)
+		// const maxLastNum = maxLastRate.trim() === '' ? NaN : parseFloat(maxLastRate)
 
 		const filtered = q
 			? stocks.filter((s) => s.symbol.toLowerCase().includes(q) || s.company.toLowerCase().includes(q))
@@ -285,13 +304,19 @@ export function DataPage() {
 			return !isNaN(chg) && chg === 0
 		})
 
-		const filteredByRange = filteredByMovement.filter((s) => {
+		const filteredByMeta = filteredByMovement.filter((s) => {
+			// if (sectionFilter !== 'all' && s.section !== sectionFilter) return false
+			if (industryFilter !== 'all' && s.industry !== industryFilter) return false
+			return true
+		})
+
+		const filteredByRange = filteredByMeta.filter((s) => {
 			const turnover = toNum(s.turnover)
 			const last = toNum(s.last_rate)
 
-			if (!isNaN(minTurnoverNum) && !isNaN(turnover) && turnover < minTurnoverNum) return false
-			if (!isNaN(minLastNum) && !isNaN(last) && last < minLastNum) return false
-			if (!isNaN(maxLastNum) && !isNaN(last) && last > maxLastNum) return false
+			// if (!isNaN(minTurnoverNum) && !isNaN(turnover) && turnover < minTurnoverNum) return false
+			// if (!isNaN(minLastNum) && !isNaN(last) && last < minLastNum) return false
+			// if (!isNaN(maxLastNum) && !isNaN(last) && last > maxLastNum) return false
 			return true
 		})
 
@@ -299,7 +324,7 @@ export function DataPage() {
 			const cmp = compareCells(a, b, sortKey)
 			return sortDir === 'asc' ? cmp : -cmp
 		})
-	}, [stocks, search, sortKey, sortDir, movementFilter, minTurnover, minLastRate, maxLastRate])
+	}, [stocks, search, sortKey, sortDir, movementFilter, industryFilter, ])
 
 	const pagedStocks = useMemo(() => {
 		const start = page * rowsPerPage
@@ -308,7 +333,7 @@ export function DataPage() {
 
 	useEffect(() => {
 		setPage(0)
-	}, [search, movementFilter, minTurnover, minLastRate, maxLastRate, rowsPerPage, activeTab])
+	}, [search, movementFilter, industryFilter, rowsPerPage, activeTab])
 
 	const stats = useMemo(() => {
 		const market = activeData?.market
@@ -460,18 +485,7 @@ export function DataPage() {
 												{status === 'loading' && (
 													<CircularProgress size={10} sx={{ color: '#6b84aa' }} />
 												)}
-												{status === 'ok' && d && (
-													<Box
-														component="span"
-														sx={{
-															fontSize: 10,
-															color: '#6b84aa',
-															fontFamily: MONO,
-														}}
-													>
-														{d.total_stocks}
-													</Box>
-												)}
+											
 												{status === 'error' && (
 													<Box component="span" sx={{ fontSize: 10, color: '#ef4444' }}>
 														✕
@@ -565,38 +579,39 @@ export function DataPage() {
 								))}
 							</Box>
 
-							{/* ── Search ── */}
-							<TextField
-								placeholder="Search symbol or company name…"
-								value={search}
-								onChange={(e) => setSearch(e.target.value)}
-								size="small"
-								fullWidth
-								slotProps={{
-									input: {
-										startAdornment: (
-											<InputAdornment position="start">
-												<SearchIcon sx={{ color: '#6b84aa', fontSize: 16 }} />
-											</InputAdornment>
-										),
-									},
-								}}
-								sx={{
-									'& .MuiOutlinedInput-root': {
-										bgcolor: '#ffffff',
-										color: '#253750',
-										fontFamily: MONO,
-										fontSize: 12,
-										borderRadius: 1,
-										'& fieldset': { borderColor: '#c9d9f2' },
-										'&:hover fieldset': { borderColor: '#87a6d3' },
-										'&.Mui-focused fieldset': { borderColor: '#1f5fbf' },
-									},
-									'& input::placeholder': { color: '#7d95b8', opacity: 1 },
-								}}
-							/>
-
+							{/* ── Filters ── */}
 							<Stack direction={{ xs: 'column', md: 'row' }} spacing={1.2}>
+								<TextField
+									placeholder="Search symbol or company name…"
+									value={search}
+									onChange={(e) => setSearch(e.target.value)}
+									size="small"
+									fullWidth
+									slotProps={{
+										input: {
+											startAdornment: (
+												<InputAdornment position="start">
+													<SearchIcon sx={{ color: '#6b84aa', fontSize: 16 }} />
+												</InputAdornment>
+											),
+										},
+									}}
+									sx={{
+										width: { xs: '100%', md: '50%' },
+										'& .MuiOutlinedInput-root': {
+											bgcolor: '#ffffff',
+											color: '#253750',
+											fontFamily: MONO,
+											fontSize: 12,
+											borderRadius: 1,
+											'& fieldset': { borderColor: '#c9d9f2' },
+											'&:hover fieldset': { borderColor: '#87a6d3' },
+											'&.Mui-focused fieldset': { borderColor: '#1f5fbf' },
+										},
+										'& input::placeholder': { color: '#7d95b8', opacity: 1 },
+									}}
+								/>
+
 								<TextField
 									select
 									size="small"
@@ -605,7 +620,7 @@ export function DataPage() {
 									onChange={(e) => setMovementFilter(e.target.value as MovementFilter)}
 									slotProps={{ select: { native: true } }}
 									sx={{
-										minWidth: { xs: '100%', md: 180 },
+										width: { xs: '100%', md: '25%' },
 										'& .MuiOutlinedInput-root': {
 											bgcolor: '#ffffff',
 											fontFamily: MONO,
@@ -623,13 +638,14 @@ export function DataPage() {
 								</TextField>
 
 								<TextField
+									select
 									size="small"
-									label="Min Turnover"
-									type="number"
-									value={minTurnover}
-									onChange={(e) => setMinTurnover(e.target.value)}
+									label="Industry"
+									value={industryFilter}
+									onChange={(e) => setIndustryFilter(e.target.value)}
+									slotProps={{ select: { native: true } }}
 									sx={{
-										minWidth: { xs: '100%', md: 160 },
+										width: { xs: '100%', md: '25%' },
 										'& .MuiOutlinedInput-root': {
 											bgcolor: '#ffffff',
 											fontFamily: MONO,
@@ -639,45 +655,14 @@ export function DataPage() {
 											'&.Mui-focused fieldset': { borderColor: '#1f5fbf' },
 										},
 									}}
-								/>
+								>
+									<option value="all">All Industries</option>
+									{industryOptions.map((industry) => (
+										<option key={industry} value={industry}>{industry}</option>
+									))}
+								</TextField>
 
-								<TextField
-									size="small"
-									label="Min Last"
-									type="number"
-									value={minLastRate}
-									onChange={(e) => setMinLastRate(e.target.value)}
-									sx={{
-										minWidth: { xs: '100%', md: 130 },
-										'& .MuiOutlinedInput-root': {
-											bgcolor: '#ffffff',
-											fontFamily: MONO,
-											fontSize: 12,
-											'& fieldset': { borderColor: '#c9d9f2' },
-											'&:hover fieldset': { borderColor: '#87a6d3' },
-											'&.Mui-focused fieldset': { borderColor: '#1f5fbf' },
-										},
-									}}
-								/>
-
-								<TextField
-									size="small"
-									label="Max Last"
-									type="number"
-									value={maxLastRate}
-									onChange={(e) => setMaxLastRate(e.target.value)}
-									sx={{
-										minWidth: { xs: '100%', md: 130 },
-										'& .MuiOutlinedInput-root': {
-											bgcolor: '#ffffff',
-											fontFamily: MONO,
-											fontSize: 12,
-											'& fieldset': { borderColor: '#c9d9f2' },
-											'&:hover fieldset': { borderColor: '#87a6d3' },
-											'&.Mui-focused fieldset': { borderColor: '#1f5fbf' },
-										},
-									}}
-								/>
+								
 							</Stack>
 
 							{search && (
