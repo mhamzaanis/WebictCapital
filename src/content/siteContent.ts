@@ -9,7 +9,7 @@ export const navItems: NavItem[] = [
       {label: 'Masterclasses', href: '/masterclasses'},
     ],
   },
-  // { label: 'Companies', href: '#' },
+  { label: 'Data', href: '/data' },
   { label: 'Advisory', href: '#' },
   { label: 'Our team', href: '#' },
   { label: 'News', href: '#' },

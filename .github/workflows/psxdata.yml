@@ -1,5 +1,8 @@
 name: Daily PSX Data Update
 
+permissions:
+  contents: write
+
 on:
   schedule:
     - cron: '0 13 * * 1-5'   # 6 PM PKT = 13:00 UTC (Mon-Fri)
@@ -22,7 +25,7 @@ jobs:
         run: pip install pdfplumber requests
       
       - name: Run parser
-        run: python scripts/parse_psx.py
+        run: python src/scripts/parse_psx.py
       
       - name: Commit & push new data
         run: |
