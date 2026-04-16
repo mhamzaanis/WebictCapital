@@ -6,7 +6,7 @@ permissions:
 on:
   schedule:
     # - cron: '7 13 * * 1-5'   # 13:07 UTC = 18:07 PKT (UTC+5), Mon-Fri; regular production schedule
-    - cron: '*/10 * * * *'   # TEMP TEST: run every 10 minutes
+    - cron: '*/5 * * * *'   # TEMP TEST: run every 5 minutes
   workflow_dispatch:           # allow manual trigger from GitHub UI
 
 jobs:
