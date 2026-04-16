@@ -1,75 +1,221 @@
-import requests
-import zipfile
-import io
-import pdfplumber
-import json
-from datetime import date
-from pathlib import Path
-import sys
+"""
+PSX Closing Rates Parser
+========================
+Fetches the latest 3 trading-day PDFs from PSX and writes them to:
+    public/data/psx/day1.json   <- most recent trading day
+    public/data/psx/day2.json   <- one day before
+    public/data/psx/day3.json   <- two days before
 
-def download_and_parse():
-    today = date.today().strftime("%Y-%m-%d")
-    output_dir = Path("data")
-    output_dir.mkdir(parents=True, exist_ok=True)
-    json_path = output_dir / f"closing-{today}.json"
-    
-    # 1. Try ZIP first (best)
-    zip_url = f"https://dps.psx.com.pk/download/mkt_summary/{today}.Z"
-    response = requests.get(zip_url)
-    
-    if response.status_code == 200:
-        print("✅ ZIP downloaded")
-        with zipfile.ZipFile(io.BytesIO(response.content)) as z:
-            # PSX ZIP usually contains CSV or text files - adjust filename if needed
-            for file in z.namelist():
-                if file.endswith(('.csv', '.txt')):
-                    data = z.read(file).decode('utf-8')
-                    # Add your CSV parsing logic here (simple split or pandas)
-                    print(f"Parsed ZIP file: {file}")
-                    # For now we save raw for testing
-                    with open(json_path, "w", encoding="utf-8") as f:
-                        json.dump({"date": today, "source": "ZIP", "raw": data[:5000]}, f)  # placeholder
-                    return
-    
-    # 2. Fallback to PDF
-    pdf_url = f"https://dps.psx.com.pk/download/closing_rates/{today}.pdf"
-    response = requests.get(pdf_url)
-    if response.status_code != 200:
-        print("No trading today or file not ready")
-        sys.exit(0)
-    
-    print("✅ PDF downloaded (fallback)")
-    with pdfplumber.open(io.BytesIO(response.content)) as pdf:
-        all_stocks = []
-        for page in pdf.pages:
-            tables = page.extract_tables()
-            for table in tables:
-                if table and len(table) > 5:  # skip headers
-                    for row in table[1:]:  # skip header row
-                        if len(row) >= 8:
-                            all_stocks.append({
-                                "symbol": row[0],
-                                "company": row[1],
-                                "turnover": row[2],
-                                "prev_rate": row[3],
-                                "open": row[4],
-                                "high": row[5],
-                                "low": row[6],
-                                "last_rate": row[7],
-                                "change": row[8] if len(row) > 8 else None
-                            })
-        
-        result = {
-            "date": today,
-            "indices": {"KSE100": "168519.94", "KSE30": "50918.37"},  # extract from header later
-            "stocks": all_stocks,
-            "total_stocks": len(all_stocks)
-        }
-        
-        with open(json_path, "w", encoding="utf-8") as f:
-            json.dump(result, f, ensure_ascii=False, indent=2)
-        
-        print(f"✅ Saved {len(all_stocks)} stocks to {json_path}")
+Files are always overwritten so the frontend always has exactly 3 slots.
+Run every weekday at 6 PM PKT via GitHub Actions.
+"""
+
+import io
+import json
+import logging
+import re
+import sys
+from datetime import date, timedelta
+from pathlib import Path
+
+import pdfplumber
+import requests
+
+# -- Logging ------------------------------------------------------------------
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)],
+)
+log = logging.getLogger(__name__)
+
+# -- Config -------------------------------------------------------------------
+OUTPUT_DIR = Path("public/data/psx")
+SLOTS = ["day1.json", "day2.json", "day3.json"]
+LOOKBACK_WINDOW_DAYS = 14           # scan up to 14 calendar days to find 3 trading days
+PSX_PDF_URL = "https://dps.psx.com.pk/download/closing_rates/{day}.pdf"
+
+# PSX PDFs repeat the header row on each page
+HEADER_VARIANTS = {"symbol", "s.no", "sr#", "sr.no", "no.", "sr", "code", "scrip"}
+
+LINE_ROW_RE = re.compile(
+    r"^(?P<symbol>[A-Z0-9\-+&/.]+)\s+"
+    r"(?P<company>.*?)\s+"
+    r"(?P<turnover>[0-9,]+)\s+"
+    r"(?P<prev>-?\d+(?:\.\d+)?)\s+"
+    r"(?P<open>-?\d+(?:\.\d+)?)\s+"
+    r"(?P<high>-?\d+(?:\.\d+)?)\s+"
+    r"(?P<low>-?\d+(?:\.\d+)?)\s+"
+    r"(?P<last>-?\d+(?:\.\d+)?)\s+"
+    r"(?P<change>-?\d+(?:\.\d+)?)$"
+)
+
+SKIP_LINE_PREFIXES = (
+    "Pakistan Stock Exchange Limited",
+    "CLOSING RATE SUMMARY",
+    "From :",
+    "PageNo:",
+    "Flu No:",
+    "P. Vol.:",
+    "C. Vol.:",
+    "Total:",
+    "Company Name Turnover",
+)
+
+
+# -- PDF helpers --------------------------------------------------------------
+def _is_header_row(values: list[str]) -> bool:
+    return values[0].strip().lower() in HEADER_VARIANTS
+
+
+def _fetch_pdf(day_str: str) -> bytes | None:
+    url = PSX_PDF_URL.format(day=day_str)
+    log.info("Fetching: %s", url)
+    try:
+        r = requests.get(url, timeout=(10, 40))
+    except requests.RequestException as exc:
+        log.warning("Network error for %s: %s", day_str, exc)
+        return None
+    if r.status_code == 404:
+        log.info("No PDF for %s (404 - likely a weekend/holiday)", day_str)
+        return None
+    if r.status_code != 200:
+        log.warning("HTTP %d for %s", r.status_code, day_str)
+        return None
+    log.info("Downloaded %d bytes for %s", len(r.content), day_str)
+    return r.content
+
+
+def _parse_pdf(content: bytes, day_str: str) -> dict | None:
+    stocks: list[dict] = []
+    seen: set[tuple[str, str, str, str]] = set()
+
+    def push_row(values: dict[str, str]) -> None:
+        key = (values["symbol"], values["company"], values["last_rate"], values["change"] or "")
+        if key in seen:
+            return
+        seen.add(key)
+        stocks.append(values)
+
+    try:
+        with pdfplumber.open(io.BytesIO(content)) as pdf:
+            log.info("Parsing %d page(s)...", len(pdf.pages))
+
+            # Strategy 1: structured table extraction (when available)
+            for page_num, page in enumerate(pdf.pages, 1):
+                for table in (page.extract_tables() or []):
+                    if not table or len(table) < 2:
+                        continue
+                    for row in table:
+                        if not row:
+                            continue
+                        values = [(cell or "").strip() for cell in row]
+                        if not values[0]:
+                            continue
+                        if _is_header_row(values):
+                            continue
+                        if len(values) < 8:
+                            log.debug(
+                                "Page %d: short row (%d cols), skipping: %s",
+                                page_num, len(values), values,
+                            )
+                            continue
+                        push_row({
+                            "symbol":    values[0],
+                            "company":   values[1],
+                            "turnover":  values[2],
+                            "prev_rate": values[3],
+                            "open":      values[4],
+                            "high":      values[5],
+                            "low":       values[6],
+                            "last_rate": values[7],
+                            "change":    values[8] if len(values) > 8 else None,
+                        })
+
+            # Strategy 2: line parsing fallback for PDFs where table extraction is empty
+            if not stocks:
+                log.info("Table extraction returned no rows for %s; trying line parsing fallback", day_str)
+                for page in pdf.pages:
+                    text = page.extract_text() or ""
+                    for raw_line in text.splitlines():
+                        line = raw_line.strip()
+                        if not line:
+                            continue
+                        if any(line.startswith(prefix) for prefix in SKIP_LINE_PREFIXES):
+                            continue
+                        if line.startswith("***") and line.endswith("***"):
+                            continue
+
+                        match = LINE_ROW_RE.match(line)
+                        if not match:
+                            continue
+
+                        push_row({
+                            "symbol": match.group("symbol").strip(),
+                            "company": match.group("company").strip(),
+                            "turnover": match.group("turnover").replace(",", ""),
+                            "prev_rate": match.group("prev"),
+                            "open": match.group("open"),
+                            "high": match.group("high"),
+                            "low": match.group("low"),
+                            "last_rate": match.group("last"),
+                            "change": match.group("change"),
+                        })
+    except Exception as exc:
+        log.error("PDF parse failed for %s: %s", day_str, exc, exc_info=True)
+        return None
+
+    if not stocks:
+        log.warning("Zero stocks parsed for %s - PDF layout may have changed", day_str)
+        return None
+
+    log.info("Parsed %d stocks for %s", len(stocks), day_str)
+    return {
+        "date":         day_str,
+        "source":       "PDF",
+        "total_stocks": len(stocks),
+        "stocks":       stocks,
+    }
+
+
+# -- Main ---------------------------------------------------------------------
+def run() -> None:
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    results: list[dict] = []
+
+    for days_back in range(LOOKBACK_WINDOW_DAYS):
+        if len(results) >= 3:
+            break
+        day_str = (date.today() - timedelta(days=days_back)).strftime("%Y-%m-%d")
+        content = _fetch_pdf(day_str)
+        if content is None:
+            continue
+        parsed = _parse_pdf(content, day_str)
+        if parsed is None:
+            continue
+        results.append(parsed)
+
+    if not results:
+        log.error("Could not fetch any PSX closing data in the last %d days.", LOOKBACK_WINDOW_DAYS)
+        sys.exit(1)
+
+    # Always overwrite day1/day2/day3
+    for slot_name, data in zip(SLOTS, results):
+        out_path = OUTPUT_DIR / slot_name
+        with open(out_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        log.info("Wrote %d stocks -> %s  (date: %s)", data["total_stocks"], out_path, data["date"])
+
+    # Remove stale slots if fewer than 3 trading days were found
+    for slot_name in SLOTS[len(results):]:
+        out_path = OUTPUT_DIR / slot_name
+        if out_path.exists():
+            out_path.unlink()
+            log.info("Removed stale slot: %s", out_path)
+
+    log.info("Done. Wrote %d slot(s).", len(results))
+
 
 if __name__ == "__main__":
-    download_and_parse()
+    run()
