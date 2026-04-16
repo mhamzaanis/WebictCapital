@@ -310,15 +310,7 @@ export function DataPage() {
 			return true
 		})
 
-		const filteredByRange = filteredByMeta.filter((s) => {
-			const turnover = toNum(s.turnover)
-			const last = toNum(s.last_rate)
-
-			// if (!isNaN(minTurnoverNum) && !isNaN(turnover) && turnover < minTurnoverNum) return false
-			// if (!isNaN(minLastNum) && !isNaN(last) && last < minLastNum) return false
-			// if (!isNaN(maxLastNum) && !isNaN(last) && last > maxLastNum) return false
-			return true
-		})
+		const filteredByRange = filteredByMeta
 
 		return [...filteredByRange].sort((a, b) => {
 			const cmp = compareCells(a, b, sortKey)
