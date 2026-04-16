@@ -57,7 +57,7 @@ jobs:
           echo "Parser failed after ${max_attempts} attempts."
           exit 1
         # If 6 PM fetch fails, retries happen at +1h and +2h in the same workflow run.
-
+#commented out the following lines to avoid multiple commits in a single workflow run during testing. Uncomment for production use.
       - name: Show generated files
         run: ls -lh public/data/psx/
 
