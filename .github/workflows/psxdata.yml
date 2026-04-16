@@ -36,9 +36,26 @@ jobs:
       - name: Ensure output directory exists
         run: mkdir -p public/data/psx && touch public/data/psx/.gitkeep
 
-      - name: Run PSX parser
-        run: python src/scripts/parse_psx.py
-        # Script exits with code 1 if nothing was fetched - job will be marked failed
+      - name: Run PSX parser with hourly retries
+        run: |
+          set -euo pipefail
+          max_attempts=3
+          for attempt in $(seq 1 "$max_attempts"); do
+            echo "Attempt ${attempt}/${max_attempts}: running parser"
+            if python src/scripts/parse_psx.py; then
+              echo "Parser succeeded on attempt ${attempt}."
+              exit 0
+            fi
+
+            if [ "$attempt" -lt "$max_attempts" ]; then
+              echo "Parser failed. Waiting 1 hour before retry..."
+              sleep 3600
+            fi
+          done
+
+          echo "Parser failed after ${max_attempts} attempts."
+          exit 1
+        # If 6 PM fetch fails, retries happen at +1h and +2h in the same workflow run.
 
       - name: Show generated files
         run: ls -lh public/data/psx/

@@ -15,8 +15,9 @@ import json
 import logging
 import re
 import sys
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import pdfplumber
 import requests
@@ -34,6 +35,7 @@ OUTPUT_DIR = Path("public/data/psx")
 SLOTS = ["day1.json", "day2.json", "day3.json"]
 LOOKBACK_WINDOW_DAYS = 14           # scan up to 14 calendar days to find 3 trading days
 PSX_PDF_URL = "https://dps.psx.com.pk/download/closing_rates/{day}.pdf"
+PKT_TZ = ZoneInfo("Asia/Karachi")
 
 # PSX PDFs repeat the header row on each page
 HEADER_VARIANTS = {"symbol", "s.no", "sr#", "sr.no", "no.", "sr", "code", "scrip"}
@@ -183,11 +185,18 @@ def run() -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     results: list[dict] = []
+    today_pkt = datetime.now(PKT_TZ).date()
 
     for days_back in range(LOOKBACK_WINDOW_DAYS):
         if len(results) >= 3:
             break
-        day_str = (date.today() - timedelta(days=days_back)).strftime("%Y-%m-%d")
+        candidate_day = today_pkt - timedelta(days=days_back)
+        if candidate_day.weekday() >= 5:
+            # Never fetch weekend URLs; PSX has no trading session on Sat/Sun.
+            log.info("Skipping %s (weekend)", candidate_day.isoformat())
+            continue
+
+        day_str = candidate_day.strftime("%Y-%m-%d")
         content = _fetch_pdf(day_str)
         if content is None:
             continue
