@@ -45,9 +45,9 @@ LINE_ROW_RE = re.compile(
     r"(?P<company>.*?)\s+"
     r"(?P<turnover>[0-9,]+)\s+"
     r"(?P<prev>-?\d+(?:\.\d+)?)\s+"
-    r"(?P<open>-?\d+(?:\.\d+)?)\s+"
-    r"(?P<high>-?\d+(?:\.\d+)?)\s+"
-    r"(?P<low>-?\d+(?:\.\d+)?)\s+"
+    r"(?P<open>-|-?\d+(?:\.\d+)?)\s+"
+    r"(?P<high>-|-?\d+(?:\.\d+)?)\s+"
+    r"(?P<low>-|-?\d+(?:\.\d+)?)\s+"
     r"(?P<last>-?\d+(?:\.\d+)?)\s+"
     r"(?P<change>-?\d+(?:\.\d+)?)$"
 )
