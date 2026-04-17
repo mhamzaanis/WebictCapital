@@ -23,7 +23,8 @@ import SearchIcon from '@mui/icons-material/Search'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 import TrendingDownIcon from '@mui/icons-material/TrendingDown'
 import RemoveIcon from '@mui/icons-material/Remove'
-import { useEffect, useMemo, useState, type ReactNode, type SyntheticEvent } from 'react'
+import { hasSupabaseConfig, supabase } from '../../lib/supabase'
+import { useCallback, useEffect, useMemo, useState, type ReactNode, type SyntheticEvent } from 'react'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -43,7 +44,7 @@ type PsxStock = {
 
 type PsxData = {
 	date: string
-	source: string
+	source: 'Supabase'
 	market?: {
 		open_kse100?: number
 		close_kse100?: number
@@ -57,53 +58,42 @@ type PsxData = {
 	stocks: PsxStock[]
 }
 
-type RawPsxStock = {
+type DbStockRow = {
 	symbol: string
 	company: string
-	section?: string | null
-	industry?: string | null
-	sector?: string | null
-	turnover?: string | number | null
-	prev_rate?: string | number | null
-	open?: string | number | null
-	open_rate?: string | number | null
-	high?: string | number | null
-	highest?: string | number | null
-	low?: string | number | null
-	lowest?: string | number | null
-	last_rate?: string | number | null
-	change?: string | number | null
-	diff?: string | number | null
+	section: string | null
+	open: number | null
+	high: number | null
+	low: number | null
+	close: number | null
+	turnover: number | null
+	change: number | null
 }
 
-type RawPsxData = {
-	date: string
-	source: string
-	market?: {
-		open_kse100?: number
-		close_kse100?: number
-		curr_volume?: number
-		advances?: number
-		declines?: number
-		unchanged?: number
-	}
-	total_stocks: number
-	stocks: RawPsxStock[]
+type DbSummaryRow = {
+	trade_date: string
+	kse100_prev: number | null
+	kse100_close: number | null
+	kse100_change: number | null
+	curr_volume: number | null
+	advances: number | null
+	declines: number | null
+	unchanged: number | null
 }
 
-type SlotKey = 'day1' | 'day2' | 'day3'
+type SlotKey = string
 type SortKey = keyof PsxStock
 type SortDir = 'asc' | 'desc'
 type MovementFilter = 'all' | 'gainers' | 'losers' | 'unchanged'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-// Adjust this base path to wherever your data folder is served from.
-// If using Vite, place files in src/data/psx/ and import them, OR serve
-// from /public/data/psx/ and fetch from the URL below.
-const DATA_BASE = '/data/psx'
+const TAB_COUNT = 10
+const SLOTS: SlotKey[] = Array.from({ length: TAB_COUNT }, (_, idx) => `day${idx + 1}`)
 
-const SLOTS: SlotKey[] = ['day1', 'day2', 'day3']
+function buildSlotRecord<T>(initialValue: T): Record<SlotKey, T> {
+	return Object.fromEntries(SLOTS.map((slot) => [slot, initialValue])) as Record<SlotKey, T>
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -138,32 +128,68 @@ function changeSign(change: string | number | null | undefined): string {
 	return n > 0 ? '+' : ''
 }
 
-function normalizeStock(stock: RawPsxStock): PsxStock {
-	const section = stock.section ?? stock.sector ?? null
-	const industry = stock.industry ?? section
-
+function mapDbStockToPsxStock(stock: DbStockRow): PsxStock {
 	return {
 		symbol: stock.symbol,
 		company: stock.company,
-		section,
-		industry,
-		turnover: stock.turnover ?? null,
-		prev_rate: stock.prev_rate ?? null,
-		open: stock.open ?? stock.open_rate ?? null,
-		high: stock.high ?? stock.highest ?? null,
-		low: stock.low ?? stock.lowest ?? null,
-		last_rate: stock.last_rate ?? null,
-		change: stock.change ?? stock.diff ?? null,
+		section: stock.section,
+		industry: stock.section,
+		turnover: stock.turnover,
+		prev_rate:
+			stock.close !== null && stock.change !== null
+				? Number(stock.close) - Number(stock.change)
+				: null,
+		open: stock.open,
+		high: stock.high,
+		low: stock.low,
+		last_rate: stock.close,
+		change: stock.change,
 	}
 }
 
-function normalizeData(data: RawPsxData): PsxData {
+async function fetchSupabaseTradeDay(tradeDate: string): Promise<PsxData> {
+	if (!supabase) {
+		throw new Error('Supabase client is not configured')
+	}
+
+	const [summaryResult, stocksResult] = await Promise.all([
+		supabase
+			.from('market_daily_summary')
+			.select('trade_date,kse100_prev,kse100_close,kse100_change,curr_volume,advances,declines,unchanged')
+			.eq('trade_date', tradeDate)
+			.single<DbSummaryRow>(),
+		supabase
+			.from('datatable')
+			.select('symbol,company,section,open,high,low,close,turnover,change')
+			.eq('trade_date', tradeDate)
+			.order('symbol', { ascending: true }),
+	])
+
+	if (summaryResult.error) {
+		throw summaryResult.error
+	}
+	if (stocksResult.error) {
+		throw stocksResult.error
+	}
+
+	const rows = ((stocksResult.data ?? []) as DbStockRow[]).map(mapDbStockToPsxStock)
+
 	return {
-		date: data.date,
-		source: data.source,
-		market: data.market,
-		total_stocks: data.total_stocks,
-		stocks: data.stocks.map(normalizeStock),
+		date: tradeDate,
+		source: 'Supabase',
+		market: summaryResult.data
+			? {
+					open_kse100: summaryResult.data.kse100_prev ?? undefined,
+					close_kse100: summaryResult.data.kse100_close ?? undefined,
+					kse100_change: summaryResult.data.kse100_change ?? undefined,
+					curr_volume: summaryResult.data.curr_volume ?? undefined,
+					advances: summaryResult.data.advances ?? undefined,
+					declines: summaryResult.data.declines ?? undefined,
+					unchanged: summaryResult.data.unchanged ?? undefined,
+			  }
+			: undefined,
+		total_stocks: rows.length,
+		stocks: rows,
 	}
 }
 
@@ -177,14 +203,16 @@ function compareCells(a: PsxStock, b: PsxStock, key: SortKey): number {
 	return (a[key] ?? '').toString().localeCompare((b[key] ?? '').toString())
 }
 
-function formatTabLabel(data: PsxData | null, slot: SlotKey): string {
-	if (!data) return slot.toUpperCase()
+function formatTabLabel(data: PsxData | null, slot: SlotKey, tradeDate?: string): string {
+	if (!data && !tradeDate) return slot.toUpperCase()
 	// e.g. "Mon 14 Apr"
 	try {
-		const d = new Date(data.date + 'T00:00:00')
+		const src = data?.date ?? tradeDate
+		if (!src) return slot.toUpperCase()
+		const d = new Date(src + 'T00:00:00')
 		return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
 	} catch {
-		return data.date
+		return data?.date ?? tradeDate ?? slot.toUpperCase()
 	}
 }
 
@@ -207,16 +235,9 @@ const headCell = {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function DataPage() {
-	const [slotData, setSlotData] = useState<Record<SlotKey, PsxData | null>>({
-		day1: null,
-		day2: null,
-		day3: null,
-	})
-	const [slotStatus, setSlotStatus] = useState<Record<SlotKey, 'idle' | 'loading' | 'ok' | 'error'>>({
-		day1: 'loading',
-		day2: 'loading',
-		day3: 'loading',
-	})
+	const [slotData, setSlotData] = useState<Record<SlotKey, PsxData | null>>(() => buildSlotRecord<PsxData | null>(null))
+	const [slotStatus, setSlotStatus] = useState<Record<SlotKey, 'idle' | 'loading' | 'ok' | 'error'>>(() => buildSlotRecord<'idle' | 'loading' | 'ok' | 'error'>('loading'))
+	const [slotTradeDate, setSlotTradeDate] = useState<Record<SlotKey, string | null>>(() => buildSlotRecord<string | null>(null))
 	const [activeTab, setActiveTab] = useState<SlotKey>('day1')
 	const [search, setSearch] = useState('')
 	const [sortKey, setSortKey] = useState<SortKey>('symbol')
@@ -230,29 +251,69 @@ export function DataPage() {
 	const [page, setPage] = useState(0)
 	const [rowsPerPage, setRowsPerPage] = useState(25)
 
-	// Fetch all 3 slots in parallel on mount
-	useEffect(() => {
-		const controller = new AbortController()
-
-		SLOTS.forEach((slot) => {
-			fetch(`${DATA_BASE}/${slot}.json`, { signal: controller.signal })
-				.then((res) => {
-					if (!res.ok) throw new Error(`HTTP ${res.status}`)
-					return res.json() as Promise<RawPsxData>
-				})
-				.then((rawData) => {
-					const data = normalizeData(rawData)
-					setSlotData((prev) => ({ ...prev, [slot]: data }))
-					setSlotStatus((prev) => ({ ...prev, [slot]: 'ok' }))
-				})
-				.catch((err) => {
-					if (err instanceof DOMException && err.name === 'AbortError') return
-					setSlotStatus((prev) => ({ ...prev, [slot]: 'error' }))
-				})
-		})
-
-		return () => controller.abort()
+	const loadSlotData = useCallback(async (slot: SlotKey, tradeDate: string) => {
+		setSlotStatus((prev) => ({ ...prev, [slot]: 'loading' }))
+		try {
+			const data = await fetchSupabaseTradeDay(tradeDate)
+			setSlotData((prev) => ({ ...prev, [slot]: data }))
+			setSlotStatus((prev) => ({ ...prev, [slot]: 'ok' }))
+		} catch {
+			setSlotStatus((prev) => ({ ...prev, [slot]: 'error' }))
+		}
 	}, [])
+
+	// Fetch latest trade dates list from Supabase on mount and lazy-load first tab only.
+	useEffect(() => {
+		let cancelled = false
+
+		async function loadSupabaseData() {
+			if (!hasSupabaseConfig || !supabase) {
+				setSlotStatus(buildSlotRecord<'idle' | 'loading' | 'ok' | 'error'>('error'))
+				return
+			}
+
+			const datesResult = await supabase
+				.from('market_daily_summary')
+				.select('trade_date')
+				.order('trade_date', { ascending: false })
+				.limit(SLOTS.length)
+
+			if (datesResult.error || !datesResult.data) {
+				if (!cancelled) {
+					setSlotStatus(buildSlotRecord<'idle' | 'loading' | 'ok' | 'error'>('error'))
+				}
+				return
+			}
+
+			if (cancelled) return
+
+			const nextDates = buildSlotRecord<string | null>(null)
+			const nextStatus = buildSlotRecord<'idle' | 'loading' | 'ok' | 'error'>('error')
+			SLOTS.forEach((slot, idx) => {
+				const tradeDate = datesResult.data[idx]?.trade_date ?? null
+				nextDates[slot] = tradeDate
+				nextStatus[slot] = tradeDate ? 'idle' : 'error'
+			})
+
+			setSlotTradeDate(nextDates)
+			setSlotData(buildSlotRecord<PsxData | null>(null))
+			setSlotStatus(nextStatus)
+
+			const firstSlot = SLOTS.find((slot) => nextDates[slot]) ?? SLOTS[0]
+			setActiveTab(firstSlot)
+
+			const firstDate = nextDates[firstSlot]
+			if (firstDate) {
+				await loadSlotData(firstSlot, firstDate)
+			}
+		}
+
+		loadSupabaseData()
+
+		return () => {
+			cancelled = true
+		}
+	}, [loadSlotData])
 
 	// Reset search + sort when switching tabs
 	const handleTabChange = (_: SyntheticEvent, val: SlotKey) => {
@@ -267,6 +328,10 @@ export function DataPage() {
 		// setMinLastRate('')
 		// setMaxLastRate('')
 		setPage(0)
+
+		if (slotStatus[val] === 'idle' && slotTradeDate[val]) {
+			void loadSlotData(val, slotTradeDate[val] as string)
+		}
 	}
 
 	const handleSort = (key: SortKey) => {
@@ -278,7 +343,7 @@ export function DataPage() {
 		}
 	}
 
-	const activeData = slotData[activeTab]
+	const activeData = slotData[activeTab] ?? null
 	const stocks = activeData?.stocks ?? []
 
 	const industryOptions = useMemo(
@@ -440,7 +505,7 @@ export function DataPage() {
 							PSX Closing Rates
 						</Typography>
 							<Typography sx={{ fontFamily: MONO, fontSize: 11, color: '#5a7090', mt: 0.4 }}>
-							Pakistan Stock Exchange · daily closing data · 3 most recent trading days
+								Pakistan Stock Exchange · daily closing data · 10 most recent trading days
 						</Typography>
 					</Box>
 
@@ -467,13 +532,14 @@ export function DataPage() {
 							{SLOTS.map((slot) => {
 								const d = slotData[slot]
 								const status = slotStatus[slot]
+								const tradeDate = slotTradeDate[slot] ?? undefined
 								return (
 									<Tab
 										key={slot}
 										value={slot}
 										label={
 											<Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-												<span>{formatTabLabel(d, slot)}</span>
+												<span>{formatTabLabel(d, slot, tradeDate)}</span>
 												{status === 'loading' && (
 													<CircularProgress size={10} sx={{ color: '#6b84aa' }} />
 												)}
@@ -496,7 +562,7 @@ export function DataPage() {
 						<Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', py: 6 }}>
 							<CircularProgress size={16} sx={{ color: '#1f5fbf' }} />
 							<Typography sx={{ fontFamily: MONO, fontSize: 12, color: '#5a7090' }}>
-								Loading {activeTab}.json…
+								Loading selected trade date…
 							</Typography>
 						</Stack>
 					)}
@@ -512,9 +578,9 @@ export function DataPage() {
 								fontSize: 12,
 							}}
 						>
-							Could not load {activeTab}.json — the GitHub Action may not have run yet, or the file path is wrong.
+							Could not load {activeTab} from Supabase. Please verify DB access and env vars.
 							<br />
-							Expected: <code>{DATA_BASE}/{activeTab}.json</code>
+							Expected envs: <code>VITE_SUPABASE_URL</code>, <code>VITE_SUPABASE_ANON_KEY</code>
 						</Alert>
 					)}
 
