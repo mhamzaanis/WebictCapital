@@ -1,7 +1,7 @@
 name: Daily PSX Data Update
 
 permissions:
-  contents: write
+  contents: read
 
 on:
   schedule:
@@ -15,11 +15,12 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
@@ -34,10 +35,13 @@ jobs:
           restore-keys: ${{ runner.os }}-pip-
 
       - name: Install dependencies
-        run: pip install pdfplumber requests
+        run: pip install pdfplumber requests supabase postgrest
 
-      - name: Ensure output directory exists
-        run: mkdir -p public/data/psx && touch public/data/psx/.gitkeep
+      - name: Validate required secrets
+        run: |
+          set -euo pipefail
+          test -n "${SUPABASE_URL}"
+          test -n "${SUPABASE_SERVICE_KEY}"
 
       - name: Run PSX parser with hourly retries
         run: |
@@ -56,19 +60,3 @@ jobs:
           done
           echo "Parser failed after ${max_attempts} attempts."
           exit 1
-
-      - name: Show generated files
-        run: ls -lh public/data/psx/
-
-      - name: Commit and push
-        run: |
-          git config user.name "PSX Bot"
-          git config user.email "bot@users.noreply.github.com"
-          git add public/data/psx/
-          git diff --cached --stat
-          if git diff --cached --quiet; then
-            echo "No changes to commit."
-          else
-            git commit -m "chore: PSX closing data $(date +'%Y-%m-%d %H:%M PKT')"
-            git push
-          fi
