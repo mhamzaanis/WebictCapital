@@ -34,7 +34,6 @@ type PsxStock = {
 	section: string | null
 	industry: string | null
 	turnover: string | number | null
-	prev_rate: string | number | null
 	open: string | number | null
 	high: string | number | null
 	low: string | number | null
@@ -135,10 +134,6 @@ function mapDbStockToPsxStock(stock: DbStockRow): PsxStock {
 		section: stock.section,
 		industry: stock.section,
 		turnover: stock.turnover,
-		prev_rate:
-			stock.close !== null && stock.change !== null
-				? Number(stock.close) - Number(stock.change)
-				: null,
 		open: stock.open,
 		high: stock.high,
 		low: stock.low,
@@ -194,7 +189,7 @@ async function fetchSupabaseTradeDay(tradeDate: string): Promise<PsxData> {
 }
 
 function compareCells(a: PsxStock, b: PsxStock, key: SortKey): number {
-	const numericKeys: SortKey[] = ['turnover', 'prev_rate', 'open', 'high', 'low', 'last_rate', 'change']
+	const numericKeys: SortKey[] = ['turnover', 'open', 'high', 'low', 'last_rate', 'change']
 	if (numericKeys.includes(key)) {
 		const an = toNum(a[key])
 		const bn = toNum(b[key])
@@ -734,7 +729,7 @@ export function DataPage() {
 								component={Paper}
 								sx={{
 									bgcolor: '#ffffff',
-									border: '1px solid #d3e0f4',
+									// border: '1px solid #d3e0f4',
 									borderRadius: 1.5,
 									maxHeight: { xs: 560, md: 700 },
 								}}
@@ -745,7 +740,6 @@ export function DataPage() {
 											<SortCell id="symbol"    label="SYMBOL"   align="left" />
 											<SortCell id="company"   label="COMPANY"  align="left" />
 											<SortCell id="turnover"  label="TURNOVER"  />
-											<SortCell id="prev_rate" label="PREV"      />
 											<SortCell id="open"      label="OPEN"      />
 											<SortCell id="high"      label="HIGH"      />
 											<SortCell id="low"       label="LOW"       />
@@ -799,11 +793,6 @@ export function DataPage() {
 													{/* Turnover */}
 													<TableCell align="right" sx={{ color: '#4f6688', fontFamily: MONO, fontSize: 11 }}>
 														{fmtNum(stock.turnover)}
-													</TableCell>
-
-													{/* Prev */}
-													<TableCell align="right" sx={{ color: '#4f6688', fontFamily: MONO, fontSize: 12 }}>
-														{stock.prev_rate || '—'}
 													</TableCell>
 
 													{/* Open */}
@@ -869,7 +858,7 @@ export function DataPage() {
 										{displayedStocks.length === 0 && search && (
 											<TableRow>
 												<TableCell
-													colSpan={9}
+													colSpan={8}
 													align="center"
 															sx={{ color: '#6b84aa', fontFamily: MONO, fontSize: 12, py: 5 }}
 												>
@@ -879,7 +868,9 @@ export function DataPage() {
 										)}
 									</TableBody>
 								</Table>
-								<TablePagination
+								
+							</TableContainer>
+							<TablePagination
 									component="div"
 									count={displayedStocks.length}
 									page={page}
@@ -891,6 +882,7 @@ export function DataPage() {
 									}}
 									rowsPerPageOptions={[10, 25, 50, 100]}
 									sx={{
+										borderRadius: '0 0 1.5rem 1.5rem',
 										borderTop: '1px solid #e5eefb',
 										bgcolor: '#f8fbff',
 										'& .MuiTablePagination-toolbar, & .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows, & .MuiInputBase-root': {
@@ -900,7 +892,6 @@ export function DataPage() {
 										},
 									}}
 								/>
-							</TableContainer>
 						</>
 					)}
 				</Stack>
