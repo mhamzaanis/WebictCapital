@@ -29,19 +29,6 @@ export function Footer() {
               <br />
               +44 (0) 20 7016 6811
             </Typography>
-            <Stack spacing={0.5} sx={{ mt: 2.5 }}>
-              {['Twitter', 'LinkedIn', 'Medium'].map((item) => (
-                <Link
-                  key={item}
-                  href="#"
-                  underline="hover"
-                  color="text.secondary"
-                  sx={{ fontSize: 13, transition: 'color 0.25s ease, transform 0.25s ease', '&:hover': { color: 'primary.main', transform: 'translateX(2px)' } }}
-                >
-                  {item}
-                </Link>
-              ))}
-            </Stack>
           </Grid>
 
           {footerColumns.map((column) => (
@@ -67,11 +54,11 @@ export function Footer() {
         <Box component={motion.div} initial={reduceMotion ? false : { opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.5, delay: 0.1 }} sx={{ borderTop: '1px solid', borderColor: 'divider', pt: 3, display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'space-between' }}>
           <Box>
             <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>© Webict Capital. All rights reserved.</Typography>
-            <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>
+            {/* <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>
               Webict Capital SAS LLC is authorised and regulated by the Financial Conduct Authority.
-            </Typography>
+            </Typography> */}
           </Box>
-          <Stack direction="row" spacing={1.3} useFlexGap sx={{ flexWrap: 'wrap', width: { xs: '100%', md: 'auto' } }}>
+          {/* <Stack direction="row" spacing={1.3} useFlexGap sx={{ flexWrap: 'wrap', width: { xs: '100%', md: 'auto' } }}>
             {legalLinks.map((item) => (
               <Link
                 key={item}
@@ -83,7 +70,7 @@ export function Footer() {
                 {item}
               </Link>
             ))}
-          </Stack>
+          </Stack> */}
         </Box>
       </Container>
     </Box>
