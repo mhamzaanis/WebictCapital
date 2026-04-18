@@ -118,39 +118,21 @@ export const newsCards: NewsCard[] = [
 ]
 
 export const footerColumns: FooterColumn[] = [
+  {title: 'Social Media',
+    links: [
+      { label: 'Twitter', href: '#' },
+      { label: 'LinkedIn', href: '#' },
+      { label: 'Facebook', href: '#' },
+    ]
+  },
   {
     title: 'Webict Capital',
     links: [
-      { label: 'About Us', href: '/about' },
-      { label: 'Sustainability', href: '#' },
-      { label: 'Our Team', href: '#' },
-      { label: 'Recruitments & Events', href: '#' },
-      { label: 'Contact', href: '/about#contact' },
+    { label: 'Glossary', href: '/glossary' },
+    { label: 'Masterclasses', href: '/masterclasses'},,
+    { label: 'Data', href: '/data' },
+    { label: 'About us', href: '/about' },
     ],
-  },
-  {
-    title: 'Founder',
-    links: [
-      { label: 'Founder Wellbeing', href: '#' },
-      { label: 'Programme Overview', href: '#' },
-      { label: 'Founder Survey', href: '#' },
-    ],
-  },
-  {
-    title: 'Companies',
-    links: [
-      { label: 'Companies', href: '#' },
-      { label: 'Portfolio Careers', href: '#' },
-      { label: 'Founder Spotlights', href: '#' },
-    ],
-  },
-  {
-    title: 'Resources',
-    links: [
-      { label: 'ESG', href: '#' },
-      { label: 'Marketing', href: '#' },
-      { label: 'News', href: '#' },
-      { label: 'Events', href: '#' },
-    ],
-  },
+    
+  }
 ]
