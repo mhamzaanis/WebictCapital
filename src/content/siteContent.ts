@@ -10,9 +10,9 @@ export const navItems: NavItem[] = [
     ],
   },
   { label: 'Data', href: '/data' },
-  { label: 'Advisory', href: '#' },
-  { label: 'Our team', href: '#' },
-  { label: 'News', href: '#' },
+  // { label: 'Advisory', href: '#' },
+  // { label: 'Our team', href: '#' },
+  // { label: 'News', href: '#' },
   { label: 'About us', href: '/about' },
 ]
 

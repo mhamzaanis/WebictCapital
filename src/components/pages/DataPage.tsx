@@ -232,6 +232,7 @@ const headCell = {
 export function DataPage() {
 	const [slotData, setSlotData] = useState<Record<SlotKey, PsxData | null>>(() => buildSlotRecord<PsxData | null>(null))
 	const [slotStatus, setSlotStatus] = useState<Record<SlotKey, 'idle' | 'loading' | 'ok' | 'error'>>(() => buildSlotRecord<'idle' | 'loading' | 'ok' | 'error'>('loading'))
+	const [slotError, setSlotError] = useState<Record<SlotKey, string | null>>(() => buildSlotRecord<string | null>(null))
 	const [slotTradeDate, setSlotTradeDate] = useState<Record<SlotKey, string | null>>(() => buildSlotRecord<string | null>(null))
 	const [activeTab, setActiveTab] = useState<SlotKey>('day1')
 	const [search, setSearch] = useState('')
@@ -248,11 +249,17 @@ export function DataPage() {
 
 	const loadSlotData = useCallback(async (slot: SlotKey, tradeDate: string) => {
 		setSlotStatus((prev) => ({ ...prev, [slot]: 'loading' }))
+		setSlotError((prev) => ({ ...prev, [slot]: null }))
 		try {
 			const data = await fetchSupabaseTradeDay(tradeDate)
 			setSlotData((prev) => ({ ...prev, [slot]: data }))
 			setSlotStatus((prev) => ({ ...prev, [slot]: 'ok' }))
-		} catch {
+		} catch (error: unknown) {
+			const message =
+			typeof error === 'object' && error !== null && 'message' in error && typeof error.message === 'string'
+				? error.message
+				: 'Unknown error while querying Supabase.'
+			setSlotError((prev) => ({ ...prev, [slot]: message }))
 			setSlotStatus((prev) => ({ ...prev, [slot]: 'error' }))
 		}
 	}, [])
@@ -263,6 +270,7 @@ export function DataPage() {
 
 		async function loadSupabaseData() {
 			if (!hasSupabaseConfig || !supabase) {
+				setSlotError(buildSlotRecord<string | null>('Supabase env vars are missing.'))
 				setSlotStatus(buildSlotRecord<'idle' | 'loading' | 'ok' | 'error'>('error'))
 				return
 			}
@@ -275,6 +283,8 @@ export function DataPage() {
 
 			if (datesResult.error || !datesResult.data) {
 				if (!cancelled) {
+					const message = datesResult.error?.message ?? 'Failed to fetch trade dates from Supabase.'
+					setSlotError(buildSlotRecord<string | null>(message))
 					setSlotStatus(buildSlotRecord<'idle' | 'loading' | 'ok' | 'error'>('error'))
 				}
 				return
@@ -292,6 +302,7 @@ export function DataPage() {
 
 			setSlotTradeDate(nextDates)
 			setSlotData(buildSlotRecord<PsxData | null>(null))
+			setSlotError(buildSlotRecord<string | null>(null))
 			setSlotStatus(nextStatus)
 
 			const firstSlot = SLOTS.find((slot) => nextDates[slot]) ?? SLOTS[0]
@@ -576,6 +587,15 @@ export function DataPage() {
 							Could not load {activeTab} from Supabase. Please verify DB access and env vars.
 							<br />
 							Expected envs: <code>VITE_SUPABASE_URL</code>, <code>VITE_SUPABASE_ANON_KEY</code>
+								{slotError[activeTab] && (
+									<>
+										<br />
+										Supabase error: <code>{slotError[activeTab]}</code>
+										<br />
+										If RLS is enabled, add <code>SELECT</code> policies for the <code>anon</code> role on
+										 <code>market_daily_summary</code> and <code>datatable</code>.
+									</>
+								)}
 						</Alert>
 					)}
 
