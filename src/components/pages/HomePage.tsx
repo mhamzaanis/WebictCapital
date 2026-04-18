@@ -689,7 +689,7 @@ export function HomePage() {
                   border: '1px solid rgba(0,0,0,0.12)',
                   backgroundImage:
                     'linear-gradient(10deg, rgba(4,10,24,0.65) 0%, rgba(10,24,56,0.15) 55%, rgba(10,24,56,0.04) 100%),' +
-                    'url(/herosection.jpg)',
+                    'url(/herosection.webp)',
                   backgroundSize: 'cover', backgroundPosition: 'center 42%',
                   minHeight: { xs: 270, sm: 380, md: 480 },
                   
