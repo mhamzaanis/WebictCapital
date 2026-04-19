@@ -16,8 +16,8 @@ type CustomStatsCardsProps = {
 }
 
 function changeColor(change: number): string {
-	if (!Number.isFinite(change) || change === 0) return '#64748b'
-	return change > 0 ? '#22c55e' : '#ef4444'
+	if (!Number.isFinite(change) || change === 0) return '#6f829d'
+	return change > 0 ? '#1a6640' : '#b4283a'
 }
 
 function changeSign(change: number): string {
@@ -36,7 +36,7 @@ export function CustomStatsCards({
 	unchanged,
 	monoFont,
 }: CustomStatsCardsProps) {
-	const statValueColor = '#0f2a5f'
+	const statValueColor = '#080e1a'
 	const kseChangeColor = changeColor(kse100Change)
 
 	return (
@@ -82,13 +82,13 @@ export function CustomStatsCards({
 					sx={{
 						p: 1.5,
 						bgcolor: '#ffffff',
-						border: '1px solid #d3e0f4',
+						border: '1px solid #e2eaf5',
 						borderRadius: 1.2,
 					}}
 				>
 					<Typography
 						sx={{
-							color: '#6b84aa',
+							color: '#8097b0',
 							fontSize: 10,
 							textTransform: 'uppercase',
 							letterSpacing: '0.1em',

@@ -56,8 +56,8 @@ function changeVal(change: string | number | null | undefined): number {
 
 function changeColor(change: string | number | null | undefined): string {
 	const n = changeVal(change)
-	if (isNaN(n) || n === 0) return '#64748b'
-	return n > 0 ? '#22c55e' : '#ef4444'
+	if (isNaN(n) || n === 0) return '#6f829d'
+	return n > 0 ? '#1a6640' : '#b4283a'
 }
 
 function changeSign(change: string | number | null | undefined): string {
@@ -99,13 +99,13 @@ export function CustomDataTable({ rows, searchQuery, monoFont }: CustomDataTable
 	}, [rows, searchQuery, rowsPerPage])
 
 	const headCell = {
-		bgcolor: '#f4f8ff',
-		color: '#4b6282',
+		bgcolor: '#fafbfd',
+		color: '#4a5e78',
 		fontFamily: monoFont,
 		fontWeight: 700,
 		fontSize: 11,
 		letterSpacing: '0.06em',
-		borderBottom: '1px solid #d8e4f5',
+		borderBottom: '1px solid #e2eaf5',
 		py: 1.2,
 		whiteSpace: 'nowrap' as const,
 	}
@@ -132,9 +132,9 @@ export function CustomDataTable({ rows, searchQuery, monoFont }: CustomDataTable
 					}
 				}}
 				sx={{
-					color: `${sortKey === id ? '#94a3b8' : '#475569'} !important`,
-					'& .MuiTableSortLabel-icon': { color: '#334155 !important' },
-					'&.Mui-active': { color: '#94a3b8 !important' },
+					color: `${sortKey === id ? '#0a2463' : '#4a5e78'} !important`,
+					'& .MuiTableSortLabel-icon': { color: '#0a2463 !important' },
+					'&.Mui-active': { color: '#0a2463 !important' },
 				}}
 			>
 				{label}
@@ -150,6 +150,7 @@ export function CustomDataTable({ rows, searchQuery, monoFont }: CustomDataTable
 					bgcolor: '#ffffff',
 					borderRadius: 1.5,
 					maxHeight: { xs: 560, md: 700 },
+					border: '1px solid #e2eaf5',
 				}}
 			>
 				<Table stickyHeader size="small" aria-label="PSX stocks table">
@@ -175,13 +176,13 @@ export function CustomDataTable({ rows, searchQuery, monoFont }: CustomDataTable
 									key={`${stock.symbol}-${page}-${i}`}
 									hover
 									sx={{
-										'&:hover': { bgcolor: '#f3f8ff' },
-										'& td': { borderBottom: '1px solid #e5eefb' },
+										'&:hover': { bgcolor: '#f5f8ff' },
+										'& td': { borderBottom: '1px solid #e2eaf5' },
 									}}
 								>
 									<TableCell
 										sx={{
-											color: '#1f5fbf',
+											color: '#0a2463',
 											fontFamily: monoFont,
 											fontWeight: 700,
 											fontSize: 12,
@@ -194,7 +195,7 @@ export function CustomDataTable({ rows, searchQuery, monoFont }: CustomDataTable
 
 									<TableCell
 										sx={{
-											color: '#4f6688',
+											color: '#4a5e78',
 											fontSize: 12,
 											maxWidth: { xs: 140, md: 260 },
 											overflow: 'hidden',
@@ -206,26 +207,26 @@ export function CustomDataTable({ rows, searchQuery, monoFont }: CustomDataTable
 										{stock.company}
 									</TableCell>
 
-									<TableCell align="right" sx={{ color: '#4f6688', fontFamily: monoFont, fontSize: 11 }}>
+									<TableCell align="right" sx={{ color: '#4a5e78', fontFamily: monoFont, fontSize: 11 }}>
 										{fmtNum(stock.turnover)}
 									</TableCell>
 
-									<TableCell align="right" sx={{ color: '#4f6688', fontFamily: monoFont, fontSize: 12 }}>
+									<TableCell align="right" sx={{ color: '#4a5e78', fontFamily: monoFont, fontSize: 12 }}>
 										{stock.open || '—'}
 									</TableCell>
 
-									<TableCell align="right" sx={{ color: '#22c55e', fontFamily: monoFont, fontSize: 12 }}>
+									<TableCell align="right" sx={{ color: '#1a6640', fontFamily: monoFont, fontSize: 12 }}>
 										{stock.high || '—'}
 									</TableCell>
 
-									<TableCell align="right" sx={{ color: '#ef4444', fontFamily: monoFont, fontSize: 12 }}>
+									<TableCell align="right" sx={{ color: '#b4283a', fontFamily: monoFont, fontSize: 12 }}>
 										{stock.low || '—'}
 									</TableCell>
 
 									<TableCell
 										align="right"
 										sx={{
-											color: '#0f2a5f',
+											color: '#080e1a',
 											fontFamily: monoFont,
 											fontWeight: 700,
 											fontSize: 13,
@@ -264,7 +265,7 @@ export function CustomDataTable({ rows, searchQuery, monoFont }: CustomDataTable
 								<TableCell
 									colSpan={8}
 									align="center"
-									sx={{ color: '#6b84aa', fontFamily: monoFont, fontSize: 12, py: 5 }}
+									sx={{ color: '#8097b0', fontFamily: monoFont, fontSize: 12, py: 5 }}
 								>
 									No symbols match &quot;{searchQuery}&quot;
 								</TableCell>
@@ -287,12 +288,12 @@ export function CustomDataTable({ rows, searchQuery, monoFont }: CustomDataTable
 				rowsPerPageOptions={[10, 25, 50, 100]}
 				sx={{
 					borderRadius: '0 0 1.5rem 1.5rem',
-					borderTop: '1px solid #e5eefb',
-					bgcolor: '#f8fbff',
+					borderTop: '1px solid #e2eaf5',
+					bgcolor: '#fafbfd',
 					'& .MuiTablePagination-toolbar, & .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows, & .MuiInputBase-root': {
 						fontFamily: monoFont,
 						fontSize: 12,
-						color: '#4f6688',
+						color: '#4a5e78',
 					},
 				}}
 			/>

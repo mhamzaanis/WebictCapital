@@ -10,22 +10,22 @@ import {
 	TableRow,
 } from '@mui/material'
 
-const MONO = '"JetBrains Mono", "Fira Code", "Cascadia Code", monospace'
+const MONO = '"Playfair Display", serif'
 
 const headCell = {
-	bgcolor: '#f4f8ff',
-	color: '#4b6282',
+	bgcolor: '#fafbfd',
+	color: '#4a5e78',
 	fontFamily: MONO,
 	fontWeight: 700,
 	fontSize: 11,
 	letterSpacing: '0.06em',
-	borderBottom: '1px solid #d8e4f5',
+	borderBottom: '1px solid #e2eaf5',
 	py: 1.2,
 	whiteSpace: 'nowrap' as const,
 }
 
 const skeletonPulseSx = {
-	bgcolor: '#e9f1ff',
+	bgcolor: '#edf3fb',
 	'&::after': {
 		background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.65), transparent)',
 	},
@@ -50,7 +50,7 @@ export function StatCardsSkeleton() {
 					sx={{
 						p: 1.5,
 						bgcolor: '#ffffff',
-						border: '1px solid #d3e0f4',
+						border: '1px solid #e2eaf5',
 						borderRadius: 1.2,
 					}}
 				>
@@ -71,7 +71,7 @@ export function PriceTableSkeleton() {
 					bgcolor: '#ffffff',
 					borderRadius: 1.5,
 					overflow: 'hidden',
-					border: '1px solid #dfe9f8',
+					border: '1px solid #e2eaf5',
 				}}
 			>
 				<Table size="small" aria-label="Loading PSX stocks table">
@@ -111,8 +111,8 @@ export function PriceTableSkeleton() {
 			</TableContainer>
 			<Box
 				sx={{
-					borderTop: '1px solid #e5eefb',
-					bgcolor: '#f8fbff',
+					borderTop: '1px solid #e2eaf5',
+					bgcolor: '#fafbfd',
 					px: 2,
 					py: 1.2,
 					display: 'flex',
