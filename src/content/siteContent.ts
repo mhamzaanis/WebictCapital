@@ -10,7 +10,7 @@ export const navItems: NavItem[] = [
     ],
   },
   { label: 'Data', href: '/data' },
-  // { label: 'Advisory', href: '#' },
+  { label: 'Advisory', href: '/advisory' },
   // { label: 'Our team', href: '#' },
   // { label: 'News', href: '#' },
   { label: 'About us', href: '/about' },
@@ -131,6 +131,7 @@ export const footerColumns: FooterColumn[] = [
     { label: 'Glossary', href: '/glossary' },
     { label: 'Masterclasses', href: '/masterclasses'},,
     { label: 'Data', href: '/data' },
+    { label: 'Advisory', href: '/advisory' },
     { label: 'About us', href: '/about' },
     ],
     
