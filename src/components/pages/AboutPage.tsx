@@ -438,7 +438,7 @@ export function AboutPage() {
                       >
                         {isSubmitting ? 'Sending…' : 'Send inquiry'}
                       </Button>
-                      <Button
+                      {/* <Button
                         variant="outlined"
                         href="mailto:contact@webictcapital.com"
                         disableElevation
@@ -455,7 +455,7 @@ export function AboutPage() {
                         }}
                       >
                         Email directly
-                      </Button>
+                      </Button> */}
                     </Stack>
 
                     {result && (
