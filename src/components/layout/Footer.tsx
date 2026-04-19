@@ -21,13 +21,13 @@ export function Footer() {
           <Grid size={{ xs: 12, md: 3 }} component={motion.div} initial={reduceMotion ? false : { opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.16 }} transition={{ duration: 0.45 }}>
             <Typography variant="h5" sx={{ fontSize: 20, mb: 2 }}>Webict Capital.</Typography>
             <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.8 }}>
-              The Stables, 23, Britannia Street,
-              <br />
+              Karachi, Pakistan
+              {/* <br />
               London WC1X 9JB, UK
               <br />
               +44 (0) 20 7016 6800
               <br />
-              +44 (0) 20 7016 6811
+              +44 (0) 20 7016 6811 */}
             </Typography>
           </Grid>
 
