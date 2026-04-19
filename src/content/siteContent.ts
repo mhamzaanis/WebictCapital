@@ -129,7 +129,7 @@ export const footerColumns: FooterColumn[] = [
     title: 'Webict Capital',
     links: [
     { label: 'Glossary', href: '/glossary' },
-    { label: 'Masterclasses', href: '/masterclasses'},,
+    { label: 'Masterclasses', href: '/masterclasses' },
     { label: 'Data', href: '/data' },
     { label: 'Advisory', href: '/advisory' },
     { label: 'About us', href: '/about' },

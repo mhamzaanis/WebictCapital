@@ -373,12 +373,14 @@ export function NavBar() {
         anchor="right"
         open={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
-        PaperProps={{
-          sx: {
-            width: 300,
-            bgcolor: '#ffffff',
-            borderLeft: '1px solid #e2eaf5',
-            boxShadow: '-8px 0 32px rgba(10,36,99,0.08)',
+        slotProps={{
+          paper: {
+            sx: {
+              width: 300,
+              bgcolor: '#ffffff',
+              borderLeft: '1px solid #e2eaf5',
+              boxShadow: '-8px 0 32px rgba(10,36,99,0.08)',
+            },
           },
         }}
       >

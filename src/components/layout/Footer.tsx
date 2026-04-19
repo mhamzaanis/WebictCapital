@@ -2,8 +2,6 @@ import { Box, Container, Grid, Link, Stack, Typography } from '@mui/material'
 import { motion, useReducedMotion } from 'motion/react'
 import { footerColumns } from '../../content/siteContent'
 
-const legalLinks = ['Webict Capital eVentCloud', 'Confidentiality', 'Our Commitment', 'Code of conduct', 'Legal']
-
 export function Footer() {
   const reduceMotion = useReducedMotion()
 
