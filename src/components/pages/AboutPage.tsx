@@ -1,6 +1,9 @@
-import { Box, Button, Container, Grid, Link, Stack, TextField, Typography } from '@mui/material'
+import { Box, Button, Container, Grid, Stack, TextField, Typography } from '@mui/material'
 import { motion, useReducedMotion } from 'motion/react'
+import { type FormEvent, useState } from 'react'
 import { MotionReveal } from '../animations/MotionReveal'
+
+const WEB3FORMS_ACCESS_KEY = '6f47bd12-e704-4f13-a5ae-63255ad5bfcd'
 
 const principles = [
   {
@@ -40,6 +43,37 @@ const teamHighlights = [
 
 export function AboutPage() {
   const reduceMotion = useReducedMotion()
+  const [result, setResult] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setResult('Sending....')
+    setIsSubmitting(true)
+
+    const form = event.currentTarget
+    const formData = new FormData(form)
+    formData.append('access_key', WEB3FORMS_ACCESS_KEY)
+
+    try {
+      const response = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        body: formData,
+      })
+
+      const data = (await response.json()) as { success?: boolean }
+      if (data.success) {
+        setResult('Form Submitted Successfully')
+        form.reset()
+      } else {
+        setResult('Error')
+      }
+    } catch {
+      setResult('Error')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   return (
     <Box
@@ -53,60 +87,201 @@ export function AboutPage() {
     >
       <Container maxWidth="xl" sx={{ maxWidth: '1240px !important', px: { xs: 2, md: 3.5 } }}>
         <Stack spacing={{ xs: 5, md: 7 }}>
-          <MotionReveal>
-            <Box
-              sx={{
-                border: '1px solid',
-                borderColor: '#cfdef3',
-                bgcolor: 'rgba(255,255,255,0.84)',
-                backdropFilter: 'blur(4px)',
-                borderRadius: 1.6,
-                p: { xs: 2.2, md: 3.5 },
-                boxShadow: '0 16px 34px rgba(14, 41, 88, 0.08)',
-                position: 'relative',
-                overflow: 'hidden',
-              }}
-            >
-              <Box
-                aria-hidden
-                sx={{
-                  position: 'absolute',
-                  width: { xs: 180, md: 240 },
-                  height: { xs: 180, md: 240 },
-                  borderRadius: '50%',
-                  right: { xs: -70, md: -90 },
-                  top: { xs: -60, md: -80 },
-                  background: 'radial-gradient(circle, rgba(21,101,192,0.22) 0%, transparent 72%)',
-                  pointerEvents: 'none',
-                }}
-              />
+          <Grid container spacing={{ xs: 1.7, md: 2.4 }} sx={{ alignItems: 'stretch' }}>
+            <Grid size={{ xs: 12, lg: 5 }}>
+              <MotionReveal>
+                <Box
+                  sx={{
+                    border: '1px solid',
+                    borderColor: '#cfdef3',
+                    bgcolor: 'rgba(255,255,255,0.86)',
+                    backdropFilter: 'blur(4px)',
+                    borderRadius: 1.6,
+                    p: { xs: 2.2, md: 3.2 },
+                    boxShadow: '0 16px 34px rgba(14, 41, 88, 0.08)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    height: '100%',
+                    minHeight: { xs: 280, lg: 420 },
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <Box
+                    aria-hidden
+                    sx={{
+                      position: 'absolute',
+                      width: { xs: 180, md: 240 },
+                      height: { xs: 180, md: 240 },
+                      borderRadius: '50%',
+                      right: { xs: -70, md: -90 },
+                      top: { xs: -60, md: -80 },
+                      background: 'radial-gradient(circle, rgba(21,101,192,0.22) 0%, transparent 72%)',
+                      pointerEvents: 'none',
+                    }}
+                  />
 
-              <Typography
-                variant="h1"
+                  <Box>
+                    <Typography
+                      variant="h1"
+                      sx={{
+                        fontSize: { xs: '2rem', sm: '2.4rem', md: '2.8rem' },
+                        lineHeight: 1.08,
+                        letterSpacing: '-0.02em',
+                        color: '#0b1320',
+                        maxWidth: 820,
+                      }}
+                    >
+                      About Webict Capital
+                    </Typography>
+                    <Typography
+                      sx={{
+                        mt: 1.4,
+                        maxWidth: 840,
+                        color: '#253750',
+                        fontSize: { xs: 15, md: 17 },
+                        lineHeight: 1.72,
+                      }}
+                    >
+                      We build serious investing education for curious learners and disciplined future investors. Our work
+                      combines classical market principles with modern tools to make decision-making clearer, calmer, and
+                      more consistent.
+                    </Typography>
+                  </Box>
+
+                  <Stack spacing={0.8} sx={{ mt: 2.2 }}>
+                    <Typography sx={{ fontSize: 12, color: '#567090', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                      Office
+                    </Typography>
+                    <Typography sx={{ color: '#1c2f48', fontSize: 15.5 }}>Karachi, Pakistan</Typography>
+                  </Stack>
+                </Box>
+              </MotionReveal>
+            </Grid>
+
+            <Grid size={{ xs: 12, lg: 7 }}>
+              <Box
+                id="contact"
                 sx={{
-                  fontSize: { xs: '2rem', sm: '2.4rem', md: '3rem' },
-                  lineHeight: 1.08,
-                  letterSpacing: '-0.02em',
-                  color: '#0b1320',
-                  maxWidth: 820,
+                  border: '1px solid',
+                  borderColor: '#c8d9f3',
+                  borderRadius: 1.6,
+                  overflow: 'hidden',
+                  bgcolor: '#ffffff',
+                  boxShadow: '0 18px 34px rgba(15, 42, 95, 0.08)',
+                  height: '100%',
                 }}
               >
-                About Webict Capital
-              </Typography>
-              <Typography
-                sx={{
-                  mt: 1.4,
-                  maxWidth: 840,
-                  color: '#253750',
-                  fontSize: { xs: 15, md: 18 },
-                  lineHeight: 1.7,
-                }}
-              >
-                We build serious investing education for curious learners and disciplined future investors. Our work combines
-                classical market principles with modern tools to make decision-making clearer, calmer, and more consistent.
-              </Typography>
-            </Box>
-          </MotionReveal>
+                <Grid container sx={{ height: '100%' }}>
+                  <Grid size={{ xs: 12, md: 4.5 }}>
+                    <Box
+                      sx={{
+                        height: '100%',
+                        p: { xs: 2.2, md: 2.6 },
+                        backgroundImage: 'linear-gradient(158deg, #102a54 0%, #0f2a5f 55%, #1a4fa0 100%)',
+                        color: '#ffffff',
+                      }}
+                    >
+                      <MotionReveal>
+                        <Typography variant="h3" sx={{ fontSize: { xs: 24, md: 30 }, lineHeight: 1.1, mb: 1.1 }}>
+                          Contact Us
+                        </Typography>
+                        <Typography sx={{ color: 'rgba(255,255,255,0.84)', fontSize: 14, lineHeight: 1.68 }}>
+                          Have questions about our programs, workshops, or portfolio education tracks? Reach out and our
+                          team will guide you to the right next step.
+                        </Typography>
+                      </MotionReveal>
+                    </Box>
+                  </Grid>
+
+                  <Grid size={{ xs: 12, md: 7.5 }}>
+                    <Box sx={{ p: { xs: 2.2, md: 2.6 } }}>
+                      <MotionReveal>
+                        <Typography sx={{ fontSize: { xs: 20, md: 25 }, color: '#0b1320', mb: 0.8 }}>Send a message</Typography>
+                        <Typography sx={{ color: '#4a5c74', mb: 1.8, fontSize: 14 }}>
+                          We usually respond within one business day.
+                        </Typography>
+
+                        <Box component="form" onSubmit={onSubmit}>
+                          <Grid container spacing={1.2}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
+                              <TextField fullWidth label="Full name" name="name" required variant="outlined" size="small" />
+                            </Grid>
+                            <Grid size={{ xs: 12, sm: 6 }}>
+                              <TextField
+                                fullWidth
+                                label="Email address"
+                                name="email"
+                                required
+                                variant="outlined"
+                                type="email"
+                                size="small"
+                              />
+                            </Grid>
+                            <Grid size={{ xs: 12 }}>
+                              <TextField fullWidth label="Subject" name="subject" variant="outlined" size="small" />
+                            </Grid>
+                            <Grid size={{ xs: 12 }}>
+                              <TextField
+                                fullWidth
+                                label="Message"
+                                name="message"
+                                required
+                                multiline
+                                minRows={4}
+                                variant="outlined"
+                                size="small"
+                              />
+                            </Grid>
+                          </Grid>
+
+                          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.1} sx={{ mt: 1.8 }}>
+                            <Button
+                              type="submit"
+                              disabled={isSubmitting}
+                              variant="contained"
+                              sx={{
+                                textTransform: 'none',
+                                bgcolor: '#0f2a5f',
+                                px: 2.5,
+                                py: 0.9,
+                                borderRadius: 1,
+                                '&:hover': { bgcolor: '#183a76' },
+                              }}
+                            >
+                              {isSubmitting ? 'Sending....' : 'Send inquiry'}
+                            </Button>
+                            <Button
+                              variant="outlined"
+                              href="mailto:contact@webictcapital.com"
+                              sx={{
+                                textTransform: 'none',
+                                borderColor: '#9ebbe8',
+                                color: '#0f2a5f',
+                                px: 2.2,
+                                py: 0.9,
+                                borderRadius: 1,
+                                '&:hover': { borderColor: '#0f2a5f', bgcolor: '#eef4ff' },
+                              }}
+                            >
+                              Email directly
+                            </Button>
+                          </Stack>
+
+                          {result ? (
+                            <Typography sx={{ mt: 1.2, fontSize: 13, color: '#4a5c74' }}>
+                              {result}
+                            </Typography>
+                          ) : null}
+                        </Box>
+                      </MotionReveal>
+                    </Box>
+                  </Grid>
+                </Grid>
+              </Box>
+            </Grid>
+          </Grid>
 
           <Grid container spacing={{ xs: 1.5, md: 2.4 }}>
             {teamHighlights.map((item, index) => (
@@ -159,124 +334,6 @@ export function AboutPage() {
             </Grid>
           </Box>
 
-          <Box
-            id="contact"
-            sx={{
-              border: '1px solid',
-              borderColor: '#c8d9f3',
-              borderRadius: 1.6,
-              overflow: 'hidden',
-              bgcolor: '#ffffff',
-              boxShadow: '0 18px 34px rgba(15, 42, 95, 0.08)',
-            }}
-          >
-            <Grid container>
-              <Grid size={{ xs: 12, md: 5 }}>
-                <Box
-                  sx={{
-                    height: '100%',
-                    p: { xs: 2.2, md: 3.1 },
-                    backgroundImage: 'linear-gradient(158deg, #102a54 0%, #0f2a5f 55%, #1a4fa0 100%)',
-                    color: '#ffffff',
-                  }}
-                >
-                  <MotionReveal>
-                    <Typography variant="h3" sx={{ fontSize: { xs: 28, md: 34 }, lineHeight: 1.1, mb: 1.2 }}>
-                      Contact Us
-                    </Typography>
-                    <Typography sx={{ color: 'rgba(255,255,255,0.84)', fontSize: 14.5, lineHeight: 1.7, maxWidth: 420 }}>
-                      Have questions about our programs, workshops, or portfolio education tracks? Reach out and our team will guide
-                      you to the right next step.
-                    </Typography>
-
-                    <Stack spacing={1.4} sx={{ mt: 3.1 }}>
-                      <Box>
-                        <Typography sx={{ fontSize: 12, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.72)' }}>
-                          Email
-                        </Typography>
-                        <Link href="mailto:contact@webictcapital.com" underline="hover" sx={{ color: '#ffffff', fontSize: 15 }}>
-                          contact@webictcapital.com
-                        </Link>
-                      </Box>
-                      <Box>
-                        <Typography sx={{ fontSize: 12, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.72)' }}>
-                          Phone
-                        </Typography>
-                        <Link href="tel:+923001234567" underline="hover" sx={{ color: '#ffffff', fontSize: 15 }}>
-                          +92 300 123 4567
-                        </Link>
-                      </Box>
-                      <Box>
-                        <Typography sx={{ fontSize: 12, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.72)' }}>
-                          Office
-                        </Typography>
-                        <Typography sx={{ color: 'rgba(255,255,255,0.9)', fontSize: 15 }}>
-                          Lahore, Pakistan
-                        </Typography>
-                      </Box>
-                    </Stack>
-                  </MotionReveal>
-                </Box>
-              </Grid>
-
-              <Grid size={{ xs: 12, md: 7 }}>
-                <Box sx={{ p: { xs: 2.2, md: 3.1 } }}>
-                  <MotionReveal>
-                    <Typography sx={{ fontSize: { xs: 22, md: 28 }, color: '#0b1320', mb: 0.8 }}>Send a message</Typography>
-                    <Typography sx={{ color: '#4a5c74', mb: 2.2, fontSize: 14.5 }}>
-                      We usually respond within one business day.
-                    </Typography>
-
-                    <Grid container spacing={1.4}>
-                      <Grid size={{ xs: 12, sm: 6 }}>
-                        <TextField fullWidth label="Full name" variant="outlined" />
-                      </Grid>
-                      <Grid size={{ xs: 12, sm: 6 }}>
-                        <TextField fullWidth label="Email address" variant="outlined" type="email" />
-                      </Grid>
-                      <Grid size={{ xs: 12 }}>
-                        <TextField fullWidth label="Subject" variant="outlined" />
-                      </Grid>
-                      <Grid size={{ xs: 12 }}>
-                        <TextField fullWidth label="Message" multiline minRows={4} variant="outlined" />
-                      </Grid>
-                    </Grid>
-
-                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.2} sx={{ mt: 2 }}>
-                      <Button
-                        variant="contained"
-                        sx={{
-                          textTransform: 'none',
-                          bgcolor: '#0f2a5f',
-                          px: 2.5,
-                          py: 1,
-                          borderRadius: 1,
-                          '&:hover': { bgcolor: '#183a76' },
-                        }}
-                      >
-                        Send inquiry
-                      </Button>
-                      <Button
-                        variant="outlined"
-                        href="mailto:contact@webictcapital.com"
-                        sx={{
-                          textTransform: 'none',
-                          borderColor: '#9ebbe8',
-                          color: '#0f2a5f',
-                          px: 2.2,
-                          py: 1,
-                          borderRadius: 1,
-                          '&:hover': { borderColor: '#0f2a5f', bgcolor: '#eef4ff' },
-                        }}
-                      >
-                        Email directly
-                      </Button>
-                    </Stack>
-                  </MotionReveal>
-                </Box>
-              </Grid>
-            </Grid>
-          </Box>
         </Stack>
       </Container>
     </Box>
