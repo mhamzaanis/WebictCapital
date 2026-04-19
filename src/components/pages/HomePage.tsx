@@ -1,10 +1,20 @@
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import NorthEastIcon from '@mui/icons-material/NorthEast'
-import { Box, Button, Container, InputBase, Link, Stack, Typography } from '@mui/material'
-import { motion, useReducedMotion, useScroll, useTransform } from 'motion/react'
-import { useEffect, useRef, useState } from 'react'
-import { featuredNews, newsCards, portfolioItems } from '../../content/siteContent'
+import { Box, Button, Container, InputBase, Stack, Typography } from '@mui/material'
+import {
+  AnimatePresence,
+  motion,
+  useInView,
+  useReducedMotion,
+  useScroll,
+  useSpring,
+  useTransform,
+} from 'motion/react'
+import { useEffect, useRef, useState, type ComponentType } from 'react'
+import { Link as RouterLink } from 'react-router-dom'
 import { MotionReveal, MotionStagger } from '../animations/MotionReveal'
+
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const TYPING_WORDS = ['Learn.', 'Invest.', 'Lead.']
 
@@ -14,59 +24,96 @@ const STATS = [
   { value: '95%',  label: 'Satisfaction rate' },
 ]
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+const GLOSSARY_MOCK = [
+  { term: 'P/E Ratio',      def: 'Price-to-earnings ratio used to value a company relative to its earnings.' },
+  { term: 'Dividend Yield', def: 'Annual dividend payment expressed as a percentage of share price.' },
+  { term: 'Market Cap',     def: "Total market value of a company's outstanding shares." },
+  { term: 'Bull Market',    def: 'A market trend characterised by rising prices and investor confidence.' },
+  { term: 'Liquidity',      def: 'The ease with which an asset can be converted to cash without impacting price.' },
+]
+
+const DATA_MOCK = [
+  { ticker: 'OGDC',  name: 'Oil & Gas Dev. Co.', price: '158.40',   change: '+2.3%', up: true  },
+  { ticker: 'HBL',   name: 'Habib Bank Ltd',     price: '182.75',   change: '-0.8%', up: false },
+  { ticker: 'LUCK',  name: 'Lucky Cement',        price: '1,024.50', change: '+1.1%', up: true  },
+  { ticker: 'PSO',   name: 'Pakistan State Oil',  price: '312.90',   change: '+0.5%', up: true  },
+  { ticker: 'ENGRO', name: 'Engro Corporation',   price: '286.00',   change: '-1.4%', up: false },
+]
+
+// ─── Motion variants ──────────────────────────────────────────────────────────
+
+const fadeUp = {
+  hidden:  { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] as const } },
+}
+
+const fadeLeft = {
+  hidden:  { opacity: 0, x: -24 },
+  visible: { opacity: 1, x: 0,  transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] as const } },
+}
+
+const fadeRight = {
+  hidden:  { opacity: 0, x: 24 },
+  visible: { opacity: 1, x: 0,  transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] as const } },
+}
+
+const rowVariants = {
+  hidden:  { opacity: 0, x: -10 },
+  visible: (i: number) => ({
+    opacity: 1,
+    x: 0,
+    transition: { delay: i * 0.07, duration: 0.36, ease: [0.22, 1, 0.36, 1] as const },
+  }),
+}
+
+// ─── Typing headline ──────────────────────────────────────────────────────────
 
 function TypingHeadline() {
-  const [displayed, setDisplayed]   = useState('')
-  const [wordIdx,   setWordIdx]     = useState(0)
-  const [charIdx,   setCharIdx]     = useState(0)
-  const [deleting,  setDeleting]    = useState(false)
-  const [done,      setDone]        = useState(false)
+  const [displayed, setDisplayed] = useState('')
+  const [wordIdx,   setWordIdx]   = useState(0)
+  const [charIdx,   setCharIdx]   = useState(0)
+  const [deleting,  setDeleting]  = useState(false)
+  const [done,      setDone]      = useState(false)
   const reduce = useReducedMotion()
 
   useEffect(() => {
     if (reduce) { setDisplayed('Learn. Invest. Lead.'); setDone(true); return }
     if (done) return
-
     const fullText   = TYPING_WORDS.slice(0, wordIdx + 1).join(' ')
     const isLastWord = wordIdx === TYPING_WORDS.length - 1
-
     if (!deleting) {
       if (charIdx < fullText.length) {
-        const t = setTimeout(() => {
-          setDisplayed(fullText.slice(0, charIdx + 1))
-          setCharIdx(c => c + 1)
-        }, charIdx === 0 ? 280 : 58)
+        const t = setTimeout(() => { setDisplayed(fullText.slice(0, charIdx + 1)); setCharIdx(c => c + 1) }, charIdx === 0 ? 280 : 58)
         return () => clearTimeout(t)
       }
       if (isLastWord) { setDone(true); return }
       const t = setTimeout(() => setDeleting(true), 900)
       return () => clearTimeout(t)
     }
-
     const currentText = TYPING_WORDS.slice(0, wordIdx).join(' ')
     if (displayed.length > currentText.length) {
       const t = setTimeout(() => setDisplayed(d => d.slice(0, -1)), 34)
       return () => clearTimeout(t)
     }
-    setDeleting(false)
-    setWordIdx(i => i + 1)
-    setCharIdx(displayed.length)
+    setDeleting(false); setWordIdx(i => i + 1); setCharIdx(displayed.length)
   }, [charIdx, deleting, displayed, done, wordIdx, reduce])
 
   return (
     <Box sx={{ display: 'inline-flex', alignItems: 'baseline', gap: '0.2em', flexWrap: 'wrap' }}>
-      {displayed.split(' ').map((word, i) => (
-        <motion.span
-          key={`${word}-${i}`}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-          style={{ display: 'inline-block' }}
-        >
-          {word}{' '}
-        </motion.span>
-      ))}
+      <AnimatePresence mode="popLayout">
+        {displayed.split(' ').filter(Boolean).map((word, i) => (
+          <motion.span
+            key={`${word}-${i}`}
+            initial={{ opacity: 0, y: 16, filter: 'blur(4px)' }}
+            animate={{ opacity: 1, y: 0,  filter: 'blur(0px)' }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+            style={{ display: 'inline-block' }}
+          >
+            {word}{' '}
+          </motion.span>
+        ))}
+      </AnimatePresence>
       {!done && (
         <Box
           component="span"
@@ -74,10 +121,10 @@ function TypingHeadline() {
             display: 'inline-block',
             width: { xs: '2px', md: '3px' },
             height: { xs: '1.6rem', md: '3.2rem' },
-            bgcolor: '#2563eb',
+            bgcolor: '#0a2463',
             ml: '1px',
             verticalAlign: 'middle',
-            borderRadius: '2px',
+            borderRadius: '1px',
             animation: 'blink 1s step-end infinite',
             '@keyframes blink': { '0%,100%': { opacity: 1 }, '50%': { opacity: 0 } },
           }}
@@ -87,117 +134,428 @@ function TypingHeadline() {
   )
 }
 
-function AnimatedStatValue({ value }: { value: string }) {
-  const reduce = useReducedMotion()
+// ── Animated stat counter ─────────────────────────────────────────────────────
+
+function AnimatedStatValue({ value, triggered }: { value: string; triggered: boolean }) {
+  const reduce       = useReducedMotion()
   const [display, setDisplay] = useState(0)
   const numericValue = Number.parseFloat(value.replace(/[^\d.]/g, '')) || 0
-  const suffix = value.replace(/[\d.]/g, '')
+  const suffix       = value.replace(/[\d.]/g, '')
 
   useEffect(() => {
-    if (reduce) {
-      setDisplay(numericValue)
-      return
-    }
-
+    if (!triggered) return
+    if (reduce) { setDisplay(numericValue); return }
     let frame = 0
-    const duration = 1200
+    const duration = 1400
     const start = performance.now()
-
     const tick = (time: number) => {
       const progress = Math.min((time - start) / duration, 1)
-      const eased = 1 - Math.pow(1 - progress, 3)
+      const eased    = 1 - Math.pow(1 - progress, 3)
       setDisplay(numericValue * eased)
       if (progress < 1) frame = requestAnimationFrame(tick)
     }
-
     frame = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(frame)
-  }, [numericValue, reduce])
+  }, [triggered, numericValue, reduce])
 
   const shown = Number.isInteger(numericValue) ? Math.round(display) : Number(display.toFixed(1))
+  return <>{shown}{suffix}</>
+}
+
+// ── Glossary mock ─────────────────────────────────────────────────────────────
+
+function GlossaryMock({ animate }: { animate: boolean }) {
+  const letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
 
   return (
-    <>
-      {shown}
-      {suffix}
-    </>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#ffffff' }}>
+      {/* Header */}
+      <Box sx={{ px: 2, pt: 1.2, pb: 0.6, borderBottom: '1px solid #e2eaf5' }}>
+        <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#080e1a', letterSpacing: '-0.01em' }}>
+          Glossary
+        </Typography>
+      </Box>
+
+      {/* Letter strip */}
+      <Box sx={{ px: 1.8, py: 0.9, display: 'flex', gap: 0.35, flexWrap: 'wrap', borderBottom: '1px solid #e2eaf5' }}>
+        {letters.map((letter, index) => {
+          const active = index === 0
+          return (
+            <Box
+              key={letter}
+              sx={{
+                width: 13,
+                height: 13,
+                border: '1px solid',
+                borderColor: active ? '#0a2463' : '#dde7f4',
+                bgcolor: active ? '#0a2463' : '#ffffff',
+                color: active ? '#ffffff' : '#8097b0',
+                fontSize: 7.5,
+                fontFamily: '"Playfair Display", serif',
+                fontWeight: 700,
+                lineHeight: '11px',
+                textAlign: 'center',
+                borderRadius: '2px',
+              }}
+            >
+              {letter}
+            </Box>
+          )
+        })}
+      </Box>
+
+      {/* Terms */}
+      <Box sx={{ flex: 1, overflow: 'hidden', px: 1.2, pt: 0.8, pb: 0.8 }}>
+        {GLOSSARY_MOCK.map((item, i) => (
+          <motion.div key={i} custom={i} variants={rowVariants} initial="hidden" animate={animate ? 'visible' : 'hidden'}>
+            <Box
+              sx={{
+                border: '1px solid #e2eaf5',
+                borderRadius: '4px',
+                bgcolor: '#ffffff',
+                px: 0.9,
+                py: 0.55,
+                mb: 0.5,
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                <Typography sx={{ fontSize: 9, fontWeight: 600, color: '#080e1a', fontFamily: '"Playfair Display", serif' }}>
+                  {item.term}
+                </Typography>
+                <Box sx={{ color: '#0a2463', fontSize: 11, fontWeight: 700, lineHeight: 1 }}>+</Box>
+              </Box>
+              <Typography sx={{ fontSize: 8.2, color: '#4a5e78', lineHeight: 1.45, mt: 0.35 }}>
+                {item.def}
+              </Typography>
+            </Box>
+          </motion.div>
+        ))}
+      </Box>
+    </Box>
   )
 }
 
+// ── Data mock ─────────────────────────────────────────────────────────────────
 
-function getCardStyles(variant?: string) {
-  switch (variant) {
-    case 'light':   return { fontWeight: 300, fontSize: 24 }
-    case 'italic':  return { fontStyle: 'italic', fontSize: 24 }
-    case 'wide':    return { letterSpacing: '0.06em', fontWeight: 600, fontSize: 18 }
-    case 'stacked': return { fontSize: 12, letterSpacing: '0.04em', lineHeight: 1.2 }
-    default:        return { fontSize: 20 }
-  }
+function DataMock({ animate }: { animate: boolean }) {
+  const mono = '"Playfair Display", serif'
+
+  return (
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#ffffff' }}>
+      {/* Tabs */}
+      <Box sx={{ px: 1.2, pt: 0.7, pb: 0.5, display: 'flex', gap: 0.4, borderBottom: '1px solid #e2eaf5' }}>
+        {['Fri 18 Apr', 'Thu 17 Apr', 'Wed 16 Apr'].map((d, idx) => (
+          <Box
+            key={d}
+            sx={{
+              px: 0.65,
+              py: 0.3,
+              borderRadius: '3px',
+              fontSize: 7,
+              fontFamily: mono,
+              color: idx === 0 ? '#0a2463' : '#8097b0',
+              bgcolor: idx === 0 ? '#f0f4fb' : 'transparent',
+              border: '1px solid',
+              borderColor: idx === 0 ? '#c8d6ec' : 'transparent',
+            }}
+          >
+            {d}
+          </Box>
+        ))}
+      </Box>
+
+      {/* Stat cards */}
+      <Box sx={{ px: 1.2, pt: 0.65, pb: 0.6, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0.4 }}>
+        {[['KSE 100', '173,939', false], ['Open', '169,911', false], ['Change', '+4,027', true], ['Volume', '1,440M', false]].map(([label, value, green]) => (
+          <Box key={label as string} sx={{ border: '1px solid #e2eaf5', borderRadius: '3px', bgcolor: '#fafbfd', px: 0.5, py: 0.4 }}>
+            <Typography sx={{ fontSize: 6.5, color: '#8097b0', textTransform: 'uppercase', fontFamily: mono, letterSpacing: '0.06em' }}>
+              {label}
+            </Typography>
+            <Typography sx={{ fontSize: 8.5, fontWeight: 700, fontFamily: mono, color: green ? '#1a6640' : '#080e1a', mt: 0.1 }}>
+              {value}
+            </Typography>
+          </Box>
+        ))}
+      </Box>
+
+      {/* Filter bar */}
+      <Box sx={{ px: 1.2, pb: 0.5, display: 'grid', gridTemplateColumns: '1.7fr 1fr', gap: 0.4 }}>
+        {['Search symbol or company…', 'Movement: All'].map((ph) => (
+          <Box key={ph} sx={{ border: '1px solid #dde7f4', borderRadius: '3px', bgcolor: '#ffffff', px: 0.7, py: 0.32 }}>
+            <Typography sx={{ fontSize: 7.2, color: '#8097b0', fontFamily: mono }}>{ph}</Typography>
+          </Box>
+        ))}
+      </Box>
+
+      {/* Table header */}
+      <Box sx={{ px: 1.2, py: 0.45, borderTop: '1px solid #e2eaf5', borderBottom: '1px solid #e2eaf5', bgcolor: '#fafbfd', display: 'grid', gridTemplateColumns: '1.1fr 1.8fr 1fr 0.9fr', gap: 0.5 }}>
+        {['Symbol', 'Company', 'Last', 'Chg'].map((h) => (
+          <Typography key={h} sx={{ fontSize: 6.8, fontWeight: 700, color: '#4a5e78', textTransform: 'uppercase', letterSpacing: '0.08em', fontFamily: mono }}>
+            {h}
+          </Typography>
+        ))}
+      </Box>
+
+      {/* Rows */}
+      <Box sx={{ flex: 1, overflow: 'hidden', px: 1.2, py: 0.4 }}>
+        {DATA_MOCK.map((row, i) => (
+          <motion.div key={i} custom={i} variants={rowVariants} initial="hidden" animate={animate ? 'visible' : 'hidden'}>
+            <Box sx={{
+              py: 0.62,
+              borderBottom: i < DATA_MOCK.length - 1 ? '1px solid #e2eaf5' : 'none',
+              display: 'grid',
+              gridTemplateColumns: '1.1fr 1.8fr 1fr 0.9fr',
+              gap: 0.5,
+              alignItems: 'center',
+            }}>
+              <Typography sx={{ fontSize: 8.2, fontWeight: 700, color: '#0a2463', fontFamily: mono }}>{row.ticker}</Typography>
+              <Typography sx={{ fontSize: 8, color: '#4a5e78', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.name}</Typography>
+              <Typography sx={{ fontSize: 8.2, fontWeight: 600, color: '#080e1a', fontFamily: mono }}>{row.price}</Typography>
+              <Typography sx={{ fontSize: 8, fontWeight: 700, color: row.up ? '#1a6640' : '#b91c1c', fontFamily: mono }}>{row.change}</Typography>
+            </Box>
+          </motion.div>
+        ))}
+      </Box>
+
+      {/* Footer */}
+      <Box sx={{ px: 1.2, py: 0.45, borderTop: '1px solid #e2eaf5', display: 'flex', justifyContent: 'space-between' }}>
+        <Typography sx={{ fontSize: 6.8, color: '#8097b0', fontFamily: mono }}>Rows per page: 25</Typography>
+        <Typography sx={{ fontSize: 6.8, color: '#8097b0', fontFamily: mono }}>1–25 of 542</Typography>
+      </Box>
+    </Box>
+  )
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// ── Sneak peek window ─────────────────────────────────────────────────────────
+
+function SneakPeekWindow({
+  eyebrow, title, caption, href, MockContent,
+}: {
+  eyebrow: string
+  title: string
+  caption: string
+  href: string
+  MockContent: ComponentType<{ animate: boolean }>
+}) {
+  const reduce  = useReducedMotion()
+  const ref     = useRef<HTMLDivElement>(null)
+  const inView  = useInView(ref, { once: true, margin: '-60px' })
+  const [hovered, setHovered] = useState(false)
+
+  return (
+    <motion.div
+      ref={ref}
+      variants={fadeUp}
+      initial="hidden"
+      animate={inView ? 'visible' : 'hidden'}
+      onHoverStart={() => setHovered(true)}
+      onHoverEnd={() => setHovered(false)}
+    >
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', md: '1fr 1.7fr' },
+          border: '1px solid #e2eaf5',
+          borderRadius: 1.5,
+          overflow: 'hidden',
+          bgcolor: '#ffffff',
+          transition: 'box-shadow 0.25s ease, border-color 0.25s ease',
+          '&:hover': { boxShadow: '0 8px 32px rgba(10,36,99,0.1)', borderColor: '#0a2463' },
+        }}
+      >
+        {/* Left: info panel */}
+        <Box sx={{
+          px: { xs: 2.5, md: 3.2 },
+          py: { xs: 2.5, md: 3.2 },
+          borderRight: { xs: 'none', md: '1px solid #e2eaf5' },
+          borderBottom: { xs: '1px solid #e2eaf5', md: 'none' },
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          gap: 3,
+          bgcolor: '#fafbfd',
+        }}>
+          <Box>
+            <Typography
+              sx={{
+                display: 'block',
+                fontSize: 10,
+                fontFamily: '"Playfair Display", serif',
+                fontWeight: 700,
+                letterSpacing: '0.16em',
+                textTransform: 'uppercase',
+                color: '#0a2463',
+                mb: 1.4,
+              }}
+            >
+              {eyebrow}
+            </Typography>
+            <Typography sx={{ fontSize: { xs: 18, md: 20 }, fontWeight: 700, color: '#080e1a', lineHeight: 1.2, mb: 1, letterSpacing: '-0.02em' }}>
+              {title}
+            </Typography>
+            <Typography sx={{ fontSize: 13.5, color: '#4a5e78', lineHeight: 1.7 }}>
+              {caption}
+            </Typography>
+          </Box>
+
+          <motion.div style={{ alignSelf: 'flex-start' }}>
+            <Button
+              href={href}
+              size="small"
+              endIcon={
+                <motion.div
+                  animate={hovered ? { x: 2, y: -2 } : { x: 0, y: 0 }}
+                  transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                  style={{ display: 'flex' }}
+                >
+                  <NorthEastIcon sx={{ fontSize: 13 }} />
+                </motion.div>
+              }
+              sx={{
+                textTransform: 'none',
+                fontSize: 12.5,
+                fontWeight: 600,
+                px: 1.8,
+                py: 0.75,
+                color: '#080e1a',
+                border: '1px solid #e2eaf5',
+                borderRadius: 1,
+                bgcolor: '#ffffff',
+                minWidth: 0,
+                '&:hover': { bgcolor: '#080e1a', borderColor: '#080e1a', color: '#ffffff' },
+                transition: 'all 0.2s ease',
+              }}
+            >
+              View Page
+            </Button>
+          </motion.div>
+        </Box>
+
+        {/* Right: mock browser */}
+        <Box sx={{ position: 'relative', bgcolor: '#ffffff', minHeight: { xs: 220, md: 260 } }}>
+          {/* Window chrome */}
+          <Box sx={{
+            height: 28,
+            bgcolor: '#f5f6f8',
+            borderBottom: '1px solid #e2eaf5',
+            display: 'flex',
+            alignItems: 'center',
+            px: 1.5,
+            gap: 0.6,
+          }}>
+            {['#fc5f57', '#fdbc2c', '#27c840'].map((c, i) => (
+              <Box key={i} sx={{ width: 7.5, height: 7.5, borderRadius: '50%', bgcolor: c, opacity: 0.7 }} />
+            ))}
+            <Box sx={{
+              flex: 1,
+              mx: 1.5,
+              height: 14,
+              bgcolor: '#ebebed',
+              borderRadius: 0.5,
+              display: 'flex',
+              alignItems: 'center',
+              px: 1,
+            }}>
+              <Typography sx={{ fontSize: 7.5, color: '#9ca3af', fontFamily: '"Playfair Display", serif', letterSpacing: '0.02em' }}>
+                webictcapital.com{href}
+              </Typography>
+            </Box>
+          </Box>
+
+          <Box sx={{ height: 'calc(100% - 28px)', overflow: 'hidden' }}>
+            <MockContent animate={inView} />
+          </Box>
+
+          {/* Shimmer on hover */}
+          <AnimatePresence>
+            {hovered && !reduce && (
+              <motion.div
+                key="shimmer"
+                initial={{ x: '-100%', opacity: 0 }}
+                animate={{ x: '200%', opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                style={{
+                  position: 'absolute', inset: 0, pointerEvents: 'none',
+                  background: 'linear-gradient(105deg, transparent 30%, rgba(10,36,99,0.06) 50%, transparent 70%)',
+                  zIndex: 2,
+                }}
+              />
+            )}
+          </AnimatePresence>
+
+          {/* Bottom fade */}
+          <Box sx={{
+            position: 'absolute', bottom: 0, left: 0, right: 0, height: 44,
+            background: 'linear-gradient(to top, rgba(255,255,255,0.95) 0%, transparent 100%)',
+            pointerEvents: 'none',
+          }} />
+        </Box>
+      </Box>
+    </motion.div>
+  )
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
 
 export function HomePage() {
-  const reduce    = useReducedMotion()
-  const heroRef   = useRef<HTMLDivElement>(null)
+  const reduce  = useReducedMotion()
+  const heroRef = useRef<HTMLDivElement>(null)
+
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] })
-  const parallaxY = useTransform(scrollYProgress, [0, 1], ['0%', '14%'])
-  const heroOp    = useTransform(scrollYProgress, [0, 0.55], [1, 0.35])
+  const parallaxY = useTransform(scrollYProgress, [0, 1], ['0%', '12%'])
+  const heroOp    = useTransform(scrollYProgress, [0, 0.6], [1, 0.4])
+
+  const statsRef    = useRef<HTMLDivElement>(null)
+  const statsInView = useInView(statsRef, { once: true, margin: '-80px' })
+  const lineScaleX  = useSpring(statsInView ? 1 : 0, { stiffness: 80, damping: 20 })
+
+  const philRef    = useRef<HTMLDivElement>(null)
+  const philInView = useInView(philRef, { once: true, margin: '-60px' })
+
+  const newsRef    = useRef<HTMLDivElement>(null)
+  const newsInView = useInView(newsRef, { once: true, margin: '-60px' })
 
   return (
     <>
-      {/* ═══════════════════════════════════════════════════════
-          HERO
-      ═══════════════════════════════════════════════════════ */}
+      {/* ═══ HERO ════════════════════════════════════════════════════════════ */}
       <Box
         ref={heroRef}
         component="section"
         sx={{
-          '@keyframes blink':      { '0%,100%': { opacity: 1 }, '50%': { opacity: 0 } },
-          '@keyframes lineGrow':   { from: { transform: 'scaleX(0)', opacity: 0 }, to: { transform: 'scaleX(1)', opacity: 1 } },
-          '@keyframes floatCard':  { '0%,100%': { transform: 'translateY(0px)' }, '50%': { transform: 'translateY(-10px)' } },
-          '@keyframes glowPulse':  { '0%,100%': { opacity: 0.18 }, '50%': { opacity: 0.35 } },
+          '@keyframes blink': { '0%,100%': { opacity: 1 }, '50%': { opacity: 0 } },
           mt: 0,
-          pt: { xs: 'calc(64px + 2.5rem)', md: 'calc(72px + 4rem)' },
+          pt: { xs: 'calc(64px + 2.5rem)', md: 'calc(72px + 4.5rem)' },
           pb: { xs: 8, md: 12 },
-          bgcolor: 'transparent',
+          bgcolor: '#ffffff',
           overflow: 'hidden',
           position: 'relative',
         }}
       >
-        
-        
-
         <Container maxWidth="xl" sx={{ maxWidth: '1340px !important', px: { xs: 2.5, md: 5 }, position: 'relative', zIndex: 1 }}>
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', md: 'minmax(0,1fr) minmax(0,600px)' },
-              alignItems: 'center',
-              gap: { xs: 6, md: 10 },
-            }}
-          >
+          <Box sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: 'minmax(0,1fr) minmax(0,560px)' },
+            alignItems: 'center',
+            gap: { xs: 6, md: 10 },
+          }}>
+
             {/* ── Left column ── */}
             <MotionReveal amount={0.25}>
               <MotionStagger delayChildren={0.06} staggerChildren={0.12} amount={0.3}>
-                <Stack spacing={{ xs: 3.2, md: 4 }} sx={{ maxWidth: 660 }}>
-
-                  {/* Badge */}
-                  {/* <Box component={motion.div} variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}>
-                    <Badge>Webict Capital · Since 2021</Badge>
-                  </Box> */}
-
+                <Stack spacing={{ xs: 3, md: 3.8 }} sx={{ maxWidth: 620 }}>
                   {/* Headline */}
                   <Box component={motion.div} variants={{ hidden: { opacity: 0, y: 22 }, visible: { opacity: 1, y: 0 } }} transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}>
+
                     <Typography
                       variant="h1"
                       sx={{
-                        fontSize: { xs: '2.2rem', sm: '2.75rem', md: '4rem' },
-                        lineHeight: { xs: 1.1, md: 1.04 },
-                        letterSpacing: { xs: '-0.03em', md: '-0.038em' },
+                        fontSize: { xs: '2.4rem', sm: '2.9rem', md: '4.2rem' },
+                        lineHeight: { xs: 1.08, md: 1.03 },
+                        letterSpacing: { xs: '-0.034em', md: '-0.04em' },
                         fontWeight: 900,
-                        color: '#08142b',
-                        minHeight: { xs: '3.4rem', md: '4.8rem' },
+                        color: '#080e1a',
+                        minHeight: { xs: '3.4rem', md: '5rem' },
                       }}
                     >
                       <TypingHeadline />
@@ -206,101 +564,99 @@ export function HomePage() {
 
                   {/* Quote */}
                   <Box component={motion.div} variants={{ hidden: { opacity: 0, y: 14 }, visible: { opacity: 1, y: 0 } }}>
-            <Typography
-              sx={{
-                maxWidth: 560,
-                fontSize: { xs: 15.2, sm: 16.5, md: 19 },
-                lineHeight: { xs: 1.58, md: 1.52 },
-                color: '#253750',
-              }}
-            >
-              {'"Markets reward discipline. '}
-              <Box
-                component="span"
-                sx={{
-                  position: 'relative',
-                  display: 'inline-block',
-                  pb: { xs: 1.2, md: 1.35 },
-                  '&::after': {
-                    content: '""',
-                    position: 'absolute',
-                    left: 0,
-                    right: 0,
-                    bottom: { xs: 1, md: 2 },
-                    height: { xs: 10, md: 14 },
-                    backgroundRepeat: 'no-repeat',
-                    backgroundSize: '100% 100%',
-                    pointerEvents: 'none',
-                    transformOrigin: 'left center',
-                    animation: 'zigLineDraw 820ms cubic-bezier(0.22, 1, 0.5, 1) 140ms both',
-                    backgroundImage:
-                      "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 16' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='ink' x1='0%25' y1='0%25' x2='100%25' y2='0%25'%3E%3Cstop offset='0%25' stop-color='%231a365d' stop-opacity='1'/%3E%3Cstop offset='72%25' stop-color='%231f5fbf' stop-opacity='0.95'/%3E%3Cstop offset='100%25' stop-color='%231f5fbf' stop-opacity='0.18'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M4 10 L28 8 L52 11 L78 8.5 L104 10.8 L130 8.4 L156 10.6 L184 8.3 L212 10.2 L242 8.6 L270 10.1 L296 9' fill='none' stroke='url(%23ink)' stroke-width='7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\")",
-                  },
-                }}
-              >
-                Education is where confident investing begins.
-              </Box>
-              {'"'}
-            </Typography>
-            </Box>
-
-                  {/* Author chip */}
-                  <Box component={motion.div} variants={{ hidden: { opacity: 0, x: -14 }, visible: { opacity: 1, x: 0 } }}>
-                    <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+                    <Typography
+                      sx={{
+                        maxWidth: 560,
+                        fontSize: { xs: 15.2, sm: 16.5, md: 18.5 },
+                        lineHeight: { xs: 1.62, md: 1.56 },
+                        color: '#253750',
+                      }}
+                    >
+                      {'"Markets reward discipline. '}
                       <Box
+                        component="span"
                         sx={{
-                          width: 42, height: 42, borderRadius: '50%',
-                          background: 'linear-gradient(135deg, #0f2a5f 0%, #1e4fac 100%)',
-                          border: '1.5px solid rgba(37,99,235,0.3)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: 13, fontWeight: 700, color: '#fff',
-                          flexShrink: 0, letterSpacing: '0.04em',
-                          boxShadow: '0 4px 14px rgba(15,42,95,0.3)',
+                          position: 'relative',
+                          display: 'inline-block',
+                          pb: { xs: 1.2, md: 1.35 },
+                          '&::after': {
+                            content: '""',
+                            position: 'absolute',
+                            left: 0, right: 0,
+                            bottom: { xs: 1, md: 2 },
+                            height: { xs: 10, md: 14 },
+                            backgroundRepeat: 'no-repeat',
+                            backgroundSize: '100% 100%',
+                            pointerEvents: 'none',
+                            transformOrigin: 'left center',
+                            animation: 'zigLineDraw 820ms cubic-bezier(0.22, 1, 0.5, 1) 140ms both',
+                            backgroundImage:
+                              "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 16' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='ink' x1='0%25' y1='0%25' x2='100%25' y2='0%25'%3E%3Cstop offset='0%25' stop-color='%230a2463' stop-opacity='1'/%3E%3Cstop offset='72%25' stop-color='%231f5fbf' stop-opacity='0.95'/%3E%3Cstop offset='100%25' stop-color='%231f5fbf' stop-opacity='0.15'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M4 10 L28 8 L52 11 L78 8.5 L104 10.8 L130 8.4 L156 10.6 L184 8.3 L212 10.2 L242 8.6 L270 10.1 L296 9' fill='none' stroke='url(%23ink)' stroke-width='7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\")",
+                          },
                         }}
                       >
-                        AS
+                        Education is where confident investing begins.
                       </Box>
-                      <Box>
-                        <Typography sx={{ fontSize: 14.5, fontWeight: 700, color: '#0b1f3d', lineHeight: 1.3 }}>
-                          Asaad Sohail
-                        </Typography>
-                        <Typography sx={{ fontSize: 12, color: '#4b6278', lineHeight: 1.4 }}>
-                          Founder, Webict Capital
-                        </Typography>
+                      {'"'}
+                    </Typography>
+
+                    {/* Author */}
+                    <motion.div
+                      initial={{ opacity: 0, x: -18 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 1.1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                    >
+                      <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Box sx={{
+                          width: 36, height: 36, borderRadius: '50%',
+                          bgcolor: '#080e1a',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 12, fontWeight: 700, color: '#fff', flexShrink: 0,
+                          letterSpacing: '0.04em', fontFamily: '"Playfair Display", serif',
+                        }}>
+                          AS
+                        </Box>
+                        <Box>
+                          <Typography sx={{ fontSize: 13.5, fontWeight: 700, color: '#080e1a', lineHeight: 1.3 }}>
+                            Asaad Sohail
+                          </Typography>
+                          <Typography sx={{ fontSize: 11.5, color: '#8097b0', lineHeight: 1.4 }}>
+                            Founder, Webict Capital
+                          </Typography>
+                        </Box>
                       </Box>
-                    </Stack>
+                    </motion.div>
                   </Box>
 
-                  {/* CTA buttons */}
+                  {/* CTA */}
                   <Box component={motion.div} variants={{ hidden: { opacity: 0, y: 14 }, visible: { opacity: 1, y: 0 } }}>
-                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.4} sx={{ pt: 0.4, width: { xs: '100%', sm: 'fit-content' } }}>
-
-                      {/* Secondary */}
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.2} sx={{ pt: 0.4, width: { xs: '100%', sm: 'fit-content' } }}>
                       <Box
                         component={motion.div}
-                        whileHover={reduce ? undefined : { scale: 1.04, y: -3 }}
+                        whileHover={reduce ? undefined : { y: -2, scale: 1.02 }}
                         whileTap={reduce ? undefined : { scale: 0.97 }}
                         transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
                       >
                         <Button
-                          href="/about"
-                          variant="outlined"
+                          component={RouterLink}
+                          to="/about#contact"
+                          variant="contained"
+                          disableElevation
                           size="large"
                           sx={{
                             width: { xs: '100%', sm: 'auto' },
-                            minWidth: 150,
-                            px: 2.6, py: 1.45,
-                            borderRadius: 1.2,
+                            minWidth: 140,
+                            px: 3,
+                            py: 1.35,
+                            borderRadius: 1,
                             textTransform: 'none',
                             fontWeight: 600,
-                            fontSize: 15,
-                            color: '#0c2247',
-                            borderColor: 'rgba(37,99,235,0.36)',
+                            fontSize: 14.5,
                             letterSpacing: '0.01em',
-                            '&:hover': {
-                              borderColor: '#0c2247',
-                              bgcolor: 'rgba(37,99,235,0.06)',
-                            },
+                            bgcolor: '#080e1a',
+                            color: '#ffffff',
+                            '&:hover': { bgcolor: '#0a2463' },
+                            transition: 'background-color 0.22s ease',
                           }}
                         >
                           Contact Us
@@ -310,33 +666,29 @@ export function HomePage() {
                   </Box>
 
                   {/* Stats */}
-                  <Box component={motion.div} variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}>
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        gap: { xs: 0, md: 0 },
-                        mt: 1,
-                        pt: 2,
-                        borderTop: '1px solid rgba(30,80,160,0.1)',
-                        width: 'fit-content',
-                      }}
-                    >
+                  <Box ref={statsRef} component={motion.div} variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}>
+                    <motion.div style={{ height: 1, backgroundColor: '#e2eaf5', originX: 0, scaleX: lineScaleX, marginTop: 8, marginBottom: 20 }} />
+                    <Box sx={{ display: 'flex' }}>
                       {STATS.map((s, i) => (
-                        <Box
+                        <motion.div
                           key={i}
-                          sx={{
-                            pr: { xs: 3, md: 4.5 },
-                            mr: { xs: 3, md: 4.5 },
-                            borderRight: i < STATS.length - 1 ? '1px solid rgba(30,80,160,0.12)' : 'none',
-                          }}
+                          initial={{ opacity: 0, y: 14 }}
+                          animate={statsInView ? { opacity: 1, y: 0 } : {}}
+                          transition={{ delay: 0.1 + i * 0.12, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
                         >
-                          <Typography sx={{ fontSize: { xs: 20, md: 24 }, fontWeight: 800, color: '#08142b', lineHeight: 1, letterSpacing: '-0.02em' }}>
-                            <AnimatedStatValue value={s.value} />
-                          </Typography>
-                          <Typography sx={{ fontSize: 11.5, color: '#617898', mt: 0.4, fontWeight: 500 }}>
-                            {s.label}
-                          </Typography>
-                        </Box>
+                          <Box sx={{
+                            pr: { xs: 3.5, md: 5 },
+                            mr: { xs: 3.5, md: 5 },
+                            borderRight: i < STATS.length - 1 ? '1px solid #e2eaf5' : 'none',
+                          }}>
+                            <Typography sx={{ fontSize: { xs: 22, md: 26 }, fontWeight: 900, color: '#080e1a', lineHeight: 1, letterSpacing: '-0.03em' }}>
+                              <AnimatedStatValue value={s.value} triggered={statsInView} />
+                            </Typography>
+                            <Typography sx={{ fontSize: 11, color: '#8097b0', mt: 0.5, fontWeight: 500, letterSpacing: '0.03em', fontFamily: '"Playfair Display", serif' }}>
+                              {s.label}
+                            </Typography>
+                          </Box>
+                        </motion.div>
                       ))}
                     </Box>
                   </Box>
@@ -345,731 +697,265 @@ export function HomePage() {
               </MotionStagger>
             </MotionReveal>
 
-            {/* ── Right column: hero image card ── */}
-            <MotionReveal delay={0.2} amount={0.25} y={36} scale={0.975}>
-              <Box
-                component={motion.div}
-                whileHover={reduce ? undefined : { y: -10, scale: 1.018 }}
-                transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-                style={{ y: reduce ? undefined : parallaxY, opacity: reduce ? undefined : heroOp }}
-                sx={{
-                  position: 'relative',
-                  borderRadius: { xs: 2.5, md: 3 },
-                  overflow: 'hidden',
-                  border: '1px solid rgba(160,200,255,0.55)',
-                  backgroundImage:
-                    'linear-gradient(10deg, rgba(4,10,24,0.72) 0%, rgba(10,24,56,0.22) 55%, rgba(10,24,56,0.06) 100%),' +
-                    'url(/herosection.jpg)',
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center 42%',
-                  minHeight: { xs: 270, sm: 380, md: 490 },
-                  boxShadow: '0 28px 56px rgba(8,20,50,0.28), inset 0 1px 0 rgba(255,255,255,0.08)',
-                  transition: 'box-shadow 0.4s ease',
-                  '&:hover': {
-                    boxShadow: '0 40px 72px rgba(8,20,50,0.38)',
-                  },
-                  animation: reduce ? undefined : 'floatCard 7s ease-in-out 2s infinite',
-                }}
-              >
-                {/* Corner accents */}
-                {[
-                  { top: 14, left: 14,   borderTop: '1.5px solid rgba(100,160,240,0.65)', borderLeft: '1.5px solid rgba(100,160,240,0.65)' },
-                  { top: 14, right: 14,  borderTop: '1.5px solid rgba(100,160,240,0.65)', borderRight: '1.5px solid rgba(100,160,240,0.65)' },
-                  { bottom: 14, left: 14,  borderBottom: '1.5px solid rgba(100,160,240,0.65)', borderLeft: '1.5px solid rgba(100,160,240,0.65)' },
-                  { bottom: 14, right: 14, borderBottom: '1.5px solid rgba(100,160,240,0.65)', borderRight: '1.5px solid rgba(100,160,240,0.65)' },
-                ].map((s, i) => (
-                  <Box
-                    key={i}
-                    component={motion.div}
-                    initial={{ opacity: 0, scale: 0.4 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.55 + i * 0.07, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                    sx={{ position: 'absolute', width: 22, height: 22, ...s }}
-                  />
-                ))}
-
-                {/* Floating badge on image */}
-                <Box
-                  component={motion.div}
-                  initial={{ opacity: 0, x: 14 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 1.1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                  sx={{
-                    position: 'absolute',
-                    top: { xs: 16, md: 22 },
-                    right: { xs: 16, md: 22 },
-                    px: 1.6, py: 0.7,
-                    borderRadius: 1,
-                    bgcolor: 'rgba(255,255,255,0.1)',
-                    backdropFilter: 'blur(12px)',
-                    border: '1px solid rgba(255,255,255,0.18)',
-                  }}
-                >
-                  <Typography sx={{ fontSize: 11, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.85)', fontWeight: 600, textTransform: 'uppercase' }}>
-                    Live Session
-                  </Typography>
-                </Box>
-
-                {/* Bottom label */}
-                <Box
-                  component={motion.div}
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.85, duration: 0.48, ease: [0.22, 1, 0.36, 1] }}
-                  sx={{
-                    position: 'absolute', bottom: 0, left: 0, right: 0,
-                    px: { xs: 2.2, md: 2.8 }, py: { xs: 1.8, md: 2.4 },
-                    background: 'linear-gradient(to top, rgba(3,9,26,0.9) 0%, transparent 100%)',
-                  }}
-                >
-                  <Typography sx={{ fontSize: { xs: 13.5, md: 15 }, color: 'rgba(255,255,255,0.92)', fontWeight: 600 }}>
-                    PSX Training Session
-                  </Typography>
-                  <Typography sx={{ fontSize: { xs: 11, md: 12.5 }, color: 'rgba(160,200,255,0.7)', mt: 0.4 }}>
-                    Conducted by Webict Capital
-                  </Typography>
-                </Box>
-              </Box>
-
-              <Typography sx={{ mt: 1.8, fontSize: 11.5, color: '#5a7090', lineHeight: 1.55, letterSpacing: '0.01em' }}>
-                Group photo from a PSX training session conducted by Webict Capital.
-              </Typography>
-            </MotionReveal>
-          </Box>
-        </Container>
-      </Box>
-
-      {/* ═══════════════════════════════════════════════════════
-          PORTFOLIO HIGHLIGHTS
-      ═══════════════════════════════════════════════════════ */}
-      <Box
-        component="section"
-        sx={{
-          '@keyframes cardIn': { from: { opacity: 0, transform: 'translateY(20px)' }, to: { opacity: 1, transform: 'translateY(0)' } },
-          '@keyframes dotPulse': { '0%,100%': { transform: 'scale(1)' }, '50%': { transform: 'scale(1.3)' } },
-          py: { xs: 9, md: 13 },
-          position: 'relative',
-          overflow: 'hidden',
-          bgcolor: 'transparent',
-          backgroundImage: 'none',
-        }}
-      >
-        {/* Grid bg */}
-
-        <Container maxWidth="xl" sx={{ px: { xs: 2.5, md: 5 }, position: 'relative', zIndex: 1 }}>
-          <MotionReveal amount={0.2}>
-            <Box sx={{ mb: { xs: 4, md: 6 } }}>
-             
-              <Typography
-                variant="h2"
-                sx={{
-                  fontSize: { xs: '1.8rem', sm: '2.2rem', md: '3rem' },
-                  lineHeight: 1.08,
-                  letterSpacing: '-0.025em',
-                  fontWeight: 800,
-                  color: '#08142b',
-                  mt: 0.5,
-                }}
-              >
-                Portfolio Highlights
-              </Typography>
-              <Typography sx={{ mt: 1.2, color: '#34506e', fontSize: { xs: 14.5, md: 17 }, lineHeight: 1.7, maxWidth: 580 }}>
-                Companies backed with long-term conviction, operator empathy, and disciplined capital.
-              </Typography>
-            </Box>
-          </MotionReveal>
-
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' },
-              gap: { xs: 2, md: 2.5 },
-              perspective: '1600px',
-            }}
-          >
-            {portfolioItems.map((item, index) => (
-              <MotionReveal key={item.name} delay={index * 0.05} amount={0.1} y={24} scale={0.984} blur={1.2}>
-                <Box
-                  component={motion.a}
-                  whileHover={reduce ? undefined : { y: -8, scale: 1.015 }}
-                  whileTap={reduce ? undefined : { scale: 0.993 }}
-                  transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-                  href={item.href ?? '#'}
-                  sx={{
-                    bgcolor: '#ffffff',
-                    minHeight: { xs: 180, sm: 240, md: 296 },
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    position: 'relative',
-                    px: 2.5,
-                    textAlign: 'center',
-                    textDecoration: 'none',
-                    borderRadius: 2.4,
-                    border: '1px solid rgba(160,195,240,0.38)',
-                    overflow: 'hidden',
-                    boxShadow: '0 2px 12px rgba(10,30,80,0.06)',
-                    transition: 'transform 0.28s ease, box-shadow 0.28s ease',
-                    animation: `cardIn 520ms ease ${index * 48}ms both`,
-                    '&:hover': {
-                      boxShadow: '0 24px 42px rgba(8,24,70,0.16)',
-                      borderColor: 'rgba(37,99,235,0.22)',
-                    },
-                    '&:hover .p-dot': { animation: 'dotPulse 600ms ease' },
-                    '&:hover .p-overlay, &:focus-visible .p-overlay': { opacity: 1, transform: 'translateY(0)' },
-                    '&:hover .p-name, &:focus-visible .p-name':       { opacity: 0, transform: 'translateY(-10px) scale(0.97)' },
-                    '&:focus-visible': { outline: '2px solid #2563eb', outlineOffset: 2 },
-                  }}
-                >
-                  {/* Status dot */}
-                  <Box
-                    className="p-dot"
-                    sx={{
-                      width: 6, height: 6, borderRadius: '50%',
-                      bgcolor: '#2563eb',
-                      position: 'absolute', top: 14, right: 14,
-                      boxShadow: '0 0 0 3px rgba(37,99,235,0.14)',
-                    }}
-                  />
-
-                  <Typography
-                    className="p-name"
-                    sx={{
-                      color: '#0a1c38',
-                      transition: 'opacity 0.24s ease, transform 0.28s ease',
-                      ...getCardStyles(item.variant),
-                    }}
-                  >
-                    {item.name}
-                  </Typography>
-
-                  {/* Hover overlay */}
-                  <Box
-                    className="p-overlay"
-                    sx={{
-                      position: 'absolute', inset: 0,
-                      background: 'linear-gradient(150deg, #0a1d38 0%, #0c2247 100%)',
-                      color: '#fff',
-                      p: 2.8,
-                      display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'flex-start',
-                      textAlign: 'left',
-                      opacity: 0,
-                      transform: 'translateY(12px)',
-                      transition: 'opacity 0.3s ease, transform 0.3s ease',
-                    }}
-                  >
-                    <Box sx={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography sx={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', letterSpacing: '0.05em' }}>
-                        {item.location ?? 'Global'}
-                      </Typography>
-                      <Box sx={{
-                        width: 28, height: 28, borderRadius: '50%',
-                        background: 'linear-gradient(135deg, #1e4fac, #2563eb)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        boxShadow: '0 4px 12px rgba(37,99,235,0.4)',
-                      }}>
-                        <NorthEastIcon sx={{ fontSize: 14, color: '#fff' }} />
-                      </Box>
-                    </Box>
-
-                    <Box>
-                      <Typography sx={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: { xs: 30, md: 38 }, lineHeight: 1.08, mb: 1 }}>
-                        {item.name}
-                      </Typography>
-                      <Typography sx={{ fontSize: 15.5, lineHeight: 1.42, color: 'rgba(255,255,255,0.86)', mb: 2.5 }}>
-                        {item.description}
-                      </Typography>
-                      <Typography sx={{ fontSize: 12, color: 'rgba(140,185,255,0.8)', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 600 }}>
-                        {item.stage}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Box>
-              </MotionReveal>
-            ))}
-          </Box>
-        </Container>
-      </Box>
-
-      {/* ═══════════════════════════════════════════════════════
-          PEOPLE SECTION
-      ═══════════════════════════════════════════════════════ */}
-      <Box
-        component="section"
-        sx={{
-          '@keyframes slideUp': { from: { opacity: 0, transform: 'translateY(20px)' }, to: { opacity: 1, transform: 'translateY(0)' } },
-          bgcolor: 'transparent',
-          backgroundImage: 'none',
-          py: { xs: 8, md: 12 },
-          position: 'relative',
-          overflow: 'hidden',
-        }}
-      >
-
-        <Container maxWidth="lg" sx={{ px: { xs: 2.5, md: 5 }, position: 'relative', zIndex: 1 }}>
-          <MotionReveal>
+            {/* ── Right column: hero image ── */}
             <Box
+              component={motion.div}
+              style={{ y: reduce ? undefined : parallaxY, opacity: reduce ? undefined : heroOp }}
               sx={{
-                borderRadius: 2.2,
-                border: '1px solid rgba(160,200,255,0.35)',
-                bgcolor: 'rgba(255,255,255,0.96)',
-                p: { xs: 3, md: 5 },
-                textAlign: 'center',
-                mb: { xs: 4, md: 6 },
-                boxShadow: '0 8px 32px rgba(10,30,80,0.07)',
-                animation: 'slideUp 580ms ease both',
                 position: 'relative',
+                borderRadius: 1.5,
                 overflow: 'hidden',
-                '&::before': {
-                  content: '""',
-                  position: 'absolute',
-                  top: 0, left: '10%', right: '10%',
-                  height: '1px',
-                  background: 'linear-gradient(90deg, transparent, rgba(37,99,235,0.4), transparent)',
-                },
+                border: '1px solid rgba(0,0,0,0.1)',
+                backgroundImage:
+                  'linear-gradient(10deg, rgba(4,10,24,0.6) 0%, rgba(10,24,56,0.12) 55%, rgba(10,24,56,0.03) 100%),' +
+                  'url(/herosection.webp)',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center 42%',
+                minHeight: { xs: 270, sm: 380, md: 480 },
               }}
             >
-              {/* <Badge>Our Philosophy</Badge> */}
-              <Typography
-                variant="h2"
-                sx={{
-                  fontSize: { xs: '1.65rem', sm: '2rem', md: '2.7rem' },
-                  lineHeight: { xs: 1.22, md: 1.14 },
-                  letterSpacing: '-0.022em',
-                  fontWeight: 800,
-                  mb: 1.8,
-                  color: '#08142b',
-                  mt: 0.5,
-                }}
-              >
-                Investing in companies and the{' '}
-                <Box
-                  component="span"
-                  sx={{
-                    fontStyle: 'italic',
-                    fontFamily: '"Playfair Display", Georgia, serif',
-                    fontWeight: 700,
-                    color: '#1349a8',
-                  }}
-                >
-                  people building them
-                </Box>
-              </Typography>
-              <Typography sx={{ maxWidth: 580, mx: 'auto', color: '#344f6e', mb: 2.5, fontSize: { xs: 14.5, md: 16.5 }, lineHeight: 1.72 }}>
-                We care about and support founders as people, not just CEOs or business leaders. Building a strong company requires resilient leadership and disciplined support.
-              </Typography>
-              <Link
-                href="#"
-                underline="none"
-                sx={{
-                  display: 'inline-flex', alignItems: 'center', gap: 0.8,
-                  color: '#1349a8', fontSize: 13.5, fontWeight: 600,
-                  borderBottom: '1px solid rgba(19,73,168,0.3)',
-                  pb: '2px',
-                  transition: 'gap 0.22s ease, border-color 0.22s ease',
-                  '&:hover': { gap: 1.4, borderColor: '#1349a8' },
-                }}
-              >
-                Wellbeing Platform <ArrowForwardIcon sx={{ fontSize: 16 }} />
-              </Link>
+              <Box sx={{
+                position: 'absolute', bottom: 0, left: 0, right: 0,
+                px: { xs: 2.2, md: 2.8 },
+                py: { xs: 1.8, md: 2.4 },
+                background: 'linear-gradient(to top, rgba(3,9,26,0.82) 0%, transparent 100%)',
+              }}>
+                <Typography sx={{ fontSize: { xs: 13.5, md: 15 }, color: 'rgba(255,255,255,0.95)', fontWeight: 700 }}>
+                  PSX Training Session
+                </Typography>
+                <Typography sx={{ fontSize: { xs: 11, md: 12 }, color: 'rgba(200,218,255,0.6)', mt: 0.3 }}>
+                  Conducted by Webict Capital
+                </Typography>
+              </Box>
             </Box>
-          </MotionReveal>
 
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }, gap: { xs: 1.5, md: 2.5 } }}>
-            {[0, 1, 2].map((i) => (
-              <MotionReveal key={i} delay={i * 0.09} amount={0.16}>
-                <Box
-                  component={motion.div}
-                  whileHover={reduce ? undefined : { y: -8, scale: 1.022 }}
-                  whileTap={reduce ? undefined : { scale: 0.99 }}
-                  transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-                  sx={{
-                    aspectRatio: '3/4',
-                    borderRadius: 2,
-                    overflow: 'hidden',
-                    display: { xs: i === 2 ? 'none' : 'flex', md: 'flex' },
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    background: [
-                      'linear-gradient(145deg, #d0dff5 0%, #a8c0e0 100%)',
-                      'linear-gradient(145deg, #c8d9f2 0%, #9ebada 100%)',
-                      'linear-gradient(145deg, #d8e7fa 0%, #b2ccec 100%)',
-                    ][i],
-                    border: '1px solid rgba(140,180,230,0.38)',
-                    boxShadow: '0 4px 18px rgba(10,30,80,0.08)',
-                    transition: 'transform 0.28s ease, box-shadow 0.28s ease',
-                    '&:hover': { boxShadow: '0 18px 36px rgba(8,24,70,0.16)' },
-                    position: 'relative',
-                    '&::after': {
-                      content: '""',
-                      position: 'absolute',
-                      inset: 0,
-                      background: 'linear-gradient(to bottom, transparent 60%, rgba(8,24,70,0.12) 100%)',
-                    },
-                  }}
-                >
-                  <Box component="svg" width="80" height="120" viewBox="0 0 80 120">
-                    <ellipse cx="40" cy="38" rx="22" ry="25" fill="rgba(255,255,255,0.28)" />
-                    <path d="M5 120 Q15 75 40 68 Q65 75 75 120 Z" fill="rgba(255,255,255,0.18)" />
-                  </Box>
-                </Box>
-              </MotionReveal>
-            ))}
+            {/* <Typography sx={{ mt: 1, fontSize: 11, color: '#8097b0', lineHeight: 1.5, letterSpacing: '0.01em', fontFamily: '"Playfair Display", serif' }}>
+              Group photo from a PSX training session conducted by Webict Capital.
+            </Typography> */}
           </Box>
         </Container>
       </Box>
 
-      {/* ═══════════════════════════════════════════════════════
-          NEWS & INSIGHTS
-      ═══════════════════════════════════════════════════════ */}
-      <Box
-        component="section"
-        sx={{
-          '@keyframes fadeIn': { from: { opacity: 0, transform: 'translateY(18px)' }, to: { opacity: 1, transform: 'translateY(0)' } },
-          py: { xs: 8, md: 13 },
-          backgroundImage: 'none',
-        }}
-      >
-        <Container maxWidth="xl" sx={{ px: { xs: 2.5, md: 5 } }}>
-          <MotionReveal amount={0.18}>
-            <Box sx={{ mb: { xs: 4, md: 6 }, maxWidth: 680 }}>
-              {/* <Badge>Editorial</Badge> */}
+      {/* ═══ FEATURED TOOLS ════════════════════════════════════════════════ */}
+      <Container maxWidth="xl" sx={{ px: { xs: 2.5, md: 5 }, pb: { xs: 8, md: 12 } }}>
+        <MotionReveal amount={0.2} y={20}>
+          <Box>
+            {/* Section header */}
+            <Box sx={{ borderTop: '1px solid #e2eaf5', pt: 5, mb: 5 }}>
               <Typography
-                variant="h2"
                 sx={{
-                  fontSize: { xs: '1.7rem', md: '2.75rem' },
-                  lineHeight: 1.1,
-                  letterSpacing: '-0.025em',
-                  fontWeight: 800,
-                  color: '#08142b',
-                  mt: 0.5,
+                  fontSize: 11,
+                  fontFamily: '"Playfair Display", serif',
+                  letterSpacing: '0.18em',
+                  textTransform: 'uppercase',
+                  color: '#0a2463',
+                  mb: 1,
                 }}
               >
-                News &amp; Insights
+                Platform
               </Typography>
-              <Typography sx={{ mt: 1.2, color: '#344f6e', fontSize: { xs: 14.5, md: 16.5 }, lineHeight: 1.72 }}>
-                Portfolio milestones, ecosystem updates, and institutional perspectives from Webict Capital.
-              </Typography>
-            </Box>
-          </MotionReveal>
-
-          {/* Featured article */}
-          <MotionReveal y={22} duration={0.65}>
-            <Box
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
-                gap: { xs: 3, md: 6 },
-                alignItems: 'center',
-                bgcolor: '#ffffff',
-                borderRadius: 2.2,
-                border: '1px solid rgba(160,195,240,0.4)',
-                boxShadow: '0 8px 28px rgba(10,30,80,0.07)',
-                p: { xs: 2.5, md: 4 },
-                mb: { xs: 4, md: 7 },
-                animation: 'fadeIn 640ms ease both',
-                position: 'relative',
-                overflow: 'hidden',
-                '&::before': {
-                  content: '""',
-                  position: 'absolute',
-                  left: 0, top: 0, bottom: 0, width: '4px',
-                  background: 'linear-gradient(180deg, #1349a8, #2563eb)',
-                  borderRadius: '0 0 0 2px',
-                },
-              }}
-            >
-              <Box sx={{ pl: { md: 1 } }}>
-                <Typography sx={{ textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: 10.5, color: '#8aabcc', mb: 1.4, fontWeight: 700 }}>
-                  {featuredNews.category} · {featuredNews.date}
+              <Box sx={{
+                display: 'flex',
+                // alignItems: 'flex-start',
+                // justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: 1,
+              }}>
+                <Typography sx={{ fontSize: { xs: 20, md: 26 }, fontWeight: 700, color: '#080e1a', letterSpacing: '-0.025em'}}>
+                  Featured Tools
                 </Typography>
-                <Typography
-                  variant="h3"
-                  sx={{
-                    fontSize: { xs: '1.35rem', sm: '1.6rem', md: '2.1rem' },
-                    lineHeight: { xs: 1.3, md: 1.22 },
-                    letterSpacing: '-0.018em',
-                    fontWeight: 800,
-                    mb: 2,
-                    color: '#08142b',
-                  }}
-                >
-                  {featuredNews.title}
-                </Typography>
-                <Typography sx={{ color: '#4a6278', lineHeight: 1.74, mb: 3, fontSize: { xs: 14.5, md: 16 } }}>
-                  {featuredNews.description}
-                </Typography>
-                <Link
-                  href="#"
-                  underline="none"
-                  sx={{
-                    display: 'inline-flex', alignItems: 'center', gap: 0.8,
-                    color: '#1349a8', fontSize: 13.5, fontWeight: 600,
-                    borderBottom: '1px solid rgba(19,73,168,0.28)',
-                    pb: '2px',
-                    transition: 'gap 0.22s ease',
-                    '&:hover': { gap: 1.4 },
-                  }}
-                >
-                  Read article <ArrowForwardIcon sx={{ fontSize: 15 }} />
-                </Link>
-              </Box>
-
-              <Box
-                component={motion.div}
-                whileHover={reduce ? undefined : { y: -6, scale: 1.012 }}
-                transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-                sx={{
-                  aspectRatio: { xs: '16/10', md: '4/3' },
-                  borderRadius: 1.8,
-                  border: '1px solid rgba(140,180,230,0.32)',
-                  background: 'linear-gradient(140deg, #0a1e3c 0%, #0e3f80 100%)',
-                  display: 'flex', alignItems: 'flex-end',
-                  p: 2.8,
-                  overflow: 'hidden',
-                  position: 'relative',
-                  boxShadow: '0 8px 24px rgba(8,24,70,0.18)',
-                  transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-                  '&:hover': { boxShadow: '0 18px 36px rgba(8,24,70,0.26)' },
-                  '&::after': {
-                    content: '""',
-                    position: 'absolute', inset: 0,
-                    background: 'radial-gradient(ellipse at 30% 30%, rgba(37,99,235,0.2) 0%, transparent 65%)',
-                    pointerEvents: 'none',
-                  },
-                }}
-              >
-                <Typography sx={{ color: 'rgba(255,255,255,0.38)', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 600 }}>
-                  {featuredNews.imageCaption}
-                </Typography>
+                {/* <Typography sx={{ fontSize: 13, color: '#8097b0', maxWidth: 320, textAlign: { xs: 'left', sm: 'right' }, fontFamily: '"Playfair Display", serif' }}>
+                  A quick preview of two key experiences on the platform.
+                </Typography> */}
               </Box>
             </Box>
-          </MotionReveal>
 
-          {/* News grid */}
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: { xs: 2, md: 3 } }}>
-            {newsCards.map((card, index) => (
-              <MotionReveal key={card.title} delay={index * 0.07} amount={0.14} y={20}>
-                <Box
-                  component={motion.div}
-                  whileHover={reduce ? undefined : { y: -5 }}
-                  transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-                  sx={{
-                    p: { xs: 2, md: 2.8 },
-                    borderRadius: 1.8,
-                    border: '1px solid rgba(160,195,240,0.35)',
-                    bgcolor: '#ffffff',
-                    boxShadow: '0 2px 10px rgba(10,30,80,0.05)',
-                    animation: `fadeIn 540ms ease ${index * 80}ms both`,
-                    transition: 'transform 0.24s ease, box-shadow 0.24s ease, border-color 0.24s ease',
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: '0 16px 30px rgba(10,30,80,0.12)',
-                      borderColor: 'rgba(37,99,235,0.24)',
-                    },
-                    position: 'relative',
-                    overflow: 'hidden',
-                    '&::after': {
-                      content: '""',
-                      position: 'absolute', left: 0, top: 0, bottom: 0, width: '3px',
-                      background: 'linear-gradient(180deg, #1349a8, #2563eb)',
-                      opacity: 0,
-                      transition: 'opacity 0.24s ease',
-                      borderRadius: '0 0 0 1px',
-                    },
-                    '&:hover::after': { opacity: 1 },
-                  }}
-                >
-                  <Typography sx={{ textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: 10.5, color: '#8aabcc', mb: 1.2, fontWeight: 700 }}>
-                    {card.category} · {card.date}
-                  </Typography>
-                  <Typography
-                    variant="h4"
-                    sx={{
-                      fontSize: { xs: '1.08rem', md: '1.28rem' },
-                      lineHeight: 1.36,
-                      letterSpacing: '-0.016em',
-                      fontWeight: 700,
-                      mb: 2,
-                      color: '#08142b',
-                    }}
-                  >
-                    {card.title}
-                  </Typography>
-                  <Link
-                    href={card.href}
-                    underline="none"
-                    sx={{
-                      display: 'inline-flex', alignItems: 'center', gap: 0.6,
-                      color: '#1349a8', fontSize: 13, fontWeight: 600,
-                      borderBottom: '1px solid rgba(19,73,168,0.24)',
-                      pb: '1px',
-                      transition: 'gap 0.22s ease',
-                      '&:hover': { gap: 1.2 },
-                    }}
-                  >
-                    {card.linkLabel} <ArrowForwardIcon sx={{ fontSize: 14 }} />
-                  </Link>
-                </Box>
-              </MotionReveal>
-            ))}
-          </Box>
-        </Container>
-      </Box>
-
-      {/* ═══════════════════════════════════════════════════════
-          NEWSLETTER CTA
-      ═══════════════════════════════════════════════════════ */}
-      <Container
-        maxWidth="xl"
-        sx={{
-          '@keyframes ctaGlow': {
-            '0%,100%': { transform: 'translateX(-10%) scale(1)' },
-            '50%':      { transform: 'translateX(10%) scale(1.06)' },
-          },
-          mb: { xs: 7, md: 12 },
-          px: { xs: 2.5, md: 5 },
-        }}
-      >
-        <MotionReveal amount={0.18} duration={0.65} y={28}>
-          <Box
-            component={motion.div}
-            whileHover={reduce ? undefined : { y: -6 }}
-            transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
-            sx={{
-              background: 'linear-gradient(140deg, #091a36 0%, #0d2754 50%, #0e3272 100%)',
-              borderRadius: 2.5,
-              border: '1px solid rgba(120,170,240,0.3)',
-              px: { xs: 3, md: 9 },
-              py: { xs: 5, md: 8 },
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
-              gap: { xs: 5, md: 10 },
-              alignItems: 'center',
-              position: 'relative',
-              overflow: 'hidden',
-              boxShadow: '0 30px 60px rgba(5,12,36,0.38)',
-              transition: 'box-shadow 0.34s ease',
-              '&:hover': { boxShadow: '0 40px 80px rgba(5,12,36,0.48)' },
-
-              // Glow sweep
-              '&::before': {
-                content: '""',
-                position: 'absolute', inset: -4,
-                background: 'linear-gradient(115deg, rgba(37,99,235,0.4), transparent, rgba(37,99,235,0.28))',
-                filter: 'blur(32px)',
-                opacity: 0.7,
-                animation: 'ctaGlow 6s ease-in-out infinite',
-                pointerEvents: 'none',
-              },
-              // Top line
-              '&::after': {
-                content: '""',
-                position: 'absolute',
-                top: 0, left: '10%', right: '10%', height: '1px',
-                background: 'linear-gradient(90deg, transparent, rgba(100,160,255,0.5), transparent)',
-                pointerEvents: 'none',
-              },
-            }}
-          >
-            <Box sx={{ position: 'relative', zIndex: 1 }}>
-              {/* <Badge>Newsletter</Badge> */}
-              <Typography
-                variant="h2"
-                sx={{
-                  color: '#ffffff',
-                  fontSize: { xs: '1.75rem', sm: '2rem', md: '3.4rem' },
-                  lineHeight: { xs: 1.2, md: 1.08 },
-                  letterSpacing: '-0.025em',
-                  fontWeight: 900,
-                  mt: 0.5,
-                }}
-              >
-                Stay in touch with{' '}
-                <Box
-                  component="span"
-                  sx={{
-                    fontStyle: 'italic',
-                    fontFamily: '"Playfair Display", Georgia, serif',
-                    color: 'rgba(140,190,255,0.95)',
-                  }}
-                >
-                  Webict Capital
-                </Box>
-              </Typography>
-            </Box>
-
-            <Box sx={{ position: 'relative', zIndex: 1 }}>
-              <Typography sx={{ color: 'rgba(200,220,255,0.7)', mb: 3.2, lineHeight: 1.74, fontSize: { xs: 14.5, md: 16 } }}>
-                Sign up for our newsletter to stay up to date on news from Webict Capital, and our portfolio companies.
-              </Typography>
-
-              <Box
-                sx={{
-                  display: 'flex',
-                  flexDirection: { xs: 'column', sm: 'row' },
-                  border: '1px solid rgba(255,255,255,0.14)',
-                  borderRadius: 1.4,
-                  overflow: 'hidden',
-                  bgcolor: 'rgba(255,255,255,0.05)',
-                  backdropFilter: 'blur(8px)',
-                  transition: 'border-color 0.25s ease, box-shadow 0.25s ease',
-                  '&:focus-within': {
-                    borderColor: 'rgba(37,99,235,0.7)',
-                    boxShadow: '0 0 0 3px rgba(37,99,235,0.18)',
-                  },
-                }}
-              >
-                <InputBase
-                  fullWidth
-                  placeholder="Enter your email address"
-                  inputProps={{ 'aria-label': 'Email address' }}
-                  sx={{
-                    px: 2.2, py: 1.4,
-                    color: '#fff',
-                    fontSize: 14.5,
-                    '& input::placeholder': { color: 'rgba(255,255,255,0.3)', opacity: 1 },
-                  }}
-                />
-                <Box
-                  component={motion.div}
-                  whileHover={reduce ? undefined : { scale: 1.05 }}
-                  whileTap={reduce ? undefined : { scale: 0.96 }}
-                  sx={{
-                    display: 'flex',
-                    alignSelf: { xs: 'stretch', sm: 'stretch' },
-                    width: { xs: '100%', sm: 'auto' },
-                  }}
-                >
-                  <Button
-                    sx={{
-                      minWidth: { xs: '100%', sm: 58 },
-                      width: { xs: '100%', sm: 'auto' },
-                      height: { xs: 'auto', sm: '100%' },
-                      minHeight: { xs: 48, sm: '100%' },
-                      py: { xs: 1.2, sm: 0 },
-                      px: { xs: 0, sm: 2 },
-                      borderRadius: 0,
-                      background: 'linear-gradient(135deg, #1349a8, #2563eb)',
-                      color: '#fff',
-                      flexShrink: 0,
-                      alignSelf: 'stretch',
-                      transition: 'filter 0.24s ease',
-                      '&:hover': { filter: 'brightness(1.12)' },
-                      '&:hover .cta-arr': { transform: 'translateX(3px)' },
-                    }}
-                  >
-                    <ArrowForwardIcon className="cta-arr" sx={{ fontSize: 18, transition: 'transform 0.24s ease' }} />
-                  </Button>
-                </Box>
-              </Box>
-
-              <Typography sx={{ mt: 2.2, color: 'rgba(255,255,255,0.28)', fontSize: 11, lineHeight: 1.65 }}>
-                You may unsubscribe at any time. We respect your privacy — see our Privacy Policy for details.
-              </Typography>
-            </Box>
+            <Stack spacing={{ xs: 1.5, md: 2 }}>
+              <SneakPeekWindow
+                eyebrow="Market Intelligence"
+                title="PSX Data"
+                caption="Daily snapshots of market movement with quick sorting and filtering across listed companies."
+                href="/data"
+                MockContent={DataMock}
+              />
+              <SneakPeekWindow
+                eyebrow="Knowledge Base"
+                title="Glossary"
+                caption="Clear investing definitions designed for fast learning and reliable reference."
+                href="/glossary"
+                MockContent={GlossaryMock}
+              />
+            </Stack>
           </Box>
         </MotionReveal>
+      </Container>
+
+      {/* ═══ PHILOSOPHY ════════════════════════════════════════════════════ */}
+      <Box component="section" sx={{ py: { xs: 8, md: 12 }, bgcolor: '#ffffff' }}>
+        <Container maxWidth="lg" sx={{ px: { xs: 2.5, md: 5 } }}>
+          <motion.div ref={philRef} variants={fadeUp} initial="hidden" animate={philInView ? 'visible' : 'hidden'}>
+            <Box sx={{
+              borderRadius: 1.5,
+              border: '1px solid #e2eaf5',
+              bgcolor: '#fafbfd',
+              p: { xs: 3.5, md: 6 },
+              textAlign: 'center',
+              position: 'relative',
+              overflow: 'hidden',
+            }}>
+              {/* Top accent bar */}
+              <motion.div
+                initial={{ scaleX: 0 }}
+                animate={philInView ? { scaleX: 1 } : { scaleX: 0 }}
+                transition={{ delay: 0.2, duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+                style={{
+                  position: 'absolute', top: 0, left: '25%', right: '25%',
+                  height: 2, backgroundColor: '#0a2463',
+                  borderRadius: '0 0 2px 2px', transformOrigin: 'center',
+                }}
+              />
+
+              <motion.div variants={fadeUp} initial="hidden" animate={philInView ? 'visible' : 'hidden'} transition={{ delay: 0.1 }}>
+                <Typography
+                  variant="h2"
+                  sx={{
+                    fontSize: { xs: '1.7rem', sm: '2rem', md: '2.8rem' },
+                    lineHeight: { xs: 1.22, md: 1.14 },
+                    letterSpacing: '-0.025em',
+                    fontWeight: 800,
+                    mb: 2,
+                    color: '#080e1a',
+                  }}
+                >
+                  Investing in companies and the{' '}
+                  <Box component="span" sx={{ fontStyle: 'italic', fontFamily: '"Georgia", serif', fontWeight: 700, color: '#0a2463' }}>
+                    people building them
+                  </Box>
+                </Typography>
+              </motion.div>
+
+              <motion.div variants={fadeUp} initial="hidden" animate={philInView ? 'visible' : 'hidden'} transition={{ delay: 0.22 }}>
+                <Typography sx={{ maxWidth: 540, mx: 'auto', color: '#4a5e78', fontSize: { xs: 14.5, md: 16 }, lineHeight: 1.76 }}>
+                  We care about and support founders as people, not just CEOs or business leaders. Building a strong company requires resilient leadership and disciplined support.
+                </Typography>
+              </motion.div>
+            </Box>
+          </motion.div>
+        </Container>
+      </Box>
+
+      {/* ═══ NEWSLETTER ════════════════════════════════════════════════════ */}
+      <Container maxWidth="xl" sx={{ mb: { xs: 8, md: 14 }, px: { xs: 2.5, md: 5 } }}>
+        <motion.div ref={newsRef} variants={fadeUp} initial="hidden" animate={newsInView ? 'visible' : 'hidden'}>
+          <Box sx={{
+            bgcolor: '#080e1a',
+            borderRadius: 1.5,
+            border: '1px solid rgba(255,255,255,0.06)',
+            px: { xs: 3, md: 9 },
+            py: { xs: 5, md: 8 },
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+            gap: { xs: 4, md: 10 },
+            alignItems: 'center',
+            position: 'relative',
+            overflow: 'hidden',
+          }}>
+            {/* Left accent bar */}
+            <motion.div
+              initial={{ scaleY: 0, originY: 0 }}
+              animate={newsInView ? { scaleY: 1 } : { scaleY: 0 }}
+              transition={{ delay: 0.18, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+              style={{ position: 'absolute', top: 0, left: 0, width: 2, height: '100%', backgroundColor: '#0a2463' }}
+            />
+
+            {/* Left: headline */}
+            <motion.div variants={fadeLeft} initial="hidden" animate={newsInView ? 'visible' : 'hidden'} transition={{ delay: 0.15 }}>
+              <Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, mb: 1.5 }}>
+                  {/* <Box sx={{ width: 14, height: 1.5, bgcolor: '#0a2463' }} /> */}
+                  {/* <Typography sx={{ fontSize: 10, fontFamily: '"Playfair Display", serif', fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#0a2463' }}>
+                    Newsletter
+                  </Typography> */}
+                </Box>/
+                <Typography
+                  variant="h2"
+                  sx={{
+                    color: '#ffffff',
+                    fontSize: { xs: '1.8rem', sm: '2.1rem', md: '3rem' },
+                    lineHeight: { xs: 1.2, md: 1.08 },
+                    letterSpacing: '-0.028em',
+                    fontWeight: 900,
+                  }}
+                >
+                  Stay in touch with{' '}
+                  <Box component="span" sx={{ fontStyle: 'italic', fontFamily: '"Georgia", serif', color: 'rgba(150,185,255,0.8)' }}>
+                    Webict Capital
+                  </Box>
+                </Typography>
+              </Box>
+            </motion.div>
+
+            {/* Right: form */}
+            <motion.div variants={fadeRight} initial="hidden" animate={newsInView ? 'visible' : 'hidden'} transition={{ delay: 0.28 }}>
+              <Box>
+                <Typography sx={{ color: 'rgba(255,255,255,0.42)', mb: 3, lineHeight: 1.76, fontSize: { xs: 14, md: 15.5 } }}>
+                  Sign up for our newsletter to stay up to date on news from Webict Capital, and our portfolio companies.
+                </Typography>
+
+                <Box sx={{
+                  display: 'flex',
+                  flexDirection: { xs: 'column', sm: 'row' },
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 1,
+                  overflow: 'hidden',
+                  bgcolor: 'rgba(255,255,255,0.04)',
+                  transition: 'border-color 0.22s ease',
+                  '&:focus-within': { borderColor: '#0a2463' },
+                }}>
+                  <InputBase
+                    fullWidth
+                    placeholder="Enter your email address"
+                    inputProps={{ 'aria-label': 'Email address' }}
+                    sx={{
+                      px: 2, py: 1.4, color: '#fff', fontSize: 14,
+                      '& input::placeholder': { color: 'rgba(255,255,255,0.22)', opacity: 1 },
+                    }}
+                  />
+                  <Box
+                    component={motion.div}
+                    whileHover={reduce ? undefined : { scale: 1.05 }}
+                    whileTap={reduce ? undefined : { scale: 0.93 }}
+                    style={{ display: 'flex' }}
+                  >
+                    <Button sx={{
+                      minWidth: { xs: '100%', sm: 52 },
+                      width: { xs: '100%', sm: 'auto' },
+                      height: { xs: 48, sm: 'auto' },
+                      borderRadius: 0,
+                      bgcolor: '#0a2463',
+                      color: '#fff',
+                      flexShrink: 0,
+                      '&:hover': { bgcolor: '#0d2d78' },
+                      transition: 'background-color 0.2s ease',
+                    }}>
+                      <motion.div
+                        whileHover={reduce ? undefined : { x: 3 }}
+                        transition={{ duration: 0.18 }}
+                        style={{ display: 'flex' }}
+                      >
+                        <ArrowForwardIcon sx={{ fontSize: 16 }} />
+                      </motion.div>
+                    </Button>
+                  </Box>
+                </Box>
+
+                <Typography sx={{ mt: 2, color: 'rgba(255,255,255,0.18)', fontSize: 11, lineHeight: 1.65, fontFamily: '"Playfair Display", serif' }}>
+                  You may unsubscribe at any time. We respect your privacy.
+                </Typography>
+              </Box>
+            </motion.div>
+          </Box>
+        </motion.div>
       </Container>
     </>
   )

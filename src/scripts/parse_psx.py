@@ -81,6 +81,7 @@ SKIP_SECTION_KEYWORDS = {
     "STOCK INDEX FUTURE",
     "BONDS",
     "DEFAULTER",
+    "TWF",
 }
 
 # ---------------------------------------------------------------------------

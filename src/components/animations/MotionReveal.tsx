@@ -14,7 +14,7 @@ type MotionRevealProps = {
   once?: boolean
 }
 
-export function MotionReveal({ children, delay = 0, duration = 0.55, y = 18, x = 0, scale = 1, blur = 0, amount = 0.2, once = true }: MotionRevealProps) {
+export function MotionReveal({ children, delay = 0, duration = 0.99, y = 18, x = 0, scale = 1, blur = 0, amount = 0.2, once = true }: MotionRevealProps) {
   const reduceMotion = useReducedMotion()
   const ref = useRef<HTMLDivElement | null>(null)
   const isInView = useInView(ref, { amount, once })

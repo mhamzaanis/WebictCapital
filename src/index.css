@@ -18,6 +18,14 @@ body,
   min-height: 100%;
 }
 
+body,
+button,
+input,
+select,
+textarea {
+  font-family: "Playfair Display", serif;
+}
+
 /* Keep scrolling native with a minimal always-visible scrollbar. */
 html {
   scrollbar-width: thin;
