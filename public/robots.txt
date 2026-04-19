@@ -1,6 +1,7 @@
 # Allow regular search indexing by default.
 User-agent: *
 Allow: /
+Sitemap: https://webictcapital.com/sitemap.xml
 
 # Block common AI crawlers from selected pages.
 User-agent: GPTBot
