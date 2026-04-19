@@ -1,6 +1,5 @@
-import { Box, Button, Chip, Container, Stack, Typography } from '@mui/material'
+import { Box, Button, Container, Stack, Typography } from '@mui/material'
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded'
-import AccessTimeRoundedIcon from '@mui/icons-material/AccessTimeRounded'
 import { motion, useReducedMotion } from 'motion/react'
 import { Link as RouterLink } from 'react-router-dom'
 import { MotionReveal } from '../animations/MotionReveal'
@@ -12,110 +11,155 @@ export function AdvisoryPage() {
     <Box
       component="main"
       sx={{
-        pt: { xs: 'calc(64px + 1.8rem)', md: 'calc(72px + 2.2rem)' },
-        pb: { xs: 8, md: 12 },
-        bgcolor: 'background.default',
-        backgroundImage:
-          'radial-gradient(circle at 12% 16%, rgba(21,101,192,0.16) 0%, transparent 36%), radial-gradient(circle at 86% 84%, rgba(21,101,192,0.12) 0%, transparent 38%), linear-gradient(180deg, #ffffff 0%, #eef4fc 55%, #e8f1fb 100%)',
+        pt: { xs: 'calc(64px + 3rem)', md: 'calc(72px + 5rem)' },
+        pb: { xs: 10, md: 16 },
+        bgcolor: '#ffffff',
+        minHeight: '100vh',
       }}
     >
-      <Container maxWidth="lg" sx={{ px: { xs: 2, md: 3 } }}>
+      <Container maxWidth="xl" sx={{ maxWidth: '1200px !important', px: { xs: 2.5, md: 5 } }}>
         <MotionReveal>
           <Box
             component={motion.section}
-            initial={reduceMotion ? false : { opacity: 0, y: 20 }}
+            initial={reduceMotion ? false : { opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-            sx={{
-              position: 'relative',
-              overflow: 'hidden',
-              border: '1px solid',
-              borderColor: 'divider',
-              borderRadius: 2,
-              bgcolor: 'rgba(255,255,255,0.84)',
-              backdropFilter: 'blur(6px)',
-              boxShadow: '0 20px 46px rgba(16, 42, 84, 0.11)',
-              px: { xs: 2.2, sm: 3.2, md: 4.2 },
-              py: { xs: 3, md: 4.4 },
-            }}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
           >
-            <Box
-              aria-hidden
-              sx={{
-                position: 'absolute',
-                width: { xs: 170, md: 240 },
-                height: { xs: 170, md: 240 },
-                borderRadius: '50%',
-                top: { xs: -70, md: -95 },
-                right: { xs: -65, md: -80 },
-                background: 'radial-gradient(circle, rgba(21,101,192,0.32) 0%, rgba(21,101,192,0.08) 45%, transparent 72%)',
-                pointerEvents: 'none',
-              }}
-            />
+            {/* Top rule + label */}
+            <Box sx={{ maxWidth: 80 }} />
 
-            <Stack spacing={2.1} sx={{ maxWidth: 760 }}>
-              <Chip
-                icon={<AccessTimeRoundedIcon />}
-                label="Launching Soon"
-                sx={{
-                  width: 'fit-content',
-                  bgcolor: 'rgba(21,101,192,0.12)',
-                  color: 'primary.dark',
-                  fontWeight: 600,
-                  '& .MuiChip-icon': { color: 'primary.main' },
-                }}
-              />
-
-              <Typography
-                variant="h1"
-                sx={{
-                  fontSize: { xs: '2rem', sm: '2.5rem', md: '3.15rem' },
-                  lineHeight: 1.05,
-                  letterSpacing: '-0.02em',
-                  color: 'text.primary',
-                }}
-              >
-                Advisory Is Coming Soon.
-              </Typography>
-
-              <Typography
-                sx={{
-                  fontSize: { xs: 15, md: 18 },
-                  color: 'text.secondary',
-                  lineHeight: 1.75,
-                  maxWidth: 640,
-                }}
-              >
-                We are preparing a focused advisory experience for serious investors. It will include strategy sessions,
-                personalized market reviews, and actionable portfolio guidance tailored to the Pakistan market.
-              </Typography>
-
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.2} sx={{ pt: 0.8 }}>
-                <Button
-                  component={RouterLink}
-                  to="/"
-                  variant="contained"
-                  endIcon={<ArrowForwardRoundedIcon />}
+            <Stack spacing={5} sx={{ maxWidth: 720 }}>
+              {/* Status pill */}
+              <Box sx={{ display: 'flex' }}>
+                <Box
                   sx={{
-                    textTransform: 'none',
-                    px: 2.4,
-                    py: 1,
-                    borderRadius: 1,
-                    bgcolor: 'primary.main',
-                    '&:hover': { bgcolor: '#0f58aa' },
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    border: '1px solid #c8d6ec',
+                    borderRadius: 0.8,
+                    px: 1.6,
+                    py: 0.6,
                   }}
                 >
-                  Back to home
-                </Button>
-                <Button
-                  component={RouterLink}
-                  to="/about"
-                  variant="outlined"
-                  sx={{ textTransform: 'none', px: 2.4, py: 1, borderRadius: 1 }}
+                  {/* Pulse dot */}
+                  <Box sx={{ position: 'relative', width: 8, height: 8 }}>
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        inset: 0,
+                        borderRadius: '50%',
+                        bgcolor: '#0a2463',
+                        opacity: 0.25,
+                        animation: 'pulse 1.8s ease-in-out infinite',
+                        '@keyframes pulse': {
+                          '0%, 100%': { transform: 'scale(1)', opacity: 0.25 },
+                          '50%': { transform: 'scale(2.2)', opacity: 0 },
+                        },
+                      }}
+                    />
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        inset: '2px',
+                        borderRadius: '50%',
+                        bgcolor: '#0a2463',
+                      }}
+                    />
+                  </Box>
+                  <Typography
+                    sx={{
+                      fontSize: 11,
+                      fontFamily: '"Playfair Display", serif',
+                      letterSpacing: '0.14em',
+                      textTransform: 'uppercase',
+                      color: '#0a2463',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Launching Soon
+                  </Typography>
+                </Box>
+              </Box>
+
+              {/* Headline */}
+              <Box>
+                <Typography
+                  variant="h1"
+                  sx={{
+                    fontSize: { xs: '2.8rem', sm: '3.6rem', md: '4.4rem', lg: '5rem' },
+                    lineHeight: 1.03,
+                    letterSpacing: '-0.03em',
+                    color: '#080e1a',
+                    fontWeight: 700,
+                  }}
                 >
-                  Learn about us
-                </Button>
-              </Stack>
+                  Advisory is{' '}
+                  <Box component="span" sx={{ color: '#0a2463' }}>
+                    coming.
+                  </Box>
+                </Typography>
+              </Box>
+
+              {/* Body */}
+              <Typography
+                sx={{
+                  fontSize: { xs: 16, md: 18 },
+                  color: '#4a5e78',
+                  lineHeight: 1.78,
+                  maxWidth: 580,
+                }}
+              >
+                We are preparing a focused advisory experience for serious investors — including
+                strategy sessions, personalized market reviews, and actionable portfolio guidance
+                tailored to the Pakistan market.
+              </Typography>
+
+              {/* Divider detail */}
+              <Box sx={{ borderTop: '1px solid #e8eef8', pt: 4 }}>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+                  <Button
+                    component={RouterLink}
+                    to="/"
+                    variant="contained"
+                    disableElevation
+                    endIcon={<ArrowForwardRoundedIcon />}
+                    sx={{
+                      textTransform: 'none',
+                      bgcolor: '#080e1a',
+                      color: '#ffffff',
+                      px: 3.2,
+                      py: 1.2,
+                      borderRadius: 1,
+                      fontSize: 14.5,
+                      fontWeight: 500,
+                      letterSpacing: '0.01em',
+                      '&:hover': { bgcolor: '#0a2463' },
+                    }}
+                  >
+                    Back to home
+                  </Button>
+                  <Button
+                    component={RouterLink}
+                    to="/about"
+                    variant="outlined"
+                    disableElevation
+                    sx={{
+                      textTransform: 'none',
+                      borderColor: '#c8d6ec',
+                      color: '#0a2463',
+                      px: 3,
+                      py: 1.2,
+                      borderRadius: 1,
+                      fontSize: 14.5,
+                      fontWeight: 500,
+                      '&:hover': { borderColor: '#0a2463', bgcolor: '#f0f4fb' },
+                    }}
+                  >
+                    Learn about us
+                  </Button>
+                </Stack>
+              </Box>
             </Stack>
           </Box>
         </MotionReveal>
