@@ -1,0 +1,36 @@
+# Allow regular search indexing by default.
+User-agent: *
+Allow: /
+
+# Block common AI crawlers from selected pages.
+User-agent: GPTBot
+Disallow: /data
+Disallow: /masterclasses
+
+User-agent: ChatGPT-User
+Disallow: /data
+Disallow: /masterclasses
+
+User-agent: Google-Extended
+Disallow: /data
+Disallow: /masterclasses
+
+User-agent: CCBot
+Disallow: /data
+Disallow: /masterclasses
+
+User-agent: ClaudeBot
+Disallow: /data
+Disallow: /masterclasses
+
+User-agent: Claude-Web
+Disallow: /data
+Disallow: /masterclasses
+
+User-agent: PerplexityBot
+Disallow: /data
+Disallow: /masterclasses
+
+User-agent: Bytespider
+Disallow: /data
+Disallow: /masterclasses
