@@ -1,37 +1,92 @@
-# Allow regular search indexing by default.
+# ── Webict Capital — robots.txt ──────────────────────────────────────────────
+# https://webictcapital.com/robots.txt
+
+# Default: allow all legitimate search crawlers
 User-agent: *
 Allow: /
+Disallow: /api/
+Disallow: /_/
+Crawl-delay: 1
+
+# Sitemap location
 Sitemap: https://webictcapital.com/sitemap.xml
 
-# Block common AI crawlers from selected pages.
+# ── Google ────────────────────────────────────────────────────────────────────
+User-agent: Googlebot
+Allow: /
+
+User-agent: Googlebot-Image
+Allow: /
+
+# ── Bing ──────────────────────────────────────────────────────────────────────
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+# ── AI training crawlers — block selectively ──────────────────────────────────
+# Block from pages with proprietary data or pre-launch content
+
 User-agent: GPTBot
 Disallow: /data
 Disallow: /masterclasses
+Disallow: /advisory
 
 User-agent: ChatGPT-User
 Disallow: /data
 Disallow: /masterclasses
+Disallow: /advisory
 
 User-agent: Google-Extended
 Disallow: /data
 Disallow: /masterclasses
+Disallow: /advisory
 
 User-agent: CCBot
 Disallow: /data
 Disallow: /masterclasses
+Disallow: /advisory
 
 User-agent: ClaudeBot
 Disallow: /data
 Disallow: /masterclasses
+Disallow: /advisory
 
 User-agent: Claude-Web
 Disallow: /data
 Disallow: /masterclasses
+Disallow: /advisory
 
 User-agent: PerplexityBot
 Disallow: /data
 Disallow: /masterclasses
+Disallow: /advisory
 
 User-agent: Bytespider
 Disallow: /data
 Disallow: /masterclasses
+Disallow: /advisory
+
+User-agent: Applebot-Extended
+Disallow: /data
+Disallow: /masterclasses
+Disallow: /advisory
+
+User-agent: cohere-ai
+Disallow: /data
+Disallow: /masterclasses
+Disallow: /advisory
+
+User-agent: anthropic-ai
+Disallow: /data
+Disallow: /masterclasses
+Disallow: /advisory
+
+User-agent: Meta-ExternalAgent
+Disallow: /data
+Disallow: /masterclasses
+Disallow: /advisory
+
+User-agent: Diffbot
+Disallow: /data
+Disallow: /masterclasses
+Disallow: /advisory
