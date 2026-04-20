@@ -16,9 +16,8 @@ jobs:
   update:
     runs-on: ubuntu-latest
     env:
-      # Support both backend and frontend-style secret names.
-      SUPABASE_URL: ${{ secrets.SUPABASE_URL || secrets.VITE_SUPABASE_URL }}
-      SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY || secrets.VITE_SUPABASE_SERVICE_KEY }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
