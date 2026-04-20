@@ -16,8 +16,9 @@ jobs:
   update:
     runs-on: ubuntu-latest
     env:
-      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-      SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+      # Support both backend and frontend-style secret names.
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL || secrets.VITE_SUPABASE_URL }}
+      SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -40,8 +41,14 @@ jobs:
       - name: Validate required secrets
         run: |
           set -euo pipefail
-          test -n "${SUPABASE_URL}"
-          test -n "${SUPABASE_SERVICE_KEY}"
+          if [ -z "${SUPABASE_URL}" ]; then
+            echo "Missing secret: set SUPABASE_URL (or VITE_SUPABASE_URL) in repository secrets."
+            exit 1
+          fi
+          if [ -z "${SUPABASE_SERVICE_KEY}" ]; then
+            echo "Missing secret: set SUPABASE_SERVICE_KEY (or SUPABASE_SERVICE_ROLE_KEY) in repository secrets."
+            exit 1
+          fi
 
       - name: Run PSX parser with hourly retries
         run: |
