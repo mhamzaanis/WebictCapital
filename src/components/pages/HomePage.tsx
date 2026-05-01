@@ -238,7 +238,7 @@ function GlossaryMock({ animate }: { animate: boolean }) {
 // ── Data mock ─────────────────────────────────────────────────────────────────
 
 function DataMock({ animate }: { animate: boolean }) {
-  const mono = '"Playfair Display", serif'
+  const mono = 'var(--wc-number-font)'
 
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#ffffff' }}>
@@ -456,7 +456,7 @@ function SneakPeekWindow({
               alignItems: 'center',
               px: 1,
             }}>
-              <Typography sx={{ fontSize: 7.5, color: '#9ca3af', fontFamily: '"Playfair Display", serif', letterSpacing: '0.02em' }}>
+              <Typography sx={{ fontSize: 7.5, color: '#9ca3af', fontFamily: 'var(--wc-number-font)', letterSpacing: '0.02em' }}>
                 webictcapital.com{href}
               </Typography>
             </Box>

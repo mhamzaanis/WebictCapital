@@ -16,8 +16,8 @@ type CustomStatsCardsProps = {
 }
 
 function changeColor(change: number): string {
-	if (!Number.isFinite(change) || change === 0) return '#6f829d'
-	return change > 0 ? '#1a6640' : '#b4283a'
+	if (!Number.isFinite(change) || change === 0) return 'var(--wc-text-secondary)'
+	return change > 0 ? 'var(--wc-success)' : 'var(--wc-error)'
 }
 
 function changeSign(change: number): string {
@@ -36,7 +36,7 @@ export function CustomStatsCards({
 	unchanged,
 	monoFont,
 }: CustomStatsCardsProps) {
-	const statValueColor = '#080e1a'
+	const statValueColor = 'var(--wc-text-primary)'
 	const kseChangeColor = changeColor(kse100Change)
 
 	return (
@@ -81,26 +81,33 @@ export function CustomStatsCards({
 					key={label}
 					sx={{
 						p: 1.5,
-						bgcolor: '#ffffff',
-						border: '1px solid #e2eaf5',
+						bgcolor: 'var(--wc-bg)',
+						border: '1px solid var(--wc-divider)',
 						borderRadius: 1.2,
 					}}
 				>
 					<Typography
 						sx={{
-							color: '#8097b0',
+							color: 'var(--wc-text-secondary)',
 							fontSize: 10,
 							textTransform: 'uppercase',
 							letterSpacing: '0.1em',
 							mb: 0.4,
-							fontFamily: monoFont,
+							fontFamily: 'var(--wc-number-font)',
 						}}
 					>
 						{label}
 					</Typography>
 					<Stack direction="row" spacing={0.7} sx={{ alignItems: 'center' }}>
 						{icon}
-						<Typography sx={{ color, fontSize: { xs: 16, md: 20 }, fontWeight: 700, fontFamily: monoFont }}>
+						<Typography
+							sx={{
+								color,
+								fontSize: { xs: 16, md: 20 },
+								fontWeight: 700,
+								fontFamily: monoFont,
+							}}
+						>
 							{value}
 						</Typography>
 					</Stack>

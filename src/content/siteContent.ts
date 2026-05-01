@@ -9,6 +9,7 @@ export const navItems: NavItem[] = [
       {label: 'Masterclasses', href: '/masterclasses'},
     ],
   },
+  { label: 'Portfolio', href: '/portfolio' },
   { label: 'Data', href: '/data' },
   { label: 'Advisory', href: '/advisory' },
   // { label: 'Our team', href: '#' },
@@ -129,7 +130,8 @@ export const footerColumns: FooterColumn[] = [
     title: 'Webict Capital',
     links: [
     { label: 'Glossary', href: '/glossary' },
-    { label: 'Masterclasses', href: '/masterclasses' },
+    { label: 'Masterclasses', href: '/masterclasses'},
+    { label: 'Portfolio', href: '/portfolio' },
     { label: 'Data', href: '/data' },
     { label: 'Advisory', href: '/advisory' },
     { label: 'About us', href: '/about' },

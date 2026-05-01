@@ -13,19 +13,19 @@ import {
 const MONO = '"Playfair Display", serif'
 
 const headCell = {
-	bgcolor: '#fafbfd',
-	color: '#4a5e78',
+	bgcolor: 'var(--wc-paper)',
+	color: 'var(--wc-text-secondary)',
 	fontFamily: MONO,
 	fontWeight: 700,
 	fontSize: 11,
 	letterSpacing: '0.06em',
-	borderBottom: '1px solid #e2eaf5',
+	borderBottom: '1px solid var(--wc-divider)',
 	py: 1.2,
 	whiteSpace: 'nowrap' as const,
 }
 
 const skeletonPulseSx = {
-	bgcolor: '#edf3fb',
+	bgcolor: 'var(--wc-primary-light)',
 	'&::after': {
 		background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.65), transparent)',
 	},
@@ -49,8 +49,8 @@ export function StatCardsSkeleton() {
 					key={`stat-skeleton-${idx}`}
 					sx={{
 						p: 1.5,
-						bgcolor: '#ffffff',
-						border: '1px solid #e2eaf5',
+						bgcolor: 'var(--wc-bg)',
+						border: '1px solid var(--wc-divider)',
 						borderRadius: 1.2,
 					}}
 				>
@@ -68,10 +68,10 @@ export function PriceTableSkeleton() {
 			<TableContainer
 				component={Paper}
 				sx={{
-					bgcolor: '#ffffff',
+					bgcolor: 'var(--wc-bg)',
 					borderRadius: 1.5,
 					overflow: 'hidden',
-					border: '1px solid #e2eaf5',
+					border: '1px solid var(--wc-divider)',
 				}}
 			>
 				<Table size="small" aria-label="Loading PSX stocks table">
@@ -111,8 +111,8 @@ export function PriceTableSkeleton() {
 			</TableContainer>
 			<Box
 				sx={{
-					borderTop: '1px solid #e2eaf5',
-					bgcolor: '#fafbfd',
+					borderTop: '1px solid var(--wc-divider)',
+					bgcolor: 'var(--wc-paper)',
 					px: 2,
 					py: 1.2,
 					display: 'flex',

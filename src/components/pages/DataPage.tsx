@@ -139,21 +139,21 @@ async function fetchSupabaseTradeDay(tradeDate: string): Promise<PsxData> {
   }
 }
 
-const MONO = '"JetBrains Mono", "Fira Code", "Cascadia Code", monospace'
+const NUMBER_FONT = 'var(--wc-number-font)'
 
 const filterFieldSx = {
   '& .MuiOutlinedInput-root': {
-    bgcolor: '#ffffff',
-    color: '#0d1c30',
-    fontFamily: MONO,
+    bgcolor: 'var(--wc-paper)',
+    color: 'var(--wc-text-primary)',
+    fontFamily: 'inherit',
     fontSize: 12,
     borderRadius: 1,
-    '& fieldset': { borderColor: '#dde7f4' },
-    '&:hover fieldset': { borderColor: '#0a2463' },
-    '&.Mui-focused fieldset': { borderColor: '#0a2463', borderWidth: '1.5px' },
+    '& fieldset': { borderColor: 'var(--wc-divider)' },
+    '&:hover fieldset': { borderColor: 'var(--wc-primary)' },
+    '&.Mui-focused fieldset': { borderColor: 'var(--wc-primary)', borderWidth: '1.5px' },
   },
-  '& .MuiInputLabel-root.Mui-focused': { color: '#0a2463' },
-  '& input::placeholder': { color: '#8097b0', opacity: 1 },
+  '& .MuiInputLabel-root.Mui-focused': { color: 'var(--wc-primary)' },
+  '& input::placeholder': { color: 'var(--wc-text-secondary)', opacity: 1 },
 }
 
 // -- Component ----------------------------------------------------------------
@@ -312,7 +312,7 @@ export function DataPage() {
           input: {
             startAdornment: (
               <InputAdornment position="start">
-                <SearchIcon sx={{ color: '#8097b0', fontSize: 15 }} />
+                <SearchIcon sx={{ color: 'var(--wc-text-secondary)', fontSize: 15 }} />
               </InputAdornment>
             ),
           },
@@ -362,7 +362,7 @@ export function DataPage() {
       sx={{
         pt: { xs: 'calc(64px + 2rem)', md: 'calc(72px + 3rem)' },
         pb: { xs: 8, md: 14 },
-        bgcolor: '#ffffff',
+        bgcolor: 'var(--wc-bg)',
         minHeight: '100vh',
       }}
     >
@@ -387,7 +387,7 @@ export function DataPage() {
                     fontFamily: '"Playfair Display", serif',
                     letterSpacing: '0.18em',
                     textTransform: 'uppercase',
-                    color: '#0a2463',
+                    color: 'var(--wc-primary)',
                     mb: 1,
                   }}
                 >
@@ -397,18 +397,21 @@ export function DataPage() {
                   sx={{
                     fontSize: { xs: '1.6rem', md: '2.2rem' },
                     fontWeight: 700,
-                    color: '#080e1a',
+                    color: 'var(--wc-text-primary)',
                     letterSpacing: '-0.025em',
                     lineHeight: 1.1,
                   }}
                 >
+                  <Box component="span" sx={{ fontFamily: 'var(--wc-number-font)' }}>
+                    
+                  </Box>{' '}
                   PSX Closing Rates
                 </Typography>
               </Box>
               <Typography
                 sx={{
                   fontSize: 11,
-                  color: '#8097b0',
+                  color: 'var(--wc-text-secondary)',
                   letterSpacing: '0.04em',
                   pb: { md: 0.5 },
                 }}
@@ -417,7 +420,7 @@ export function DataPage() {
               </Typography>
             </Box>
             {latestTradeDate && (
-              <Typography sx={{ fontSize: 11, color: '#8097b0', mt: 1 }}>
+              <Typography sx={{ fontSize: 11, color: 'var(--wc-text-secondary)', mt: 1 }}>
                 Latest entry: {latestTradeDate}
               </Typography>
             )}
@@ -437,9 +440,9 @@ export function DataPage() {
             <Alert
               severity="error"
               sx={{
-                bgcolor: '#fff8f8',
-                border: '1px solid #f0d0d0',
-                color: '#7a2424',
+                bgcolor: 'rgba(180,40,58,0.08)',
+                border: '1px solid rgba(180,40,58,0.18)',
+                color: 'var(--wc-error)',
                 fontSize: 12,
                 borderRadius: 1,
               }}
@@ -471,18 +474,18 @@ export function DataPage() {
                 advances={stats.gainers}
                 declines={stats.losers}
                 unchanged={stats.unchanged}
-                monoFont={MONO}
+                monoFont={NUMBER_FONT}
               />
 
               <FiltersBar disabled={false} />
 
               {search && (
-                <Typography sx={{ fontSize: 11, color: '#8097b0' }}>
+                <Typography sx={{ fontSize: 11, color: 'var(--wc-text-secondary)' }}>
                   {displayedStocks.length} of {stocks.length} symbols
                 </Typography>
               )}
 
-              <CustomDataTable rows={displayedStocks} searchQuery={search} monoFont={MONO} />
+              <CustomDataTable rows={displayedStocks} searchQuery={search} monoFont={NUMBER_FONT} />
             </>
           )}
         </Stack>
