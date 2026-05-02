@@ -8,6 +8,7 @@ import { useState, useMemo } from 'react'
 import { SparkLineChart } from '@mui/x-charts'
 import { MotionReveal } from '../animations/MotionReveal'
 import { CustomButton } from '../CustomButton'
+import { StockDrawer, type StockDetail } from '../StockDrawer'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -135,6 +136,161 @@ const watchlist: WatchItem[] = [
   { symbol: 'PSO', company: 'Pakistan State Oil', price: 312.9, change: -3.6, changePct: -1.14, volume: '3.1M', spark: [8, 10, 11, 13, 14, 17, 19, 20, 21, 22, 21, 23] },
   { symbol: 'MCB', company: 'MCB Bank Ltd', price: 198.6, change: 1.2, changePct: 0.61, volume: '2.4M', spark: [10, 11, 12, 10, 13, 14, 15, 14, 16, 17, 16, 18] },
 ]
+
+// ─── Mock detail data for watchlist stocks ──────────────────────────────────────
+
+const watchDetails: Record<string, StockDetail> = {
+  OGDC: {
+    symbol: 'OGDC',
+    company: 'Oil & Gas Development Co.',
+    sector: 'Energy',
+    industry: 'Oil & Gas Exploration',
+    price: 158.4,
+    change: 2.3,
+    changePct: 1.47,
+    volume: '4.2M',
+    avgVolume: '3.8M',
+    sharesOutstanding: '4.3B',
+    open: 156.1,
+    previousClose: 156.1,
+    dayLow: 155.2,
+    dayHigh: 159.8,
+    week52Low: 112.5,
+    week52High: 178.9,
+    week52ChangePct: 28.4,
+    eps: 28.45,
+    pe: 5.57,
+    marketCap: 'Rs. 681B',
+    dividendYield: 8.2,
+    beta: 0.72,
+    roe: 24.3,
+    debtToEquity: 0.18,
+    priceToBook: 1.12,
+    spark: [14, 15, 13, 16, 12, 11, 10, 9, 11, 10, 9, 8],
+    history30: [148, 150, 152, 149, 151, 153, 155, 154, 156, 158, 157, 159, 160, 158, 156, 155, 153, 154, 156, 157, 159, 158, 160, 159, 157, 158, 156, 155, 157, 158.4],
+    historyLabels: ['1 Apr', '2 Apr', '3 Apr', '4 Apr', '5 Apr', '8 Apr', '9 Apr', '10 Apr', '11 Apr', '12 Apr', '15 Apr', '16 Apr', '17 Apr', '18 Apr', '19 Apr', '22 Apr', '23 Apr', '24 Apr', '25 Apr', '26 Apr', '29 Apr', '30 Apr', '1 May', '2 May', '3 May', '6 May', '7 May', '8 May', '9 May', '10 May'],
+  },
+  ENGRO: {
+    symbol: 'ENGRO',
+    company: 'Engro Corporation',
+    sector: 'Conglomerate',
+    industry: 'Diversified Holdings',
+    price: 286.0,
+    change: -4.1,
+    changePct: -1.41,
+    volume: '1.8M',
+    avgVolume: '2.1M',
+    sharesOutstanding: '1.14B',
+    open: 290.1,
+    previousClose: 290.1,
+    dayLow: 284.5,
+    dayHigh: 292.0,
+    week52Low: 241.0,
+    week52High: 345.5,
+    week52ChangePct: -8.2,
+    eps: 42.18,
+    pe: 6.78,
+    marketCap: 'Rs. 327B',
+    dividendYield: 5.8,
+    beta: 0.89,
+    roe: 18.6,
+    debtToEquity: 0.62,
+    priceToBook: 1.45,
+    spark: [9, 10, 11, 13, 15, 17, 18, 20, 21, 22, 20, 21],
+    history30: [280, 282, 279, 283, 285, 288, 290, 292, 289, 291, 294, 293, 295, 292, 290, 288, 286, 287, 289, 291, 290, 288, 287, 285, 284, 286, 288, 287, 285, 286],
+    historyLabels: ['1 Apr', '2 Apr', '3 Apr', '4 Apr', '5 Apr', '8 Apr', '9 Apr', '10 Apr', '11 Apr', '12 Apr', '15 Apr', '16 Apr', '17 Apr', '18 Apr', '19 Apr', '22 Apr', '23 Apr', '24 Apr', '25 Apr', '26 Apr', '29 Apr', '30 Apr', '1 May', '2 May', '3 May', '6 May', '7 May', '8 May', '9 May', '10 May'],
+  },
+  LUCK: {
+    symbol: 'LUCK',
+    company: 'Lucky Cement',
+    sector: 'Cement',
+    industry: 'Construction Materials',
+    price: 1024.5,
+    change: 8.7,
+    changePct: 0.86,
+    volume: '890K',
+    avgVolume: '1.1M',
+    sharesOutstanding: '294M',
+    open: 1015.8,
+    previousClose: 1015.8,
+    dayLow: 1010.2,
+    dayHigh: 1030.0,
+    week52Low: 785.0,
+    week52High: 1180.5,
+    week52ChangePct: 12.6,
+    eps: 156.2,
+    pe: 6.56,
+    marketCap: 'Rs. 302B',
+    dividendYield: 3.4,
+    beta: 1.12,
+    roe: 16.8,
+    debtToEquity: 0.41,
+    priceToBook: 1.28,
+    spark: [20, 18, 17, 16, 15, 14, 12, 10, 9, 8, 7, 6],
+    history30: [980, 985, 990, 988, 995, 1000, 1005, 1010, 1008, 1012, 1018, 1020, 1015, 1022, 1025, 1020, 1018, 1015, 1020, 1022, 1025, 1028, 1030, 1026, 1022, 1020, 1024, 1022, 1025, 1024.5],
+    historyLabels: ['1 Apr', '2 Apr', '3 Apr', '4 Apr', '5 Apr', '8 Apr', '9 Apr', '10 Apr', '11 Apr', '12 Apr', '15 Apr', '16 Apr', '17 Apr', '18 Apr', '19 Apr', '22 Apr', '23 Apr', '24 Apr', '25 Apr', '26 Apr', '29 Apr', '30 Apr', '1 May', '2 May', '3 May', '6 May', '7 May', '8 May', '9 May', '10 May'],
+  },
+  PSO: {
+    symbol: 'PSO',
+    company: 'Pakistan State Oil',
+    sector: 'Energy',
+    industry: 'Oil & Gas Marketing',
+    price: 312.9,
+    change: -3.6,
+    changePct: -1.14,
+    volume: '3.1M',
+    avgVolume: '2.7M',
+    sharesOutstanding: '470M',
+    open: 316.5,
+    previousClose: 316.5,
+    dayLow: 310.8,
+    dayHigh: 318.2,
+    week52Low: 248.0,
+    week52High: 420.0,
+    week52ChangePct: -5.8,
+    eps: 58.73,
+    pe: 5.33,
+    marketCap: 'Rs. 147B',
+    dividendYield: 7.5,
+    beta: 0.95,
+    roe: 22.1,
+    debtToEquity: 0.85,
+    priceToBook: 0.94,
+    spark: [8, 10, 11, 13, 14, 17, 19, 20, 21, 22, 21, 23],
+    history30: [305, 308, 310, 307, 312, 315, 318, 316, 320, 322, 319, 317, 315, 318, 320, 322, 319, 316, 314, 317, 319, 321, 318, 315, 313, 315, 318, 316, 314, 312.9],
+    historyLabels: ['1 Apr', '2 Apr', '3 Apr', '4 Apr', '5 Apr', '8 Apr', '9 Apr', '10 Apr', '11 Apr', '12 Apr', '15 Apr', '16 Apr', '17 Apr', '18 Apr', '19 Apr', '22 Apr', '23 Apr', '24 Apr', '25 Apr', '26 Apr', '29 Apr', '30 Apr', '1 May', '2 May', '3 May', '6 May', '7 May', '8 May', '9 May', '10 May'],
+  },
+  MCB: {
+    symbol: 'MCB',
+    company: 'MCB Bank Ltd',
+    sector: 'Banking',
+    industry: 'Commercial Banks',
+    price: 198.6,
+    change: 1.2,
+    changePct: 0.61,
+    volume: '2.4M',
+    avgVolume: '2.2M',
+    sharesOutstanding: '1.18B',
+    open: 197.4,
+    previousClose: 197.4,
+    dayLow: 196.5,
+    dayHigh: 200.2,
+    week52Low: 162.0,
+    week52High: 235.0,
+    week52ChangePct: 3.1,
+    eps: 35.82,
+    pe: 5.54,
+    marketCap: 'Rs. 235B',
+    dividendYield: 9.1,
+    beta: 0.68,
+    roe: 20.4,
+    debtToEquity: 0.08,
+    priceToBook: 1.05,
+    spark: [10, 11, 12, 10, 13, 14, 15, 14, 16, 17, 16, 18],
+    history30: [190, 192, 191, 193, 195, 194, 196, 198, 197, 199, 200, 198, 197, 196, 195, 194, 196, 198, 199, 197, 198, 200, 199, 197, 196, 198, 199, 197, 198, 198.6],
+    historyLabels: ['1 Apr', '2 Apr', '3 Apr', '4 Apr', '5 Apr', '8 Apr', '9 Apr', '10 Apr', '11 Apr', '12 Apr', '15 Apr', '16 Apr', '17 Apr', '18 Apr', '19 Apr', '22 Apr', '23 Apr', '24 Apr', '25 Apr', '26 Apr', '29 Apr', '30 Apr', '1 May', '2 May', '3 May', '6 May', '7 May', '8 May', '9 May', '10 May'],
+  },
+}
 
 // ─── Design tokens (matching theme.ts) ─────────────────────────────────────────
 
@@ -384,7 +540,7 @@ function HoldingRow({ h, index }: { h: Holding; index: number }) {
 
 // ─── Watchlist row ─────────────────────────────────────────────────────────────
 
-function WatchRow({ item, index }: { item: WatchItem; index: number }) {
+function WatchRow({ item, index, onClick }: { item: WatchItem; index: number; onClick?: () => void }) {
   const reduce = useReducedMotion()
   const [hov, setHov] = useState(false)
   const pos = item.change >= 0
@@ -397,6 +553,7 @@ function WatchRow({ item, index }: { item: WatchItem; index: number }) {
       transition={{ duration: 0.34, delay: index * 0.07, ease: [0.22, 1, 0.36, 1] }}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
+      onClick={onClick}
       sx={{
         py: 1.2,
         px: 1,
@@ -404,13 +561,14 @@ function WatchRow({ item, index }: { item: WatchItem; index: number }) {
         borderRadius: '7px',
         bgcolor: hov ? 'rgba(10,36,99,0.03)' : 'transparent',
         transition: 'background-color 0.2s ease',
+        cursor: onClick ? 'pointer' : 'default',
       }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
         {/* Symbol */}
         <Box sx={{ minWidth: 0, flex: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
-            <Typography sx={{ fontFamily: mono, fontSize: 12.5, fontWeight: 700, color: colors.ink }}>
+            <Typography sx={{ fontFamily: mono, fontSize: 12.5, fontWeight: 700, color: onClick ? colors.accent : colors.ink, textDecoration: onClick ? 'underline' : 'none', textUnderlineOffset: '2px', textDecorationThickness: '1px', textDecorationColor: 'rgba(10,36,99,0.2)' }}>
               {item.symbol}
             </Typography>
             <StarBorderIcon sx={{ fontSize: 12, color: colors.muted, opacity: hov ? 1 : 0, transition: 'opacity 0.2s ease' }} />
@@ -518,6 +676,16 @@ function HistRow({ event, index }: { event: HistoryEvent; index: number }) {
 
 export function PortfolioPage() {
   const reduce = useReducedMotion()
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [drawerStock, setDrawerStock] = useState<StockDetail | null>(null)
+
+  const openDrawer = (symbol: string) => {
+    const detail = watchDetails[symbol]
+    if (detail) {
+      setDrawerStock(detail)
+      setDrawerOpen(true)
+    }
+  }
 
   const mvFmt = useMemo(() => fmtPkr(totalMV), [])
   const dayFmt = useMemo(() => fmtPkrSigned(dayPL), [])
@@ -771,7 +939,7 @@ export function PortfolioPage() {
                 <Box sx={{ maxHeight: { xs: 360, md: 520 }, overflowY: 'auto', overflowX: 'hidden', pr: 0.5 }}>
                   {watchlist.map((item, i) => (
                     <Box key={item.symbol}>
-                      <WatchRow item={item} index={i} />
+                      <WatchRow item={item} index={i} onClick={() => openDrawer(item.symbol)} />
                       {i < watchlist.length - 1 && <Divider sx={{ borderColor: colors.border, opacity: 0.4 }} />}
                     </Box>
                   ))}
@@ -813,6 +981,12 @@ export function PortfolioPage() {
 
         </Stack>
       </Container>
+
+      <StockDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        stock={drawerStock}
+      />
     </Box>
   )
 }
