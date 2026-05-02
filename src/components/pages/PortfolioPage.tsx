@@ -470,8 +470,8 @@ function WatchRow({ item, index, onClick }: { item: WatchItem; index: number; on
       onClick={onClick}
       sx={{
         py: 1.2,
-        px: 1,
-        mx: -1,
+        pl: 0,
+        pr: 0,
         borderRadius: '7px',
         bgcolor: hov ? 'rgba(10,36,99,0.03)' : 'transparent',
         transition: 'background-color 0.18s ease',
@@ -739,70 +739,70 @@ export function PortfolioPage() {
 
           {/* ── Page Header ─────────────────────────────────────────────── */}
           <MotionReveal>
-                      <Box
-                        component={motion.section}
-                        initial={reduce ? false : { opacity: 0, y: 24 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                      >
-                        <Box sx={{ maxWidth: 80 }} />
-          
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            flexDirection: { xs: 'column', md: 'row' },
-                            alignItems: { md: 'flex-end' },
-                            justifyContent: 'space-between',
-                            gap: 2,
-                          }}
-                        >
-                          <Box sx={{ maxWidth: 620 }}>
-                            <Typography
-                              sx={{
-                                fontSize: 11,
-                                fontFamily: SERIF,
-                                letterSpacing: '0.18em',
-                                textTransform: 'uppercase',
-                                color: 'var(--wc-primary)',
-                                mb: 1.5,
-                              }}
-                            >
-                              Portfolio
-                            </Typography>
-                            <Typography
-                              variant="h1"
-                              sx={{
-                                fontSize: { xs: '1.6rem', sm: '2rem', md: '2.4rem' },
-                                fontWeight: 700,
-                                color: 'var(--wc-text-primary)',
-                                letterSpacing: '-0.03em',
-                                lineHeight: 1.08,
-                              }}
-                            >
-                              Your holdings at{' '}
-                              <Box component="span" sx={{ color: 'var(--wc-primary)' }}>
-                                a glance.
-                              </Box>
-                            </Typography>
-                          </Box>
-          
-                          <Box sx={{ textAlign: { md: 'right' }, pb: { md: 0.5 }, flexShrink: 0 }}>
-                            <Typography
-                              sx={{
-                                fontSize: 11,
-                                color: 'var(--wc-text-secondary)',
-                                letterSpacing: '0.04em',
-                                fontFamily: SERIF,
-                                mb: 0.3,
-                              }}
-                            >
-                              Pakistan Stock Exchange · daily closing data
-                            </Typography>
-                            
-                          </Box>
-                        </Box>
-                      </Box>
-                    </MotionReveal>
+            <Box
+              component={motion.section}
+              initial={reduce ? false : { opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <Box sx={{ maxWidth: 80 }} />
+
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: { xs: 'column', md: 'row' },
+                  alignItems: { md: 'flex-end' },
+                  justifyContent: 'space-between',
+                  gap: 2,
+                }}
+              >
+                <Box sx={{ maxWidth: 620 }}>
+                  <Typography
+                    sx={{
+                      fontSize: 11,
+                      fontFamily: SERIF,
+                      letterSpacing: '0.18em',
+                      textTransform: 'uppercase',
+                      color: 'var(--wc-primary)',
+                      mb: 1.5,
+                    }}
+                  >
+                    Portfolio
+                  </Typography>
+                  <Typography
+                    variant="h1"
+                    sx={{
+                      fontSize: { xs: '1.6rem', sm: '2rem', md: '2.4rem' },
+                      fontWeight: 700,
+                      color: 'var(--wc-text-primary)',
+                      letterSpacing: '-0.03em',
+                      lineHeight: 1.08,
+                    }}
+                  >
+                    Your holdings at{' '}
+                    <Box component="span" sx={{ color: 'var(--wc-primary)' }}>
+                      a glance.
+                    </Box>
+                  </Typography>
+                </Box>
+
+                <Box sx={{ textAlign: { md: 'right' }, pb: { md: 0.5 }, flexShrink: 0 }}>
+                  <Typography
+                    sx={{
+                      fontSize: 11,
+                      color: 'var(--wc-text-secondary)',
+                      letterSpacing: '0.04em',
+                      fontFamily: SERIF,
+                      mb: 0.3,
+                    }}
+                  >
+                    Pakistan Stock Exchange · daily closing data
+                  </Typography>
+
+                </Box>
+              </Box>
+            </Box>
+          </MotionReveal>
 
           {/* ── Market Snapshot ─────────────────────────────────────────── */}
           <MotionReveal>
@@ -1085,7 +1085,7 @@ export function PortfolioPage() {
             <Box
               sx={{
                 display: 'grid',
-                gap: 2.5,
+                gap: 1.5,
                 gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1.55fr) minmax(0, 1fr)' },
                 alignItems: 'start',
               }}
@@ -1113,15 +1113,23 @@ export function PortfolioPage() {
 
                 <Divider sx={{ borderColor: 'var(--wc-divider)', mb: 0.5, display: { xs: 'none', sm: 'block' } }} />
 
-                <Box sx={{ maxHeight: { xs: 420, md: 500 }, overflowY: 'auto', overflowX: 'hidden', pr: 0.5 }}>
-                  {holdings.map((h, i) => (
-                    <Box key={h.symbol}>
-                      <HoldingRow h={h} index={i} onEdit={handleEditHolding} onDelete={handleDeleteHolding} />
-                      {i < holdings.length - 1 && (
-                        <Divider sx={{ borderColor: 'var(--wc-divider)', opacity: 0.5 }} />
-                      )}
-                    </Box>
-                  ))}
+                <Box
+                  sx={{
+                    maxHeight: { xs: 420, md: 500 },
+                    overflowY: 'auto',
+                    overflowX: 'hidden',
+                    mr: -2.4,          // pulls scrollbar flush to card edge (matches card padding)
+                    pr: 2,             // padding between content and scrollbar
+                    scrollbarGutter: 'stable',
+                  }}
+                >                  {holdings.map((h, i) => (
+                  <Box key={h.symbol}>
+                    <HoldingRow h={h} index={i} onEdit={handleEditHolding} onDelete={handleDeleteHolding} />
+                    {i < holdings.length - 1 && (
+                      <Divider sx={{ borderColor: 'var(--wc-divider)', opacity: 0.5 }} />
+                    )}
+                  </Box>
+                ))}
                 </Box>
 
                 {/* Footer row */}
@@ -1192,7 +1200,16 @@ export function PortfolioPage() {
                   </Typography>
                 </Box>
 
-                <Box sx={{ maxHeight: { xs: 360, md: 500 }, overflowY: 'auto', overflowX: 'hidden', pr: 0.5 }}>
+                <Box
+                  sx={{
+                    maxHeight: { xs: 420, md: 500 },
+                    overflowY: 'auto',
+                    overflowX: 'hidden',
+                    mr: { xs: -2, md: -2.4 },   // pulls scrollbar to card edge
+                    pr: 2,                       // breathing room between content and scrollbar
+                    scrollbarGutter: 'stable',
+                  }}
+                >
                   {watchlist.map((item, i) => (
                     <Box key={item.symbol}>
                       <WatchRow item={item} index={i} onClick={() => openDrawer(item.symbol)} />
