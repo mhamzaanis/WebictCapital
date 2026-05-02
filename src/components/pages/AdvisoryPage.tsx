@@ -1,4 +1,4 @@
-import { Box, Button, Container, Stack, Typography } from '@mui/material'
+import { Box, Container, Stack, Typography } from '@mui/material'
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded'
 import { motion, useReducedMotion } from 'motion/react'
 import { Link as RouterLink } from 'react-router-dom'
@@ -119,16 +119,16 @@ export function AdvisoryPage() {
               {/* Divider detail */}
               <Box sx={{ borderTop: '1px solid #e8eef8', pt: 4 }}>
                 <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-                  <CustomButton
-                    component={RouterLink}
-                    to="/"
-                    endIcon={<ArrowForwardRoundedIcon />}
-                  >
-                    Back to home
-                  </CustomButton>
-                  <CustomButton component={RouterLink} to="/about" variant="outlined" tone="light">
-                    Learn about us
-                  </CustomButton>
+                  <RouterLink to="/" style={{ textDecoration: 'none' }}>
+                    <CustomButton endIcon={<ArrowForwardRoundedIcon />}>
+                      Back to home
+                    </CustomButton>
+                  </RouterLink>
+                  <RouterLink to="/about" style={{ textDecoration: 'none' }}>
+                    <CustomButton variant="outlined" tone="light">
+                      Learn about us
+                    </CustomButton>
+                  </RouterLink>
                 </Stack>
               </Box>
             </Stack>

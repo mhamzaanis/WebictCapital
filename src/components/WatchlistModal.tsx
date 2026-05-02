@@ -11,8 +11,6 @@ import {
   TextField,
   InputAdornment,
   Divider,
-  useMediaQuery,
-  useTheme,
 } from '@mui/material'
 import type { TransitionProps } from '@mui/material/transitions'
 import { motion, useReducedMotion, AnimatePresence } from 'motion/react'
@@ -231,8 +229,6 @@ function StockRow({
 
 export function WatchlistModal({ open, onClose, watchlist, onAdd }: WatchlistModalProps) {
   const reduce = useReducedMotion()
-  const theme = useTheme()
-  const isXs = useMediaQuery(theme.breakpoints.down('sm'))
   const [query, setQuery] = useState('')
 
   const watchlistSymbols = useMemo(() => new Set(watchlist.map(w => w.symbol)), [watchlist])
