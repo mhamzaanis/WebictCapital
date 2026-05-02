@@ -633,7 +633,7 @@ export function PortfolioPage() {
             </Card>
           </MotionReveal>
 
-          {/* ── Holdings ────────────────────────────────────────────────── */}
+          {/* ── Holdings + Watchlist ───────────────────────────────────── */}
           <MotionReveal>
             <Box
               sx={{
@@ -658,95 +658,95 @@ export function PortfolioPage() {
               </Typography>
             </Box>
 
-            <Card sx={{ p: { xs: 2, md: 2.4 }, '&:hover': { borderColor: colors.border, boxShadow: 'none' } }}>
-              {/* Column headers (desktop) */}
-              <Box
-                sx={{
-                  display: { xs: 'none', sm: 'flex' },
-                  alignItems: 'center',
-                  gap: 2,
-                  px: 1.2,
-                  mb: 0.5,
-                }}
-              >
-                <Box sx={{ width: 40, flexShrink: 0 }} />
-                <Box sx={{ flex: '0 0 130px' }}>
-                  <Typography sx={{ fontSize: 9, fontWeight: 700, color: colors.muted, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: mono }}>
-                    Stock
-                  </Typography>
-                </Box>
-                <Box sx={{ flex: 1, display: { xs: 'none', md: 'block' } }}>
-                  <Typography sx={{ fontSize: 9, fontWeight: 700, color: colors.muted, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: mono }}>
-                    Price / Shares
-                  </Typography>
-                </Box>
-                <Box sx={{ textAlign: 'right', minWidth: 72 }}>
-                  <Typography sx={{ fontSize: 9, fontWeight: 700, color: colors.muted, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: mono }}>
-                    Mkt Val
-                  </Typography>
-                </Box>
-                <Box sx={{ textAlign: 'right', minWidth: 90 }}>
-                  <Typography sx={{ fontSize: 9, fontWeight: 700, color: colors.muted, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: mono }}>
-                    Day P/L
-                  </Typography>
-                </Box>
-                <Box sx={{ textAlign: 'right', minWidth: 95 }}>
-                  <Typography sx={{ fontSize: 9, fontWeight: 700, color: colors.muted, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: mono }}>
-                    Total P/L
-                  </Typography>
-                </Box>
-              </Box>
-
-              <Divider sx={{ borderColor: colors.border, mb: 0.5, display: { xs: 'none', sm: 'block' } }} />
-
-              {holdings.map((h, i) => (
-                <Box key={h.symbol}>
-                  <HoldingRow h={h} index={i} />
-                  {i < holdings.length - 1 && <Divider sx={{ borderColor: colors.border, opacity: 0.5 }} />}
-                </Box>
-              ))}
-
-              {/* Footer */}
-              <Box
-                sx={{
-                  mt: 2,
-                  pt: 2,
-                  borderTop: `1px solid ${colors.border}`,
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}
-              >
-                <Typography sx={{ fontSize: 11, color: colors.muted, fontFamily: serif }}>
-                  Total invested ·{' '}
-                  <Box component="span" sx={{ fontFamily: mono, color: colors.ink2, fontWeight: 600 }}>
-                    {fmtPkr(totalMV - totalPL)}
-                  </Box>
-                </Typography>
-                <CustomButton
-                  variant="contained"
-                  tone="light"
-                  startIcon={<AddRoundedIcon />}
-                  style={{ fontSize: '0.78rem', paddingInline: '1rem', paddingBlock: '0.45rem' }}
-                >
-                  Add holding
-                </CustomButton>
-              </Box>
-            </Card>
-          </MotionReveal>
-
-          {/* ── Watchlist + History Grid ─────────────────────────────────── */}
-          <MotionReveal>
             <Box
               sx={{
                 display: 'grid',
                 gap: 3,
-                gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+                gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1.5fr) minmax(0, 1fr)' },
                 alignItems: 'start',
               }}
             >
+              {/* Holdings */}
+              <Card sx={{ p: { xs: 2, md: 2.4 }, minWidth: 0, '&:hover': { borderColor: colors.border, boxShadow: 'none' } }}>
+                {/* Column headers (desktop) */}
+                <Box
+                  sx={{
+                    display: { xs: 'none', sm: 'flex' },
+                    alignItems: 'center',
+                    gap: 2,
+                    px: 1.2,
+                    mb: 0.5,
+                  }}
+                >
+                  <Box sx={{ width: 40, flexShrink: 0 }} />
+                  <Box sx={{ flex: '0 0 130px' }}>
+                    <Typography sx={{ fontSize: 9, fontWeight: 700, color: colors.muted, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: mono }}>
+                      Stock
+                    </Typography>
+                  </Box>
+                  <Box sx={{ flex: 1, display: { xs: 'none', md: 'block' } }}>
+                    <Typography sx={{ fontSize: 9, fontWeight: 700, color: colors.muted, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: mono }}>
+                      Price / Shares
+                    </Typography>
+                  </Box>
+                  <Box sx={{ textAlign: 'right', minWidth: 72 }}>
+                    <Typography sx={{ fontSize: 9, fontWeight: 700, color: colors.muted, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: mono }}>
+                      Mkt Val
+                    </Typography>
+                  </Box>
+                  <Box sx={{ textAlign: 'right', minWidth: 90 }}>
+                    <Typography sx={{ fontSize: 9, fontWeight: 700, color: colors.muted, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: mono }}>
+                      Day P/L
+                    </Typography>
+                  </Box>
+                  <Box sx={{ textAlign: 'right', minWidth: 95 }}>
+                    <Typography sx={{ fontSize: 9, fontWeight: 700, color: colors.muted, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: mono }}>
+                      Total P/L
+                    </Typography>
+                  </Box>
+                </Box>
+
+                <Divider sx={{ borderColor: colors.border, mb: 0.5, display: { xs: 'none', sm: 'block' } }} />
+
+                <Box sx={{ maxHeight: { xs: 420, md: 520 }, overflowY: 'auto', overflowX: 'hidden', pr: 0.5 }}>
+                  {holdings.map((h, i) => (
+                    <Box key={h.symbol}>
+                      <HoldingRow h={h} index={i} />
+                      {i < holdings.length - 1 && <Divider sx={{ borderColor: colors.border, opacity: 0.5 }} />}
+                    </Box>
+                  ))}
+                </Box>
+
+                {/* Footer */}
+                <Box
+                  sx={{
+                    mt: 2,
+                    pt: 2,
+                    borderTop: `1px solid ${colors.border}`,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Typography sx={{ fontSize: 11, color: colors.muted, fontFamily: serif }}>
+                    Total invested ·{' '}
+                    <Box component="span" sx={{ fontFamily: mono, color: colors.ink2, fontWeight: 600 }}>
+                      {fmtPkr(totalMV - totalPL)}
+                    </Box>
+                  </Typography>
+                  <CustomButton
+                    variant="contained"
+                    tone="light"
+                    startIcon={<AddRoundedIcon />}
+                    style={{ fontSize: '0.78rem', paddingInline: '1rem', paddingBlock: '0.45rem' }}
+                  >
+                    Add holding
+                  </CustomButton>
+                </Box>
+              </Card>
+
               {/* Watchlist */}
-              <Card sx={{ p: { xs: 2, md: 2.4 } }}>
+              <Card sx={{ p: { xs: 2, md: 2.4 }, minWidth: 0 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                   <Box>
                     <SecLabel>Watchlist</SecLabel>
@@ -768,30 +768,34 @@ export function PortfolioPage() {
                     + Add
                   </Typography>
                 </Box>
-                {watchlist.map((item, i) => (
-                  <Box key={item.symbol}>
-                    <WatchRow item={item} index={i} />
-                    {i < watchlist.length - 1 && <Divider sx={{ borderColor: colors.border, opacity: 0.4 }} />}
-                  </Box>
-                ))}
-              </Card>
-
-              {/* Trade History */}
-              <Card sx={{ p: { xs: 2, md: 2.4 } }}>
-                <Box sx={{ mb: 2 }}>
-                  <SecLabel>Trade History</SecLabel>
-                  <Typography sx={{ fontSize: 15, fontWeight: 700, color: colors.ink, fontFamily: serif, letterSpacing: '-0.01em' }}>
-                    Recent activity
-                  </Typography>
+                <Box sx={{ maxHeight: { xs: 360, md: 520 }, overflowY: 'auto', overflowX: 'hidden', pr: 0.5 }}>
+                  {watchlist.map((item, i) => (
+                    <Box key={item.symbol}>
+                      <WatchRow item={item} index={i} />
+                      {i < watchlist.length - 1 && <Divider sx={{ borderColor: colors.border, opacity: 0.4 }} />}
+                    </Box>
+                  ))}
                 </Box>
-                {historyEvents.map((ev, i) => (
-                  <Box key={`${ev.symbol}-${i}`}>
-                    <HistRow event={ev} index={i} />
-                    {i < historyEvents.length - 1 && <Divider sx={{ borderColor: colors.border, opacity: 0.4 }} />}
-                  </Box>
-                ))}
               </Card>
             </Box>
+          </MotionReveal>
+
+          {/* ── Trade History ─────────────────────────────────────────── */}
+          <MotionReveal>
+            <Card sx={{ p: { xs: 2, md: 2.4 } }}>
+              <Box sx={{ mb: 2 }}>
+                <SecLabel>Trade History</SecLabel>
+                <Typography sx={{ fontSize: 15, fontWeight: 700, color: colors.ink, fontFamily: serif, letterSpacing: '-0.01em' }}>
+                  Recent activity
+                </Typography>
+              </Box>
+              {historyEvents.map((ev, i) => (
+                <Box key={`${ev.symbol}-${i}`}>
+                  <HistRow event={ev} index={i} />
+                  {i < historyEvents.length - 1 && <Divider sx={{ borderColor: colors.border, opacity: 0.4 }} />}
+                </Box>
+              ))}
+            </Card>
           </MotionReveal>
 
           {/* ── Footer ──────────────────────────────────────────────────── */}
