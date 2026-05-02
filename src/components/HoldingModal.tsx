@@ -1,7 +1,7 @@
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded'
 import AddRoundedIcon from '@mui/icons-material/AddRounded'
 import EditRoundedIcon from '@mui/icons-material/EditRounded'
-import MergeRoundedIcon from '@mui/icons-material/MergeRounded'
+import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded'
 import {
   Box,
   Dialog,
@@ -10,8 +10,6 @@ import {
   Typography,
   TextField,
   MenuItem,
-  useMediaQuery,
-  useTheme,
 } from '@mui/material'
 import type { TransitionProps } from '@mui/material/transitions'
 import { motion, useReducedMotion } from 'motion/react'
@@ -19,6 +17,12 @@ import { forwardRef, useEffect, useMemo, useState } from 'react'
 import type { ReactElement, Ref } from 'react'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
+
+export type BuyLot = {
+  id: string
+  shares: number
+  price: number
+}
 
 export type Holding = {
   symbol: string
@@ -32,17 +36,15 @@ export type Holding = {
   todayPLPct: number
   totalPL: number
   totalPLPct: number
+  buyLots: BuyLot[]
 }
-
-export type HoldingMode = 'add' | 'edit' | 'average'
 
 type HoldingModalProps = {
   open: boolean
   onClose: () => void
   holdings: Holding[]
   onSave: (holding: Holding) => void
-  onAverage: (symbol: string, newShares: number, newPrice: number) => void
-  initialMode?: HoldingMode
+  initialMode?: 'new' | 'manage'
   initialSymbol?: string
 }
 
@@ -89,6 +91,7 @@ const C = {
   pos: '#0d5c32',
   posBg: 'rgba(13,92,50,0.07)',
   neg: '#9b1c2e',
+  negBg: 'rgba(155,28,46,0.07)',
   divider: 'var(--wc-divider)',
 }
 
@@ -107,43 +110,6 @@ const fmt = (v: number) => v.toLocaleString('en-PK')
 const fmtPkr = (v: number) => `Rs. ${fmt(Math.round(v))}`
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
-
-function ModeTab({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string }) {
-  return (
-    <Box
-      component={motion.button}
-      onClick={onClick}
-      whileTap={{ scale: 0.96 }}
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 0.6,
-        px: 1.6,
-        py: 0.8,
-        border: `1px solid ${active ? C.accentMid : C.border}`,
-        borderRadius: '8px',
-        cursor: 'pointer',
-        bgcolor: active ? C.accentLight : 'transparent',
-        transition: 'all 0.2s ease',
-        outline: 'none',
-        '&:hover': { borderColor: C.accentMid, bgcolor: C.accentLight },
-      }}
-    >
-      <Box sx={{ color: active ? C.accentMid : C.muted, display: 'flex' }}>{icon}</Box>
-      <Typography
-        sx={{
-          fontSize: 11,
-          fontWeight: 600,
-          fontFamily: mono,
-          letterSpacing: '0.04em',
-          color: active ? C.accentMid : C.muted,
-        }}
-      >
-        {label}
-      </Typography>
-    </Box>
-  )
-}
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -182,49 +148,210 @@ const selectSx = {
   '& .MuiSelect-select': { fontFamily: mono, fontSize: 13 },
 }
 
+function ActionBtn({
+  onClick, icon, label, color = C.accentMid, disabled,
+}: { onClick: () => void; icon: React.ReactNode; label: string; color?: string; disabled?: boolean }) {
+  return (
+    <Box
+      component={motion.button}
+      onClick={onClick}
+      whileTap={{ scale: 0.96 }}
+      disabled={disabled}
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 0.5,
+        px: 1.6,
+        py: 0.8,
+        border: `1px solid ${disabled ? C.border : color}`,
+        borderRadius: '8px',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        bgcolor: 'transparent',
+        opacity: disabled ? 0.4 : 1,
+        transition: 'all 0.2s ease',
+        outline: 'none',
+        '&:hover': disabled ? {} : { bgcolor: `${color}14` },
+      }}
+    >
+      <Box sx={{ color: disabled ? C.muted : color, display: 'flex' }}>{icon}</Box>
+      <Typography sx={{ fontSize: 11, fontWeight: 600, fontFamily: mono, letterSpacing: '0.04em', color: disabled ? C.muted : color }}>
+        {label}
+      </Typography>
+    </Box>
+  )
+}
+
+function SaveBtn({
+  onClick, disabled, label, icon,
+}: { onClick: () => void; disabled?: boolean; label: string; icon?: React.ReactNode }) {
+  return (
+    <Box
+      component={motion.button}
+      onClick={onClick}
+      whileTap={{ scale: 0.97 }}
+      disabled={disabled}
+      sx={{
+        alignSelf: 'flex-end',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 0.8,
+        px: 2.5,
+        py: 1,
+        border: 'none',
+        borderRadius: '8px',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        bgcolor: disabled ? C.border : C.accentMid,
+        color: disabled ? C.muted : '#fff',
+        fontFamily: mono,
+        fontSize: 12,
+        fontWeight: 700,
+        letterSpacing: '0.04em',
+        opacity: disabled ? 0.5 : 1,
+        transition: 'background 0.2s ease',
+        '&:hover': disabled ? undefined : { bgcolor: C.accent },
+      }}
+    >
+      {icon}
+      {label}
+    </Box>
+  )
+}
+
 // ─── Main Component ────────────────────────────────────────────────────────────
 
-export function HoldingModal({ open, onClose, holdings, onSave, onAverage, initialMode, initialSymbol }: HoldingModalProps) {
+export function HoldingModal({ open, onClose, holdings, onSave, initialMode, initialSymbol }: HoldingModalProps) {
   const reduce = useReducedMotion()
-  const theme = useTheme()
-  const isXs = useMediaQuery(theme.breakpoints.down('sm'))
 
-  const [mode, setMode] = useState<HoldingMode>('add')
+  const isManage = initialMode === 'manage'
 
-  // Add mode state
-  const [addSymbol, setAddSymbol] = useState('')
-  const [addCompany, setAddCompany] = useState('')
-  const [addSector, setAddSector] = useState('')
-  const [addShares, setAddShares] = useState('')
-  const [addPrice, setAddPrice] = useState('')
+  // New mode: selected stock
+  const [selectedStock, setSelectedStock] = useState('')
 
-  // Edit mode state
-  const [editSymbol, setEditSymbol] = useState('')
+  // Buy lots (shared across modes)
+  const [lots, setLots] = useState<BuyLot[]>([])
+
+  // Add buy inline form
+  const [showBuyForm, setShowBuyForm] = useState(false)
+  const [buyShares, setBuyShares] = useState('')
+  const [buyPrice, setBuyPrice] = useState('')
+
+  // Sell inline form (manage mode only)
+  const [showSellForm, setShowSellForm] = useState(false)
+  const [sellShares, setSellShares] = useState('')
+
+  // Edit lot inline state
+  const [editingLotId, setEditingLotId] = useState<string | null>(null)
   const [editShares, setEditShares] = useState('')
   const [editPrice, setEditPrice] = useState('')
-  const [editAvgCost, setEditAvgCost] = useState('')
 
-  // Average mode state
-  const [avgSymbol, setAvgSymbol] = useState('')
-  const [avgNewShares, setAvgNewShares] = useState('')
-  const [avgNewPrice, setAvgNewPrice] = useState('')
+  const managedHolding = useMemo(() => holdings.find(h => h.symbol === initialSymbol) ?? null, [holdings, initialSymbol])
 
-  const selectedHolding = useMemo(() => holdings.find(h => h.symbol === editSymbol) ?? null, [holdings, editSymbol])
-  const selectedAvgHolding = useMemo(() => holdings.find(h => h.symbol === avgSymbol) ?? null, [holdings, avgSymbol])
+  // Computed from lots
+  const totalShares = useMemo(() => lots.reduce((s, l) => s + l.shares, 0), [lots])
+  const avgCost = useMemo(() => {
+    const totalCost = lots.reduce((s, l) => s + l.shares * l.price, 0)
+    return totalShares > 0 ? totalCost / totalShares : 0
+  }, [lots, totalShares])
+  const totalCostBasis = useMemo(() => lots.reduce((s, l) => s + l.shares * l.price, 0), [lots])
 
-  const newAvgCost = useMemo(() => {
-    if (!selectedAvgHolding || !avgNewShares || !avgNewPrice) return null
-    const oldTotal = selectedAvgHolding.shares * selectedAvgHolding.avgCost
-    const newTotal = Number(avgNewShares) * Number(avgNewPrice)
-    const totalShares = selectedAvgHolding.shares + Number(avgNewShares)
-    return oldTotal + newTotal > 0 ? (oldTotal + newTotal) / totalShares : null
-  }, [selectedAvgHolding, avgNewShares, avgNewPrice])
+  const projectedAvg = useMemo(() => {
+    if (!buyShares || !buyPrice) return null
+    const ns = Number(buyShares)
+    const np = Number(buyPrice)
+    if (!ns || !np) return null
+    const newTotalCost = totalCostBasis + ns * np
+    const newTotalShares = totalShares + ns
+    return newTotalShares > 0 ? newTotalCost / newTotalShares : null
+  }, [lots, buyShares, buyPrice, totalShares, totalCostBasis])
+
+  // Current market price
+  const currentPrice = isManage
+    ? (managedHolding?.price ?? 0)
+    : selectedStock
+      ? (availableStocks.find(s => s.symbol === selectedStock)?.price ?? 0)
+      : 0
+
+  const stockDetail = useMemo(() => availableStocks.find(s => s.symbol === selectedStock), [selectedStock])
+
+  const totalPL = totalShares * currentPrice - totalCostBasis
+  const totalPLPct = totalCostBasis > 0 ? (totalPL / totalCostBasis) * 100 : 0
 
   const resetForm = () => {
-    setMode('add')
-    setAddSymbol(''); setAddCompany(''); setAddSector(''); setAddShares(''); setAddPrice('')
-    setEditSymbol(''); setEditShares(''); setEditPrice(''); setEditAvgCost('')
-    setAvgSymbol(''); setAvgNewShares(''); setAvgNewPrice('')
+    setSelectedStock('')
+    setLots([])
+    setShowBuyForm(false)
+    setShowSellForm(false)
+    setBuyShares('')
+    setBuyPrice('')
+    setSellShares('')
+    setEditingLotId(null)
+    setEditShares('')
+    setEditPrice('')
+  }
+
+  // Initialize on open
+  useEffect(() => {
+    if (!open) return
+    if (isManage && initialSymbol && managedHolding) {
+      setLots(
+        managedHolding.buyLots.length > 0
+          ? managedHolding.buyLots.map(l => ({ ...l }))
+          : [{ id: 'lot-1', shares: managedHolding.shares, price: managedHolding.avgCost }]
+      )
+      setSelectedStock('')
+    } else {
+      resetForm()
+    }
+    setShowBuyForm(false)
+    setShowSellForm(false)
+    setBuyShares('')
+    setBuyPrice('')
+    setSellShares('')
+    setEditingLotId(null)
+    setEditShares('')
+    setEditPrice('')
+  }, [open, initialMode, initialSymbol])
+
+  // ── Handlers ───────────────────────────────────────────────────────────────
+
+  const handleAddBuy = () => {
+    const shares = Number(buyShares)
+    const price = Number(buyPrice)
+    if (!shares || !price) return
+    const newLot: BuyLot = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+      shares,
+      price,
+    }
+    setLots(prev => [...prev, newLot])
+    setBuyShares('')
+    setBuyPrice('')
+    setShowBuyForm(false)
+  }
+
+  const handleEditLot = (id: string, shares: number, price: number) => {
+    setLots(prev => prev.map(l => (l.id === id ? { ...l, shares, price } : l)))
+  }
+
+  const handleDeleteLot = (id: string) => {
+    setLots(prev => prev.filter(l => l.id !== id))
+  }
+
+  const handleSell = () => {
+    const sellQty = Number(sellShares)
+    if (!sellQty || sellQty <= 0 || sellQty >= totalShares) return
+    let remaining = sellQty
+    const updated = lots
+      .map(lot => {
+        if (remaining <= 0) return lot
+        const fromThis = Math.min(lot.shares, remaining)
+        remaining -= fromThis
+        return { ...lot, shares: lot.shares - fromThis }
+      })
+      .filter(l => l.shares > 0)
+    setLots(updated)
+    setSellShares('')
+    setShowSellForm(false)
   }
 
   const handleClose = () => {
@@ -232,101 +359,69 @@ export function HoldingModal({ open, onClose, holdings, onSave, onAverage, initi
     onClose()
   }
 
-  const handleStockSelect = (symbol: string) => {
-    const stock = availableStocks.find(s => s.symbol === symbol)
-    if (!stock) return
-    setAddSymbol(stock.symbol)
-    setAddCompany(stock.company)
-    setAddSector(stock.sector)
-    setAddPrice(stock.price.toString())
-  }
+  const handleSave = () => {
+    if (totalShares <= 0) return
 
-  const handleAddSave = () => {
-    const shares = Number(addShares)
-    const price = Number(addPrice)
-    if (!addSymbol || !addCompany || !shares || !price) return
-
-    const marketValue = shares * price
-    const holding: Holding = {
-      symbol: addSymbol,
-      company: addCompany,
-      sector: addSector,
-      shares,
-      price,
-      avgCost: price,
-      marketValue,
-      todayPL: 0,
-      todayPLPct: 0,
-      totalPL: 0,
-      totalPLPct: 0,
+    if (isManage && managedHolding) {
+      onSave({
+        ...managedHolding,
+        shares: totalShares,
+        avgCost,
+        price: currentPrice,
+        marketValue: totalShares * currentPrice,
+        totalPL,
+        totalPLPct,
+        buyLots: lots,
+      })
+    } else if (stockDetail) {
+      onSave({
+        symbol: stockDetail.symbol,
+        company: stockDetail.company,
+        sector: stockDetail.sector,
+        shares: totalShares,
+        price: currentPrice,
+        avgCost,
+        marketValue: totalShares * currentPrice,
+        todayPL: 0,
+        todayPLPct: 0,
+        totalPL: 0,
+        totalPLPct: 0,
+        buyLots: lots,
+      })
     }
-    onSave(holding)
+
     resetForm()
     onClose()
   }
 
-  const handleEditSave = () => {
+  const canSave = totalShares > 0 && (isManage || stockDetail != null)
+
+  const canAddBuy = isManage || stockDetail != null
+
+  // ── Inline edit helpers ──────────────────────────────────────────────────
+
+  const startEdit = (lot: BuyLot) => {
+    setEditingLotId(lot.id)
+    setEditShares(lot.shares.toString())
+    setEditPrice(lot.price.toString())
+  }
+
+  const confirmEdit = () => {
+    if (!editingLotId) return
     const shares = Number(editShares)
     const price = Number(editPrice)
-    const avgCost = Number(editAvgCost)
-    if (!editSymbol || !selectedHolding || !shares || !price) return
-
-    const marketValue = shares * price
-    const totalPL = marketValue - shares * avgCost
-    const totalPLPct = shares * avgCost > 0 ? (totalPL / (shares * avgCost)) * 100 : 0
-    const holding: Holding = {
-      ...selectedHolding,
-      shares,
-      price,
-      avgCost,
-      marketValue,
-      totalPL,
-      totalPLPct,
-    }
-    onSave(holding)
-    resetForm()
-    onClose()
+    if (!shares || !price) return
+    handleEditLot(editingLotId, shares, price)
+    setEditingLotId(null)
+    setEditShares('')
+    setEditPrice('')
   }
 
-  const handleAverageSave = () => {
-    const newShares = Number(avgNewShares)
-    const newPrice = Number(avgNewPrice)
-    if (!avgSymbol || !newShares || !newPrice) return
-    onAverage(avgSymbol, newShares, newPrice)
-    resetForm()
-    onClose()
+  const cancelEdit = () => {
+    setEditingLotId(null)
+    setEditShares('')
+    setEditPrice('')
   }
-
-  const handleEditSelect = (symbol: string) => {
-    setEditSymbol(symbol)
-    const h = holdings.find(x => x.symbol === symbol)
-    if (h) {
-      setEditShares(h.shares.toString())
-      setEditPrice(h.price.toString())
-      setEditAvgCost(h.avgCost.toString())
-    }
-  }
-
-  useEffect(() => {
-    if (!open) return
-    if (initialMode === 'edit' && initialSymbol) {
-      setMode('edit')
-      handleEditSelect(initialSymbol)
-      return
-    }
-    if (initialMode === 'average' && initialSymbol) {
-      setMode('average')
-      setAvgSymbol(initialSymbol)
-      setAvgNewShares('')
-      setAvgNewPrice('')
-      return
-    }
-    resetForm()
-  }, [open, initialMode, initialSymbol])
-
-  const canAdd = addSymbol && addCompany && Number(addShares) > 0 && Number(addPrice) > 0
-  const canEdit = editSymbol && selectedHolding && Number(editShares) > 0 && Number(editPrice) > 0
-  const canAverage = avgSymbol && selectedAvgHolding && Number(avgNewShares) > 0 && Number(avgNewPrice) > 0
 
   return (
     <Dialog
@@ -345,7 +440,7 @@ export function HoldingModal({ open, onClose, holdings, onSave, onAverage, initi
         },
         paper: {
           sx: {
-            width: { xs: '100%', sm: '90vw', md: 680 },
+            width: { xs: '100%', sm: '90vw', md: 560 },
             maxWidth: '100vw',
             maxHeight: { xs: '100dvh', sm: '92dvh' },
             borderRadius: { xs: 0, sm: '16px' },
@@ -360,35 +455,25 @@ export function HoldingModal({ open, onClose, holdings, onSave, onAverage, initi
       {/* ── HEADER ──────────────────────────────────────────────────────────── */}
       <Box
         sx={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 10,
+          position: 'sticky', top: 0, zIndex: 10,
           bgcolor: 'rgba(255,255,255,0.95)',
           backdropFilter: 'blur(12px)',
           borderBottom: `1px solid ${C.border}`,
-          px: { xs: 2.5, md: 3.5 },
-          py: 2,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 2,
+          px: { xs: 2.5, md: 3.5 }, py: 2,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2,
         }}
       >
         <Box>
           <Typography
             sx={{
-              fontSize: 11,
-              fontFamily: serif,
-              letterSpacing: '0.18em',
-              textTransform: 'uppercase',
-              color: C.accentMid,
-              mb: 0.6,
+              fontSize: 11, fontFamily: serif, letterSpacing: '0.18em',
+              textTransform: 'uppercase', color: C.accentMid, mb: 0.6,
             }}
           >
             Holdings
           </Typography>
           <Typography sx={{ fontFamily: serif, fontSize: 16, fontWeight: 700, color: C.ink }}>
-            {mode === 'add' ? 'Add New Holding' : mode === 'edit' ? 'Edit Holding' : 'Average Out'}
+            {isManage ? `${managedHolding?.symbol} — ${managedHolding?.company}` : 'Add New Holding'}
           </Typography>
         </Box>
 
@@ -399,12 +484,8 @@ export function HoldingModal({ open, onClose, holdings, onSave, onAverage, initi
           whileHover={{ rotate: 90 }}
           transition={{ duration: 0.2 }}
           sx={{
-            color: C.muted,
-            bgcolor: C.surface,
-            border: `1px solid ${C.border}`,
-            borderRadius: '8px',
-            width: 32,
-            height: 32,
+            color: C.muted, bgcolor: C.surface, border: `1px solid ${C.border}`,
+            borderRadius: '8px', width: 32, height: 32,
             '&:hover': { color: C.ink, bgcolor: C.surfaceDeep },
           }}
         >
@@ -413,34 +494,20 @@ export function HoldingModal({ open, onClose, holdings, onSave, onAverage, initi
       </Box>
 
       {/* ── BODY ────────────────────────────────────────────────────────────── */}
-      <Box sx={{ overflowY: 'auto', px: { xs: 2.5, md: 3.5 }, py: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
-        {/* Mode tabs */}
-        <Box
-          component={motion.div}
-          initial={reduce ? false : { opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-          sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}
-        >
-          <ModeTab active={mode === 'add'} onClick={() => setMode('add')} icon={<AddRoundedIcon sx={{ fontSize: 16 }} />} label="New Holding" />
-          <ModeTab active={mode === 'edit'} onClick={() => setMode('edit')} icon={<EditRoundedIcon sx={{ fontSize: 16 }} />} label="Edit" />
-          <ModeTab active={mode === 'average'} onClick={() => setMode('average')} icon={<MergeRoundedIcon sx={{ fontSize: 16 }} />} label="Average Out" />
-        </Box>
-
-        {/* ── ADD NEW MODE ──────────────────────────────────────────────────── */}
-        {mode === 'add' && (
+      <Box sx={{ overflowY: 'auto', px: { xs: 2.5, md: 3.5 }, py: 3, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+        {!isManage && (
+          /* ── Stock selector (new mode only) ── */
           <Box
             component={motion.div}
-            initial={reduce ? false : { opacity: 0, y: 12 }}
+            initial={reduce ? false : { opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
-            sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}
+            transition={{ duration: 0.32 }}
           >
             <TextField
               select
               label="Select Stock"
-              value={addSymbol}
-              onChange={(e) => handleStockSelect(e.target.value)}
+              value={selectedStock}
+              onChange={(e) => setSelectedStock(e.target.value)}
               fullWidth
               sx={selectSx}
             >
@@ -453,318 +520,322 @@ export function HoldingModal({ open, onClose, holdings, onSave, onAverage, initi
                   </MenuItem>
                 ))}
             </TextField>
+          </Box>
+        )}
 
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
-              <TextField label="Symbol" value={addSymbol} onChange={(e) => setAddSymbol(e.target.value.toUpperCase())} fullWidth sx={inputSx} inputProps={{ maxLength: 8 }} />
-              <TextField label="Company" value={addCompany} onChange={(e) => setAddCompany(e.target.value)} fullWidth sx={inputSx} />
-              <TextField label="Sector" value={addSector} onChange={(e) => setAddSector(e.target.value)} fullWidth sx={inputSx} />
-              <TextField label="Buy Price (Rs.)" type="number" value={addPrice} onChange={(e) => setAddPrice(e.target.value)} fullWidth sx={inputSx} inputProps={{ min: 0, step: '0.01' }} />
-              <TextField label="Shares" type="number" value={addShares} onChange={(e) => setAddShares(e.target.value)} fullWidth sx={inputSx} inputProps={{ min: 1 }} />
+        {isManage && managedHolding && (
+          /* ── Position summary (manage mode) ── */
+          <Box
+            component={motion.div}
+            initial={reduce ? false : { opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.34 }}
+            sx={{
+              border: `1px solid ${C.border}`,
+              borderRadius: '10px',
+              bgcolor: C.surface,
+              p: 2,
+            }}
+          >
+            <Typography sx={{ fontSize: 10, color: C.muted, fontFamily: mono, textTransform: 'uppercase', letterSpacing: '0.08em', mb: 1.2 }}>
+              Current Position
+            </Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1 }}>
+              <Box>
+                <Typography sx={{ fontSize: 9, color: C.muted, fontFamily: mono }}>Shares</Typography>
+                <Typography sx={{ fontFamily: mono, fontSize: 15, fontWeight: 700, color: C.ink }}>{fmt(totalShares)}</Typography>
+              </Box>
+              <Box>
+                <Typography sx={{ fontSize: 9, color: C.muted, fontFamily: mono }}>Avg Cost</Typography>
+                <Typography sx={{ fontFamily: mono, fontSize: 15, fontWeight: 700, color: C.accentMid }}>Rs. {avgCost.toFixed(2)}</Typography>
+              </Box>
+              <Box>
+                <Typography sx={{ fontSize: 9, color: C.muted, fontFamily: mono }}>Market Value</Typography>
+                <Typography sx={{ fontFamily: mono, fontSize: 15, fontWeight: 700, color: C.ink }}>{fmtPkr(totalShares * currentPrice)}</Typography>
+              </Box>
+            </Box>
+            <Box sx={{ mt: 1, pt: 1, borderTop: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography sx={{ fontFamily: mono, fontSize: 10, color: C.ink2 }}>
+                Market price: Rs. {currentPrice.toFixed(2)}
+              </Typography>
+              <Typography sx={{ fontFamily: mono, fontSize: 10, fontWeight: 700, color: totalPL >= 0 ? C.pos : C.neg }}>
+                · {totalPL >= 0 ? '+' : ''}{totalPLPct.toFixed(2)}%
+              </Typography>
+            </Box>
+          </Box>
+        )}
+
+        {/* ── Buy Lots ──────────────────────────────────────────────────────── */}
+        <Box
+          component={motion.div}
+          initial={reduce ? false : { opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.34, delay: 0.05 }}
+        >
+          <FieldLabel>Buy Lots ({lots.length})</FieldLabel>
+
+          {lots.length === 0 ? (
+            <Box
+              sx={{
+                py: 3, textAlign: 'center',
+                border: `1px dashed ${C.borderStrong}`,
+                borderRadius: '10px',
+                bgcolor: C.surface,
+              }}
+            >
+              <Typography sx={{ fontFamily: serif, fontSize: 13, color: C.muted }}>
+                No purchases added yet
+              </Typography>
+              <Typography sx={{ fontFamily: serif, fontSize: 11, color: C.muted, mt: 0.5 }}>
+                Tap "Add Buying" below to add your first entry
+              </Typography>
+            </Box>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 1.5 }}>
+              {lots.map(lot => (
+                <Box
+                  key={lot.id}
+                  sx={{
+                    display: 'flex', alignItems: 'center', gap: 1,
+                    p: 1.2, borderRadius: '8px', border: `1px solid ${C.border}`,
+                    bgcolor: C.bg,
+                  }}
+                >
+                  {editingLotId === lot.id ? (
+                    <>
+                      <TextField
+                        size="small"
+                        label="Shares"
+                        type="number"
+                        value={editShares}
+                        onChange={(e) => setEditShares(e.target.value)}
+                        sx={{
+                          flex: 1,
+                          ...inputSx,
+                          '& .MuiOutlinedInput-root': { fontSize: 12, bgcolor: C.bg },
+                        }}
+                        slotProps={{ htmlInput: { min: 1 } }}
+                      />
+                      <TextField
+                        size="small"
+                        label="Price"
+                        type="number"
+                        value={editPrice}
+                        onChange={(e) => setEditPrice(e.target.value)}
+                        sx={{
+                          flex: 1,
+                          ...inputSx,
+                          '& .MuiOutlinedInput-root': { fontSize: 12, bgcolor: C.bg },
+                        }}
+                        slotProps={{ htmlInput: { min: 0, step: '0.01' } }}
+                      />
+                      <IconButton size="small" onClick={confirmEdit} sx={{ color: C.pos }}>
+                        <Typography sx={{ fontSize: 10, fontWeight: 700, fontFamily: mono }}>OK</Typography>
+                      </IconButton>
+                      <IconButton size="small" onClick={cancelEdit} sx={{ color: C.muted }}>
+                        <CloseRoundedIcon sx={{ fontSize: 14 }} />
+                      </IconButton>
+                    </>
+                  ) : (
+                    <>
+                      <Box sx={{ flex: 1 }}>
+                        <Typography sx={{ fontFamily: mono, fontSize: 12, fontWeight: 600, color: C.ink }}>
+                          {fmt(lot.shares)} shares
+                        </Typography>
+                        <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.ink2 }}>
+                          @ Rs. {lot.price.toFixed(2)}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ textAlign: 'right', mr: 1 }}>
+                        <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.muted }}>
+                          Rs. {fmt(Math.round(lot.shares * lot.price))}
+                        </Typography>
+                      </Box>
+                      <IconButton size="small" onClick={() => startEdit(lot)} sx={{ color: C.muted }}>
+                        <EditRoundedIcon sx={{ fontSize: 14 }} />
+                      </IconButton>
+                      <IconButton size="small" onClick={() => handleDeleteLot(lot.id)} sx={{ color: C.neg }}>
+                        <DeleteOutlineRoundedIcon sx={{ fontSize: 14 }} />
+                      </IconButton>
+                    </>
+                  )}
+                </Box>
+              ))}
+            </Box>
+          )}
+        </Box>
+
+        {/* ── Action buttons row ──────────────────────────────────────────── */}
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          {canAddBuy && (
+            <ActionBtn
+              onClick={() => { setShowBuyForm(v => !v); setShowSellForm(false) }}
+              icon={<AddRoundedIcon sx={{ fontSize: 16 }} />}
+              label="Add Buying"
+            />
+          )}
+          {isManage && lots.length > 0 && (
+            <ActionBtn
+              onClick={() => { setShowSellForm(v => !v); setShowBuyForm(false) }}
+              icon={<DeleteOutlineRoundedIcon sx={{ fontSize: 16 }} />}
+              label="Sell"
+              color={C.neg}
+            />
+          )}
+        </Box>
+
+        {/* ── Add Buy inline form ──────────────────────────────────────────── */}
+        {showBuyForm && (
+          <Box
+            component={motion.div}
+            initial={reduce ? false : { opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            sx={{
+              border: `1px solid ${C.accentMid}30`,
+              borderRadius: '10px',
+              bgcolor: C.accentLight,
+              p: 2,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 1.5,
+            }}
+          >
+            <Typography sx={{ fontSize: 10, color: C.accentMid, fontFamily: mono, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              New Purchase
+            </Typography>
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
+              <TextField
+                label="Shares"
+                type="number"
+                value={buyShares}
+                onChange={(e) => setBuyShares(e.target.value)}
+                fullWidth
+                sx={inputSx}
+                slotProps={{ htmlInput: { min: 1 } }}
+              />
+              <TextField
+                label="Buy Price (Rs.)"
+                type="number"
+                value={buyPrice}
+                onChange={(e) => setBuyPrice(e.target.value)}
+                fullWidth
+                sx={inputSx}
+                slotProps={{ htmlInput: { min: 0, step: '0.01' } }}
+              />
             </Box>
 
-            {canAdd && (
-              <Box sx={{ border: `1px solid ${C.border}`, borderRadius: '10px', bgcolor: C.surface, p: 2 }}>
-                <Typography sx={{ fontSize: 10, color: C.muted, fontFamily: mono, textTransform: 'uppercase', letterSpacing: '0.08em', mb: 1 }}>
-                  Preview
+            {projectedAvg !== null && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 0.8, px: 1.2, bgcolor: C.bg, borderRadius: '8px' }}>
+                <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.ink2 }}>
+                  Updated avg cost:
                 </Typography>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
-                  <Typography sx={{ fontFamily: mono, fontSize: 12, color: C.ink2 }}>
-                    {fmt(Number(addShares))} shares @ {fmtPkr(Number(addPrice))}
+                <Typography sx={{ fontFamily: mono, fontSize: 13, fontWeight: 700, color: C.accentMid }}>
+                  Rs. {projectedAvg.toFixed(2)}
+                </Typography>
+                {avgCost > 0 && projectedAvg !== avgCost && (
+                  <Typography
+                    sx={{
+                      fontFamily: mono, fontSize: 10, fontWeight: 600,
+                      color: projectedAvg < avgCost ? C.pos : C.neg,
+                    }}
+                  >
+                    ({projectedAvg < avgCost ? '▼' : '▲'} {Math.abs(((projectedAvg - avgCost) / avgCost) * 100).toFixed(1)}%)
                   </Typography>
-                  <Typography sx={{ fontFamily: mono, fontSize: 13, fontWeight: 700, color: C.ink }}>
-                    Total: {fmtPkr(Number(addShares) * Number(addPrice))}
+                )}
+                {avgCost > 0 && projectedAvg === avgCost && (
+                  <Typography sx={{ fontFamily: mono, fontSize: 10, color: C.muted }}>
+                    — unchanged
                   </Typography>
-                </Box>
+                )}
               </Box>
             )}
 
-            <Box
-              component={motion.button}
-              onClick={handleAddSave}
-              whileTap={{ scale: 0.97 }}
-              disabled={!canAdd}
-              sx={{
-                alignSelf: 'flex-end',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 0.8,
-                px: 2.5,
-                py: 1,
-                border: 'none',
-                borderRadius: '8px',
-                cursor: canAdd ? 'pointer' : 'not-allowed',
-                bgcolor: canAdd ? C.accentMid : C.border,
-                color: canAdd ? '#fff' : C.muted,
-                fontFamily: mono,
-                fontSize: 12,
-                fontWeight: 700,
-                letterSpacing: '0.04em',
-                opacity: canAdd ? 1 : 0.5,
-                transition: 'background 0.2s ease',
-                '&:hover': canAdd ? { bgcolor: C.accent } : undefined,
-              }}
-            >
-              <AddRoundedIcon sx={{ fontSize: 16 }} />
-              Add to Holdings
+            <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+              <ActionBtn
+                onClick={() => { setShowBuyForm(false); setBuyShares(''); setBuyPrice('') }}
+                icon={<CloseRoundedIcon sx={{ fontSize: 16 }} />}
+                label="Cancel"
+                color={C.muted}
+              />
+              <SaveBtn
+                onClick={handleAddBuy}
+                disabled={!buyShares || !buyPrice}
+                label="Confirm Buy"
+                icon={<AddRoundedIcon sx={{ fontSize: 16 }} />}
+              />
             </Box>
           </Box>
         )}
 
-        {/* ── EDIT MODE ─────────────────────────────────────────────────────── */}
-        {mode === 'edit' && (
+        {/* ── Sell inline form ────────────────────────────────────────────── */}
+        {showSellForm && (
           <Box
             component={motion.div}
-            initial={reduce ? false : { opacity: 0, y: 12 }}
+            initial={reduce ? false : { opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
-            sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}
+            sx={{
+              border: `1px solid ${C.neg}30`,
+              borderRadius: '10px',
+              bgcolor: C.negBg,
+              p: 2,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 1.5,
+            }}
           >
+            <Typography sx={{ fontSize: 10, color: C.neg, fontFamily: mono, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              Sell Shares
+            </Typography>
             <TextField
-              select
-              label="Select Holding to Edit"
-              value={editSymbol}
-              onChange={(e) => handleEditSelect(e.target.value)}
+              label="Shares to Sell"
+              type="number"
+              value={sellShares}
+              onChange={(e) => setSellShares(e.target.value)}
               fullWidth
-              sx={selectSx}
-            >
-              <MenuItem value="" disabled>Choose a holding…</MenuItem>
-              {holdings.map(h => (
-                <MenuItem key={h.symbol} value={h.symbol}>
-                  {h.symbol} — {h.company} · {fmt(h.shares)} sh @ Rs. {h.price.toFixed(2)}
-                </MenuItem>
-              ))}
-            </TextField>
-
-            {selectedHolding && (
-              <>
-                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
-                  <TextField label="Symbol" value={editSymbol} disabled fullWidth sx={inputSx} />
-                  <TextField label="Company" value={selectedHolding.company} disabled fullWidth sx={inputSx} />
-                  <TextField label="Sector" value={selectedHolding.sector} disabled fullWidth sx={inputSx} />
-                  <TextField label="Avg Cost (Rs.)" type="number" value={editAvgCost} onChange={(e) => setEditAvgCost(e.target.value)} fullWidth sx={inputSx} inputProps={{ min: 0, step: '0.01' }} />
-                  <TextField label="Current Price (Rs.)" type="number" value={editPrice} onChange={(e) => setEditPrice(e.target.value)} fullWidth sx={inputSx} inputProps={{ min: 0, step: '0.01' }} />
-                  <TextField label="Shares" type="number" value={editShares} onChange={(e) => setEditShares(e.target.value)} fullWidth sx={inputSx} inputProps={{ min: 1 }} />
-                </Box>
-
-                {canEdit && Number(editAvgCost) > 0 && (
-                  <Box sx={{ border: `1px solid ${C.border}`, borderRadius: '10px', bgcolor: C.surface, p: 2 }}>
-                    <Typography sx={{ fontSize: 10, color: C.muted, fontFamily: mono, textTransform: 'uppercase', letterSpacing: '0.08em', mb: 1 }}>
-                      Updated Summary
-                    </Typography>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.8 }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.ink2 }}>Market Value</Typography>
-                        <Typography sx={{ fontFamily: mono, fontSize: 12, fontWeight: 600, color: C.ink }}>
-                          {fmtPkr(Number(editShares) * Number(editPrice))}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.ink2 }}>Cost Basis</Typography>
-                        <Typography sx={{ fontFamily: mono, fontSize: 12, fontWeight: 600, color: C.ink }}>
-                          {fmtPkr(Number(editShares) * Number(editAvgCost))}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.ink2 }}>Total P/L</Typography>
-                        <Typography sx={{
-                          fontFamily: mono, fontSize: 12, fontWeight: 700,
-                          color: (Number(editShares) * Number(editPrice) - Number(editShares) * Number(editAvgCost)) >= 0 ? C.pos : C.neg,
-                        }}>
-                          {fmtPkr(Number(editShares) * Number(editPrice) - Number(editShares) * Number(editAvgCost))}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </Box>
-                )}
-
-                <Box
-                  component={motion.button}
-                  onClick={handleEditSave}
-                  whileTap={{ scale: 0.97 }}
-                  disabled={!canEdit}
-                  sx={{
-                    alignSelf: 'flex-end',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 0.8,
-                    px: 2.5,
-                    py: 1,
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: canEdit ? 'pointer' : 'not-allowed',
-                    bgcolor: canEdit ? C.accentMid : C.border,
-                    color: canEdit ? '#fff' : C.muted,
-                    fontFamily: mono,
-                    fontSize: 12,
-                    fontWeight: 700,
-                    letterSpacing: '0.04em',
-                    opacity: canEdit ? 1 : 0.5,
-                    transition: 'background 0.2s ease',
-                    '&:hover': canEdit ? { bgcolor: C.accent } : undefined,
-                  }}
-                >
-                  <EditRoundedIcon sx={{ fontSize: 16 }} />
-                  Save Changes
-                </Box>
-              </>
+              sx={inputSx}
+              slotProps={{ htmlInput: { min: 1, max: totalShares - 1 } }}
+            />
+            {sellShares && Number(sellShares) > 0 && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.5, px: 1.2, bgcolor: C.bg, borderRadius: '8px' }}>
+                <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.ink2 }}>
+                  Remaining:
+                </Typography>
+                <Typography sx={{ fontFamily: mono, fontSize: 13, fontWeight: 700, color: C.ink }}>
+                  {fmt(totalShares - Number(sellShares))} shares
+                </Typography>
+              </Box>
             )}
+            {sellShares && Number(sellShares) >= totalShares && (
+              <Typography sx={{ fontFamily: mono, fontSize: 10, color: C.neg }}>
+                Cannot sell all shares. Use delete from the portfolio page instead.
+              </Typography>
+            )}
+            <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+              <ActionBtn
+                onClick={() => { setShowSellForm(false); setSellShares('') }}
+                icon={<CloseRoundedIcon sx={{ fontSize: 16 }} />}
+                label="Cancel"
+                color={C.muted}
+              />
+              <SaveBtn
+                onClick={handleSell}
+                disabled={!sellShares || Number(sellShares) <= 0 || Number(sellShares) >= totalShares}
+                label="Confirm Sell"
+                icon={<DeleteOutlineRoundedIcon sx={{ fontSize: 16 }} />}
+              />
+            </Box>
           </Box>
         )}
 
-        {/* ── AVERAGE OUT MODE ──────────────────────────────────────────────── */}
-        {mode === 'average' && (
-          <Box
-            component={motion.div}
-            initial={reduce ? false : { opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
-            sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}
-          >
-            <TextField
-              select
-              label="Select Holding to Average"
-              value={avgSymbol}
-              onChange={(e) => { setAvgSymbol(e.target.value); setAvgNewShares(''); setAvgNewPrice('') }}
-              fullWidth
-              sx={selectSx}
-            >
-              <MenuItem value="" disabled>Choose a holding…</MenuItem>
-              {holdings.map(h => (
-                <MenuItem key={h.symbol} value={h.symbol}>
-                  {h.symbol} — {h.company} · {fmt(h.shares)} sh @ avg Rs. {h.avgCost.toFixed(2)}
-                </MenuItem>
-              ))}
-            </TextField>
-
-            {selectedAvgHolding && (
-              <>
-                {/* Current position summary */}
-                <Box sx={{ border: `1px solid ${C.border}`, borderRadius: '10px', bgcolor: C.surface, p: 2 }}>
-                  <Typography sx={{ fontSize: 10, color: C.muted, fontFamily: mono, textTransform: 'uppercase', letterSpacing: '0.08em', mb: 1 }}>
-                    Current Position
-                  </Typography>
-                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1.5 }}>
-                    <Box>
-                      <Typography sx={{ fontSize: 9, color: C.muted, fontFamily: mono }}>Shares</Typography>
-                      <Typography sx={{ fontFamily: mono, fontSize: 14, fontWeight: 700, color: C.ink }}>{fmt(selectedAvgHolding.shares)}</Typography>
-                    </Box>
-                    <Box>
-                      <Typography sx={{ fontSize: 9, color: C.muted, fontFamily: mono }}>Avg Cost</Typography>
-                      <Typography sx={{ fontFamily: mono, fontSize: 14, fontWeight: 700, color: C.ink }}>Rs. {selectedAvgHolding.avgCost.toFixed(2)}</Typography>
-                    </Box>
-                    <Box>
-                      <Typography sx={{ fontSize: 9, color: C.muted, fontFamily: mono }}>Market Value</Typography>
-                      <Typography sx={{ fontFamily: mono, fontSize: 14, fontWeight: 700, color: C.ink }}>{fmtPkr(selectedAvgHolding.marketValue)}</Typography>
-                    </Box>
-                  </Box>
-                </Box>
-
-                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
-                  <TextField
-                    label="New Shares to Buy"
-                    type="number"
-                    value={avgNewShares}
-                    onChange={(e) => setAvgNewShares(e.target.value)}
-                    fullWidth
-                    sx={inputSx}
-                    inputProps={{ min: 1 }}
-                  />
-                  <TextField
-                    label="New Buy Price (Rs.)"
-                    type="number"
-                    value={avgNewPrice}
-                    onChange={(e) => setAvgNewPrice(e.target.value)}
-                    fullWidth
-                    sx={inputSx}
-                    inputProps={{ min: 0, step: '0.01' }}
-                  />
-                </Box>
-
-                {newAvgCost !== null && (
-                  <Box sx={{ border: `1px solid ${C.accentMid}30`, borderRadius: '10px', bgcolor: C.accentLight, p: 2.5 }}>
-                    <Typography sx={{ fontSize: 10, color: C.accentMid, fontFamily: mono, textTransform: 'uppercase', letterSpacing: '0.08em', mb: 1.5 }}>
-                      Averaged Result
-                    </Typography>
-                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
-                      <Box>
-                        <Typography sx={{ fontSize: 9, color: C.muted, fontFamily: mono, mb: 0.3 }}>New Total Shares</Typography>
-                        <Typography sx={{ fontFamily: mono, fontSize: 15, fontWeight: 700, color: C.ink }}>
-                          {fmt(selectedAvgHolding.shares + Number(avgNewShares))}
-                        </Typography>
-                      </Box>
-                      <Box>
-                        <Typography sx={{ fontSize: 9, color: C.muted, fontFamily: mono, mb: 0.3 }}>New Avg Cost</Typography>
-                        <Typography sx={{ fontFamily: mono, fontSize: 15, fontWeight: 700, color: C.accentMid }}>
-                          Rs. {newAvgCost.toFixed(2)}
-                        </Typography>
-                      </Box>
-                      <Box>
-                        <Typography sx={{ fontSize: 9, color: C.muted, fontFamily: mono, mb: 0.3 }}>Total Invested</Typography>
-                        <Typography sx={{ fontFamily: mono, fontSize: 15, fontWeight: 700, color: C.ink }}>
-                          {fmtPkr((selectedAvgHolding.shares + Number(avgNewShares)) * newAvgCost)}
-                        </Typography>
-                      </Box>
-                    </Box>
-
-                    <Box sx={{ mt: 2, pt: 2, borderTop: `1px solid ${C.border}` }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography sx={{ fontFamily: mono, fontSize: 10, color: C.ink2 }}>
-                          Avg cost moves from Rs. {selectedAvgHolding.avgCost.toFixed(2)}
-                        </Typography>
-                        {newAvgCost < selectedAvgHolding.avgCost ? (
-                          <Typography sx={{ fontFamily: mono, fontSize: 10, fontWeight: 700, color: C.pos }}>
-                            ↓ Down
-                          </Typography>
-                        ) : newAvgCost > selectedAvgHolding.avgCost ? (
-                          <Typography sx={{ fontFamily: mono, fontSize: 10, fontWeight: 700, color: C.neg }}>
-                            ↑ Up
-                          </Typography>
-                        ) : (
-                          <Typography sx={{ fontFamily: mono, fontSize: 10, color: C.muted }}>
-                            — Unchanged
-                          </Typography>
-                        )}
-                        <Typography sx={{ fontFamily: mono, fontSize: 10, color: C.ink2 }}>
-                          to Rs. {newAvgCost.toFixed(2)}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </Box>
-                )}
-
-                <Box
-                  component={motion.button}
-                  onClick={handleAverageSave}
-                  whileTap={{ scale: 0.97 }}
-                  disabled={!canAverage}
-                  sx={{
-                    alignSelf: 'flex-end',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 0.8,
-                    px: 2.5,
-                    py: 1,
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: canAverage ? 'pointer' : 'not-allowed',
-                    bgcolor: canAverage ? C.accentMid : C.border,
-                    color: canAverage ? '#fff' : C.muted,
-                    fontFamily: mono,
-                    fontSize: 12,
-                    fontWeight: 700,
-                    letterSpacing: '0.04em',
-                    opacity: canAverage ? 1 : 0.5,
-                    transition: 'background 0.2s ease',
-                    '&:hover': canAverage ? { bgcolor: C.accent } : undefined,
-                  }}
-                >
-                  <MergeRoundedIcon sx={{ fontSize: 16 }} />
-                  Apply Average
-                </Box>
-              </>
-            )}
-          </Box>
-        )}
+        {/* ── Save button ────────────────────────────────────────────────── */}
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', pt: 1 }}>
+          <SaveBtn
+            onClick={handleSave}
+            disabled={!canSave}
+            label={isManage ? 'Save Changes' : 'Save Holding'}
+            icon={isManage ? undefined : <AddRoundedIcon sx={{ fontSize: 16 }} />}
+          />
+        </Box>
       </Box>
     </Dialog>
   )

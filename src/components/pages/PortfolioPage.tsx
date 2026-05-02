@@ -14,7 +14,7 @@ import { MotionReveal } from '../animations/MotionReveal'
 import { CustomButton } from '../CustomButton'
 import { StockDrawer, type StockDetail } from '../StockDrawer'
 import { MarketSummaryModal } from '../MarketSummaryModal'
-import { HoldingModal, type Holding, type HoldingMode } from '../HoldingModal'
+import { HoldingModal, type Holding } from '../HoldingModal'
 import { WatchlistModal, type WatchItem } from '../WatchlistModal'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -31,11 +31,11 @@ type HistoryEvent = {
 // ─── Data ──────────────────────────────────────────────────────────────────────
 
 const initialHoldings: Holding[] = [
-  { symbol: 'HBL', company: 'Habib Bank Ltd', sector: 'Banking', shares: 408_011, price: 117.03, avgCost: 119.58, marketValue: 47_749_417, todayPL: 1_394, todayPLPct: 0.35, totalPL: -10_109, totalPLPct: -2.48 },
-  { symbol: 'NESTLE', company: 'Nestlé Pakistan', sector: 'Consumer', shares: 5_300, price: 5_725.49, avgCost: 5_300.0, marketValue: 30_345_097, todayPL: 425_490, todayPLPct: 8.03, totalPL: 425_490, totalPLPct: 8.03 },
-  { symbol: 'TRG', company: 'TRG Pakistan', sector: 'Technology', shares: 26_040, price: 130.2, avgCost: 143.8, marketValue: 3_390_408, todayPL: -23_760, todayPLPct: -9.12, totalPL: -23_760, totalPLPct: -9.12 },
-  { symbol: 'MARI', company: 'Mari Petroleum', sector: 'Energy', shares: 12_000, price: 445.75, avgCost: 430.5, marketValue: 5_349_000, todayPL: 48_000, todayPLPct: 0.91, totalPL: 182_400, totalPLPct: 3.53 },
-  { symbol: 'SYS', company: 'Systems Ltd', sector: 'Technology', shares: 18_500, price: 312.6, avgCost: 304.2, marketValue: 5_783_100, todayPL: -12_950, todayPLPct: -0.22, totalPL: 156_200, totalPLPct: 2.78 },
+  { symbol: 'HBL', company: 'Habib Bank Ltd', sector: 'Banking', shares: 408_011, price: 117.03, avgCost: 119.58, marketValue: 47_749_417, todayPL: 1_394, todayPLPct: 0.35, totalPL: -10_109, totalPLPct: -2.48, buyLots: [{ id: 'hbl-1', shares: 200_000, price: 120.5 }, { id: 'hbl-2', shares: 208_011, price: 118.7 }] },
+  { symbol: 'NESTLE', company: 'Nestlé Pakistan', sector: 'Consumer', shares: 5_300, price: 5_725.49, avgCost: 5_300.0, marketValue: 30_345_097, todayPL: 425_490, todayPLPct: 8.03, totalPL: 425_490, totalPLPct: 8.03, buyLots: [{ id: 'nest-1', shares: 5_300, price: 5_300 }] },
+  { symbol: 'TRG', company: 'TRG Pakistan', sector: 'Technology', shares: 26_040, price: 130.2, avgCost: 143.8, marketValue: 3_390_408, todayPL: -23_760, todayPLPct: -9.12, totalPL: -23_760, totalPLPct: -9.12, buyLots: [{ id: 'trg-1', shares: 15_000, price: 145.0 }, { id: 'trg-2', shares: 11_040, price: 142.2 }] },
+  { symbol: 'MARI', company: 'Mari Petroleum', sector: 'Energy', shares: 12_000, price: 445.75, avgCost: 430.5, marketValue: 5_349_000, todayPL: 48_000, todayPLPct: 0.91, totalPL: 182_400, totalPLPct: 3.53, buyLots: [{ id: 'mari-1', shares: 12_000, price: 430.5 }] },
+  { symbol: 'SYS', company: 'Systems Ltd', sector: 'Technology', shares: 18_500, price: 312.6, avgCost: 304.2, marketValue: 5_783_100, todayPL: -12_950, todayPLPct: -0.22, totalPL: 156_200, totalPLPct: 2.78, buyLots: [{ id: 'sys-1', shares: 10_000, price: 300.0 }, { id: 'sys-2', shares: 8_500, price: 309.1 }] },
 ]
 
 const historyEvents: HistoryEvent[] = [
@@ -664,7 +664,7 @@ export function PortfolioPage() {
   const [marketModalOpen, setMarketModalOpen] = useState(false)
   const [holdModalOpen, setHoldModalOpen] = useState(false)
   const [watchModalOpen, setWatchModalOpen] = useState(false)
-  const [holdModalMode, setHoldModalMode] = useState<HoldingMode>('add')
+  const [holdModalMode, setHoldModalMode] = useState<'new' | 'manage'>('new')
   const [holdModalSymbol, setHoldModalSymbol] = useState<string | undefined>(undefined)
   const [holdings, setHoldings] = useState<Holding[]>(initialHoldings)
   const [watchlist, setWatchlist] = useState<WatchItem[]>(initialWatchlist)
@@ -702,27 +702,6 @@ export function PortfolioPage() {
     })
   }
 
-  const handleAverageHolding = (symbol: string, newShares: number, newPrice: number) => {
-    setHoldings(prev => {
-      const idx = prev.findIndex(h => h.symbol === symbol)
-      if (idx < 0) return prev
-      const h = prev[idx]
-      const totalCost = h.shares * h.avgCost + newShares * newPrice
-      const totalShares = h.shares + newShares
-      const newAvgCost = totalCost / totalShares
-      const next = [...prev]
-      next[idx] = {
-        ...h,
-        shares: totalShares,
-        avgCost: newAvgCost,
-        marketValue: totalShares * h.price,
-        totalPL: totalShares * h.price - totalCost,
-        totalPLPct: totalCost > 0 ? ((totalShares * h.price - totalCost) / totalCost) * 100 : 0,
-      }
-      return next
-    })
-  }
-
   const handleAddToWatchlist = (item: WatchItem) => {
     setWatchlist(prev => {
       if (prev.some(w => w.symbol === item.symbol)) return prev
@@ -731,7 +710,7 @@ export function PortfolioPage() {
   }
 
   const handleEditHolding = (symbol: string) => {
-    setHoldModalMode('edit')
+    setHoldModalMode('manage')
     setHoldModalSymbol(symbol)
     setHoldModalOpen(true)
   }
@@ -1170,7 +1149,7 @@ export function PortfolioPage() {
                     startIcon={<AddRoundedIcon />}
                     style={{ fontSize: '0.78rem', paddingInline: '1rem', paddingBlock: '0.45rem' }}
                     onClick={() => {
-                      setHoldModalMode('add')
+                      setHoldModalMode('new')
                       setHoldModalSymbol(undefined)
                       setHoldModalOpen(true)
                     }}
@@ -1293,7 +1272,6 @@ export function PortfolioPage() {
         onClose={() => setHoldModalOpen(false)}
         holdings={holdings}
         onSave={handleSaveHolding}
-        onAverage={handleAverageHolding}
         initialMode={holdModalMode}
         initialSymbol={holdModalSymbol}
       />
