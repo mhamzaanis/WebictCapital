@@ -1,5 +1,4 @@
 import {
-  Alert,
   Box,
   Container,
   InputAdornment,
@@ -8,11 +7,13 @@ import {
   Typography,
 } from '@mui/material'
 import SearchIcon from '@mui/icons-material/Search'
+import { motion, useReducedMotion } from 'motion/react'
 import { hasSupabaseConfig, supabase } from '../../lib/supabase'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { PriceTableSkeleton, StatCardsSkeleton } from './CustomSkeleton'
 import { CustomDataTable } from './CustomDataTable'
 import { CustomStatsCards } from './CustomStatsCards'
+import { MotionReveal } from '../animations/MotionReveal'
 
 // -- Types --------------------------------------------------------------------
 
@@ -139,7 +140,10 @@ async function fetchSupabaseTradeDay(tradeDate: string): Promise<PsxData> {
   }
 }
 
+// -- Design tokens ------------------------------------------------------------
+
 const NUMBER_FONT = 'var(--wc-number-font)'
+const SERIF = '"Playfair Display", serif'
 
 const filterFieldSx = {
   '& .MuiOutlinedInput-root': {
@@ -159,6 +163,7 @@ const filterFieldSx = {
 // -- Component ----------------------------------------------------------------
 
 export function DataPage() {
+  const reduce = useReducedMotion()
   const [data, setData] = useState<PsxData | null>(null)
   const [status, setStatus] = useState<'loading' | 'ok' | 'error'>('loading')
   const [fetchError, setFetchError] = useState<string | null>(null)
@@ -299,61 +304,66 @@ export function DataPage() {
     }
   }, [stocks, activeData])
 
-  const FiltersBar = ({ disabled }: { disabled: boolean }) => (
-    <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5}>
-      <TextField
-        placeholder="Search symbol or company…"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        disabled={disabled}
-        size="small"
-        fullWidth
-        slotProps={{
-          input: {
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon sx={{ color: 'var(--wc-text-secondary)', fontSize: 15 }} />
-              </InputAdornment>
-            ),
-          },
-        }}
-        sx={{ width: { xs: '100%', md: '50%' }, ...filterFieldSx }}
-      />
+  // -- Render helpers ---------------------------------------------------------
 
-      <TextField
-        select
-        size="small"
-        label="Movement"
-        value={movementFilter}
-        onChange={(e) => setMovementFilter(e.target.value as MovementFilter)}
-        disabled={disabled}
-        slotProps={{ select: { native: true } }}
-        sx={{ width: { xs: '100%', md: '25%' }, ...filterFieldSx }}
-      >
-        <option value="all">All</option>
-        <option value="gainers">Gainers</option>
-        <option value="losers">Losers</option>
-        <option value="unchanged">Unchanged</option>
-      </TextField>
+  const FiltersBar = useCallback(
+    ({ disabled }: { disabled: boolean }) => (
+      <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5}>
+        <TextField
+          placeholder="Search symbol or company…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          disabled={disabled}
+          size="small"
+          fullWidth
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ color: 'var(--wc-text-secondary)', fontSize: 15 }} />
+                </InputAdornment>
+              ),
+            },
+          }}
+          sx={{ width: { xs: '100%', md: '50%' }, ...filterFieldSx }}
+        />
 
-      <TextField
-        select
-        size="small"
-        label="Industry"
-        value={industryFilter}
-        onChange={(e) => setIndustryFilter(e.target.value)}
-        disabled={disabled}
-        slotProps={{ select: { native: true } }}
-        sx={{ width: { xs: '100%', md: '25%' }, ...filterFieldSx }}
-      >
-        <option value="all">All Industries</option>
-        {industryOptions.map((industry) => (
-          <option key={industry} value={industry}>
-            {industry}
-          </option>
-        ))}
-      </TextField>
-    </Stack>
+        <TextField
+          select
+          size="small"
+          label="Movement"
+          value={movementFilter}
+          onChange={(e) => setMovementFilter(e.target.value as MovementFilter)}
+          disabled={disabled}
+          slotProps={{ select: { native: true } }}
+          sx={{ width: { xs: '100%', md: '25%' }, ...filterFieldSx }}
+        >
+          <option value="all">All</option>
+          <option value="gainers">Gainers</option>
+          <option value="losers">Losers</option>
+          <option value="unchanged">Unchanged</option>
+        </TextField>
+
+        <TextField
+          select
+          size="small"
+          label="Industry"
+          value={industryFilter}
+          onChange={(e) => setIndustryFilter(e.target.value)}
+          disabled={disabled}
+          slotProps={{ select: { native: true } }}
+          sx={{ width: { xs: '100%', md: '25%' }, ...filterFieldSx }}
+        >
+          <option value="all">All Industries</option>
+          {industryOptions.map((industry) => (
+            <option key={industry} value={industry}>
+              {industry}
+            </option>
+          ))}
+        </TextField>
+      </Stack>
+    ),
+    [search, movementFilter, industryFilter, industryOptions],
   )
 
   return (
@@ -366,128 +376,247 @@ export function DataPage() {
         minHeight: '100vh',
       }}
     >
-      <Container maxWidth="xl" sx={{ maxWidth: '1400px !important', px: { xs: 2, md: 4 } }}>
-        <Stack spacing={4}>
-          {/* -- Header -- */}
-          <Box>
-            <Box sx={{ maxWidth: 80 }} />
+      <Container maxWidth="xl" sx={{ maxWidth: '1400px !important', px: { xs: 2.5, md: 5 } }}>
+        <Stack spacing={{ xs: 6, md: 8 }}>
+
+          {/* ── Header ──────────────────────────────────────────────────── */}
+          <MotionReveal>
             <Box
-              sx={{
-                display: 'flex',
-                flexDirection: { xs: 'column', md: 'row' },
-                alignItems: { md: 'flex-end' },
-                justifyContent: 'space-between',
-                gap: 1.5,
-              }}
+              component={motion.section}
+              initial={reduce ? false : { opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
             >
-              <Box>
-                <Typography
-                  sx={{
-                    fontSize: 11,
-                    fontFamily: '"Playfair Display", serif',
-                    letterSpacing: '0.18em',
-                    textTransform: 'uppercase',
-                    color: 'var(--wc-primary)',
-                    mb: 1,
-                  }}
-                >
-                  Market Data
-                </Typography>
-                <Typography
-                  sx={{
-                    fontSize: { xs: '1.6rem', md: '2.2rem' },
-                    fontWeight: 700,
-                    color: 'var(--wc-text-primary)',
-                    letterSpacing: '-0.025em',
-                    lineHeight: 1.1,
-                  }}
-                >
-                  <Box component="span" sx={{ fontFamily: 'var(--wc-number-font)' }}>
-                    
-                  </Box>{' '}
-                  PSX Closing Rates
-                </Typography>
-              </Box>
-              <Typography
+              <Box sx={{ maxWidth: 80 }} />
+
+              <Box
                 sx={{
-                  fontSize: 11,
-                  color: 'var(--wc-text-secondary)',
-                  letterSpacing: '0.04em',
-                  pb: { md: 0.5 },
+                  display: 'flex',
+                  flexDirection: { xs: 'column', md: 'row' },
+                  alignItems: { md: 'flex-end' },
+                  justifyContent: 'space-between',
+                  gap: 2,
                 }}
               >
-                Pakistan Stock Exchange · daily closing data · latest trading day
-              </Typography>
+                <Box sx={{ maxWidth: 620 }}>
+                  <Typography
+                    sx={{
+                      fontSize: 11,
+                      fontFamily: SERIF,
+                      letterSpacing: '0.18em',
+                      textTransform: 'uppercase',
+                      color: 'var(--wc-primary)',
+                      mb: 1.5,
+                    }}
+                  >
+                    Market Data
+                  </Typography>
+                  <Typography
+                    variant="h1"
+                    sx={{
+                      fontSize: { xs: '1.6rem', sm: '2rem', md: '2.4rem' },
+                      fontWeight: 700,
+                      color: 'var(--wc-text-primary)',
+                      letterSpacing: '-0.03em',
+                      lineHeight: 1.08,
+                    }}
+                  >
+                    PSX Closing{' '}
+                    <Box component="span" sx={{ color: 'var(--wc-primary)' }}>
+                      Rates
+                    </Box>
+                    .
+                  </Typography>
+                </Box>
+
+                <Box sx={{ textAlign: { md: 'right' }, pb: { md: 0.5 }, flexShrink: 0 }}>
+                  <Typography
+                    sx={{
+                      fontSize: 11,
+                      color: 'var(--wc-text-secondary)',
+                      letterSpacing: '0.04em',
+                      fontFamily: SERIF,
+                      mb: 0.3,
+                    }}
+                  >
+                    Pakistan Stock Exchange · daily closing data
+                  </Typography>
+                  {latestTradeDate && (
+                    <Typography sx={{ fontSize: 10.5, color: 'var(--wc-primary)', fontFamily: NUMBER_FONT, fontWeight: 500 }}>
+                      Latest: {latestTradeDate}
+                    </Typography>
+                  )}
+                </Box>
+              </Box>
             </Box>
-            {latestTradeDate && (
-              <Typography sx={{ fontSize: 11, color: 'var(--wc-text-secondary)', mt: 1 }}>
-                Latest entry: {latestTradeDate}
-              </Typography>
-            )}
-          </Box>
+          </MotionReveal>
 
-          {/* -- Loading state -- */}
+          {/* ── Loading state ───────────────────────────────────────────── */}
           {status === 'loading' && (
-            <>
-              <StatCardsSkeleton />
-              <FiltersBar disabled />
-              <PriceTableSkeleton />
-            </>
+            <MotionReveal>
+              <Stack spacing={3}>
+                <StatCardsSkeleton />
+                <FiltersBar disabled />
+                <PriceTableSkeleton />
+              </Stack>
+            </MotionReveal>
           )}
 
-          {/* -- Error state -- */}
+          {/* ── Error state ─────────────────────────────────────────────── */}
           {status === 'error' && (
-            <Alert
-              severity="error"
-              sx={{
-                bgcolor: 'rgba(180,40,58,0.08)',
-                border: '1px solid rgba(180,40,58,0.18)',
-                color: 'var(--wc-error)',
-                fontSize: 12,
-                borderRadius: 1,
-              }}
-            >
-              Could not load latest entry from Supabase. Please verify DB access and env vars.
-              <br />
-              Expected: <code>VITE_SUPABASE_URL</code>, <code>VITE_SUPABASE_ANON_KEY</code>
-              {fetchError && (
-                <>
-                  <br />
-                  Error: <code>{fetchError}</code>
-                  <br />
-                  If RLS is enabled, add <code>SELECT</code> policies for the <code>anon</code> role on{' '}
-                  <code>market_daily_summary</code> and <code>datatable</code>.
-                </>
-              )}
-            </Alert>
+            <MotionReveal>
+              <Box
+                sx={{
+                  border: '1px solid #e2eaf5',
+                  borderRadius: 1.5,
+                  bgcolor: '#fafbfd',
+                  p: { xs: 3, md: 5 },
+                  textAlign: 'center',
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: '12px',
+                    bgcolor: 'rgba(180,40,58,0.08)',
+                    border: '1px solid rgba(180,40,58,0.15)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    mx: 'auto',
+                    mb: 3,
+                  }}
+                >
+                  <Typography sx={{ fontSize: 20, fontWeight: 700, color: 'var(--wc-error)', fontFamily: NUMBER_FONT }}>
+                    !
+                  </Typography>
+                </Box>
+
+                <Typography
+                  sx={{
+                    fontSize: 18,
+                    fontWeight: 700,
+                    color: 'var(--wc-text-primary)',
+                    fontFamily: SERIF,
+                    mb: 1.5,
+                    letterSpacing: '-0.01em',
+                  }}
+                >
+                  Could not load market data
+                </Typography>
+
+                <Typography
+                  sx={{
+                    fontSize: 14,
+                    color: 'var(--wc-text-secondary)',
+                    lineHeight: 1.7,
+                    maxWidth: 520,
+                    mx: 'auto',
+                    mb: 0.5,
+                  }}
+                >
+                  Please verify database access and environment variables.
+                </Typography>
+
+                <Box
+                  sx={{
+                    mt: 2,
+                    display: 'inline-block',
+                    textAlign: 'left',
+                    bgcolor: 'rgba(10,36,99,0.04)',
+                    border: '1px solid rgba(10,36,99,0.12)',
+                    borderRadius: 1,
+                    px: 2.5,
+                    py: 1.5,
+                  }}
+                >
+                  <Typography sx={{ fontSize: 10, fontFamily: NUMBER_FONT, color: 'var(--wc-text-secondary)', letterSpacing: '0.04em', mb: 0.6 }}>
+                    REQUIRED ENV VARIABLES
+                  </Typography>
+                  <Typography sx={{ fontSize: 12, fontFamily: NUMBER_FONT, color: 'var(--wc-text-primary)', lineHeight: 1.8 }}>
+                    <code>VITE_SUPABASE_URL</code>
+                    <br />
+                    <code>VITE_SUPABASE_ANON_KEY</code>
+                  </Typography>
+                  {fetchError && (
+                    <Box sx={{ mt: 1 }}>
+                      <Typography sx={{ fontSize: 10, fontFamily: NUMBER_FONT, color: 'var(--wc-error)', letterSpacing: '0.04em', mb: 0.4 }}>
+                        ERROR
+                      </Typography>
+                      <Typography sx={{ fontSize: 11, fontFamily: NUMBER_FONT, color: 'var(--wc-text-secondary)', wordBreak: 'break-all' }}>
+                        {fetchError}
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+              </Box>
+            </MotionReveal>
           )}
 
-          {/* -- Data state -- */}
+          {/* ── Data state ──────────────────────────────────────────────── */}
           {status === 'ok' && activeData && (
             <>
-              <CustomStatsCards
-                date={activeData.date}
-                kse100Open={marketSummary.KSE100_Open}
-                kse100Close={marketSummary.KSE100_Close}
-                kse100Change={marketSummary.KSE100_Change}
-                volumeTraded={marketSummary.Volume_Traded}
-                advances={stats.gainers}
-                declines={stats.losers}
-                unchanged={stats.unchanged}
-                monoFont={NUMBER_FONT}
-              />
+              <MotionReveal>
+                <CustomStatsCards
+                  date={activeData.date}
+                  kse100Open={marketSummary.KSE100_Open}
+                  kse100Close={marketSummary.KSE100_Close}
+                  kse100Change={marketSummary.KSE100_Change}
+                  volumeTraded={marketSummary.Volume_Traded}
+                  advances={stats.gainers}
+                  declines={stats.losers}
+                  unchanged={stats.unchanged}
+                  monoFont={NUMBER_FONT}
+                />
+              </MotionReveal>
 
-              <FiltersBar disabled={false} />
+              {/* Filters + Search */}
+              <MotionReveal>
+                <Box
+                  sx={{
+                    borderTop: '1px solid var(--wc-divider)',
+                    pt: 4,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 2,
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
+                    <Box>
+                      <Typography
+                        sx={{
+                          fontSize: 11,
+                          fontFamily: SERIF,
+                          letterSpacing: '0.18em',
+                          textTransform: 'uppercase',
+                          color: 'var(--wc-primary)',
+                          mb: 0.8,
+                        }}
+                      >
+                        All Listings
+                      </Typography>
+                      <Typography sx={{ fontSize: { xs: 14, md: 16 }, fontWeight: 700, color: 'var(--wc-text-primary)', fontFamily: SERIF }}>
+                        {stocks.length.toLocaleString()} symbols on the exchange.
+                      </Typography>
+                    </Box>
+                    {search && (
+                      <Typography sx={{ fontSize: 11, color: 'var(--wc-text-secondary)', fontFamily: NUMBER_FONT }}>
+                        Showing {displayedStocks.length} of {stocks.length}
+                      </Typography>
+                    )}
+                  </Box>
 
-              {search && (
-                <Typography sx={{ fontSize: 11, color: 'var(--wc-text-secondary)' }}>
-                  {displayedStocks.length} of {stocks.length} symbols
-                </Typography>
-              )}
+                  <FiltersBar disabled={false} />
+                </Box>
+              </MotionReveal>
 
-              <CustomDataTable rows={displayedStocks} searchQuery={search} monoFont={NUMBER_FONT} />
+              <MotionReveal>
+                <CustomDataTable rows={displayedStocks} searchQuery={search} monoFont={NUMBER_FONT} />
+              </MotionReveal>
             </>
           )}
+
         </Stack>
       </Container>
     </Box>
