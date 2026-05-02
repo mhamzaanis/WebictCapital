@@ -9,10 +9,11 @@ import {
   Typography,
   Slide,
 } from '@mui/material'
+import { useMediaQuery, useTheme } from '@mui/material'
 import type { TransitionProps } from '@mui/material/transitions'
 import { motion, useReducedMotion, AnimatePresence } from 'motion/react'
-import { useMemo, useState, forwardRef } from 'react'
-import { LineChart } from '@mui/x-charts'
+import { useMemo, useState, forwardRef, useEffect, useRef } from 'react'
+import { LineChart } from '@mui/x-charts/LineChart'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -182,10 +183,11 @@ function StatRow({
           color: valueColor ?? C.ink,
           letterSpacing: '0.01em',
           ...(highlight && {
-            px: 0.8,
-            py: 0.2,
-            borderRadius: '4px',
-            bgcolor: valueColor ? `${valueColor}12` : C.accentLight,
+            px: 1,
+            py: 0.3,
+            borderRadius: '5px',
+            bgcolor: valueColor ? `${valueColor}14` : C.accentLight,
+            border: valueColor ? `1px solid ${valueColor}25` : `1px solid ${C.border}`,
           }),
         }}
       >
@@ -221,8 +223,9 @@ function RangeBar({
             position: 'absolute',
             top: 0, left: 0,
             height: '100%',
-            background: `linear-gradient(90deg, ${color}60, ${color})`,
+            background: `linear-gradient(90deg, ${color}30, ${color}90, ${color})`,
             borderRadius: '99px',
+            boxShadow: `0 0 8px ${color}30`,
           }}
         />
         {/* thumb */}
@@ -235,12 +238,12 @@ function RangeBar({
             position: 'absolute',
             top: '50%',
             transform: 'translate(-50%, -50%)',
-            width: 13,
-            height: 13,
+            width: 14,
+            height: 14,
             borderRadius: '50%',
-            bgcolor: color,
-            border: '2.5px solid #fff',
-            boxShadow: `0 0 0 2px ${color}40, 0 2px 6px ${color}50`,
+            bgcolor: '#fff',
+            border: `2px solid ${color}`,
+            boxShadow: `0 0 0 3px ${color}35, 0 2px 8px ${color}45`,
           }}
         />
       </Box>
@@ -274,7 +277,6 @@ function RangeBar({
   )
 }
 
-// Range pill button
 function RangeBtn({
   label, active, onClick,
 }: { label: string; active: boolean; onClick: () => void }) {
@@ -313,12 +315,12 @@ function RangeBtn({
   )
 }
 
-// Metric card — small KPI tile
 function KpiCard({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
+  const accent = color ?? C.accentMid
   return (
     <Box
       component={motion.div}
-      whileHover={{ y: -2 }}
+      whileHover={{ y: -3 }}
       transition={{ duration: 0.2 }}
       sx={{
         p: 1.6,
@@ -329,14 +331,27 @@ function KpiCard({ label, value, sub, color }: { label: string; value: string; s
         flexDirection: 'column',
         gap: 0.4,
         cursor: 'default',
-        transition: 'box-shadow 0.2s ease',
-        '&:hover': { boxShadow: '0 6px 20px rgba(10,36,99,0.08)' },
+        position: 'relative',
+        overflow: 'hidden',
+        transition: 'box-shadow 0.2s ease, border-color 0.2s ease',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0, left: 0,
+          width: '100%', height: '2.5px',
+          background: `linear-gradient(90deg, ${accent}, ${accent}40)`,
+          borderRadius: '0 0 2px 0',
+        },
+        '&:hover': {
+          boxShadow: '0 8px 24px rgba(10,36,99,0.1)',
+          borderColor: C.borderStrong,
+        },
       }}
     >
       <Typography sx={{ fontSize: 10, color: C.muted, fontFamily: mono, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
         {label}
       </Typography>
-      <Typography sx={{ fontFamily: mono, fontSize: 16, fontWeight: 700, color: color ?? C.ink, letterSpacing: '-0.01em', lineHeight: 1.1 }}>
+      <Typography sx={{ fontFamily: mono, fontSize: 16, fontWeight: 700, color: accent, letterSpacing: '-0.01em', lineHeight: 1.1 }}>
         {value}
       </Typography>
       {sub && (
@@ -352,7 +367,27 @@ function KpiCard({ label, value, sub, color }: { label: string; value: string; s
 
 export function StockDrawer({ open, onClose, stock }: StockDrawerProps) {
   const reduce = useReducedMotion()
+  const theme = useTheme()
+  const isXs = useMediaQuery(theme.breakpoints.down('sm'))
   const [range, setRange] = useState<'1W' | '1M' | 'YTD' | '1Y'>('1M')
+
+  // Force chart remount after dialog finishes opening so it measures correct width
+  const chartRef = useRef<HTMLDivElement>(null)
+  const [chartKey, setChartKey] = useState(0)
+
+  useEffect(() => {
+    if (!open) return
+    // Wait for slide-up transition (~350ms) then remount chart with correct dimensions
+    const timer = setTimeout(() => setChartKey((k) => k + 1), 380)
+    return () => clearTimeout(timer)
+  }, [open])
+
+  useEffect(() => {
+    if (!chartRef.current) return
+    const ro = new ResizeObserver(() => setChartKey((k) => k + 1))
+    ro.observe(chartRef.current)
+    return () => ro.disconnect()
+  }, [])
 
   const chartData = useMemo(() => {
     if (!stock) return { values: [], labels: [], gain: false }
@@ -366,6 +401,9 @@ export function StockDrawer({ open, onClose, stock }: StockDrawerProps) {
 
   if (!stock) return null
 
+  const tickStep = Math.max(1, Math.ceil(chartData.labels.length / (isXs ? 5 : 7)))
+  const chartHeight = isXs ? 210 : 190
+
   const pos = stock.change >= 0
   const changeColor = pos ? C.pos : C.neg
   const chartColor = chartData.gain ? C.pos : C.neg
@@ -376,24 +414,26 @@ export function StockDrawer({ open, onClose, stock }: StockDrawerProps) {
       onClose={onClose}
       fullWidth
       maxWidth={false}
-      TransitionComponent={SlideUp}
-      transitionDuration={reduce ? 0 : 320}
-      PaperProps={{
-        sx: {
-          width: { xs: '100%', sm: '90vw', md: 880 },
-          maxWidth: '100vw',
-          maxHeight: { xs: '100dvh', sm: '92dvh' },
-          borderRadius: { xs: 0, sm: '16px' },
-          border: `1px solid ${C.borderStrong}`,
-          bgcolor: C.bg,
-          overflow: 'hidden',
-          boxShadow: '0 40px 80px rgba(8,14,26,0.28), 0 0 0 1px rgba(10,36,99,0.06)',
+      slots={{ transition: SlideUp }}
+      slotProps={{
+        transition: { timeout: reduce ? 0 : 320 },
+        backdrop: {
+          sx: {
+            bgcolor: 'rgba(5,10,20,0.55)',
+            backdropFilter: 'blur(6px)',
+          },
         },
-      }}
-      BackdropProps={{
-        sx: {
-          bgcolor: 'rgba(5,10,20,0.55)',
-          backdropFilter: 'blur(6px)',
+        paper: {
+          sx: {
+            width: { xs: '100%', sm: '90vw', md: 880 },
+            maxWidth: '100vw',
+            maxHeight: { xs: '100dvh', sm: '92dvh' },
+            borderRadius: { xs: 0, sm: '16px' },
+            border: `1px solid ${C.borderStrong}`,
+            bgcolor: C.bg,
+            overflow: 'hidden',
+            boxShadow: '0 40px 80px rgba(8,14,26,0.28), 0 0 0 1px rgba(10,36,99,0.06)',
+          },
         },
       }}
     >
@@ -558,7 +598,9 @@ export function StockDrawer({ open, onClose, stock }: StockDrawerProps) {
             border: `1px solid ${C.border}`,
             borderRadius: '12px',
             bgcolor: C.surface,
-            overflow: 'hidden',
+            // FIX: 'visible' so chart SVG marks/tooltips near edges aren't clipped
+            overflow: 'visible',
+            isolation: 'isolate',
           }}
         >
           {/* Chart header */}
@@ -588,44 +630,63 @@ export function StockDrawer({ open, onClose, stock }: StockDrawerProps) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.22 }}
-              sx={{ px: 1, pb: 1.5 }}
+              // FIX: fixed height (not minHeight) so the chart fills exactly this space
+              sx={{ px: 1, pb: 1.5, height: chartHeight }}
+              ref={chartRef}
             >
               <LineChart
+                key={chartKey}
                 xAxis={[{
                   data: chartData.labels,
                   scaleType: 'point',
-                  height: 28,
-                  tickLabelStyle: { fontSize: 9, fill: C.muted, fontFamily: 'DM Mono, monospace' },
+                  height: isXs ? 22 : 28,
+                  tickInterval: (_: unknown, i: number) => i % tickStep === 0,
+                  tickLabelStyle: { fontSize: isXs ? 8 : 9, fill: C.muted, fontFamily: 'DM Mono, monospace' },
                   disableLine: true,
                   disableTicks: true,
                 }]}
                 yAxis={[{
-                  width: 55,
-                  tickLabelStyle: { fontSize: 9, fill: C.muted, fontFamily: 'DM Mono, monospace' },
+                  width: isXs ? 44 : 55,
+                  tickLabelStyle: { fontSize: isXs ? 8 : 9, fill: C.muted, fontFamily: 'DM Mono, monospace' },
                   disableLine: true,
                   disableTicks: true,
                 }]}
                 series={[{
                   data: chartData.values,
                   connectNulls: true,
-                  showMark: false,
+                  showMark: true,
                   area: true,
+                  color: chartColor,
+                  valueFormatter: (value) => {
+                    const safeValue = typeof value === 'number' ? value : 0
+                    return `Rs.${fmt(safeValue)} · Vol ${stock.volume} · Avg ${stock.avgVolume}`
+                  },
                 }]}
-                margin={{ left: 56, right: 12, top: 12, bottom: 30 }}
+                margin={{ left: isXs ? 44 : 56, right: isXs ? 16 : 24, top: 10, bottom: isXs ? 24 : 30 }}
+                grid={{ horizontal: true }}
+                // FIX: height matches the container exactly
+                height={chartHeight}
                 sx={{
-                  '& .MuiChartsGrid-root line': { stroke: C.border, strokeDasharray: '3 4' },
+                  // FIX: force SVG to fill container width — prevents stale measurement during dialog open animation
+                  width: '100% !important',
+                  '& .MuiChartsGrid-root line': { stroke: C.border, strokeDasharray: '3 4', strokeOpacity: 0.5 },
                   '& .MuiLineElement-root': {
                     strokeWidth: 2,
                     stroke: chartColor,
+                    filter: `drop-shadow(0 2px 4px ${chartColor}30)`,
                   },
                   '& .MuiAreaElement-root': {
                     fill: chartColor,
-                    fillOpacity: 0.07,
+                    fillOpacity: 0.12,
                   },
-                  '& .MuiMarkElement-root': { display: 'none' },
+                  '& .MuiMarkElement-root': {
+                    fill: '#fff',
+                    stroke: chartColor,
+                    strokeWidth: 2,
+                    r: 3,
+                  },
                   bgcolor: 'transparent',
                 }}
-                height={190}
               />
             </Box>
           </AnimatePresence>
