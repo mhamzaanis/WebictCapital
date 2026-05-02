@@ -3,6 +3,7 @@ import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded'
 import { motion, useReducedMotion } from 'motion/react'
 import { Link as RouterLink } from 'react-router-dom'
 import { MotionReveal } from '../animations/MotionReveal'
+import { CustomButton } from '../CustomButton'
 
 export function AdvisoryPage() {
   const reduceMotion = useReducedMotion()
@@ -118,46 +119,16 @@ export function AdvisoryPage() {
               {/* Divider detail */}
               <Box sx={{ borderTop: '1px solid #e8eef8', pt: 4 }}>
                 <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-                  <Button
+                  <CustomButton
                     component={RouterLink}
                     to="/"
-                    variant="contained"
-                    disableElevation
                     endIcon={<ArrowForwardRoundedIcon />}
-                    sx={{
-                      textTransform: 'none',
-                      bgcolor: '#080e1a',
-                      color: '#ffffff',
-                      px: 3.2,
-                      py: 1.2,
-                      borderRadius: 1,
-                      fontSize: 14.5,
-                      fontWeight: 500,
-                      letterSpacing: '0.01em',
-                      '&:hover': { bgcolor: '#0a2463' },
-                    }}
                   >
                     Back to home
-                  </Button>
-                  <Button
-                    component={RouterLink}
-                    to="/about"
-                    variant="outlined"
-                    disableElevation
-                    sx={{
-                      textTransform: 'none',
-                      borderColor: '#c8d6ec',
-                      color: '#0a2463',
-                      px: 3,
-                      py: 1.2,
-                      borderRadius: 1,
-                      fontSize: 14.5,
-                      fontWeight: 500,
-                      '&:hover': { borderColor: '#0a2463', bgcolor: '#f0f4fb' },
-                    }}
-                  >
+                  </CustomButton>
+                  <CustomButton component={RouterLink} to="/about" variant="outlined" tone="light">
                     Learn about us
-                  </Button>
+                  </CustomButton>
                 </Stack>
               </Box>
             </Stack>
