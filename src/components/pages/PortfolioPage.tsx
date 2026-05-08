@@ -103,8 +103,10 @@ const buildMarketHistory = (tradeDate: string, closeValue: number): MarketHistor
   }
 }
 
+const todayISO = new Date().toISOString().slice(0, 10)
+
 const marketSummary = {
-  tradeDate: '2026-04-30',
+  tradeDate: todayISO,
   kse100_prev: 165_823.88,
   kse100_close: 162_994.17,
   kse100_change: -2_829.71,
@@ -117,7 +119,7 @@ const marketSummary = {
   declines: 348,
   unchanged: 36,
   flu_no: 'KSE-2026-04-30',
-  history: buildMarketHistory('2026-04-30', 162_994.17),
+  history: buildMarketHistory(todayISO, 162_994.17),
 }
 
 const portfolioTrend = [92_680_000, 92_340_000, 91_950_000, 92_120_000, 92_450_000, 92_800_000, 93_150_000, 92_900_000, 92_700_000, 92_300_000, 92_500_000, 92_650_000]
