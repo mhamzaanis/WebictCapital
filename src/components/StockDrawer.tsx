@@ -576,6 +576,9 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
     )
   }
 
+  // Type guard: TS can't infer stock is non-null across the compound checks above
+  if (!stock) return null
+
   return (
     <Dialog
       open={open}
