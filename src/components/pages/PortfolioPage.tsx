@@ -9,13 +9,14 @@ import ShowChartIcon from '@mui/icons-material/ShowChart'
 import { Box, Container, Divider, IconButton, Menu, MenuItem, Stack, Typography } from '@mui/material'
 import { motion, useReducedMotion } from 'motion/react'
 import { useState, useMemo } from 'react'
-import { SparkLineChart } from '@mui/x-charts'
+import ReactECharts from 'echarts-for-react'
 import { MotionReveal } from '../animations/MotionReveal'
 import { CustomButton } from '../CustomButton'
 import { StockDrawer, type StockDetail } from '../StockDrawer'
 import { MarketSummaryModal } from '../MarketSummaryModal'
 import { HoldingModal, type Holding } from '../HoldingModal'
 import { WatchlistModal, type WatchItem } from '../WatchlistModal'
+import { hasStockService, fetchStockDetail, addToWatchlist as addToWatchlistDb } from '../../lib/stockService'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -61,6 +62,47 @@ const watchDetails: Record<string, StockDetail> = {
   MCB: { symbol: 'MCB', company: 'MCB Bank Ltd', sector: 'Banking', industry: 'Commercial Banks', price: 198.6, change: 1.2, changePct: 0.61, volume: '2.4M', avgVolume: '2.2M', sharesOutstanding: '1.18B', open: 197.4, previousClose: 197.4, dayLow: 196.5, dayHigh: 200.2, week52Low: 162.0, week52High: 235.0, week52ChangePct: 3.1, eps: 35.82, pe: 5.54, marketCap: 'Rs. 235B', dividendYield: 9.1, beta: 0.68, roe: 20.4, debtToEquity: 0.08, priceToBook: 1.05, spark: [10, 11, 12, 10, 13, 14, 15, 14, 16, 17, 16, 18], history30: [190, 192, 191, 193, 195, 194, 196, 198, 197, 199, 200, 198, 197, 196, 195, 194, 196, 198, 199, 197, 198, 200, 199, 197, 196, 198, 199, 197, 198, 198.6], historyLabels: ['1 Apr', '2 Apr', '3 Apr', '4 Apr', '5 Apr', '8 Apr', '9 Apr', '10 Apr', '11 Apr', '12 Apr', '15 Apr', '16 Apr', '17 Apr', '18 Apr', '19 Apr', '22 Apr', '23 Apr', '24 Apr', '25 Apr', '26 Apr', '29 Apr', '30 Apr', '1 May', '2 May', '3 May', '6 May', '7 May', '8 May', '9 May', '10 May'] },
 }
 
+type MarketHistory = Record<'1W' | '1M' | 'YTD' | '1Y', { labels: string[]; values: number[] }>
+
+const buildTradingDates = (endDate: string, count: number) => {
+  const dates: Date[] = []
+  const cursor = new Date(endDate)
+  while (dates.length < count) {
+    const day = cursor.getDay()
+    if (day !== 0 && day !== 6) {
+      dates.push(new Date(cursor))
+    }
+    cursor.setDate(cursor.getDate() - 1)
+  }
+  return dates.reverse()
+}
+
+const formatShortDate = (d: Date) =>
+  d.toLocaleDateString('en-PK', { month: 'short', day: 'numeric' })
+
+const buildTradingSeries = (endDate: string, count: number, startValue: number, endValue: number) => {
+  const dates = buildTradingDates(endDate, count)
+  const values = dates.map((_, i) => {
+    const t = count > 1 ? i / (count - 1) : 1
+    const trend = startValue + (endValue - startValue) * t
+    const wiggle = Math.sin(i * 0.7) * (startValue * 0.002) + Math.cos(i * 0.33) * (startValue * 0.0016)
+    return Math.max(1, trend + wiggle)
+  })
+  return {
+    labels: dates.map(formatShortDate),
+    values,
+  }
+}
+
+const buildMarketHistory = (tradeDate: string, closeValue: number): MarketHistory => {
+  return {
+    '1W': buildTradingSeries(tradeDate, 7, 167_210, closeValue),
+    '1M': buildTradingSeries(tradeDate, 22, 168_420, closeValue),
+    'YTD': buildTradingSeries(tradeDate, 90, 163_540, closeValue),
+    '1Y': buildTradingSeries(tradeDate, 252, 155_820, closeValue),
+  }
+}
+
 const marketSummary = {
   tradeDate: '2026-04-30',
   kse100_prev: 165_823.88,
@@ -75,24 +117,7 @@ const marketSummary = {
   declines: 348,
   unchanged: 36,
   flu_no: 'KSE-2026-04-30',
-  history: {
-    '1W': {
-      labels: ['Apr 22', 'Apr 23', 'Apr 24', 'Apr 25', 'Apr 28', 'Apr 29', 'Apr 30'],
-      values: [167_210, 166_540, 166_980, 165_920, 164_760, 163_640, 162_994.17],
-    },
-    '1M': {
-      labels: ['Apr 1', 'Apr 4', 'Apr 8', 'Apr 12', 'Apr 16', 'Apr 20', 'Apr 24', 'Apr 27', 'Apr 29', 'Apr 30'],
-      values: [168_420, 169_210, 170_145, 169_380, 168_240, 167_950, 166_430, 166_720, 163_640, 162_994.17],
-    },
-    'YTD': {
-      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
-      values: [163_540, 166_120, 170_880, 165_430, 162_994.17],
-    },
-    '1Y': {
-      labels: ['May', 'Jul', 'Sep', 'Nov', 'Jan', 'Mar', 'Apr', 'May'],
-      values: [155_820, 159_340, 162_880, 169_110, 163_540, 170_880, 165_430, 162_994.17],
-    },
-  },
+  history: buildMarketHistory('2026-04-30', 162_994.17),
 }
 
 const portfolioTrend = [92_680_000, 92_340_000, 91_950_000, 92_120_000, 92_450_000, 92_800_000, 93_150_000, 92_900_000, 92_700_000, 92_300_000, 92_500_000, 92_650_000]
@@ -452,6 +477,32 @@ function HoldingRow({ h, index, onEdit, onDelete }: { h: Holding; index: number;
   )
 }
 
+// ─── ECharts Sparkline ─────────────────────────────────────────────────────
+
+function SparkLine({ data, width, height, color, area = false }: { data: number[]; width: number; height: number; color: string; area?: boolean }) {
+  const safeMin = data.length > 0 ? Math.min(...data) * 0.98 : 0
+  const safeMax = data.length > 0 ? Math.max(...data) * 1.02 : 1
+  return (
+    <ReactECharts
+      style={{ width, height }}
+      opts={{ renderer: 'svg' }}
+      option={{
+        grid: { left: 0, right: 0, top: 0, bottom: 0 },
+        xAxis: { type: 'category', data: data.map((_, i) => i), show: false },
+        yAxis: { type: 'value', show: false, min: safeMin, max: safeMax },
+        series: [{
+          type: 'line',
+          data,
+          smooth: true,
+          showSymbol: false,
+          lineStyle: { color, width: 1.5 },
+          areaStyle: area ? { color, opacity: 0.12 } : undefined,
+        }],
+      }}
+    />
+  )
+}
+
 // ─── Watchlist Row ────────────────────────────────────────────────────────────
 
 function WatchRow({ item, index, onClick }: { item: WatchItem; index: number; onClick?: () => void }) {
@@ -512,13 +563,11 @@ function WatchRow({ item, index, onClick }: { item: WatchItem; index: number; on
 
         {/* Sparkline */}
         <Box sx={{ width: 60, flexShrink: 0 }}>
-          <SparkLineChart
+          <SparkLine
             data={item.spark}
             width={60}
             height={30}
-            curve="natural"
             color={pos ? 'var(--wc-success)' : 'var(--wc-error)'}
-            sx={{ '& .MuiChartsAxis-root': { display: 'none' } }}
           />
         </Box>
 
@@ -668,10 +717,36 @@ export function PortfolioPage() {
   const [holdModalSymbol, setHoldModalSymbol] = useState<string | undefined>(undefined)
   const [holdings, setHoldings] = useState<Holding[]>(initialHoldings)
   const [watchlist, setWatchlist] = useState<WatchItem[]>(initialWatchlist)
+  const [drawerLoading, setDrawerLoading] = useState(false)
+  const [drawerError, setDrawerError] = useState<string | null>(null)
 
-  const openDrawer = (symbol: string) => {
-    const detail = watchDetails[symbol]
-    if (detail) { setDrawerStock(detail); setDrawerOpen(true) }
+  const openDrawer = async (symbol: string) => {
+    // Fallback to hardcoded data when Supabase is not configured
+    if (!hasStockService()) {
+      const detail = watchDetails[symbol]
+      if (detail) { setDrawerStock(detail); setDrawerOpen(true) }
+      return
+    }
+
+    // Open dialog immediately with loading state
+    setDrawerLoading(true)
+    setDrawerError(null)
+    setDrawerStock(null)
+    setDrawerOpen(true)
+
+    try {
+      const detail = await fetchStockDetail(symbol)
+      setDrawerStock(detail)
+    } catch (err: unknown) {
+      const message =
+        typeof err === 'object' && err !== null && 'message' in err && typeof err.message === 'string'
+          ? err.message
+          : 'Failed to load stock data.'
+      setDrawerError(message)
+      setDrawerStock(null)
+    } finally {
+      setDrawerLoading(false)
+    }
   }
 
   // ── Derived computations ──────────────────────────────────────────────────
@@ -707,6 +782,20 @@ export function PortfolioPage() {
       if (prev.some(w => w.symbol === item.symbol)) return prev
       return [...prev, item]
     })
+    // Fire-and-forget DB persistence
+    addToWatchlistDb(item.symbol).catch(() => {
+      // Silently degrade — local state remains updated
+    })
+  }
+
+  const handleCloseDrawer = () => {
+    setDrawerOpen(false)
+    // Delay state reset to let slide-out transition finish
+    setTimeout(() => {
+      setDrawerStock(null)
+      setDrawerLoading(false)
+      setDrawerError(null)
+    }, 400)
   }
 
   const handleEditHolding = (symbol: string) => {
@@ -856,17 +945,12 @@ export function PortfolioPage() {
                       </Typography>
                     </Box>
                     <Box sx={{ width: 80, height: 36 }}>
-                      <SparkLineChart
+                      <SparkLine
                         data={marketSummary.history['1W'].values}
                         width={80}
                         height={36}
-                        curve="natural"
                         color={marketSummary.kse100_change >= 0 ? 'var(--wc-success)' : 'var(--wc-error)'}
                         area
-                        sx={{
-                          '& .MuiAreaElement-root': { fillOpacity: 0.12 },
-                          '& .MuiChartsAxis-root': { display: 'none' },
-                        }}
                       />
                     </Box>
                   </Box>
@@ -902,17 +986,12 @@ export function PortfolioPage() {
                       </Typography>
                     </Box>
                     <Box sx={{ width: 80, height: 36 }}>
-                      <SparkLineChart
+                      <SparkLine
                         data={marketSummary.history['1W'].values}
                         width={80}
                         height={36}
-                        curve="natural"
                         color={marketSummary.kse30_change >= 0 ? 'var(--wc-success)' : 'var(--wc-error)'}
                         area
-                        sx={{
-                          '& .MuiAreaElement-root': { fillOpacity: 0.12 },
-                          '& .MuiChartsAxis-root': { display: 'none' },
-                        }}
                       />
                     </Box>
                   </Box>
@@ -952,17 +1031,12 @@ export function PortfolioPage() {
                   {mvFmt}
                 </Typography>
                 <Box sx={{ width: 140, height: 44 }}>
-                  <SparkLineChart
+                  <SparkLine
                     data={portfolioTrend}
                     width={140}
                     height={44}
-                    curve="natural"
                     color={totalPL >= 0 ? 'var(--wc-success)' : 'var(--wc-error)'}
                     area
-                    sx={{
-                      '& .MuiAreaElement-root': { fillOpacity: 0.15 },
-                      '& .MuiChartsAxis-root': { display: 'none' },
-                    }}
                   />
                 </Box>
               </Box>
@@ -1276,8 +1350,10 @@ export function PortfolioPage() {
 
       <StockDrawer
         open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
+        onClose={handleCloseDrawer}
         stock={drawerStock}
+        loading={drawerLoading}
+        error={drawerError}
       />
       <MarketSummaryModal
         open={marketModalOpen}

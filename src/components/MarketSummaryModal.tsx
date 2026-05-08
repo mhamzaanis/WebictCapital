@@ -3,7 +3,7 @@ import TrendingDownIcon from '@mui/icons-material/TrendingDown'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 import { Box, Dialog, IconButton, Slide, Typography, useMediaQuery, useTheme } from '@mui/material'
 import type { TransitionProps } from '@mui/material/transitions'
-import { LineChart } from '@mui/x-charts/LineChart'
+import ReactECharts from 'echarts-for-react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { forwardRef, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactElement, Ref } from 'react'
@@ -214,7 +214,7 @@ export function MarketSummaryModal({ open, onClose, summary }: MarketSummaryModa
   const [range, setRange] = useState<'1W' | '1M' | 'YTD' | '1Y'>('1M')
 
   // Force chart remount after dialog finishes opening so it measures correct width
-  const chartRef = useRef<HTMLDivElement>(null)
+  const chartRef = useRef<ReactECharts>(null)
   const [chartKey, setChartKey] = useState(0)
 
   useEffect(() => {
@@ -225,27 +225,74 @@ export function MarketSummaryModal({ open, onClose, summary }: MarketSummaryModa
   }, [open])
 
   useEffect(() => {
-    if (!chartRef.current) return
-    const ro = new ResizeObserver(() => setChartKey((k) => k + 1))
-    ro.observe(chartRef.current)
-    return () => ro.disconnect()
-  }, [])
+    if (!open) return
+    const timer = setTimeout(() => chartRef.current?.getEchartsInstance()?.resize(), 400)
+    return () => clearTimeout(timer)
+  }, [open, chartKey, range])
 
   const chartData = useMemo(() => {
-    if (!summary) return { values: [], labels: [], gain: false, min: 0, max: 0 }
+    if (!summary) return { ohlc: [] as number[][], labels: [] as string[], volumes: [] as number[], closeLine: [] as number[] }
     const data = summary.history[range]
-    const gain = data.values.length > 1 && data.values[data.values.length - 1] >= data.values[0]
-    const minValue = Math.min(...data.values)
-    const maxValue = Math.max(...data.values)
-    const padding = Math.max(1, (maxValue - minValue) * 0.12)
-    return {
-      values: data.values,
-      labels: data.labels,
-      gain,
-      min: minValue - padding,
-      max: maxValue + padding,
+    const rawOhlc = data.values.map((v, i) => {
+      const open = i > 0 ? data.values[i - 1] : v * 0.998
+      const close = v
+      const low = Math.min(open, close) * (1 - 0.004 - Math.sin(i * 0.7) * 0.004)
+      const high = Math.max(open, close) * (1 + 0.004 + Math.cos(i * 0.6) * 0.004)
+      return [open, close, low, high]
+    })
+
+    // Generate synthetic volumes (based on price change magnitude)
+    const rawVolumes = rawOhlc.map((candle, i) => {
+      const base = summary.curr_volume || 100000
+      const changeRatio = Math.abs(candle[1] - candle[0]) / Math.max(candle[0], 1)
+      return Math.round(base * (0.6 + changeRatio * 8 + Math.sin(i * 1.3) * 0.25))
+    })
+
+    // Smarter aggregation: show a window of visible candles, keep all data for zoom
+    const maxVisible = isXs ? 40 : 50
+    const needsAggregation = rawOhlc.length > maxVisible * 2
+
+    if (!needsAggregation) {
+      return {
+        ohlc: rawOhlc,
+        labels: data.labels,
+        volumes: rawVolumes,
+        closeLine: rawOhlc.map(c => c[1]),
+      }
     }
-  }, [range, summary])
+
+    // Aggregate into buckets for very large datasets
+    const bucketSize = Math.ceil(rawOhlc.length / (maxVisible * 2))
+    const compactOhlc: number[][] = []
+    const compactLabels: string[] = []
+    const compactVolumes: number[] = []
+
+    for (let i = 0; i < rawOhlc.length; i += bucketSize) {
+      const slice = rawOhlc.slice(i, i + bucketSize)
+      const volSlice = rawVolumes.slice(i, i + bucketSize)
+      if (!slice.length) continue
+      const open = slice[0][0]
+      const close = slice[slice.length - 1][1]
+      let low = slice[0][2]
+      let high = slice[0][3]
+      let totalVol = 0
+      for (let j = 0; j < slice.length; j++) {
+        low = Math.min(low, slice[j][2])
+        high = Math.max(high, slice[j][3])
+        totalVol += volSlice[j] || 0
+      }
+      compactOhlc.push([open, close, low, high])
+      compactLabels.push(data.labels[Math.min(i + slice.length - 1, data.labels.length - 1)])
+      compactVolumes.push(totalVol)
+    }
+
+    return {
+      ohlc: compactOhlc,
+      labels: compactLabels,
+      volumes: compactVolumes,
+      closeLine: compactOhlc.map(c => c[1]),
+    }
+  }, [range, summary, isXs])
 
   if (!summary) return null
 
@@ -253,8 +300,15 @@ export function MarketSummaryModal({ open, onClose, summary }: MarketSummaryModa
   const pos30 = summary.kse30_change >= 0
   const changeColor = pos ? COLORS.success : COLORS.error
   const change30Color = pos30 ? COLORS.success : COLORS.error
-  const chartColor = chartData.gain ? COLORS.success : COLORS.error
-  const chartHeight = isXs ? 230 : 260
+  const candleUp = COLORS.success
+  const candleDown = COLORS.error
+  const chartHeight = isXs ? 320 : 360
+
+  // Determine if we need dataZoom (scrollable chart)
+  const totalCandles = chartData.ohlc.length
+  const showZoom = totalCandles > (isXs ? 30 : 40)
+  const zoomEnd = showZoom ? Math.min(100, ((isXs ? 30 : 40) / totalCandles) * 100) : 100
+  const maxVolume = chartData.volumes.length > 0 ? Math.max(...chartData.volumes) : 1
   const formattedDate = new Date(summary.tradeDate).toLocaleDateString('en-PK', {
     weekday: 'short',
     day: 'numeric',
@@ -486,62 +540,241 @@ export function MarketSummaryModal({ open, onClose, summary }: MarketSummaryModa
               transition={{ duration: 0.2 }}
               // FIX: use fixed height (not minHeight) so chart fills exactly this space
               sx={{ px: 1, pb: 1.5, height: chartHeight }}
-              ref={chartRef}
             >
-              <LineChart
+              <ReactECharts
                 key={chartKey}
-                xAxis={[{
-                  data: chartData.labels,
-                  scaleType: 'point',
-                  height: isXs ? 22 : 28,
-                  tickInterval: (_: unknown, i: number) => (isXs ? i % 3 === 0 : i % 2 === 0),
-                  tickLabelStyle: { fontSize: isXs ? 8 : 9, fill: COLORS.textSecondary, fontFamily: 'DM Mono, monospace' },
-                  disableLine: true,
-                  disableTicks: true,
-                }]}
-                yAxis={[{
-                  width: isXs ? 44 : 55,
-                  min: chartData.min,
-                  max: chartData.max,
-                  tickLabelStyle: { fontSize: isXs ? 8 : 9, fill: COLORS.textSecondary, fontFamily: 'DM Mono, monospace' },
-                  disableLine: true,
-                  disableTicks: true,
-                }]}
-                series={[{
-                  data: chartData.values,
-                  connectNulls: true,
-                  showMark: true,
-                  area: true,
-                  color: chartColor,
-                  valueFormatter: (value) => {
-                    const safeValue = typeof value === 'number' ? value : 0
-                    return `${fmtIndex(safeValue)} · Vol ${fmtNumber(summary.curr_volume)} · Adv ${summary.advances} · Dec ${summary.declines}`
+                ref={chartRef}
+                style={{ height: chartHeight, width: '100%' }}
+                opts={{ renderer: 'svg' }}
+                option={{
+                  animation: true,
+                  animationDuration: 600,
+                  animationEasing: 'cubicOut',
+                  grid: [
+                    {
+                      // Main candle grid
+                      left: isXs ? 52 : 64,
+                      right: isXs ? 12 : 24,
+                      top: 16,
+                      bottom: showZoom ? (isXs ? 90 : 100) : (isXs ? 70 : 80),
+                      height: showZoom ? (chartHeight - (isXs ? 155 : 170)) : (chartHeight - (isXs ? 120 : 130)),
+                    },
+                    {
+                      // Volume grid
+                      left: isXs ? 52 : 64,
+                      right: isXs ? 12 : 24,
+                      bottom: showZoom ? (isXs ? 60 : 68) : (isXs ? 28 : 34),
+                      height: isXs ? 28 : 36,
+                    },
+                  ],
+                  xAxis: [
+                    {
+                      type: 'category',
+                      data: chartData.labels,
+                      boundaryGap: true,
+                      axisLine: { show: false },
+                      axisTick: { show: false },
+                      axisLabel: { show: false },
+                      gridIndex: 0,
+                    },
+                    {
+                      type: 'category',
+                      data: chartData.labels,
+                      boundaryGap: true,
+                      gridIndex: 1,
+                      axisLine: { show: false },
+                      axisTick: { show: false },
+                      axisLabel: {
+                        show: true,
+                        fontSize: isXs ? 8 : 9,
+                        color: COLORS.textSecondary,
+                        fontFamily: 'DM Mono, monospace',
+                        interval: Math.max(0, Math.ceil(chartData.labels.length / (isXs ? 5 : 7)) - 1),
+                        rotate: 0,
+                      },
+                    },
+                  ],
+                  yAxis: [
+                    {
+                      type: 'value',
+                      scale: true,
+                      gridIndex: 0,
+                      axisLine: { show: false },
+                      axisTick: { show: false },
+                      splitLine: {
+                        lineStyle: {
+                          color: COLORS.border,
+                          type: 'dashed',
+                          opacity: 0.4,
+                        },
+                      },
+                      axisLabel: {
+                        show: true,
+                        fontSize: isXs ? 8 : 9,
+                        color: COLORS.textSecondary,
+                        fontFamily: 'DM Mono, monospace',
+                        formatter: (v: number) => v >= 1000 ? `${(v / 1000).toFixed(1)}K` : v.toString(),
+                      },
+                    },
+                    {
+                      type: 'value',
+                      gridIndex: 1,
+                      axisLine: { show: false },
+                      axisTick: { show: false },
+                      splitLine: { show: false },
+                      axisLabel: { show: false },
+                      max: maxVolume * 3,
+                    },
+                  ],
+                  dataZoom: showZoom ? [
+                    {
+                      type: 'slider',
+                      xAxisIndex: [0, 1],
+                      start: 100 - zoomEnd,
+                      end: 100,
+                      bottom: isXs ? 10 : 14,
+                      height: isXs ? 18 : 22,
+                      borderColor: COLORS.border,
+                      fillerColor: 'rgba(10,36,99,0.08)',
+                      handleStyle: {
+                        color: COLORS.primary,
+                        borderColor: COLORS.primary,
+                      },
+                      moveHandleSize: 4,
+                      textStyle: {
+                        fontSize: 9,
+                        color: COLORS.textSecondary,
+                        fontFamily: 'DM Mono, monospace',
+                      },
+                      dataBackground: {
+                        lineStyle: { color: 'rgba(10,36,99,0.15)', width: 1 },
+                        areaStyle: { color: 'rgba(10,36,99,0.05)' },
+                      },
+                      selectedDataBackground: {
+                        lineStyle: { color: COLORS.primary, width: 1 },
+                        areaStyle: { color: 'rgba(10,36,99,0.12)' },
+                      },
+                    },
+                    {
+                      type: 'inside',
+                      xAxisIndex: [0, 1],
+                      start: 100 - zoomEnd,
+                      end: 100,
+                    },
+                  ] : [
+                    {
+                      type: 'inside',
+                      xAxisIndex: [0, 1],
+                      start: 0,
+                      end: 100,
+                    },
+                  ],
+                  series: [
+                    {
+                      name: 'KSE 100',
+                      type: 'candlestick',
+                      data: chartData.ohlc,
+                      xAxisIndex: 0,
+                      yAxisIndex: 0,
+                      barMaxWidth: isXs ? 14 : 18,
+                      barMinWidth: 2,
+                      itemStyle: {
+                        color: candleUp,
+                        color0: candleDown,
+                        borderColor: candleUp,
+                        borderColor0: candleDown,
+                        borderWidth: 1,
+                      },
+                      emphasis: {
+                        itemStyle: {
+                          borderWidth: 2,
+                          shadowBlur: 6,
+                          shadowColor: 'rgba(0,0,0,0.12)',
+                        },
+                      },
+                    },
+                    {
+                      name: 'Close',
+                      type: 'line',
+                      data: chartData.closeLine,
+                      xAxisIndex: 0,
+                      yAxisIndex: 0,
+                      smooth: 0.3,
+                      symbol: 'none',
+                      lineStyle: {
+                        width: 1.2,
+                        color: 'rgba(10,36,99,0.25)',
+                      },
+                      areaStyle: {
+                        color: {
+                          type: 'linear',
+                          x: 0, y: 0, x2: 0, y2: 1,
+                          colorStops: [
+                            { offset: 0, color: 'rgba(10,36,99,0.08)' },
+                            { offset: 1, color: 'rgba(10,36,99,0.01)' },
+                          ],
+                        },
+                      },
+                      z: 0,
+                    },
+                    {
+                      name: 'Volume',
+                      type: 'bar',
+                      data: chartData.volumes.map((v, i) => ({
+                        value: v,
+                        itemStyle: {
+                          color: chartData.ohlc[i] && chartData.ohlc[i][1] >= chartData.ohlc[i][0]
+                            ? 'rgba(13,92,50,0.25)'
+                            : 'rgba(155,28,46,0.25)',
+                        },
+                      })),
+                      xAxisIndex: 1,
+                      yAxisIndex: 1,
+                      barMaxWidth: isXs ? 12 : 16,
+                      barMinWidth: 1,
+                    },
+                  ],
+                  tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                      type: 'cross',
+                      crossStyle: { color: COLORS.textSecondary, width: 0.5 },
+                      lineStyle: { color: COLORS.border, width: 1, type: 'dashed' },
+                      label: {
+                        backgroundColor: COLORS.primary,
+                        fontSize: 9,
+                        fontFamily: 'DM Mono, monospace',
+                      },
+                    },
+                    backgroundColor: 'rgba(255,255,255,0.96)',
+                    borderColor: COLORS.border,
+                    borderRadius: 8,
+                    padding: [10, 14],
+                    textStyle: {
+                      fontSize: 11,
+                      color: COLORS.text,
+                      fontFamily: 'DM Mono, monospace',
+                    },
+                    formatter: (params: { seriesName?: string; value: number | number[] }[]) => {
+                      const candleParam = params.find(p => p.seriesName === 'KSE 100')
+                      if (!candleParam) return ''
+                      const d = candleParam.value as number[]
+                      const [open, close, low, high] = d
+                      const chg = ((close - open) / open * 100).toFixed(2)
+                      const sign = close >= open ? '+' : ''
+                      const chgColor = close >= open ? candleUp : candleDown
+                      return [
+                        `<div style="font-weight:700;margin-bottom:4px;font-size:10px;color:${COLORS.textSecondary};">KSE 100 INDEX</div>`,
+                        `<div style="display:grid;grid-template-columns:32px 1fr;gap:2px 8px;font-size:11px;">`,
+                        `<span style="color:${COLORS.textSecondary}">O</span><span>${fmtIndex(open)}</span>`,
+                        `<span style="color:${COLORS.textSecondary}">H</span><span>${fmtIndex(high)}</span>`,
+                        `<span style="color:${COLORS.textSecondary}">L</span><span>${fmtIndex(low)}</span>`,
+                        `<span style="color:${COLORS.textSecondary}">C</span><span style="font-weight:700">${fmtIndex(close)}</span>`,
+                        `</div>`,
+                        `<div style="margin-top:4px;padding-top:4px;border-top:1px solid ${COLORS.border};color:${chgColor};font-weight:700;font-size:12px">${sign}${chg}%</div>`,
+                      ].join('')
+                    },
                   },
-                }]}
-                margin={{ left: isXs ? 44 : 56, right: isXs ? 12 : 24, top: 10, bottom: isXs ? 22 : 30 }}
-                grid={{ horizontal: true }}
-                // FIX: height matches the container exactly
-                height={chartHeight}
-                sx={{
-                  // FIX: force SVG to fill container width, prevents stale measurement on mount
-                  width: '100% !important',
-                  '& .MuiChartsGrid-root line': { stroke: COLORS.border, strokeDasharray: '3 4', strokeOpacity: 0.5 },
-                  '& .MuiLineElement-root': {
-                    strokeWidth: 2.5,
-                    stroke: chartColor,
-                    filter: `drop-shadow(0 2px 4px ${chartColor}30)`,
-                  },
-                  '& .MuiAreaElement-root': {
-                    fill: chartColor,
-                    fillOpacity: 0.14,
-                  },
-                  '& .MuiMarkElement-root': {
-                    fill: '#fff',
-                    stroke: chartColor,
-                    strokeWidth: 2,
-                    r: 3,
-                  },
-                  bgcolor: 'transparent',
                 }}
               />
             </Box>

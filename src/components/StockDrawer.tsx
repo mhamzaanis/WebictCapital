@@ -4,6 +4,7 @@ import TrendingDownIcon from '@mui/icons-material/TrendingDown'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import {
   Box,
+  CircularProgress,
   Dialog,
   IconButton,
   Typography,
@@ -13,7 +14,7 @@ import { useMediaQuery, useTheme } from '@mui/material'
 import type { TransitionProps } from '@mui/material/transitions'
 import { motion, useReducedMotion, AnimatePresence } from 'motion/react'
 import { useMemo, useState, forwardRef, useEffect, useRef } from 'react'
-import { LineChart } from '@mui/x-charts/LineChart'
+import ReactECharts from 'echarts-for-react'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -52,6 +53,8 @@ type StockDrawerProps = {
   open: boolean
   onClose: () => void
   stock: StockDetail | null
+  loading?: boolean
+  error?: string | null
 }
 
 // ─── Design tokens ─────────────────────────────────────────────────────────────
@@ -365,48 +368,213 @@ function KpiCard({ label, value, sub, color }: { label: string; value: string; s
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 
-export function StockDrawer({ open, onClose, stock }: StockDrawerProps) {
+export function StockDrawer({ open, onClose, stock, loading = false, error = null }: StockDrawerProps) {
   const reduce = useReducedMotion()
   const theme = useTheme()
   const isXs = useMediaQuery(theme.breakpoints.down('sm'))
   const [range, setRange] = useState<'1W' | '1M' | 'YTD' | '1Y'>('1M')
 
   // Force chart remount after dialog finishes opening so it measures correct width
-  const chartRef = useRef<HTMLDivElement>(null)
-  const [chartKey, setChartKey] = useState(0)
+  const chartRef = useRef<ReactECharts>(null)
 
+  // Resize chart when dialog finishes opening or stock data arrives
   useEffect(() => {
     if (!open) return
-    // Wait for slide-up transition (~350ms) then remount chart with correct dimensions
-    const timer = setTimeout(() => setChartKey((k) => k + 1), 380)
+    const timer = setTimeout(() => {
+      chartRef.current?.getEchartsInstance()?.resize()
+    }, 380)
     return () => clearTimeout(timer)
   }, [open])
 
   useEffect(() => {
-    if (!chartRef.current) return
-    const ro = new ResizeObserver(() => setChartKey((k) => k + 1))
-    ro.observe(chartRef.current)
-    return () => ro.disconnect()
-  }, [])
+    if (open && stock) {
+      // Let DOM paint content sections first, then resize
+      const timer = setTimeout(() => {
+        chartRef.current?.getEchartsInstance()?.resize()
+      }, 120)
+      return () => clearTimeout(timer)
+    }
+  }, [open, stock])
 
   const chartData = useMemo(() => {
-    if (!stock) return { values: [], labels: [], gain: false }
-    const slices = { '1W': 7, '1M': stock.history30.length, 'YTD': stock.history30.length, '1Y': stock.history30.length }
-    const count = slices[range]
+    if (!stock) return { ohlc: [] as number[][], labels: [], gain: false, values: [] as number[], volumes: [] as number[], closeLine: [] as number[] }
+    const count = range === '1W' ? 5 : range === '1M' ? 22 : stock.history30.length
     const values = stock.history30.slice(-count)
     const labels = stock.historyLabels.slice(-count)
     const gain = values.length > 1 && values[values.length - 1] >= values[0]
-    return { values, labels, gain }
-  }, [range, stock])
+    // Generate synthetic OHLC data from close prices
+    const rawOhlc = values.map((v, i) => {
+      const open = i > 0 ? values[i - 1] : v * 0.998
+      const close = v
+      const low = Math.min(open, close) * (1 - 0.005 - Math.sin(i * 0.7) * 0.005)
+      const high = Math.max(open, close) * (1 + 0.005 + Math.cos(i * 0.6) * 0.005)
+      return [open, close, low, high]
+    })
 
-  if (!stock) return null
+    // Synthetic volume from price movement magnitude
+    const rawVolumes = rawOhlc.map((candle, i) => {
+      const base = parseInt(String(stock.volume).replace(/[^0-9]/g, ''), 10) || 100000
+      const changeRatio = Math.abs(candle[1] - candle[0]) / Math.max(candle[0], 1)
+      return Math.round(base * (0.5 + changeRatio * 10 + Math.sin(i * 1.3) * 0.2))
+    })
 
-  const tickStep = Math.max(1, Math.ceil(chartData.labels.length / (isXs ? 5 : 7)))
-  const chartHeight = isXs ? 210 : 190
+    // Aggregate for very large datasets
+    const maxVisible = isXs ? 35 : 45
+    const needsAggregation = rawOhlc.length > maxVisible * 2
 
-  const pos = stock.change >= 0
+    if (!needsAggregation) {
+      return {
+        ohlc: rawOhlc,
+        labels,
+        gain,
+        values,
+        volumes: rawVolumes,
+        closeLine: rawOhlc.map(c => c[1]),
+      }
+    }
+
+    const bucketSize = Math.ceil(rawOhlc.length / (maxVisible * 2))
+    const compactOhlc: number[][] = []
+    const compactLabels: string[] = []
+    const compactVolumes: number[] = []
+    const compactValues: number[] = []
+
+    for (let i = 0; i < rawOhlc.length; i += bucketSize) {
+      const slice = rawOhlc.slice(i, i + bucketSize)
+      const volSlice = rawVolumes.slice(i, i + bucketSize)
+      if (!slice.length) continue
+      const open = slice[0][0]
+      const close = slice[slice.length - 1][1]
+      let low = slice[0][2]
+      let high = slice[0][3]
+      let totalVol = 0
+      for (let j = 0; j < slice.length; j++) {
+        low = Math.min(low, slice[j][2])
+        high = Math.max(high, slice[j][3])
+        totalVol += volSlice[j] || 0
+      }
+      compactOhlc.push([open, close, low, high])
+      compactLabels.push(labels[Math.min(i + slice.length - 1, labels.length - 1)])
+      compactVolumes.push(totalVol)
+      compactValues.push(close)
+    }
+
+    return {
+      ohlc: compactOhlc,
+      labels: compactLabels,
+      gain: compactValues.length > 1 && compactValues[compactValues.length - 1] >= compactValues[0],
+      values: compactValues,
+      volumes: compactVolumes,
+      closeLine: compactOhlc.map(c => c[1]),
+    }
+  }, [range, stock, isXs])
+
+  if (!stock && !loading) return null
+
+  const chartHeight = isXs ? 260 : 280
+
+  // Determine if we need dataZoom (scrollable chart)
+  const totalCandles = chartData.ohlc.length
+  const showZoom = totalCandles > (isXs ? 25 : 35)
+  const zoomEnd = showZoom ? Math.min(100, ((isXs ? 25 : 35) / totalCandles) * 100) : 100
+  const maxVolume = chartData.volumes.length > 0 ? Math.max(...chartData.volumes) : 1
+
+  const pos = stock ? stock.change >= 0 : false
   const changeColor = pos ? C.pos : C.neg
-  const chartColor = chartData.gain ? C.pos : C.neg
+  const candleUp = C.pos
+  const candleDown = C.neg
+
+  // ── Loading state ────────────────────────────────────────────────────────
+
+  if (loading && !stock) {
+    return (
+      <Dialog
+        open={open}
+        onClose={onClose}
+        fullWidth
+        maxWidth={false}
+        slots={{ transition: SlideUp }}
+        slotProps={{
+          transition: { timeout: reduce ? 0 : 320 },
+          backdrop: {
+            sx: { bgcolor: 'rgba(5,10,20,0.55)', backdropFilter: 'blur(6px)' },
+          },
+          paper: {
+            sx: {
+              width: { xs: '100%', sm: '90vw', md: 880 },
+              maxWidth: '100vw',
+              maxHeight: { xs: '100dvh', sm: '92dvh' },
+              borderRadius: { xs: 0, sm: '16px' },
+              border: `1px solid ${C.borderStrong}`,
+              bgcolor: C.bg,
+              overflow: 'hidden',
+              boxShadow: '0 40px 80px rgba(8,14,26,0.28), 0 0 0 1px rgba(10,36,99,0.06)',
+            },
+          },
+        }}
+      >
+        <Box sx={{ position: 'sticky', top: 0, zIndex: 10, bgcolor: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(12px)', borderBottom: `1px solid ${C.border}`, px: { xs: 2.5, md: 3.5 }, py: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography sx={{ fontFamily: serif, fontSize: 16, fontWeight: 700, color: C.ink }}>Loading...</Typography>
+          <IconButton onClick={onClose} size="small" sx={{ color: C.muted, bgcolor: C.surface, border: `1px solid ${C.border}`, borderRadius: '8px', width: 32, height: 32 }}>
+            <CloseRoundedIcon sx={{ fontSize: 16 }} />
+          </IconButton>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 12 }}>
+          <CircularProgress size={40} sx={{ color: C.accentMid }} />
+        </Box>
+      </Dialog>
+    )
+  }
+
+  // ── Error state ──────────────────────────────────────────────────────────
+
+  if (error && !stock) {
+    return (
+      <Dialog
+        open={open}
+        onClose={onClose}
+        fullWidth
+        maxWidth={false}
+        slots={{ transition: SlideUp }}
+        slotProps={{
+          transition: { timeout: reduce ? 0 : 320 },
+          backdrop: {
+            sx: { bgcolor: 'rgba(5,10,20,0.55)', backdropFilter: 'blur(6px)' },
+          },
+          paper: {
+            sx: {
+              width: { xs: '100%', sm: '90vw', md: 880 },
+              maxWidth: '100vw',
+              maxHeight: { xs: '100dvh', sm: '92dvh' },
+              borderRadius: { xs: 0, sm: '16px' },
+              border: `1px solid ${C.borderStrong}`,
+              bgcolor: C.bg,
+              overflow: 'hidden',
+              boxShadow: '0 40px 80px rgba(8,14,26,0.28), 0 0 0 1px rgba(10,36,99,0.06)',
+            },
+          },
+        }}
+      >
+        <Box sx={{ position: 'sticky', top: 0, zIndex: 10, bgcolor: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(12px)', borderBottom: `1px solid ${C.border}`, px: { xs: 2.5, md: 3.5 }, py: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography sx={{ fontFamily: serif, fontSize: 16, fontWeight: 700, color: C.ink }}>Error</Typography>
+          <IconButton onClick={onClose} size="small" sx={{ color: C.muted, bgcolor: C.surface, border: `1px solid ${C.border}`, borderRadius: '8px', width: 32, height: 32 }}>
+            <CloseRoundedIcon sx={{ fontSize: 16 }} />
+          </IconButton>
+        </Box>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 10, px: 4, textAlign: 'center', gap: 2 }}>
+          <Box sx={{ width: 48, height: 48, borderRadius: '12px', bgcolor: C.negBg, border: `1px solid ${C.neg}25`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Typography sx={{ fontSize: 20, fontWeight: 700, color: C.neg, fontFamily: mono }}>!</Typography>
+          </Box>
+          <Typography sx={{ fontFamily: serif, fontSize: 18, fontWeight: 700, color: C.ink, letterSpacing: '-0.01em' }}>
+            Could not load stock data
+          </Typography>
+          <Typography sx={{ fontSize: 13, color: C.muted, lineHeight: 1.7, maxWidth: 400 }}>
+            {error}
+          </Typography>
+        </Box>
+      </Dialog>
+    )
+  }
 
   return (
     <Dialog
@@ -579,7 +747,7 @@ export function StockDrawer({ open, onClose, stock }: StockDrawerProps) {
           {/* Mini KPIs */}
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             <KpiCard label="Market Cap" value={stock.marketCap} />
-            <KpiCard label="P/E Ratio" value={stock.pe.toFixed(1)} color={stock.pe < 0 ? C.neg : C.accentMid} />
+            <KpiCard label="P/E Ratio" value={stock.pe !== 0 ? stock.pe.toFixed(1) : 'N/A'} color={stock.pe < 0 ? C.neg : C.accentMid} />
             <KpiCard
               label="52W Chg"
               value={`${stock.week52ChangePct >= 0 ? '+' : ''}${stock.week52ChangePct.toFixed(1)}%`}
@@ -632,60 +800,239 @@ export function StockDrawer({ open, onClose, stock }: StockDrawerProps) {
               transition={{ duration: 0.22 }}
               // FIX: fixed height (not minHeight) so the chart fills exactly this space
               sx={{ px: 1, pb: 1.5, height: chartHeight }}
-              ref={chartRef}
             >
-              <LineChart
-                key={chartKey}
-                xAxis={[{
-                  data: chartData.labels,
-                  scaleType: 'point',
-                  height: isXs ? 22 : 28,
-                  tickInterval: (_: unknown, i: number) => i % tickStep === 0,
-                  tickLabelStyle: { fontSize: isXs ? 8 : 9, fill: C.muted, fontFamily: 'DM Mono, monospace' },
-                  disableLine: true,
-                  disableTicks: true,
-                }]}
-                yAxis={[{
-                  width: isXs ? 44 : 55,
-                  tickLabelStyle: { fontSize: isXs ? 8 : 9, fill: C.muted, fontFamily: 'DM Mono, monospace' },
-                  disableLine: true,
-                  disableTicks: true,
-                }]}
-                series={[{
-                  data: chartData.values,
-                  connectNulls: true,
-                  showMark: true,
-                  area: true,
-                  color: chartColor,
-                  valueFormatter: (value) => {
-                    const safeValue = typeof value === 'number' ? value : 0
-                    return `Rs.${fmt(safeValue)} · Vol ${stock.volume} · Avg ${stock.avgVolume}`
+              <ReactECharts
+                ref={chartRef}
+                style={{ height: chartHeight, width: '100%' }}
+                opts={{ renderer: 'svg' }}
+                option={{
+                  animation: true,
+                  animationDuration: 600,
+                  animationEasing: 'cubicOut',
+                  grid: [
+                    {
+                      // Main candle grid
+                      left: isXs ? 52 : 64,
+                      right: isXs ? 12 : 24,
+                      top: 16,
+                      bottom: showZoom ? (isXs ? 85 : 95) : (isXs ? 65 : 72),
+                      height: showZoom ? (chartHeight - (isXs ? 145 : 158)) : (chartHeight - (isXs ? 110 : 118)),
+                    },
+                    {
+                      // Volume grid
+                      left: isXs ? 52 : 64,
+                      right: isXs ? 12 : 24,
+                      bottom: showZoom ? (isXs ? 55 : 62) : (isXs ? 26 : 30),
+                      height: isXs ? 24 : 30,
+                    },
+                  ],
+                  xAxis: [
+                    {
+                      type: 'category',
+                      data: chartData.labels,
+                      boundaryGap: true,
+                      axisLine: { show: false },
+                      axisTick: { show: false },
+                      axisLabel: { show: false },
+                      gridIndex: 0,
+                    },
+                    {
+                      type: 'category',
+                      data: chartData.labels,
+                      boundaryGap: true,
+                      gridIndex: 1,
+                      axisLine: { show: false },
+                      axisTick: { show: false },
+                      axisLabel: {
+                        show: true,
+                        fontSize: isXs ? 8 : 9,
+                        color: C.muted,
+                        fontFamily: 'DM Mono, monospace',
+                        interval: Math.max(0, Math.ceil(chartData.labels.length / (isXs ? 5 : 7)) - 1),
+                        rotate: 0,
+                      },
+                    },
+                  ],
+                  yAxis: [
+                    {
+                      type: 'value',
+                      scale: true,
+                      gridIndex: 0,
+                      axisLine: { show: false },
+                      axisTick: { show: false },
+                      splitLine: {
+                        lineStyle: {
+                          color: C.border,
+                          type: 'dashed',
+                          opacity: 0.4,
+                        },
+                      },
+                      axisLabel: {
+                        show: true,
+                        fontSize: isXs ? 8 : 9,
+                        color: C.muted,
+                        fontFamily: 'DM Mono, monospace',
+                      },
+                    },
+                    {
+                      type: 'value',
+                      gridIndex: 1,
+                      axisLine: { show: false },
+                      axisTick: { show: false },
+                      splitLine: { show: false },
+                      axisLabel: { show: false },
+                      max: maxVolume * 3,
+                    },
+                  ],
+                  dataZoom: showZoom ? [
+                    {
+                      type: 'slider',
+                      xAxisIndex: [0, 1],
+                      start: 100 - zoomEnd,
+                      end: 100,
+                      bottom: isXs ? 8 : 10,
+                      height: isXs ? 16 : 20,
+                      borderColor: C.border,
+                      fillerColor: 'rgba(10,36,99,0.08)',
+                      handleStyle: {
+                        color: C.accent,
+                        borderColor: C.accent,
+                      },
+                      moveHandleSize: 4,
+                      textStyle: {
+                        fontSize: 9,
+                        color: C.muted,
+                        fontFamily: 'DM Mono, monospace',
+                      },
+                      dataBackground: {
+                        lineStyle: { color: 'rgba(10,36,99,0.15)', width: 1 },
+                        areaStyle: { color: 'rgba(10,36,99,0.05)' },
+                      },
+                      selectedDataBackground: {
+                        lineStyle: { color: C.accent, width: 1 },
+                        areaStyle: { color: 'rgba(10,36,99,0.12)' },
+                      },
+                    },
+                    {
+                      type: 'inside',
+                      xAxisIndex: [0, 1],
+                      start: 100 - zoomEnd,
+                      end: 100,
+                    },
+                  ] : [
+                    {
+                      type: 'inside',
+                      xAxisIndex: [0, 1],
+                      start: 0,
+                      end: 100,
+                    },
+                  ],
+                  series: [
+                    {
+                      name: stock.symbol,
+                      type: 'candlestick',
+                      data: chartData.ohlc,
+                      xAxisIndex: 0,
+                      yAxisIndex: 0,
+                      barMaxWidth: isXs ? 14 : 18,
+                      barMinWidth: 2,
+                      itemStyle: {
+                        color: candleUp,
+                        color0: candleDown,
+                        borderColor: candleUp,
+                        borderColor0: candleDown,
+                        borderWidth: 1,
+                      },
+                      emphasis: {
+                        itemStyle: {
+                          borderWidth: 2,
+                          shadowBlur: 6,
+                          shadowColor: 'rgba(0,0,0,0.12)',
+                        },
+                      },
+                    },
+                    {
+                      name: 'Close',
+                      type: 'line',
+                      data: chartData.closeLine,
+                      xAxisIndex: 0,
+                      yAxisIndex: 0,
+                      smooth: 0.3,
+                      symbol: 'none',
+                      lineStyle: {
+                        width: 1.2,
+                        color: chartData.gain ? 'rgba(13,92,50,0.2)' : 'rgba(155,28,46,0.2)',
+                      },
+                      areaStyle: {
+                        color: {
+                          type: 'linear',
+                          x: 0, y: 0, x2: 0, y2: 1,
+                          colorStops: [
+                            { offset: 0, color: chartData.gain ? 'rgba(13,92,50,0.08)' : 'rgba(155,28,46,0.08)' },
+                            { offset: 1, color: chartData.gain ? 'rgba(13,92,50,0.01)' : 'rgba(155,28,46,0.01)' },
+                          ],
+                        },
+                      },
+                      z: 0,
+                    },
+                    {
+                      name: 'Volume',
+                      type: 'bar',
+                      data: chartData.volumes.map((v, i) => ({
+                        value: v,
+                        itemStyle: {
+                          color: chartData.ohlc[i] && chartData.ohlc[i][1] >= chartData.ohlc[i][0]
+                            ? 'rgba(13,92,50,0.22)'
+                            : 'rgba(155,28,46,0.22)',
+                        },
+                      })),
+                      xAxisIndex: 1,
+                      yAxisIndex: 1,
+                      barMaxWidth: isXs ? 12 : 16,
+                      barMinWidth: 1,
+                    },
+                  ],
+                  tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                      type: 'cross',
+                      crossStyle: { color: C.muted, width: 0.5 },
+                      lineStyle: { color: C.border, width: 1, type: 'dashed' },
+                      label: {
+                        backgroundColor: C.accent,
+                        fontSize: 9,
+                        fontFamily: 'DM Mono, monospace',
+                      },
+                    },
+                    backgroundColor: 'rgba(255,255,255,0.96)',
+                    borderColor: C.borderStrong,
+                    borderRadius: 8,
+                    padding: [10, 14],
+                    textStyle: {
+                      fontSize: 11,
+                      color: C.ink,
+                      fontFamily: 'DM Mono, monospace',
+                    },
+                    formatter: (params: { seriesName?: string; value: number | number[] }[]) => {
+                      const candleParam = params.find(p => p.seriesName === stock.symbol)
+                      if (!candleParam) return ''
+                      const d = candleParam.value as number[]
+                      const [open, close, low, high] = d
+                      const chg = ((close - open) / open * 100).toFixed(2)
+                      const sign = close >= open ? '+' : ''
+                      const chgColor = close >= open ? candleUp : candleDown
+                      return [
+                        `<div style="font-weight:700;margin-bottom:4px;font-size:10px;color:${C.muted};">${stock.symbol}</div>`,
+                        `<div style="display:grid;grid-template-columns:32px 1fr;gap:2px 8px;font-size:11px;">`,
+                        `<span style="color:${C.muted}">O</span><span>Rs.${fmt(open)}</span>`,
+                        `<span style="color:${C.muted}">H</span><span>Rs.${fmt(high)}</span>`,
+                        `<span style="color:${C.muted}">L</span><span>Rs.${fmt(low)}</span>`,
+                        `<span style="color:${C.muted}">C</span><span style="font-weight:700">Rs.${fmt(close)}</span>`,
+                        `</div>`,
+                        `<div style="margin-top:4px;padding-top:4px;border-top:1px solid ${C.border};color:${chgColor};font-weight:700;font-size:12px">${sign}${chg}%</div>`,
+                      ].join('')
+                    },
                   },
-                }]}
-                margin={{ left: isXs ? 44 : 56, right: isXs ? 16 : 24, top: 10, bottom: isXs ? 24 : 30 }}
-                grid={{ horizontal: true }}
-                // FIX: height matches the container exactly
-                height={chartHeight}
-                sx={{
-                  // FIX: force SVG to fill container width — prevents stale measurement during dialog open animation
-                  width: '100% !important',
-                  '& .MuiChartsGrid-root line': { stroke: C.border, strokeDasharray: '3 4', strokeOpacity: 0.5 },
-                  '& .MuiLineElement-root': {
-                    strokeWidth: 2,
-                    stroke: chartColor,
-                    filter: `drop-shadow(0 2px 4px ${chartColor}30)`,
-                  },
-                  '& .MuiAreaElement-root': {
-                    fill: chartColor,
-                    fillOpacity: 0.12,
-                  },
-                  '& .MuiMarkElement-root': {
-                    fill: '#fff',
-                    stroke: chartColor,
-                    strokeWidth: 2,
-                    r: 3,
-                  },
-                  bgcolor: 'transparent',
                 }}
               />
             </Box>
@@ -755,44 +1102,46 @@ export function StockDrawer({ open, onClose, stock }: StockDrawerProps) {
           {/* Fundamentals */}
           <Box sx={{ border: `1px solid ${C.border}`, borderRadius: '12px', bgcolor: C.bg, p: 2.5 }}>
             <SectionTitle index={4}>Fundamentals</SectionTitle>
-            <StatRow label="EPS (TTM)" value={`Rs.${stock.eps.toFixed(2)}`} />
-            <StatRow label="P/E Ratio" value={stock.pe.toFixed(2)} valueColor={stock.pe < 0 ? C.neg : undefined} highlight />
-            <StatRow label="Price / Book" value={stock.priceToBook.toFixed(2)} />
-            <StatRow label="Dividend Yield" value={`${stock.dividendYield.toFixed(2)}%`} valueColor={stock.dividendYield > 0 ? C.pos : C.muted} highlight />
-            <StatRow label="Beta (5Y)" value={stock.beta.toFixed(2)} valueColor={stock.beta > 1.2 ? C.neg : stock.beta < 0.8 ? C.pos : undefined} highlight />
+            <StatRow label="EPS (TTM)" value={stock.eps !== 0 ? `Rs.${stock.eps.toFixed(2)}` : 'N/A'} />
+            <StatRow label="P/E Ratio" value={stock.pe !== 0 ? stock.pe.toFixed(2) : 'N/A'} valueColor={stock.pe < 0 ? C.neg : undefined} highlight />
+            <StatRow label="Price / Book" value={stock.priceToBook !== 0 ? stock.priceToBook.toFixed(2) : 'N/A'} />
+            <StatRow label="Dividend Yield" value={stock.dividendYield !== 0 ? `${stock.dividendYield.toFixed(2)}%` : 'N/A'} valueColor={stock.dividendYield > 0 ? C.pos : C.muted} highlight />
+            <StatRow label="Beta (5Y)" value={stock.beta !== 0 ? stock.beta.toFixed(2) : 'N/A'} valueColor={stock.beta > 1.2 ? C.neg : stock.beta < 0.8 ? C.pos : undefined} highlight />
           </Box>
         </Box>
 
         {/* ── RISK METRICS ──────────────────────────────────────────── */}
-        <Box
-          component={motion.div}
-          initial={reduce ? false : { opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.42, delay: 0.24, ease: [0.22, 1, 0.36, 1] }}
-          sx={{ border: `1px solid ${C.border}`, borderRadius: '12px', bgcolor: C.bg, p: 2.5 }}
-        >
-          <SectionTitle index={5}>Risk & Quality</SectionTitle>
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', sm: 'repeat(3, 1fr)' }, gap: 1.5 }}>
-            <KpiCard
-              label="ROE"
-              value={`${stock.roe.toFixed(1)}%`}
-              sub={stock.roe > 15 ? 'Strong' : stock.roe < 5 ? 'Weak' : 'Average'}
-              color={stock.roe > 15 ? C.pos : stock.roe < 5 ? C.neg : C.accentMid}
-            />
-            <KpiCard
-              label="Debt / Equity"
-              value={stock.debtToEquity.toFixed(2)}
-              sub={stock.debtToEquity > 1 ? 'High leverage' : 'Conservative'}
-              color={stock.debtToEquity > 1 ? C.neg : C.pos}
-            />
-            <KpiCard
-              label="Beta (5Y)"
-              value={stock.beta.toFixed(2)}
-              sub={stock.beta > 1.2 ? 'High volatility' : stock.beta < 0.8 ? 'Low volatility' : 'Market-like'}
-              color={stock.beta > 1.2 ? C.neg : stock.beta < 0.8 ? C.pos : C.accentMid}
-            />
+        {(stock.roe !== 0 || stock.debtToEquity !== 0 || stock.beta !== 0) && (
+          <Box
+            component={motion.div}
+            initial={reduce ? false : { opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.42, delay: 0.24, ease: [0.22, 1, 0.36, 1] }}
+            sx={{ border: `1px solid ${C.border}`, borderRadius: '12px', bgcolor: C.bg, p: 2.5 }}
+          >
+            <SectionTitle index={5}>Risk & Quality</SectionTitle>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', sm: 'repeat(3, 1fr)' }, gap: 1.5 }}>
+              <KpiCard
+                label="ROE"
+                value={`${stock.roe.toFixed(1)}%`}
+                sub={stock.roe > 15 ? 'Strong' : stock.roe < 5 ? 'Weak' : 'Average'}
+                color={stock.roe > 15 ? C.pos : stock.roe < 5 ? C.neg : C.accentMid}
+              />
+              <KpiCard
+                label="Debt / Equity"
+                value={stock.debtToEquity.toFixed(2)}
+                sub={stock.debtToEquity > 1 ? 'High leverage' : 'Conservative'}
+                color={stock.debtToEquity > 1 ? C.neg : C.pos}
+              />
+              <KpiCard
+                label="Beta (5Y)"
+                value={stock.beta.toFixed(2)}
+                sub={stock.beta > 1.2 ? 'High volatility' : stock.beta < 0.8 ? 'Low volatility' : 'Market-like'}
+                color={stock.beta > 1.2 ? C.neg : stock.beta < 0.8 ? C.pos : C.accentMid}
+              />
+            </Box>
           </Box>
-        </Box>
+        )}
 
         {/* ── FOOTER ──────────────────────────────────────────────────── */}
         <Box
