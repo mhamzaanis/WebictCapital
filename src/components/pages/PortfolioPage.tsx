@@ -8,7 +8,7 @@ import StarBorderIcon from '@mui/icons-material/StarBorder'
 import ShowChartIcon from '@mui/icons-material/ShowChart'
 import { Box, Container, Divider, IconButton, Menu, MenuItem, Stack, Typography } from '@mui/material'
 import { motion, useReducedMotion } from 'motion/react'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, memo } from 'react'
 import ReactECharts from 'echarts-for-react'
 import { MotionReveal } from '../animations/MotionReveal'
 import { CustomButton } from '../CustomButton'
@@ -479,29 +479,35 @@ function HoldingRow({ h, index, onEdit, onDelete }: { h: Holding; index: number;
 
 // ─── ECharts Sparkline ─────────────────────────────────────────────────────
 
-function SparkLine({ data, width, height, color, area = false }: { data: number[]; width: number; height: number; color: string; area?: boolean }) {
+const SparkLine = memo(function SparkLine({ data, width, height, color, area = false }: { data: number[]; width: number; height: number; color: string; area?: boolean }) {
   const safeMin = data.length > 0 ? Math.min(...data) * 0.98 : 0
   const safeMax = data.length > 0 ? Math.max(...data) * 1.02 : 1
+  const option = useMemo(() => ({
+    animation: false,
+    silent: true,
+    grid: { left: 0, right: 0, top: 0, bottom: 0 },
+    xAxis: { type: 'category', data: data.map((_, i) => i), show: false },
+    yAxis: { type: 'value', show: false, min: safeMin, max: safeMax },
+    series: [{
+      type: 'line',
+      data,
+      smooth: true,
+      showSymbol: false,
+      lineStyle: { color, width: 1.5 },
+      areaStyle: area ? { color, opacity: 0.12 } : undefined,
+    }],
+  }), [area, color, data, safeMax, safeMin])
+
   return (
     <ReactECharts
       style={{ width, height }}
       opts={{ renderer: 'svg' }}
-      option={{
-        grid: { left: 0, right: 0, top: 0, bottom: 0 },
-        xAxis: { type: 'category', data: data.map((_, i) => i), show: false },
-        yAxis: { type: 'value', show: false, min: safeMin, max: safeMax },
-        series: [{
-          type: 'line',
-          data,
-          smooth: true,
-          showSymbol: false,
-          lineStyle: { color, width: 1.5 },
-          areaStyle: area ? { color, opacity: 0.12 } : undefined,
-        }],
-      }}
+      option={option}
+      notMerge
+      lazyUpdate
     />
   )
-}
+})
 
 // ─── Watchlist Row ────────────────────────────────────────────────────────────
 
