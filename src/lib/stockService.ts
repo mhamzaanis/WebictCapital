@@ -28,6 +28,7 @@ export type UserTrade = {
 export type MarketSymbolSnapshot = {
   symbol: string
   company: string
+  sector: string
   price: number
   change: number
   changePct: number
@@ -76,6 +77,8 @@ export async function fetchUniqueSymbols(): Promise<MarketSymbolSnapshot[]> {
   return ((data ?? []) as Array<{
     symbol: string
     company: string | null
+    sector?: string | null
+    section?: string | null
     price: number | null
     change: number | null
     changePct: number | null
@@ -84,6 +87,7 @@ export async function fetchUniqueSymbols(): Promise<MarketSymbolSnapshot[]> {
   }>).map((row) => ({
     symbol: (row.symbol ?? '').trim().toUpperCase(),
     company: row.company ?? (row.symbol ?? '').trim().toUpperCase(),
+    sector: row.sector ?? row.section ?? '',
     price: toNum(row.price),
     change: toNum(row.change),
     changePct: toNum(row.changePct),
@@ -111,23 +115,19 @@ export async function fetchStockDetail(symbol: string): Promise<StockDetail> {
     throw new Error('Supabase client is not configured.')
   }
 
-  const yearAgo = new Date()
-  yearAgo.setFullYear(yearAgo.getFullYear() - 1)
-  const yearAgoStr = yearAgo.toISOString().slice(0, 10)
-
   const result = await supabase!
     .from('datatable')
     .select('trade_date,close,open,high,low,turnover,change,company,section')
     .eq('symbol', symbol.toUpperCase())
-    .gte('trade_date', yearAgoStr)
-    .order('trade_date', { ascending: true })
+    .order('trade_date', { ascending: false }) // Get newest dates first
+    .limit(252)
 
   if (result.error) throw result.error
-
-  const rows = (result.data ?? []) as DbStockRow[]
-  if (rows.length === 0) {
+  if (!result.data || result.data.length === 0) {
     throw new Error(`No data found for symbol "${symbol.toUpperCase()}".`)
   }
+
+  const rows = (result.data as DbStockRow[]).reverse()
 
   const latest = rows[rows.length - 1]
   const prev = rows.length > 1 ? rows[rows.length - 2] : latest

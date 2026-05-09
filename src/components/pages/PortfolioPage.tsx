@@ -12,7 +12,7 @@ import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined'
 import GoogleIcon from '@mui/icons-material/Google'
 import { Box, Container, Divider, IconButton, Menu, MenuItem, Stack, Typography } from '@mui/material'
 import { motion, useReducedMotion } from 'motion/react'
-import { useState, useMemo, memo, useEffect, useCallback } from 'react'
+import { useState, useMemo, memo, useEffect, useCallback, useRef } from 'react'
 import ReactECharts from 'echarts-for-react'
 import { MotionReveal } from '../animations/MotionReveal'
 import { CustomButton } from '../CustomButton'
@@ -79,25 +79,6 @@ const buildMarketHistory = (tradeDate: string, closeValue: number): MarketHistor
     'YTD': buildTradingSeries(tradeDate, 90, 163_540, closeValue),
     '1Y': buildTradingSeries(tradeDate, 252, 155_820, closeValue),
   }
-}
-
-const todayISO = new Date().toISOString().slice(0, 10)
-
-const marketSummary = {
-  tradeDate: todayISO,
-  kse100_prev: 165_823.88,
-  kse100_close: 162_994.17,
-  kse100_change: -2_829.71,
-  kse30_prev: 74_980.25,
-  kse30_close: 73_220.19,
-  kse30_change: -1_760.06,
-  prev_volume: 912_550_000,
-  curr_volume: 837_371_894,
-  advances: 101,
-  declines: 348,
-  unchanged: 36,
-  flu_no: 'KSE-2026-04-30',
-  history: buildMarketHistory(todayISO, 162_994.17),
 }
 
 const portfolioTrend = [92_680_000, 92_340_000, 91_950_000, 92_120_000, 92_450_000, 92_800_000, 93_150_000, 92_900_000, 92_700_000, 92_300_000, 92_500_000, 92_650_000]
@@ -502,23 +483,25 @@ function HoldingRow({ h, index, onEdit, onDelete }: { h: Holding; index: number;
 // ─── ECharts Sparkline ─────────────────────────────────────────────────────
 
 const SparkLine = memo(function SparkLine({ data, width, height, color, area = false }: { data: number[]; width: number; height: number; color: string; area?: boolean }) {
-  const safeMin = data.length > 0 ? Math.min(...data) * 0.98 : 0
-  const safeMax = data.length > 0 ? Math.max(...data) * 1.02 : 1
-  const option = useMemo(() => ({
-    animation: false,
-    silent: true,
-    grid: { left: 0, right: 0, top: 0, bottom: 0 },
-    xAxis: { type: 'category', data: data.map((_, i) => i), show: false },
-    yAxis: { type: 'value', show: false, min: safeMin, max: safeMax },
-    series: [{
-      type: 'line',
-      data,
-      smooth: true,
-      showSymbol: false,
-      lineStyle: { color, width: 1.5 },
-      areaStyle: area ? { color, opacity: 0.12 } : undefined,
-    }],
-  }), [area, color, data, safeMax, safeMin])
+  const option = useMemo(() => {
+    const safeMin = data.length > 0 ? Math.min(...data) * 0.98 : 0
+    const safeMax = data.length > 0 ? Math.max(...data) * 1.02 : 1
+    return {
+      animation: false,
+      silent: true,
+      grid: { left: 0, right: 0, top: 0, bottom: 0 },
+      xAxis: { type: 'category', data: data.map((_, i) => i), show: false },
+      yAxis: { type: 'value', show: false, min: safeMin, max: safeMax },
+      series: [{
+        type: 'line',
+        data,
+        smooth: true,
+        showSymbol: false,
+        lineStyle: { color, width: 1.5 },
+        areaStyle: area ? { color, opacity: 0.12 } : undefined,
+      }],
+    }
+  }, [area, color, data])
 
   return (
     <ReactECharts
@@ -743,7 +726,7 @@ export function PortfolioPage() {
   const [holdModalOpen, setHoldModalOpen] = useState(false)
   const [watchModalOpen, setWatchModalOpen] = useState(false)
   const [holdModalMode, setHoldModalMode] = useState<'new' | 'manage'>('new')
-  const [holdModalSymbol, setHoldModalSymbol] = useState<string | undefined>(undefined)
+  const [holdModalHolding, setHoldModalHolding] = useState<Holding | null>(null)
   const [holdings, setHoldings] = useState<Holding[]>([])
   const [watchlist, setWatchlist] = useState<WatchItem[]>([])
   const [historyEvents, setHistoryEvents] = useState<HistoryEvent[]>([])
@@ -757,19 +740,45 @@ export function PortfolioPage() {
   const { user, loading: authLoading, clearError } = useAuth()
   const isLocked = !authLoading && !user
 
+  const marketSummary = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10)
+    return {
+      tradeDate: today,
+      kse100_prev: 165_823.88,
+      kse100_close: 162_994.17,
+      kse100_change: -2_829.71,
+      kse30_prev: 74_980.25,
+      kse30_close: 73_220.19,
+      kse30_change: -1_760.06,
+      prev_volume: 912_550_000,
+      curr_volume: 837_371_894,
+      advances: 101,
+      declines: 348,
+      unchanged: 36,
+      flu_no: 'KSE-2026-04-30',
+      history: buildMarketHistory(today, 162_994.17),
+    }
+  }, [])
+
   useEffect(() => {
     if (isLocked) setAuthModalOpen(true)
   }, [isLocked])
 
-  // Fetch live market snapshots from Supabase for modals and portfolio calculations
-  useEffect(() => {
-    if (!hasStockService()) return
-    fetchUniqueSymbols().then(setMarketSnapshots).catch(() => setMarketSnapshots([]))
-  }, [user])
+  // Keep the latest market snapshot list available for modals and openDrawer fallback
+  const marketSnapshotsRef = useRef<MarketSymbolSnapshot[]>([])
 
-  // Load user's holdings and watchlist — merge trades with live market data
+  // Single effect: fetch market data + user data, merge, derive all state
   useEffect(() => {
-    if (!user || authLoading) return
+    if (!user || authLoading) {
+      // Still fetch market snapshots for modals even when not signed in
+      if (hasStockService()) {
+        fetchUniqueSymbols().then(data => {
+          setMarketSnapshots(data)
+          marketSnapshotsRef.current = data
+        }).catch(() => {})
+      }
+      return
+    }
 
     const loadUserData = async () => {
       try {
@@ -779,11 +788,13 @@ export function PortfolioPage() {
           hasStockService() ? fetchUniqueSymbols() : Promise.resolve([] as MarketSymbolSnapshot[]),
         ])
 
+        // Store for modals and openDrawer
+        setMarketSnapshots(marketData)
+        marketSnapshotsRef.current = marketData
+
         // Build a lookup map from market data: symbol → MarketSymbolSnapshot
         const marketMap = new Map<string, MarketSymbolSnapshot>()
-        for (const m of marketData) {
-          marketMap.set(m.symbol, m)
-        }
+        for (const m of marketData) marketMap.set(m.symbol, m)
 
         // Aggregate trades: BUY adds, SELL subtracts
         const holdingsMap = new Map<string, { quantity: number; totalCost: number; buys: UserTrade[]; sells: UserTrade[] }>()
@@ -803,7 +814,8 @@ export function PortfolioPage() {
         }
 
         // Build holdings enriched with live market prices and sectors
-        let calcTotalMV = 0
+        // Compute totalMV and sector allocation in the same pass
+        let totalMV = 0
         const sectorMap = new Map<string, number>()
         const sectorColors = ['var(--wc-primary)', '#b77a12', '#0d5c32', '#7c3aed', '#1a4fa8', '#6366f1']
 
@@ -818,9 +830,9 @@ export function PortfolioPage() {
           const totalPL = currentValue - data.totalCost
           const totalPLPct = data.totalCost !== 0 ? (totalPL / data.totalCost) * 100 : 0
 
-          calcTotalMV += currentValue
+          totalMV += currentValue
 
-          const sector = (live as any)?.sector || live?.company || 'Unclassified'
+          const sector = (live as any)?.sector || 'Unclassified'
           const shortSector = sector.length > 20 ? sector.slice(0, 18) + '...' : sector
           sectorMap.set(shortSector, (sectorMap.get(shortSector) ?? 0) + currentValue)
 
@@ -840,18 +852,13 @@ export function PortfolioPage() {
           })
         }
 
-        setHoldings(userHoldings)
-
         // Build dynamic sector allocation from live data
         const sectorAlloc = Array.from(sectorMap.entries())
-          .map(([sector, value], i) => ({
-            sector,
-            value,
-            color: sectorColors[i % sectorColors.length],
-          }))
+          .map(([sector, value], i) => ({ sector, value, color: sectorColors[i % sectorColors.length] }))
           .filter(s => s.value > 0)
           .sort((a, b) => b.value - a.value)
-        // Store in a ref so we don't need to recalc it in useMemo
+
+        setHoldings(userHoldings)
         setSectorAllocation(sectorAlloc)
 
         // Build trade history from all trades sorted by date
@@ -873,17 +880,7 @@ export function PortfolioPage() {
         if (symbols.length > 0) {
           const dbWatchlist: WatchItem[] = symbols.map(sym => {
             const live = marketMap.get(sym)
-            if (live) {
-              return {
-                symbol: live.symbol,
-                company: live.company,
-                price: live.price,
-                change: live.change,
-                changePct: live.changePct,
-                volume: live.volume,
-                spark: live.spark,
-              }
-            }
+            if (live) return { symbol: live.symbol, company: live.company, price: live.price, change: live.change, changePct: live.changePct, volume: live.volume, spark: live.spark }
             return { symbol: sym, company: sym, price: 0, change: 0, changePct: 0, volume: '--', spark: emptySpark }
           })
           setWatchlist(dbWatchlist)
@@ -908,7 +905,7 @@ export function PortfolioPage() {
   const openDrawer = async (symbol: string) => {
     // Fallback to market snapshot when Supabase is not configured
     if (!hasStockService()) {
-      const snap = marketSnapshots.find(m => m.symbol === symbol)
+      const snap = marketSnapshotsRef.current.find(m => m.symbol === symbol)
       if (snap) {
         setDrawerStock({
           symbol: snap.symbol,
@@ -1052,8 +1049,9 @@ export function PortfolioPage() {
 
   const handleEditHolding = (symbol: string) => {
     if (!requireAuth()) return
+    const found = holdings.find(h => h.symbol === symbol)
     setHoldModalMode('manage')
-    setHoldModalSymbol(symbol)
+    setHoldModalHolding(found ?? null)
     setHoldModalOpen(true)
   }
 
@@ -1067,11 +1065,6 @@ export function PortfolioPage() {
       })
     }
   }
-
-  const mvFmt = useMemo(() => fmtPkr(totalMV), [totalMV])
-  const dayFmt = useMemo(() => fmtPkrSigned(dayPL), [dayPL])
-  const totalFmt = useMemo(() => fmtPkrSigned(totalPL), [totalPL])
-  const sharesFmt = useMemo(() => fmtCompact(totalShares), [totalShares])
 
   return (
     <Box
@@ -1456,7 +1449,7 @@ export function PortfolioPage() {
                       lineHeight: 1,
                     }}
                   >
-                    {mvFmt}
+                    {fmtPkr(totalMV)}
                   </Typography>
                   <Box sx={{ width: 140, height: 44 }}>
                     <SparkLine
@@ -1478,19 +1471,19 @@ export function PortfolioPage() {
                 >
                   <StatTile
                     label="Day P/L"
-                    value={dayFmt}
+                    value={fmtPkrSigned(dayPL)}
                     positive={dayPL >= 0}
                     sub={`${dayPL >= 0 ? '+' : ''}${dayPLPct.toFixed(2)}% today`}
                   />
                   <StatTile
                     label="Total Return"
-                    value={totalFmt}
+                    value={fmtPkrSigned(totalPL)}
                     positive={totalPL >= 0}
                     sub={`${totalPL >= 0 ? '+' : ''}${totalPLPct.toFixed(2)}% all time`}
                   />
                   <StatTile
                     label="Total Shares"
-                    value={sharesFmt}
+                    value={fmtCompact(totalShares)}
                     sub={`${holdings.length} positions`}
                   />
                   <StatTile
@@ -1670,7 +1663,7 @@ export function PortfolioPage() {
                       onClick={() => {
                         if (!requireAuth()) return
                         setHoldModalMode('new')
-                        setHoldModalSymbol(undefined)
+                        setHoldModalHolding(null)
                         setHoldModalOpen(true)
                       }}
                     >
@@ -1796,7 +1789,7 @@ export function PortfolioPage() {
         holdings={holdings}
         onSave={handleSaveHolding}
         initialMode={holdModalMode}
-        initialSymbol={holdModalSymbol}
+        initialHolding={holdModalHolding}
         availableStocks={holdingAvailableStocks.length > 0 ? holdingAvailableStocks : undefined}
       />
       <WatchlistModal

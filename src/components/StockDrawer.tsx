@@ -469,7 +469,7 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
     }
   }, [range, stock, isXs])
 
-  if (!stock && !loading) return null
+  if (!stock && !loading && !error) return null
 
   const chartHeight = isXs ? 260 : 280
 

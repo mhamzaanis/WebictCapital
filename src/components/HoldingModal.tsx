@@ -45,7 +45,7 @@ type HoldingModalProps = {
   holdings: Holding[]
   onSave: (holding: Holding) => void
   initialMode?: 'new' | 'manage'
-  initialSymbol?: string
+  initialHolding?: Holding | null
   availableStocks?: { symbol: string; company: string; sector: string; price: number }[]
 }
 
@@ -220,12 +220,13 @@ function SaveBtn({
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 
-export function HoldingModal({ open, onClose, holdings, onSave, initialMode, initialSymbol, availableStocks: stocksProp }: HoldingModalProps) {
+export function HoldingModal({ open, onClose, holdings, onSave, initialMode, initialHolding, availableStocks: stocksProp }: HoldingModalProps) {
   const reduce = useReducedMotion()
 
   const stocks = stocksProp ?? availableStocksHardcoded
 
   const isManage = initialMode === 'manage'
+  const managedHolding = isManage ? (initialHolding ?? null) : null
 
   // New mode: selected stock
   const [selectedStock, setSelectedStock] = useState('')
@@ -247,25 +248,22 @@ export function HoldingModal({ open, onClose, holdings, onSave, initialMode, ini
   const [editShares, setEditShares] = useState('')
   const [editPrice, setEditPrice] = useState('')
 
-  const managedHolding = useMemo(() => holdings.find(h => h.symbol === initialSymbol) ?? null, [holdings, initialSymbol])
-
-  // Computed from lots
-  const totalShares = useMemo(() => lots.reduce((s, l) => s + l.shares, 0), [lots])
-  const avgCost = useMemo(() => {
-    const totalCost = lots.reduce((s, l) => s + l.shares * l.price, 0)
-    return totalShares > 0 ? totalCost / totalShares : 0
-  }, [lots, totalShares])
-  const totalCostBasis = useMemo(() => lots.reduce((s, l) => s + l.shares * l.price, 0), [lots])
-
-  const projectedAvg = useMemo(() => {
-    if (!buyShares || !buyPrice) return null
-    const ns = Number(buyShares)
-    const np = Number(buyPrice)
-    if (!ns || !np) return null
-    const newTotalCost = totalCostBasis + ns * np
-    const newTotalShares = totalShares + ns
-    return newTotalShares > 0 ? newTotalCost / newTotalShares : null
-  }, [lots, buyShares, buyPrice, totalShares, totalCostBasis])
+  // Single-pass computation from lots + inline buy form
+  const { totalShares, avgCost, totalCostBasis, projectedAvg } = useMemo(() => {
+    const shares = lots.reduce((s, l) => s + l.shares, 0)
+    const cost = lots.reduce((s, l) => s + l.shares * l.price, 0)
+    const avg = shares > 0 ? cost / shares : 0
+    let projAvg: number | null = null
+    if (buyShares && buyPrice) {
+      const ns = Number(buyShares)
+      const np = Number(buyPrice)
+      if (ns && np) {
+        const newShares = shares + ns
+        projAvg = newShares > 0 ? (cost + ns * np) / newShares : null
+      }
+    }
+    return { totalShares: shares, avgCost: avg, totalCostBasis: cost, projectedAvg: projAvg }
+  }, [lots, buyShares, buyPrice])
 
   // Current market price
   const currentPrice = isManage
@@ -295,7 +293,7 @@ export function HoldingModal({ open, onClose, holdings, onSave, initialMode, ini
   // Initialize on open
   useEffect(() => {
     if (!open) return
-    if (isManage && initialSymbol && managedHolding) {
+    if (isManage && managedHolding) {
       setLots(
         managedHolding.buyLots.length > 0
           ? managedHolding.buyLots.map(l => ({ ...l }))
@@ -313,7 +311,7 @@ export function HoldingModal({ open, onClose, holdings, onSave, initialMode, ini
     setEditingLotId(null)
     setEditShares('')
     setEditPrice('')
-  }, [open, initialMode, initialSymbol])
+  }, [open, initialMode, managedHolding])
 
   // ── Handlers ───────────────────────────────────────────────────────────────
 

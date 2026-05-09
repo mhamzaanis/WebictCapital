@@ -214,10 +214,10 @@ export function WatchlistModal({ open, onClose, watchlist, onAdd, availableStock
   const [fetchedStocks, setFetchedStocks] = useState<WatchItem[]>([])
   const [loading, setLoading] = useState(false)
 
-  // Fetch symbols from Supabase RPC when modal opens
+  // Use parent-provided stocks when available; fetch internally only as fallback
   useEffect(() => {
     if (!open) return
-    if (stocksProp && stocksProp.length > 0) {
+    if (stocksProp !== undefined) {
       setFetchedStocks(stocksProp)
       return
     }
@@ -228,19 +228,17 @@ export function WatchlistModal({ open, onClose, watchlist, onAdd, availableStock
       .finally(() => setLoading(false))
   }, [open, stocksProp])
 
-  const stocks = fetchedStocks
-
   const watchlistSymbols = useMemo(() => new Set(watchlist.map(w => w.symbol)), [watchlist])
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase().trim()
-    if (!q) return stocks
-    return stocks.filter(
+    if (!q) return fetchedStocks
+    return fetchedStocks.filter(
       s =>
         s.symbol.toLowerCase().includes(q) ||
         s.company.toLowerCase().includes(q)
     )
-  }, [query, stocks])
+  }, [query, fetchedStocks])
 
   const handleClose = () => {
     setQuery('')
