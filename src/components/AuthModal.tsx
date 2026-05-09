@@ -241,7 +241,7 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
           mt: 1.5,
           opacity: 0.7,
         }}>
-          Secured by Supabase · We never share your data
+          We never share your data
         </Typography>
       </Box>
     </Dialog>
