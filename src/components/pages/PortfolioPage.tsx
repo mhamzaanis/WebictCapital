@@ -446,7 +446,7 @@ const SparkLine = memo(function SparkLine({
 
 function WatchRow({ item, index, onClick }: { item: WatchItem; index: number; onClick?: () => void }) {
   const reduce = useReducedMotion()
-  const [hov, setHov] = useState(false)
+  // const [hov, setHov] = useState(false)
   const pos = item.change >= 0
 
   return (
@@ -462,7 +462,7 @@ function WatchRow({ item, index, onClick }: { item: WatchItem; index: number; on
         py: 1.1, pl: 0, pr: 0, borderRadius: '7px',
         minHeight: 64,
         maxHeight: 64,
-        bgcolor: hov ? 'rgba(10,36,99,0.03)' : 'transparent',
+        // bgcolor: hov ? 'rgba(10,36,99,0.03)' : 'transparent',
         transition: 'background-color 0.18s ease',
         cursor: onClick ? 'pointer' : 'default',
       }}
