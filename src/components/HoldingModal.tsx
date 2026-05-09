@@ -2,6 +2,7 @@ import CloseRoundedIcon from '@mui/icons-material/CloseRounded'
 import AddRoundedIcon from '@mui/icons-material/AddRounded'
 import EditRoundedIcon from '@mui/icons-material/EditRounded'
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded'
+import SearchRoundedIcon from '@mui/icons-material/SearchRounded'
 import {
   Box,
   Dialog,
@@ -9,7 +10,6 @@ import {
   Slide,
   Typography,
   TextField,
-  MenuItem,
 } from '@mui/material'
 import type { TransitionProps } from '@mui/material/transitions'
 import { motion, useReducedMotion } from 'motion/react'
@@ -144,9 +144,13 @@ const inputSx = {
   '& .MuiInputLabel-root': { fontFamily: serif, fontSize: 12, color: C.muted },
 }
 
-const selectSx = {
+const searchInputSx = {
   ...inputSx,
-  '& .MuiSelect-select': { fontFamily: mono, fontSize: 13 },
+  '& .MuiOutlinedInput-root': {
+    ...inputSx['& .MuiOutlinedInput-root'],
+    fontFamily: serif,
+  },
+  '& input': { fontFamily: serif },
 }
 
 function ActionBtn({
@@ -230,6 +234,7 @@ export function HoldingModal({ open, onClose, holdings, onSave, initialMode, ini
 
   // New mode: selected stock
   const [selectedStock, setSelectedStock] = useState('')
+  const [stockQuery, setStockQuery] = useState('')
 
   // Buy lots (shared across modes)
   const [lots, setLots] = useState<BuyLot[]>([])
@@ -273,12 +278,27 @@ export function HoldingModal({ open, onClose, holdings, onSave, initialMode, ini
       : 0
 
   const stockDetail = useMemo(() => stocks.find(s => s.symbol === selectedStock), [selectedStock])
+  const existingHolding = useMemo(
+    () => (!isManage && selectedStock ? holdings.find(h => h.symbol === selectedStock) ?? null : null),
+    [holdings, isManage, selectedStock]
+  )
+
+  const filteredStocks = useMemo(() => {
+    const q = stockQuery.trim().toLowerCase()
+    if (!q) return stocks
+    return stocks.filter((s) =>
+      s.symbol.toLowerCase().includes(q)
+      || s.company.toLowerCase().includes(q)
+      || s.sector.toLowerCase().includes(q)
+    )
+  }, [stockQuery, stocks])
 
   const totalPL = totalShares * currentPrice - totalCostBasis
   const totalPLPct = totalCostBasis > 0 ? (totalPL / totalCostBasis) * 100 : 0
 
   const resetForm = () => {
     setSelectedStock('')
+    setStockQuery('')
     setLots([])
     setShowBuyForm(false)
     setShowSellForm(false)
@@ -312,6 +332,15 @@ export function HoldingModal({ open, onClose, holdings, onSave, initialMode, ini
     setEditShares('')
     setEditPrice('')
   }, [open, initialMode, managedHolding])
+
+  useEffect(() => {
+    if (!open || isManage) return
+    if (existingHolding) {
+      setLots(existingHolding.buyLots.map(l => ({ ...l })))
+      return
+    }
+    if (selectedStock) setLots([])
+  }, [existingHolding, isManage, open, selectedStock])
 
   // ── Handlers ───────────────────────────────────────────────────────────────
 
@@ -366,6 +395,17 @@ export function HoldingModal({ open, onClose, holdings, onSave, initialMode, ini
     if (isManage && managedHolding) {
       onSave({
         ...managedHolding,
+        shares: totalShares,
+        avgCost,
+        price: currentPrice,
+        marketValue: totalShares * currentPrice,
+        totalPL,
+        totalPLPct,
+        buyLots: lots,
+      })
+    } else if (existingHolding) {
+      onSave({
+        ...existingHolding,
         shares: totalShares,
         avgCost,
         price: currentPrice,
@@ -505,22 +545,100 @@ export function HoldingModal({ open, onClose, holdings, onSave, initialMode, ini
             transition={{ duration: 0.32 }}
           >
             <TextField
-              select
-              label="Select Stock"
-              value={selectedStock}
-              onChange={(e) => setSelectedStock(e.target.value)}
+              label="Search stock"
+              placeholder="Type a symbol or company…"
+              value={stockQuery}
+              onChange={(e) => setStockQuery(e.target.value)}
               fullWidth
-              sx={selectSx}
+              sx={searchInputSx}
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <Box sx={{ display: 'flex', alignItems: 'center', color: C.muted, mr: 0.5 }}>
+                      <SearchRoundedIcon sx={{ fontSize: 18 }} />
+                    </Box>
+                  ),
+                },
+              }}
+            />
+
+            <Box
+              sx={{
+                mt: 1,
+                border: `1px solid ${C.border}`,
+                borderRadius: '10px',
+                bgcolor: C.bg,
+                maxHeight: 240,
+                overflowY: 'auto',
+              }}
             >
-              <MenuItem value="" disabled>Choose a stock…</MenuItem>
-              {stocks
-                .filter(s => !holdings.some(h => h.symbol === s.symbol))
-                .map(s => (
-                  <MenuItem key={s.symbol} value={s.symbol}>
-                    {s.symbol} — {s.company} · Rs. {fmt(s.price)}
-                  </MenuItem>
-                ))}
-            </TextField>
+              {filteredStocks.length === 0 ? (
+                <Typography
+                  sx={{
+                    px: 1.5,
+                    py: 1.2,
+                    fontSize: 12,
+                    color: C.muted,
+                    fontFamily: serif,
+                  }}
+                >
+                  No matches found.
+                </Typography>
+              ) : (
+                filteredStocks.map((s) => {
+                  const isSelected = s.symbol === selectedStock
+                  const alreadyHeld = holdings.some(h => h.symbol === s.symbol)
+                  return (
+                    <Box
+                      key={s.symbol}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => { setSelectedStock(s.symbol); setStockQuery(s.symbol) }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          setSelectedStock(s.symbol)
+                          setStockQuery(s.symbol)
+                        }
+                      }}
+                      sx={{
+                        px: 1.5,
+                        py: 1.1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        cursor: 'pointer',
+                        borderBottom: `1px solid ${C.border}`,
+                        bgcolor: isSelected ? C.surface : 'transparent',
+                        transition: 'background 0.2s ease',
+                        '&:last-of-type': { borderBottom: 'none' },
+                        '&:hover': { bgcolor: C.surfaceDeep },
+                        outline: 'none',
+                      }}
+                    >
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography sx={{ fontFamily: mono, fontSize: 12, fontWeight: 700, color: C.ink }}>
+                          {s.symbol}
+                        </Typography>
+                        <Typography sx={{ fontFamily: serif, fontSize: 11, color: C.ink2 }}>
+                          {s.company}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ textAlign: 'right', flexShrink: 0 }}>
+                        <Typography sx={{ fontFamily: mono, fontSize: 11.5, color: C.ink }}>
+                          Rs. {fmt(s.price)}
+                        </Typography>
+                        {alreadyHeld && (
+                          <Typography sx={{ fontFamily: mono, fontSize: 9.5, color: C.muted }}>
+                            already held
+                          </Typography>
+                        )}
+                      </Box>
+                    </Box>
+                  )
+                })
+              )}
+            </Box>
           </Box>
         )}
 
