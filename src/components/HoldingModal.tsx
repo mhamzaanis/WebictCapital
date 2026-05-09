@@ -871,8 +871,7 @@ export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initia
                 onChange={(e) => setBuyDate(e.target.value)}
                 fullWidth
                 sx={{ ...inputSx, gridColumn: '1 / -1' }}
-                slotProps={{ htmlInput: { max: todayIso() } }}
-                InputLabelProps={{ shrink: true }}
+                slotProps={{ htmlInput: { max: todayIso() }, inputLabel: { shrink: true } }}
               />
             </Box>
 
