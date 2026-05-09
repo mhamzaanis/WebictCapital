@@ -6,9 +6,13 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 import TrendingDownIcon from '@mui/icons-material/TrendingDown'
 import StarBorderIcon from '@mui/icons-material/StarBorder'
 import ShowChartIcon from '@mui/icons-material/ShowChart'
+import InboxOutlinedIcon from '@mui/icons-material/InboxOutlined'
+import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined'
+import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined'
+import GoogleIcon from '@mui/icons-material/Google'
 import { Box, Container, Divider, IconButton, Menu, MenuItem, Stack, Typography } from '@mui/material'
 import { motion, useReducedMotion } from 'motion/react'
-import { useState, useMemo, memo } from 'react'
+import { useState, useMemo, memo, useEffect, useCallback } from 'react'
 import ReactECharts from 'echarts-for-react'
 import { MotionReveal } from '../animations/MotionReveal'
 import { CustomButton } from '../CustomButton'
@@ -16,7 +20,10 @@ import { StockDrawer, type StockDetail } from '../StockDrawer'
 import { MarketSummaryModal } from '../MarketSummaryModal'
 import { HoldingModal, type Holding } from '../HoldingModal'
 import { WatchlistModal, type WatchItem } from '../WatchlistModal'
-import { hasStockService, fetchStockDetail, addToWatchlist as addToWatchlistDb } from '../../lib/stockService'
+import { hasStockService, fetchStockDetail, addToWatchlist as addToWatchlistDb, insertUserTrade, deleteUserTradesBySymbol, fetchUserTrades, fetchWatchlistSymbols, fetchUniqueSymbols, type UserTrade, type MarketSymbolSnapshot } from '../../lib/stockService'
+import { useAuth } from '../../context/AuthContext'
+import { AuthModal } from '../AuthModal'
+
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -31,36 +38,7 @@ type HistoryEvent = {
 
 // ─── Data ──────────────────────────────────────────────────────────────────────
 
-const initialHoldings: Holding[] = [
-  { symbol: 'HBL', company: 'Habib Bank Ltd', sector: 'Banking', shares: 408_011, price: 117.03, avgCost: 119.58, marketValue: 47_749_417, todayPL: 1_394, todayPLPct: 0.35, totalPL: -10_109, totalPLPct: -2.48, buyLots: [{ id: 'hbl-1', shares: 200_000, price: 120.5 }, { id: 'hbl-2', shares: 208_011, price: 118.7 }] },
-  { symbol: 'NESTLE', company: 'Nestlé Pakistan', sector: 'Consumer', shares: 5_300, price: 5_725.49, avgCost: 5_300.0, marketValue: 30_345_097, todayPL: 425_490, todayPLPct: 8.03, totalPL: 425_490, totalPLPct: 8.03, buyLots: [{ id: 'nest-1', shares: 5_300, price: 5_300 }] },
-  { symbol: 'TRG', company: 'TRG Pakistan', sector: 'Technology', shares: 26_040, price: 130.2, avgCost: 143.8, marketValue: 3_390_408, todayPL: -23_760, todayPLPct: -9.12, totalPL: -23_760, totalPLPct: -9.12, buyLots: [{ id: 'trg-1', shares: 15_000, price: 145.0 }, { id: 'trg-2', shares: 11_040, price: 142.2 }] },
-  { symbol: 'MARI', company: 'Mari Petroleum', sector: 'Energy', shares: 12_000, price: 445.75, avgCost: 430.5, marketValue: 5_349_000, todayPL: 48_000, todayPLPct: 0.91, totalPL: 182_400, totalPLPct: 3.53, buyLots: [{ id: 'mari-1', shares: 12_000, price: 430.5 }] },
-  { symbol: 'SYS', company: 'Systems Ltd', sector: 'Technology', shares: 18_500, price: 312.6, avgCost: 304.2, marketValue: 5_783_100, todayPL: -12_950, todayPLPct: -0.22, totalPL: 156_200, totalPLPct: 2.78, buyLots: [{ id: 'sys-1', shares: 10_000, price: 300.0 }, { id: 'sys-2', shares: 8_500, price: 309.1 }] },
-]
-
-const historyEvents: HistoryEvent[] = [
-  { symbol: 'KEL', type: 'profit', message: 'Total profit realised on full exit', profit: 147_100, profitPct: 437.02, date: '28 Dec' },
-  { symbol: 'HBL', type: 'profit', message: 'Partial sell — profit realised', profit: 23_649, profitPct: 10.22, date: '21 Dec' },
-  { symbol: 'EFERT', type: 'dividend', message: 'Dividend received', profit: 42_500, profitPct: 3.8, date: '15 Dec' },
-  { symbol: 'TRG', type: 'loss', message: 'Stop-loss triggered', profit: -11_240, profitPct: -4.3, date: '10 Dec' },
-]
-
-const initialWatchlist: WatchItem[] = [
-  { symbol: 'OGDC', company: 'Oil & Gas Dev. Co.', price: 158.4, change: 2.3, changePct: 1.47, volume: '4.2M', spark: [14, 15, 13, 16, 12, 11, 10, 9, 11, 10, 9, 8] },
-  { symbol: 'ENGRO', company: 'Engro Corporation', price: 286.0, change: -4.1, changePct: -1.41, volume: '1.8M', spark: [9, 10, 11, 13, 15, 17, 18, 20, 21, 22, 20, 21] },
-  { symbol: 'LUCK', company: 'Lucky Cement', price: 1_024.5, change: 8.7, changePct: 0.86, volume: '890K', spark: [20, 18, 17, 16, 15, 14, 12, 10, 9, 8, 7, 6] },
-  { symbol: 'PSO', company: 'Pakistan State Oil', price: 312.9, change: -3.6, changePct: -1.14, volume: '3.1M', spark: [8, 10, 11, 13, 14, 17, 19, 20, 21, 22, 21, 23] },
-  { symbol: 'MCB', company: 'MCB Bank Ltd', price: 198.6, change: 1.2, changePct: 0.61, volume: '2.4M', spark: [10, 11, 12, 10, 13, 14, 15, 14, 16, 17, 16, 18] },
-]
-
-const watchDetails: Record<string, StockDetail> = {
-  OGDC: { symbol: 'OGDC', company: 'Oil & Gas Development Co.', sector: 'Energy', industry: 'Oil & Gas Exploration', price: 158.4, change: 2.3, changePct: 1.47, volume: '4.2M', avgVolume: '3.8M', sharesOutstanding: '4.3B', open: 156.1, previousClose: 156.1, dayLow: 155.2, dayHigh: 159.8, week52Low: 112.5, week52High: 178.9, week52ChangePct: 28.4, eps: 28.45, pe: 5.57, marketCap: 'Rs. 681B', dividendYield: 8.2, beta: 0.72, roe: 24.3, debtToEquity: 0.18, priceToBook: 1.12, spark: [14, 15, 13, 16, 12, 11, 10, 9, 11, 10, 9, 8], history30: [148, 150, 152, 149, 151, 153, 155, 154, 156, 158, 157, 159, 160, 158, 156, 155, 153, 154, 156, 157, 159, 158, 160, 159, 157, 158, 156, 155, 157, 158.4], historyLabels: ['1 Apr', '2 Apr', '3 Apr', '4 Apr', '5 Apr', '8 Apr', '9 Apr', '10 Apr', '11 Apr', '12 Apr', '15 Apr', '16 Apr', '17 Apr', '18 Apr', '19 Apr', '22 Apr', '23 Apr', '24 Apr', '25 Apr', '26 Apr', '29 Apr', '30 Apr', '1 May', '2 May', '3 May', '6 May', '7 May', '8 May', '9 May', '10 May'] },
-  ENGRO: { symbol: 'ENGRO', company: 'Engro Corporation', sector: 'Conglomerate', industry: 'Diversified Holdings', price: 286.0, change: -4.1, changePct: -1.41, volume: '1.8M', avgVolume: '2.1M', sharesOutstanding: '1.14B', open: 290.1, previousClose: 290.1, dayLow: 284.5, dayHigh: 292.0, week52Low: 241.0, week52High: 345.5, week52ChangePct: -8.2, eps: 42.18, pe: 6.78, marketCap: 'Rs. 327B', dividendYield: 5.8, beta: 0.89, roe: 18.6, debtToEquity: 0.62, priceToBook: 1.45, spark: [9, 10, 11, 13, 15, 17, 18, 20, 21, 22, 20, 21], history30: [280, 282, 279, 283, 285, 288, 290, 292, 289, 291, 294, 293, 295, 292, 290, 288, 286, 287, 289, 291, 290, 288, 287, 285, 284, 286, 288, 287, 285, 286], historyLabels: ['1 Apr', '2 Apr', '3 Apr', '4 Apr', '5 Apr', '8 Apr', '9 Apr', '10 Apr', '11 Apr', '12 Apr', '15 Apr', '16 Apr', '17 Apr', '18 Apr', '19 Apr', '22 Apr', '23 Apr', '24 Apr', '25 Apr', '26 Apr', '29 Apr', '30 Apr', '1 May', '2 May', '3 May', '6 May', '7 May', '8 May', '9 May', '10 May'] },
-  LUCK: { symbol: 'LUCK', company: 'Lucky Cement', sector: 'Cement', industry: 'Construction Materials', price: 1024.5, change: 8.7, changePct: 0.86, volume: '890K', avgVolume: '1.1M', sharesOutstanding: '294M', open: 1015.8, previousClose: 1015.8, dayLow: 1010.2, dayHigh: 1030.0, week52Low: 785.0, week52High: 1180.5, week52ChangePct: 12.6, eps: 156.2, pe: 6.56, marketCap: 'Rs. 302B', dividendYield: 3.4, beta: 1.12, roe: 16.8, debtToEquity: 0.41, priceToBook: 1.28, spark: [20, 18, 17, 16, 15, 14, 12, 10, 9, 8, 7, 6], history30: [980, 985, 990, 988, 995, 1000, 1005, 1010, 1008, 1012, 1018, 1020, 1015, 1022, 1025, 1020, 1018, 1015, 1020, 1022, 1025, 1028, 1030, 1026, 1022, 1020, 1024, 1022, 1025, 1024.5], historyLabels: ['1 Apr', '2 Apr', '3 Apr', '4 Apr', '5 Apr', '8 Apr', '9 Apr', '10 Apr', '11 Apr', '12 Apr', '15 Apr', '16 Apr', '17 Apr', '18 Apr', '19 Apr', '22 Apr', '23 Apr', '24 Apr', '25 Apr', '26 Apr', '29 Apr', '30 Apr', '1 May', '2 May', '3 May', '6 May', '7 May', '8 May', '9 May', '10 May'] },
-  PSO: { symbol: 'PSO', company: 'Pakistan State Oil', sector: 'Energy', industry: 'Oil & Gas Marketing', price: 312.9, change: -3.6, changePct: -1.14, volume: '3.1M', avgVolume: '2.7M', sharesOutstanding: '470M', open: 316.5, previousClose: 316.5, dayLow: 310.8, dayHigh: 318.2, week52Low: 248.0, week52High: 420.0, week52ChangePct: -5.8, eps: 58.73, pe: 5.33, marketCap: 'Rs. 147B', dividendYield: 7.5, beta: 0.95, roe: 22.1, debtToEquity: 0.85, priceToBook: 0.94, spark: [8, 10, 11, 13, 14, 17, 19, 20, 21, 22, 21, 23], history30: [305, 308, 310, 307, 312, 315, 318, 316, 320, 322, 319, 317, 315, 318, 320, 322, 319, 316, 314, 317, 319, 321, 318, 315, 313, 315, 318, 316, 314, 312.9], historyLabels: ['1 Apr', '2 Apr', '3 Apr', '4 Apr', '5 Apr', '8 Apr', '9 Apr', '10 Apr', '11 Apr', '12 Apr', '15 Apr', '16 Apr', '17 Apr', '18 Apr', '19 Apr', '22 Apr', '23 Apr', '24 Apr', '25 Apr', '26 Apr', '29 Apr', '30 Apr', '1 May', '2 May', '3 May', '6 May', '7 May', '8 May', '9 May', '10 May'] },
-  MCB: { symbol: 'MCB', company: 'MCB Bank Ltd', sector: 'Banking', industry: 'Commercial Banks', price: 198.6, change: 1.2, changePct: 0.61, volume: '2.4M', avgVolume: '2.2M', sharesOutstanding: '1.18B', open: 197.4, previousClose: 197.4, dayLow: 196.5, dayHigh: 200.2, week52Low: 162.0, week52High: 235.0, week52ChangePct: 3.1, eps: 35.82, pe: 5.54, marketCap: 'Rs. 235B', dividendYield: 9.1, beta: 0.68, roe: 20.4, debtToEquity: 0.08, priceToBook: 1.05, spark: [10, 11, 12, 10, 13, 14, 15, 14, 16, 17, 16, 18], history30: [190, 192, 191, 193, 195, 194, 196, 198, 197, 199, 200, 198, 197, 196, 195, 194, 196, 198, 199, 197, 198, 200, 199, 197, 196, 198, 199, 197, 198, 198.6], historyLabels: ['1 Apr', '2 Apr', '3 Apr', '4 Apr', '5 Apr', '8 Apr', '9 Apr', '10 Apr', '11 Apr', '12 Apr', '15 Apr', '16 Apr', '17 Apr', '18 Apr', '19 Apr', '22 Apr', '23 Apr', '24 Apr', '25 Apr', '26 Apr', '29 Apr', '30 Apr', '1 May', '2 May', '3 May', '6 May', '7 May', '8 May', '9 May', '10 May'] },
-}
+const emptySpark: number[] = []
 
 type MarketHistory = Record<'1W' | '1M' | 'YTD' | '1Y', { labels: string[]; values: number[] }>
 
@@ -284,6 +262,48 @@ function PLBadge({ value, pct }: { value: number; pct: number }) {
       >
         {positive ? '+' : ''}{Math.abs(pct).toFixed(2)}%
       </Typography>
+    </Box>
+  )
+}
+
+/** Empty state placeholder */
+function EmptyState({ icon, title, subtitle }: { icon: React.ReactNode; title: string; subtitle: string }) {
+  return (
+    <Box
+      sx={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 1.4,
+        py: 5,
+        px: 3,
+      }}
+    >
+      <Box
+        sx={{
+          width: 48,
+          height: 48,
+          borderRadius: '12px',
+          bgcolor: 'rgba(10,36,99,0.04)',
+          border: '1px solid rgba(10,36,99,0.08)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'var(--wc-text-secondary)',
+        }}
+      >
+        {icon}
+      </Box>
+      <Box sx={{ textAlign: 'center' }}>
+        <Typography sx={{ fontSize: 12.5, fontWeight: 600, color: 'var(--wc-text-primary)', fontFamily: SERIF, mb: 0.3 }}>
+          {title}
+        </Typography>
+        <Typography sx={{ fontSize: 11, color: 'var(--wc-text-secondary)', lineHeight: 1.5 }}>
+          {subtitle}
+        </Typography>
+      </Box>
     </Box>
   )
 }
@@ -610,10 +630,10 @@ function WatchRow({ item, index, onClick }: { item: WatchItem; index: number; on
 
 // ─── History Row ──────────────────────────────────────────────────────────────
 
-const histCfg: Record<HistoryEvent['type'], { color: string; label: string }> = {
-  profit: { color: 'var(--wc-success)', label: 'PROFIT' },
-  dividend: { color: '#b77a12', label: 'DIVIDEND' },
-  loss: { color: 'var(--wc-error)', label: 'LOSS' },
+const histCfg: Record<HistoryEvent['type'], { color: string; label: string; icon: React.ReactNode }> = {
+  profit: { color: 'var(--wc-success)', label: 'PROFIT', icon: <TrendingUpIcon sx={{ fontSize: 14 }} /> },
+  dividend: { color: '#b77a12', label: 'DIVIDEND', icon: <StarBorderIcon sx={{ fontSize: 14 }} /> },
+  loss: { color: 'var(--wc-error)', label: 'LOSS', icon: <TrendingDownIcon sx={{ fontSize: 14 }} /> },
 }
 
 function HistRow({ event, index }: { event: HistoryEvent; index: number }) {
@@ -649,7 +669,8 @@ function HistRow({ event, index }: { event: HistoryEvent; index: number }) {
 
       {/* Details */}
       <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mb: 0.3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6, mb: 0.3 }}>
+          <Box sx={{ color: cfg.color, display: 'flex', alignItems: 'center' }}>{cfg.icon}</Box>
           <Typography
             sx={{
               fontSize: 9,
@@ -723,20 +744,207 @@ export function PortfolioPage() {
   const [watchModalOpen, setWatchModalOpen] = useState(false)
   const [holdModalMode, setHoldModalMode] = useState<'new' | 'manage'>('new')
   const [holdModalSymbol, setHoldModalSymbol] = useState<string | undefined>(undefined)
-  const [holdings, setHoldings] = useState<Holding[]>(initialHoldings)
-  const [watchlist, setWatchlist] = useState<WatchItem[]>(initialWatchlist)
+  const [holdings, setHoldings] = useState<Holding[]>([])
+  const [watchlist, setWatchlist] = useState<WatchItem[]>([])
+  const [historyEvents, setHistoryEvents] = useState<HistoryEvent[]>([])
   const [drawerLoading, setDrawerLoading] = useState(false)
   const [drawerError, setDrawerError] = useState<string | null>(null)
+  const [authModalOpen, setAuthModalOpen] = useState(false)
+  const [marketModalIndex, setMarketModalIndex] = useState<'kse100' | 'kse30'>('kse100')
+  const [marketSnapshots, setMarketSnapshots] = useState<MarketSymbolSnapshot[]>([])
+  const [sectorAllocation, setSectorAllocation] = useState<{ sector: string; value: number; color: string }[]>([])
+
+  const { user, loading: authLoading, clearError } = useAuth()
+  const isLocked = !authLoading && !user
+
+  useEffect(() => {
+    if (isLocked) setAuthModalOpen(true)
+  }, [isLocked])
+
+  // Fetch live market snapshots from Supabase for modals and portfolio calculations
+  useEffect(() => {
+    if (!hasStockService()) return
+    fetchUniqueSymbols().then(setMarketSnapshots).catch(() => setMarketSnapshots([]))
+  }, [user])
+
+  // Load user's holdings and watchlist — merge trades with live market data
+  useEffect(() => {
+    if (!user || authLoading) return
+
+    const loadUserData = async () => {
+      try {
+        // Fetch trades and live market data in parallel
+        const [trades, marketData] = await Promise.all([
+          fetchUserTrades(),
+          hasStockService() ? fetchUniqueSymbols() : Promise.resolve([] as MarketSymbolSnapshot[]),
+        ])
+
+        // Build a lookup map from market data: symbol → MarketSymbolSnapshot
+        const marketMap = new Map<string, MarketSymbolSnapshot>()
+        for (const m of marketData) {
+          marketMap.set(m.symbol, m)
+        }
+
+        // Aggregate trades: BUY adds, SELL subtracts
+        const holdingsMap = new Map<string, { quantity: number; totalCost: number; buys: UserTrade[]; sells: UserTrade[] }>()
+        for (const t of trades) {
+          const sym = t.symbol
+          if (!holdingsMap.has(sym)) holdingsMap.set(sym, { quantity: 0, totalCost: 0, buys: [], sells: [] })
+          const entry = holdingsMap.get(sym)!
+          if (t.trade_type === 'BUY') {
+            entry.quantity += t.quantity
+            entry.totalCost += t.quantity * t.price
+            entry.buys.push(t)
+          } else {
+            entry.quantity -= t.quantity
+            entry.totalCost -= t.quantity * t.price
+            entry.sells.push(t)
+          }
+        }
+
+        // Build holdings enriched with live market prices and sectors
+        let calcTotalMV = 0
+        const sectorMap = new Map<string, number>()
+        const sectorColors = ['var(--wc-primary)', '#b77a12', '#0d5c32', '#7c3aed', '#1a4fa8', '#6366f1']
+
+        const userHoldings: Holding[] = []
+        for (const [symbol, data] of holdingsMap) {
+          if (data.quantity <= 0) continue
+
+          const live = marketMap.get(symbol)
+          const currentPrice = live?.price ?? data.totalCost / data.quantity
+          const currentValue = currentPrice * data.quantity
+          const avgCost = data.totalCost / data.quantity
+          const totalPL = currentValue - data.totalCost
+          const totalPLPct = data.totalCost !== 0 ? (totalPL / data.totalCost) * 100 : 0
+
+          calcTotalMV += currentValue
+
+          const sector = (live as any)?.sector || live?.company || 'Unclassified'
+          const shortSector = sector.length > 20 ? sector.slice(0, 18) + '...' : sector
+          sectorMap.set(shortSector, (sectorMap.get(shortSector) ?? 0) + currentValue)
+
+          userHoldings.push({
+            symbol,
+            company: live?.company ?? symbol,
+            sector: shortSector,
+            shares: data.quantity,
+            price: currentPrice,
+            avgCost,
+            marketValue: currentValue,
+            todayPL: 0,
+            todayPLPct: 0,
+            totalPL,
+            totalPLPct,
+            buyLots: data.buys.map(b => ({ id: `${symbol.toLowerCase()}-${b.id}`, shares: b.quantity, price: b.price })),
+          })
+        }
+
+        setHoldings(userHoldings)
+
+        // Build dynamic sector allocation from live data
+        const sectorAlloc = Array.from(sectorMap.entries())
+          .map(([sector, value], i) => ({
+            sector,
+            value,
+            color: sectorColors[i % sectorColors.length],
+          }))
+          .filter(s => s.value > 0)
+          .sort((a, b) => b.value - a.value)
+        // Store in a ref so we don't need to recalc it in useMemo
+        setSectorAllocation(sectorAlloc)
+
+        // Build trade history from all trades sorted by date
+        const events: HistoryEvent[] = trades
+          .sort((a, b) => b.trade_date.localeCompare(a.trade_date))
+          .slice(0, 10)
+          .map(t => ({
+            symbol: t.symbol,
+            type: t.trade_type === 'BUY' ? 'profit' : 'loss',
+            message: t.trade_type === 'BUY' ? 'Buy order recorded' : 'Sell order recorded',
+            profit: t.quantity * t.price,
+            profitPct: 0,
+            date: new Date(t.trade_date).toLocaleDateString('en-PK', { day: 'numeric', month: 'short' }),
+          }))
+        setHistoryEvents(events)
+
+        // Load watchlist from DB, enriched with live market data
+        const symbols = await fetchWatchlistSymbols()
+        if (symbols.length > 0) {
+          const dbWatchlist: WatchItem[] = symbols.map(sym => {
+            const live = marketMap.get(sym)
+            if (live) {
+              return {
+                symbol: live.symbol,
+                company: live.company,
+                price: live.price,
+                change: live.change,
+                changePct: live.changePct,
+                volume: live.volume,
+                spark: live.spark,
+              }
+            }
+            return { symbol: sym, company: sym, price: 0, change: 0, changePct: 0, volume: '--', spark: emptySpark }
+          })
+          setWatchlist(dbWatchlist)
+        } else {
+          setWatchlist([])
+        }
+      } catch {
+        // Silently degrade — local state remains
+      }
+    }
+
+    loadUserData()
+  }, [user, authLoading])
+
+  // Guard: require auth before performing an action. Returns true if allowed.
+  const requireAuth = useCallback((): boolean => {
+    if (user) return true
+    setAuthModalOpen(true)
+    return false
+  }, [user])
 
   const openDrawer = async (symbol: string) => {
-    // Fallback to hardcoded data when Supabase is not configured
+    // Fallback to market snapshot when Supabase is not configured
     if (!hasStockService()) {
-      const detail = watchDetails[symbol]
-      if (detail) { setDrawerStock(detail); setDrawerOpen(true) }
+      const snap = marketSnapshots.find(m => m.symbol === symbol)
+      if (snap) {
+        setDrawerStock({
+          symbol: snap.symbol,
+          company: snap.company,
+          sector: (snap as any).sector ?? '',
+          industry: '',
+          price: snap.price,
+          change: snap.change,
+          changePct: snap.changePct,
+          volume: snap.volume,
+          avgVolume: '--',
+          sharesOutstanding: 'N/A',
+          open: 0,
+          previousClose: 0,
+          dayLow: 0,
+          dayHigh: 0,
+          week52Low: 0,
+          week52High: 0,
+          week52ChangePct: 0,
+          eps: 0,
+          pe: 0,
+          marketCap: 'N/A',
+          dividendYield: 0,
+          beta: 0,
+          roe: 0,
+          debtToEquity: 0,
+          priceToBook: 0,
+          spark: snap.spark,
+          history30: snap.spark,
+          historyLabels: [],
+        })
+        setDrawerOpen(true)
+      }
       return
     }
 
-    // Open dialog immediately with loading state
     setDrawerLoading(true)
     setDrawerError(null)
     setDrawerStock(null)
@@ -765,15 +973,31 @@ export function PortfolioPage() {
   const totalPLPct = useMemo(() => totalMV - totalPL !== 0 ? (totalPL / (totalMV - totalPL)) * 100 : 0, [totalMV, totalPL])
   const totalShares = useMemo(() => holdings.reduce((s, h) => s + h.shares, 0), [holdings])
 
-  const sectorAllocation = useMemo(() => [
-    { sector: 'Banking', value: holdings.filter(h => h.sector === 'Banking').reduce((s, h) => s + h.marketValue, 0), color: 'var(--wc-primary)' },
-    { sector: 'Consumer', value: holdings.filter(h => h.sector === 'Consumer').reduce((s, h) => s + h.marketValue, 0), color: '#b77a12' },
-    { sector: 'Technology', value: holdings.filter(h => h.sector === 'Technology').reduce((s, h) => s + h.marketValue, 0), color: '#0d5c32' },
-    { sector: 'Energy', value: holdings.filter(h => h.sector === 'Energy').reduce((s, h) => s + h.marketValue, 0), color: '#7c3aed' },
-  ].filter(s => s.value > 0).sort((a, b) => b.value - a.value), [holdings])
+  // Build enriched watchlist-modal stocks from live market snapshots
+  const watchlistAvailableStocks = useMemo((): WatchItem[] => {
+    return marketSnapshots.map(m => ({
+      symbol: m.symbol,
+      company: m.company,
+      price: m.price,
+      change: m.change,
+      changePct: m.changePct,
+      volume: m.volume,
+      spark: m.spark,
+    }))
+  }, [marketSnapshots])
+
+  // Build enriched holding-modal stocks from live market snapshots
+  const holdingAvailableStocks = useMemo(() => {
+    return marketSnapshots.map(m => ({
+      symbol: m.symbol,
+      company: m.company,
+      sector: (m as any).sector ?? '',
+      price: m.price,
+    }))
+  }, [marketSnapshots])
 
   // ── Modal handlers ───────────────────────────────────────────────────────
-  const handleSaveHolding = (holding: Holding) => {
+  const handleSaveHolding = async (holding: Holding) => {
     setHoldings(prev => {
       const idx = prev.findIndex(h => h.symbol === holding.symbol)
       if (idx >= 0) {
@@ -783,6 +1007,26 @@ export function PortfolioPage() {
       }
       return [...prev, holding]
     })
+
+    // Persist to Supabase if authenticated
+    if (user) {
+      try {
+        // Delete existing trades for this symbol, then re-insert from buyLots
+        await deleteUserTradesBySymbol(holding.symbol)
+        const today = new Date().toISOString().slice(0, 10)
+        for (const lot of holding.buyLots) {
+          await insertUserTrade({
+            symbol: holding.symbol,
+            trade_type: 'BUY',
+            quantity: lot.shares,
+            price: lot.price,
+            trade_date: today,
+          })
+        }
+      } catch {
+        // Silently degrade — local state remains updated
+      }
+    }
   }
 
   const handleAddToWatchlist = (item: WatchItem) => {
@@ -807,13 +1051,21 @@ export function PortfolioPage() {
   }
 
   const handleEditHolding = (symbol: string) => {
+    if (!requireAuth()) return
     setHoldModalMode('manage')
     setHoldModalSymbol(symbol)
     setHoldModalOpen(true)
   }
 
-  const handleDeleteHolding = (symbol: string) => {
+  const handleDeleteHolding = async (symbol: string) => {
+    if (!requireAuth()) return
     setHoldings(prev => prev.filter(h => h.symbol !== symbol))
+
+    if (user) {
+      deleteUserTradesBySymbol(symbol).catch(() => {
+        // Silently degrade
+      })
+    }
   }
 
   const mvFmt = useMemo(() => fmtPkr(totalMV), [totalMV])
@@ -920,7 +1172,7 @@ export function PortfolioPage() {
                   </Typography>
                 </Box>
                 <Typography sx={{ fontSize: 11, color: 'var(--wc-text-secondary)', fontFamily: NUMBER_FONT }}>
-                  {marketSummary.tradeDate}
+                  {new Date(marketSummary.tradeDate).toLocaleDateString('en-PK', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
                 </Typography>
               </Box>
 
@@ -932,14 +1184,27 @@ export function PortfolioPage() {
                 }}
               >
                 <Box
-                  onClick={() => setMarketModalOpen(true)}
+                  onClick={() => { setMarketModalIndex('kse100'); setMarketModalOpen(true) }}
                   sx={{
                     p: 2,
                     border: '1px solid var(--wc-divider)',
                     borderRadius: 1.5,
-                    bgcolor: 'var(--wc-paper)',
+                    bgcolor: marketSummary.kse100_change >= 0 ? 'rgba(13,92,50,0.03)' : 'rgba(180,40,58,0.03)',
                     cursor: 'pointer',
+                    position: 'relative',
+                    overflow: 'hidden',
                     transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: '3px',
+                      background: marketSummary.kse100_change >= 0
+                        ? 'linear-gradient(90deg, var(--wc-success), rgba(13,92,50,0.2))'
+                        : 'linear-gradient(90deg, var(--wc-error), rgba(180,40,58,0.2))',
+                    },
                     '&:hover': { borderColor: 'var(--wc-primary)', boxShadow: '0 6px 24px rgba(10,36,99,0.08)' },
                   }}
                 >
@@ -973,14 +1238,27 @@ export function PortfolioPage() {
                   </Box>
                 </Box>
                 <Box
-                  onClick={() => setMarketModalOpen(true)}
+                  onClick={() => { setMarketModalIndex('kse30'); setMarketModalOpen(true) }}
                   sx={{
                     p: 2,
                     border: '1px solid var(--wc-divider)',
                     borderRadius: 1.5,
-                    bgcolor: 'var(--wc-paper)',
+                    bgcolor: marketSummary.kse30_change >= 0 ? 'rgba(13,92,50,0.03)' : 'rgba(180,40,58,0.03)',
                     cursor: 'pointer',
+                    position: 'relative',
+                    overflow: 'hidden',
                     transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: '3px',
+                      background: marketSummary.kse30_change >= 0
+                        ? 'linear-gradient(90deg, var(--wc-success), rgba(13,92,50,0.2))'
+                        : 'linear-gradient(90deg, var(--wc-error), rgba(180,40,58,0.2))',
+                    },
                     '&:hover': { borderColor: 'var(--wc-primary)', boxShadow: '0 6px 24px rgba(10,36,99,0.08)' },
                   }}
                 >
@@ -1017,299 +1295,217 @@ export function PortfolioPage() {
             </Box>
           </MotionReveal>
 
-          {/* ── Portfolio Value card ─────────────────────────────────────── */}
-          <MotionReveal>
-            <Card>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, mb: 0.6 }}>
-                {/* <AccountBalanceWalletOutlinedIcon sx={{ fontSize: 15, color: 'var(--wc-primary)', opacity: 0.7 }} /> */}
-                <SecLabel>Total Portfolio Value</SecLabel>
-              </Box>
-
-              <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2, mb: 3 }}>
-                <Typography
-                  sx={{
-                    fontFamily: NUMBER_FONT,
-                    fontSize: { xs: 26, md: 38 },
-                    fontWeight: 700,
-                    color: 'var(--wc-text-primary)',
-                    letterSpacing: '-0.04em',
-                    lineHeight: 1,
-                  }}
-                >
-                  {mvFmt}
-                </Typography>
-                <Box sx={{ width: 140, height: 44 }}>
-                  <SparkLine
-                    data={portfolioTrend}
-                    width={140}
-                    height={44}
-                    color={totalPL >= 0 ? 'var(--wc-success)' : 'var(--wc-error)'}
-                    area
-                  />
-                </Box>
-              </Box>
-
+          {isLocked && (
+            <MotionReveal>
               <Box
                 sx={{
-                  display: 'grid',
-                  gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' },
-                  gap: 1.5,
+                  border: '1px solid var(--wc-divider)',
+                  borderRadius: 2,
+                  bgcolor: 'var(--wc-paper)',
+                  overflow: 'hidden',
+                  position: 'relative',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: '3px',
+                    background: 'linear-gradient(90deg, var(--wc-primary), var(--wc-primary) 40%, rgba(10,36,99,0.15) 100%)',
+                  },
                 }}
               >
-                <StatTile
-                  label="Day P/L"
-                  value={dayFmt}
-                  positive={dayPL >= 0}
-                  sub={`${dayPL >= 0 ? '+' : ''}${dayPLPct.toFixed(2)}% today`}
-                />
-                <StatTile
-                  label="Total Return"
-                  value={totalFmt}
-                  positive={totalPL >= 0}
-                  sub={`${totalPL >= 0 ? '+' : ''}${totalPLPct.toFixed(2)}% all time`}
-                />
-                <StatTile
-                  label="Total Shares"
-                  value={sharesFmt}
-                  sub={`${holdings.length} positions`}
-                />
-                <StatTile
-                  label="Cash Balance"
-                  value="Rs. 492,800"
-                  sub="Available to invest"
-                />
-              </Box>
-            </Card>
-          </MotionReveal>
-
-          {/* ── Sector Allocation ─────────────────────────────────────── */}
-          <MotionReveal>
-            <Card>
-              <SecLabel>Sector Allocation</SecLabel>
-              <Typography
-                sx={{
-                  fontSize: 15,
-                  fontWeight: 700,
-                  color: 'var(--wc-text-primary)',
-                  fontFamily: SERIF,
-                  letterSpacing: '-0.01em',
-                  mb: 2,
-                }}
-              >
-                Where your capital is deployed.
-              </Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2 }}>
-                {sectorAllocation.map((s) => {
-                  const pct = (s.value / totalMV) * 100
-                  return (
-                    <Box key={s.sector} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                      <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 10.5, fontWeight: 700, color: 'var(--wc-text-secondary)', minWidth: 80, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-                        {s.sector}
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) auto' },
+                    gap: { xs: 3, md: 4 },
+                    alignItems: 'center',
+                    p: { xs: 3, md: 4 },
+                  }}
+                >
+                  <Box sx={{ display: 'flex', gap: 2.5, alignItems: 'flex-start' }}>
+                    <Box
+                      sx={{
+                        width: 52,
+                        height: 52,
+                        borderRadius: '14px',
+                        bgcolor: 'rgba(10,36,99,0.06)',
+                        border: '1px solid rgba(10,36,99,0.12)',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        color: 'var(--wc-primary)',
+                        mt: 0.3,
+                        display: { xs: 'none', sm: 'flex' },
+                      }}
+                    >
+                      <VisibilityOffOutlinedIcon sx={{ fontSize: 22, opacity: 0.7 }} />
+                    </Box>
+                    <Box>
+                      <Typography
+                        sx={{
+                          fontSize: 10,
+                          fontWeight: 700,
+                          letterSpacing: '0.12em',
+                          textTransform: 'uppercase',
+                          color: 'var(--wc-primary)',
+                          fontFamily: NUMBER_FONT,
+                          mb: 0.8,
+                        }}
+                      >
+                        Portfolio Access
                       </Typography>
-                      <Box sx={{ flex: 1, height: 10, bgcolor: 'var(--wc-surface)', borderRadius: '99px', overflow: 'hidden', position: 'relative' }}>
-                        <Box
-                          component={motion.div}
-                          initial={{ width: 0 }}
-                          animate={{ width: `${pct}%` }}
-                          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
-                          sx={{ height: '100%', bgcolor: s.color, borderRadius: '99px', opacity: 0.85 }}
-                        />
-                      </Box>
-                      <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 11, fontWeight: 600, color: 'var(--wc-text-primary)', minWidth: 48, textAlign: 'right' }}>
-                        {pct.toFixed(1)}%
+                      <Typography
+                        sx={{
+                          fontSize: { xs: 17, md: 20 },
+                          fontWeight: 700,
+                          color: 'var(--wc-text-primary)',
+                          fontFamily: SERIF,
+                          letterSpacing: '-0.02em',
+                          lineHeight: 1.2,
+                          mb: 0.8,
+                        }}
+                      >
+                        Sign in to unlock your portfolio
                       </Typography>
-                      <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 10, color: 'var(--wc-text-secondary)', minWidth: 72, textAlign: 'right' }}>
-                        {fmtCompact(s.value)}
+                      <Typography
+                        sx={{
+                          fontSize: 12.5,
+                          color: 'var(--wc-text-secondary)',
+                          lineHeight: 1.6,
+                          maxWidth: 520,
+                        }}
+                      >
+                        Holdings, watchlist, and trade history sync automatically to your Google account — available on any device.
                       </Typography>
                     </Box>
-                  )
-                })}
-              </Box>
-            </Card>
-          </MotionReveal>
-
-          {/* ── Holdings + Watchlist ─────────────────────────────────────── */}
-          <MotionReveal>
-            {/* Section divider — identical to DataPage "All Listings" section */}
-            <Box
-              sx={{
-                borderTop: '1px solid var(--wc-divider)',
-                pt: 4,
-                mb: 4,
-                display: 'flex',
-                alignItems: 'flex-end',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: 2,
-              }}
-            >
-              <Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, mb: 0.8 }}>
-                  <ShowChartIcon sx={{ fontSize: 14, color: 'var(--wc-primary)', opacity: 0.7 }} />
-                  <SecLabel>Holdings</SecLabel>
-                </Box>
-                <Typography
-                  sx={{
-                    fontSize: { xs: 14, md: 16 },
-                    fontWeight: 700,
-                    color: 'var(--wc-text-primary)',
-                    fontFamily: SERIF,
-                  }}
-                >
-                  {holdings.length} active positions.
-                </Typography>
-              </Box>
-              <Typography sx={{ fontSize: 11, color: 'var(--wc-text-secondary)', fontFamily: NUMBER_FONT }}>
-                {fmt(totalShares)} total shares
-              </Typography>
-            </Box>
-
-            <Box
-              sx={{
-                display: 'grid',
-                gap: 1.5,
-                gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1.55fr) minmax(0, 1fr)' },
-                alignItems: 'start',
-              }}
-            >
-              {/* ── Holdings table ─────────────────────────────────────── */}
-              <Card sx={{ p: { xs: 2, md: 2.4 }, '&:hover': { borderColor: 'var(--wc-divider)', boxShadow: 'none' } }}>
-                {/* Column headers */}
-                <Box
-                  sx={{
-                    display: { xs: 'none', sm: 'flex' },
-                    alignItems: 'center',
-                    gap: 2,
-                    px: 1.2,
-                    mb: 0.5,
-                  }}
-                >
-                  <Box sx={{ width: 40, flexShrink: 0 }} />
-                  <Box sx={{ flex: '0 0 134px' }}><ColHead>Stock</ColHead></Box>
-                  <Box sx={{ flex: 1, display: { xs: 'none', md: 'block' } }}><ColHead>Price / Shares</ColHead></Box>
-                  <Box sx={{ textAlign: 'right', minWidth: 72 }}><ColHead align="right">Mkt Val</ColHead></Box>
-                  <Box sx={{ textAlign: 'right', minWidth: 90 }}><ColHead align="right">Day P/L</ColHead></Box>
-                  <Box sx={{ textAlign: 'right', minWidth: 95 }}><ColHead align="right">Total P/L</ColHead></Box>
-                  <Box sx={{ width: 32 }} />
-                </Box>
-
-                <Divider sx={{ borderColor: 'var(--wc-divider)', mb: 0.5, display: { xs: 'none', sm: 'block' } }} />
-
-                <Box
-                  sx={{
-                    maxHeight: { xs: 420, md: 500 },
-                    overflowY: 'auto',
-                    overflowX: 'hidden',
-                    mr: -2.4,          // pulls scrollbar flush to card edge (matches card padding)
-                    pr: 2,             // padding between content and scrollbar
-                    scrollbarGutter: 'stable',
-                  }}
-                >                  {holdings.map((h, i) => (
-                  <Box key={h.symbol}>
-                    <HoldingRow h={h} index={i} onEdit={handleEditHolding} onDelete={handleDeleteHolding} />
-                    {i < holdings.length - 1 && (
-                      <Divider sx={{ borderColor: 'var(--wc-divider)', opacity: 0.5 }} />
-                    )}
                   </Box>
-                ))}
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      flexDirection: { xs: 'row', md: 'column' },
+                      gap: 1.5,
+                      alignItems: { md: 'flex-end' },
+                      flexShrink: 0,
+                    }}
+                  >
+                    <CustomButton
+                      variant="contained"
+                      tone="light"
+                      startIcon={<GoogleIcon />}
+                      style={{ fontSize: '0.82rem', paddingInline: '1.3rem', paddingBlock: '0.55rem', whiteSpace: 'nowrap' }}
+                      onClick={() => setAuthModalOpen(true)}
+                    >
+                      Sign in with Google
+                    </CustomButton>
+                  </Box>
+                </Box>
+              </Box>
+            </MotionReveal>
+          )}
+
+          <Box
+            sx={{
+              filter: isLocked ? 'blur(6px)' : 'none',
+              opacity: isLocked ? 0.7 : 1,
+              pointerEvents: isLocked ? 'none' : 'auto',
+              transition: 'filter 0.2s ease, opacity 0.2s ease',
+            }}
+          >
+            {/* ── Portfolio Value card ─────────────────────────────────────── */}
+            <MotionReveal>
+              <Box
+                sx={{
+                  border: '1px solid var(--wc-divider)',
+                  borderRadius: 1.5,
+                  bgcolor: 'var(--wc-paper)',
+                  p: { xs: 2.4, md: 3.2 },
+                  position: 'relative',
+                  overflow: 'hidden',
+                  transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: '3px',
+                    background: totalPL >= 0
+                      ? 'linear-gradient(90deg, var(--wc-success), rgba(13,92,50,0.15))'
+                      : 'linear-gradient(90deg, var(--wc-error), rgba(180,40,58,0.15))',
+                  },
+                  '&:hover': {
+                    borderColor: 'var(--wc-primary)',
+                    boxShadow: '0 4px 24px rgba(10,36,99,0.07)',
+                  },
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, mb: 0.6 }}>
+                  <SecLabel>Total Portfolio Value</SecLabel>
                 </Box>
 
-                {/* Footer row */}
+                <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2, mb: 3 }}>
+                  <Typography
+                    sx={{
+                      fontFamily: NUMBER_FONT,
+                      fontSize: { xs: 26, md: 38 },
+                      fontWeight: 700,
+                      color: 'var(--wc-text-primary)',
+                      letterSpacing: '-0.04em',
+                      lineHeight: 1,
+                    }}
+                  >
+                    {mvFmt}
+                  </Typography>
+                  <Box sx={{ width: 140, height: 44 }}>
+                    <SparkLine
+                      data={portfolioTrend}
+                      width={140}
+                      height={44}
+                      color={totalPL >= 0 ? 'var(--wc-success)' : 'var(--wc-error)'}
+                      area
+                    />
+                  </Box>
+                </Box>
+
                 <Box
                   sx={{
-                    mt: 2,
-                    pt: 2,
-                    borderTop: '1px solid var(--wc-divider)',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    flexWrap: 'wrap',
+                    display: 'grid',
+                    gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' },
                     gap: 1.5,
                   }}
                 >
-                  <Typography sx={{ fontSize: 11, color: 'var(--wc-text-secondary)', fontFamily: SERIF }}>
-                    Total invested ·{' '}
-                    <Box component="span" sx={{ fontFamily: NUMBER_FONT, color: 'var(--wc-text-primary)', fontWeight: 600 }}>
-                      {fmtPkr(totalMV - totalPL)}
-                    </Box>
-                  </Typography>
-                  <CustomButton
-                    variant="contained"
-                    tone="light"
-                    startIcon={<AddRoundedIcon />}
-                    style={{ fontSize: '0.78rem', paddingInline: '1rem', paddingBlock: '0.45rem' }}
-                    onClick={() => {
-                      setHoldModalMode('new')
-                      setHoldModalSymbol(undefined)
-                      setHoldModalOpen(true)
-                    }}
-                  >
-                    Add holding
-                  </CustomButton>
+                  <StatTile
+                    label="Day P/L"
+                    value={dayFmt}
+                    positive={dayPL >= 0}
+                    sub={`${dayPL >= 0 ? '+' : ''}${dayPLPct.toFixed(2)}% today`}
+                  />
+                  <StatTile
+                    label="Total Return"
+                    value={totalFmt}
+                    positive={totalPL >= 0}
+                    sub={`${totalPL >= 0 ? '+' : ''}${totalPLPct.toFixed(2)}% all time`}
+                  />
+                  <StatTile
+                    label="Total Shares"
+                    value={sharesFmt}
+                    sub={`${holdings.length} positions`}
+                  />
+                  <StatTile
+                    label="Cash Balance"
+                    value="Rs. 492,800"
+                    sub="Available to invest"
+                  />
                 </Box>
-              </Card>
+              </Box>
+            </MotionReveal>
 
-              {/* ── Watchlist ──────────────────────────────────────────── */}
-              <Card sx={{ p: { xs: 2, md: 2.4 } }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                  <Box>
-                    <SecLabel>Watchlist</SecLabel>
-                    <Typography
-                      sx={{
-                        fontSize: 15,
-                        fontWeight: 700,
-                        color: 'var(--wc-text-primary)',
-                        fontFamily: SERIF,
-                        letterSpacing: '-0.01em',
-                      }}
-                    >
-                      Favourites
-                    </Typography>
-                  </Box>
-                  <Typography
-                    onClick={() => setWatchModalOpen(true)}
-                    sx={{
-                      fontSize: 11,
-                      fontWeight: 600,
-                      color: 'var(--wc-primary)',
-                      fontFamily: SERIF,
-                      cursor: 'pointer',
-                      transition: 'color 0.2s ease',
-                      '&:hover': { color: 'var(--wc-text-primary)' },
-                    }}
-                  >
-                    + Add
-                  </Typography>
-                </Box>
-
-                <Box
-                  sx={{
-                    maxHeight: { xs: 420, md: 500 },
-                    overflowY: 'auto',
-                    overflowX: 'hidden',
-                    mr: { xs: -2, md: -2.4 },   // pulls scrollbar to card edge
-                    pr: 2,                       // breathing room between content and scrollbar
-                    scrollbarGutter: 'stable',
-                  }}
-                >
-                  {watchlist.map((item, i) => (
-                    <Box key={item.symbol}>
-                      <WatchRow item={item} index={i} onClick={() => openDrawer(item.symbol)} />
-                      {i < watchlist.length - 1 && (
-                        <Divider sx={{ borderColor: 'var(--wc-divider)', opacity: 0.4 }} />
-                      )}
-                    </Box>
-                  ))}
-                </Box>
-              </Card>
-            </Box>
-          </MotionReveal>
-
-          {/* ── Trade History ─────────────────────────────────────────────── */}
-          <MotionReveal>
-            <Card sx={{ p: { xs: 2, md: 2.4 } }}>
-              <Box sx={{ mb: 2 }}>
-                <SecLabel>Trade History</SecLabel>
+            {/* ── Sector Allocation ─────────────────────────────────────── */}
+            <MotionReveal>
+              <Card>
+                <SecLabel>Sector Allocation</SecLabel>
                 <Typography
                   sx={{
                     fontSize: 15,
@@ -1317,21 +1513,246 @@ export function PortfolioPage() {
                     color: 'var(--wc-text-primary)',
                     fontFamily: SERIF,
                     letterSpacing: '-0.01em',
+                    mb: 2,
                   }}
                 >
-                  Recent activity
+                  Where your capital is deployed.
+                </Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2 }}>
+                  {totalMV === 0 ? (
+                    <EmptyState
+                      icon={<InboxOutlinedIcon sx={{ fontSize: 20 }} />}
+                      title="No capital deployed"
+                      subtitle="Add holdings to see your sector allocation."
+                    />
+                  ) : (
+                  sectorAllocation.map((s) => {
+                    const pct = (s.value / totalMV) * 100
+                    return (
+                      <Box key={s.sector} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 10.5, fontWeight: 700, color: 'var(--wc-text-secondary)', minWidth: 80, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                          {s.sector}
+                        </Typography>
+                        <Box sx={{ flex: 1, height: 10, bgcolor: 'var(--wc-surface)', borderRadius: '99px', overflow: 'hidden', position: 'relative' }}>
+                          <Box
+                            component={motion.div}
+                            initial={{ width: 0 }}
+                            animate={{ width: `${pct}%` }}
+                            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
+                            sx={{ height: '100%', bgcolor: s.color, borderRadius: '99px', opacity: 0.85 }}
+                          />
+                        </Box>
+                        <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 11, fontWeight: 600, color: 'var(--wc-text-primary)', minWidth: 48, textAlign: 'right' }}>
+                          {pct.toFixed(1)}%
+                        </Typography>
+                        <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 10, color: 'var(--wc-text-secondary)', minWidth: 72, textAlign: 'right' }}>
+                          {fmtCompact(s.value)}
+                        </Typography>
+                      </Box>
+                    )
+                  }))}
+                </Box>
+              </Card>
+            </MotionReveal>
+
+            {/* ── Holdings + Watchlist ─────────────────────────────────────── */}
+            <MotionReveal>
+              {/* Section divider — identical to DataPage "All Listings" section */}
+              <Box
+                sx={{
+                  borderTop: '1px solid var(--wc-divider)',
+                  pt: 4,
+                  mb: 4,
+                  display: 'flex',
+                  alignItems: 'flex-end',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: 2,
+                }}
+              >
+                <Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, mb: 0.8 }}>
+                    <ShowChartIcon sx={{ fontSize: 14, color: 'var(--wc-primary)', opacity: 0.7 }} />
+                    <SecLabel>Holdings</SecLabel>
+                  </Box>
+                  <Typography
+                    sx={{
+                      fontSize: { xs: 14, md: 16 },
+                      fontWeight: 700,
+                      color: 'var(--wc-text-primary)',
+                      fontFamily: SERIF,
+                    }}
+                  >
+                    {holdings.length} active positions.
+                  </Typography>
+                </Box>
+                <Typography sx={{ fontSize: 11, color: 'var(--wc-text-secondary)', fontFamily: NUMBER_FONT }}>
+                  {fmt(totalShares)} total shares
                 </Typography>
               </Box>
-              {historyEvents.map((ev, i) => (
-                <Box key={`${ev.symbol}-${i}`}>
-                  <HistRow event={ev} index={i} />
-                  {i < historyEvents.length - 1 && (
-                    <Divider sx={{ borderColor: 'var(--wc-divider)', opacity: 0.4 }} />
-                  )}
+
+              <Box
+                sx={{
+                  display: 'grid',
+                  gap: 1.5,
+                  gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1.55fr) minmax(0, 1fr)' },
+                  alignItems: 'start',
+                }}
+              >
+                {/* ── Holdings table ─────────────────────────────────────── */}
+                {/* ── Holdings table ─────────────────────────────────────── */}
+                <Card sx={{ p: { xs: 2, md: 2.4 }, display: 'flex', flexDirection: 'column', height: 520, '&:hover': { borderColor: 'var(--wc-divider)', boxShadow: 'none' } }}>
+                  {/* Column headers */}
+                  <Box
+                    sx={{
+                      display: { xs: 'none', sm: 'flex' },
+                      alignItems: 'center',
+                      gap: 2,
+                      px: 1.2,
+                      mb: 0.5,
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Box sx={{ width: 40, flexShrink: 0 }} />
+                    <Box sx={{ flex: '0 0 134px' }}><ColHead>Stock</ColHead></Box>
+                    <Box sx={{ flex: 1, display: { xs: 'none', md: 'block' } }}><ColHead>Price / Shares</ColHead></Box>
+                    <Box sx={{ textAlign: 'right', minWidth: 72 }}><ColHead align="right">Mkt Val</ColHead></Box>
+                    <Box sx={{ textAlign: 'right', minWidth: 90 }}><ColHead align="right">Day P/L</ColHead></Box>
+                    <Box sx={{ textAlign: 'right', minWidth: 95 }}><ColHead align="right">Total P/L</ColHead></Box>
+                    <Box sx={{ width: 32 }} />
+                  </Box>
+
+                  <Divider sx={{ borderColor: 'var(--wc-divider)', mb: 0.5, flexShrink: 0, display: { xs: 'none', sm: 'block' } }} />
+
+                  {/* Scrollable list — grows to fill, never pushes footer */}
+                  <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', mr: -2.4, pr: 2, scrollbarGutter: 'stable' }}>
+                    {holdings.length === 0 ? (
+                      <EmptyState
+                        icon={<InboxOutlinedIcon sx={{ fontSize: 20 }} />}
+                        title="No holdings yet"
+                        subtitle={`Click "Add holding" to build your portfolio.`}
+                      />
+                    ) : (
+                      holdings.map((h, i) => (
+                        <Box key={h.symbol}>
+                          <HoldingRow h={h} index={i} onEdit={handleEditHolding} onDelete={handleDeleteHolding} />
+                          {i < holdings.length - 1 && <Divider sx={{ borderColor: 'var(--wc-divider)', opacity: 0.5 }} />}
+                        </Box>
+                      ))
+                    )}
+                  </Box>
+
+                  {/* Footer — always pinned to bottom */}
+                  <Box
+                    sx={{
+                      flexShrink: 0,
+                      mt: 2,
+                      pt: 2,
+                      borderTop: '1px solid var(--wc-divider)',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: 1.5,
+                    }}
+                  >
+                    <Typography sx={{ fontSize: 11, color: 'var(--wc-text-secondary)', fontFamily: SERIF }}>
+                      Total invested ·{' '}
+                      <Box component="span" sx={{ fontFamily: NUMBER_FONT, color: 'var(--wc-text-primary)', fontWeight: 600 }}>
+                        {fmtPkr(totalMV - totalPL)}
+                      </Box>
+                    </Typography>
+                    <CustomButton
+                      variant="contained"
+                      tone="light"
+                      startIcon={<AddRoundedIcon />}
+                      style={{ fontSize: '0.78rem', paddingInline: '1rem', paddingBlock: '0.45rem' }}
+                      onClick={() => {
+                        if (!requireAuth()) return
+                        setHoldModalMode('new')
+                        setHoldModalSymbol(undefined)
+                        setHoldModalOpen(true)
+                      }}
+                    >
+                      Add holding
+                    </CustomButton>
+                  </Box>
+                </Card>
+
+                {/* ── Watchlist ──────────────────────────────────────────── */}
+                {/* ── Watchlist ──────────────────────────────────────────── */}
+                <Card sx={{ p: { xs: 2, md: 2.4 }, display: 'flex', flexDirection: 'column', height: 520 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, flexShrink: 0 }}>
+                    <Box>
+                      <SecLabel>Watchlist</SecLabel>
+                      <Typography sx={{ fontSize: 15, fontWeight: 700, color: 'var(--wc-text-primary)', fontFamily: SERIF, letterSpacing: '-0.01em' }}>
+                        Favourites
+                      </Typography>
+                    </Box>
+                    <Typography
+                      onClick={() => { if (!requireAuth()) return; setWatchModalOpen(true) }}
+                      sx={{ fontSize: 11, fontWeight: 600, color: 'var(--wc-primary)', fontFamily: SERIF, cursor: 'pointer', transition: 'color 0.2s ease', '&:hover': { color: 'var(--wc-text-primary)' } }}
+                    >
+                      + Add
+                    </Typography>
+                  </Box>
+
+                  <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', mr: { xs: -2, md: -2.4 }, pr: 2, scrollbarGutter: 'stable' }}>
+                    {watchlist.length === 0 ? (
+                      <EmptyState
+                        icon={<StarBorderIcon sx={{ fontSize: 20 }} />}
+                        title="No stocks watched yet"
+                        subtitle={`Click "+ Add" to start tracking your favourites.`}
+                      />
+                    ) : (
+                      watchlist.map((item, i) => (
+                        <Box key={item.symbol}>
+                          <WatchRow item={item} index={i} onClick={() => openDrawer(item.symbol)} />
+                          {i < watchlist.length - 1 && <Divider sx={{ borderColor: 'var(--wc-divider)', opacity: 0.4 }} />}
+                        </Box>
+                      ))
+                    )}
+                  </Box>
+                </Card>
+              </Box>
+            </MotionReveal>
+
+            {/* ── Trade History ─────────────────────────────────────────────── */}
+            <MotionReveal>
+              <Card sx={{ p: { xs: 2, md: 2.4 } }}>
+                <Box sx={{ mb: 2 }}>
+                  <SecLabel>Trade History</SecLabel>
+                  <Typography
+                    sx={{
+                      fontSize: 15,
+                      fontWeight: 700,
+                      color: 'var(--wc-text-primary)',
+                      fontFamily: SERIF,
+                      letterSpacing: '-0.01em',
+                    }}
+                  >
+                    Recent activity
+                  </Typography>
                 </Box>
-              ))}
-            </Card>
-          </MotionReveal>
+                {historyEvents.length === 0 ? (
+                  <EmptyState
+                    icon={<ReceiptLongOutlinedIcon sx={{ fontSize: 20 }} />}
+                    title="No trade history yet"
+                    subtitle="Your buy and sell activity will appear here."
+                  />
+                ) : (
+                  historyEvents.map((ev, i) => (
+                    <Box key={`${ev.symbol}-${i}`}>
+                      <HistRow event={ev} index={i} />
+                      {i < historyEvents.length - 1 && (
+                        <Divider sx={{ borderColor: 'var(--wc-divider)', opacity: 0.4 }} />
+                      )}
+                    </Box>
+                  ))
+                )}
+              </Card>
+            </MotionReveal>
+          </Box>
 
           {/* ── Footer ────────────────────────────────────────────────────── */}
           <Box
@@ -1367,6 +1788,7 @@ export function PortfolioPage() {
         open={marketModalOpen}
         onClose={() => setMarketModalOpen(false)}
         summary={marketSummary}
+        activeIndex={marketModalIndex}
       />
       <HoldingModal
         open={holdModalOpen}
@@ -1375,12 +1797,21 @@ export function PortfolioPage() {
         onSave={handleSaveHolding}
         initialMode={holdModalMode}
         initialSymbol={holdModalSymbol}
+        availableStocks={holdingAvailableStocks.length > 0 ? holdingAvailableStocks : undefined}
       />
       <WatchlistModal
         open={watchModalOpen}
         onClose={() => setWatchModalOpen(false)}
         watchlist={watchlist}
         onAdd={handleAddToWatchlist}
+        availableStocks={watchlistAvailableStocks.length > 0 ? watchlistAvailableStocks : undefined}
+      />
+      <AuthModal
+        open={authModalOpen}
+        onClose={() => {
+          clearError()
+          setAuthModalOpen(false)
+        }}
       />
     </Box>
   )

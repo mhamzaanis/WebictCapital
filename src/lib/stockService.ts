@@ -16,6 +16,25 @@ type DbStockRow = {
   change: number | null
 }
 
+export type UserTrade = {
+  id?: number
+  symbol: string
+  trade_type: 'BUY' | 'SELL'
+  quantity: number
+  price: number
+  trade_date: string
+}
+
+export type MarketSymbolSnapshot = {
+  symbol: string
+  company: string
+  price: number
+  change: number
+  changePct: number
+  volume: string
+  spark: number[]
+}
+
 // ─── Helpers ────────────────────────────────────────────────────────────────────
 
 function toNum(val: unknown): number {
@@ -40,18 +59,49 @@ function fmtVolume(v: number): string {
   return v.toLocaleString('en-PK')
 }
 
-// ─── Service guards ─────────────────────────────────────────────────────────────
+// ─── Auth helpers ───────────────────────────────────────────────────────────────
 
 export function hasStockService(): boolean {
   return hasSupabaseConfig && supabase !== null
 }
 
-export function getDemoUserId(): string | null {
-  return import.meta.env.VITE_DEMO_USER_ID ?? null
+export async function fetchUniqueSymbols(): Promise<MarketSymbolSnapshot[]> {
+  if (!hasStockService() || !supabase) return []
+
+  const { data, error } = await supabase.rpc('get_unique_symbols')
+  if (error) {
+    console.warn('Failed to fetch unique symbols:', error.message)
+    return []
+  }
+  return ((data ?? []) as Array<{
+    symbol: string
+    company: string | null
+    price: number | null
+    change: number | null
+    changePct: number | null
+    volume: number | null
+    spark: number[] | null
+  }>).map((row) => ({
+    symbol: (row.symbol ?? '').trim().toUpperCase(),
+    company: row.company ?? (row.symbol ?? '').trim().toUpperCase(),
+    price: toNum(row.price),
+    change: toNum(row.change),
+    changePct: toNum(row.changePct),
+    volume: fmtVolume(toNum(row.volume)),
+    spark: (row.spark ?? []).map(toNum),
+  }))
 }
 
-function canWriteWatchlist(): boolean {
-  return hasStockService() && getDemoUserId() !== null
+async function getCurrentUserId(): Promise<string | null> {
+  if (!hasStockService() || !supabase) return null
+  const { data: { user } } = await supabase.auth.getUser()
+  return user?.id ?? null
+}
+
+async function requireUserId(): Promise<string> {
+  const userId = await getCurrentUserId()
+  if (!userId) throw new Error('User must be signed in.')
+  return userId
 }
 
 // ─── Stock Detail Fetch ─────────────────────────────────────────────────────────
@@ -94,7 +144,6 @@ export async function fetchStockDetail(symbol: string): Promise<StockDetail> {
   const dayLow = toNum(latest.low)
   const turnover = toNum(latest.turnover)
 
-  // Average volume from last 10 trading days
   const recentTurnovers = rows.slice(-10).map((r) => toNum(r.turnover)).filter((t) => t !== 0)
   const avgTurnover = recentTurnovers.length > 0
     ? recentTurnovers.reduce((a, b) => a + b, 0) / recentTurnovers.length
@@ -142,9 +191,9 @@ export async function fetchStockDetail(symbol: string): Promise<StockDetail> {
 // ─── Watchlist Operations ───────────────────────────────────────────────────────
 
 export async function fetchWatchlistSymbols(): Promise<string[]> {
-  if (!canWriteWatchlist()) return []
+  const userId = await getCurrentUserId()
+  if (!userId) return []
 
-  const userId = getDemoUserId()!
   const result = await supabase!
     .from('watchlists')
     .select('symbol')
@@ -156,11 +205,8 @@ export async function fetchWatchlistSymbols(): Promise<string[]> {
 }
 
 export async function addToWatchlist(symbol: string): Promise<void> {
-  if (!canWriteWatchlist()) return
+  const userId = await requireUserId()
 
-  const userId = getDemoUserId()!
-
-  // Check if already present
   const existing = await supabase!
     .from('watchlists')
     .select('id')
@@ -168,7 +214,7 @@ export async function addToWatchlist(symbol: string): Promise<void> {
     .eq('symbol', symbol.toUpperCase())
     .maybeSingle()
 
-  if (existing.data) return // already in watchlist
+  if (existing.data) return
 
   const result = await supabase!
     .from('watchlists')
@@ -180,9 +226,7 @@ export async function addToWatchlist(symbol: string): Promise<void> {
 }
 
 export async function removeFromWatchlist(symbol: string): Promise<void> {
-  if (!canWriteWatchlist()) return
-
-  const userId = getDemoUserId()!
+  const userId = await requireUserId()
 
   const result = await supabase!
     .from('watchlists')
@@ -192,5 +236,74 @@ export async function removeFromWatchlist(symbol: string): Promise<void> {
 
   if (result.error) {
     console.warn('Failed to remove from watchlist:', result.error.message)
+  }
+}
+
+// ─── User Trades (Holdings) Operations ──────────────────────────────────────────
+
+export async function fetchUserTrades(): Promise<UserTrade[]> {
+  const userId = await getCurrentUserId()
+  if (!userId) return []
+
+  const result = await supabase!
+    .from('user_trades')
+    .select('id,symbol,trade_type,quantity,price,trade_date')
+    .eq('user_id', userId)
+    .order('trade_date', { ascending: false })
+
+  if (result.error) {
+    console.warn('Failed to fetch user trades:', result.error.message)
+    return []
+  }
+  return (result.data ?? []) as UserTrade[]
+}
+
+export async function insertUserTrade(trade: UserTrade): Promise<void> {
+  const userId = await requireUserId()
+
+  const result = await supabase!
+    .from('user_trades')
+    .insert({
+      user_id: userId,
+      symbol: trade.symbol.toUpperCase(),
+      trade_type: trade.trade_type,
+      quantity: trade.quantity,
+      price: trade.price,
+      trade_date: trade.trade_date || new Date().toISOString().slice(0, 10),
+    })
+
+  if (result.error) {
+    console.warn('Failed to insert trade:', result.error.message)
+    throw result.error
+  }
+}
+
+export async function deleteUserTrade(tradeId: number): Promise<void> {
+  const userId = await requireUserId()
+
+  const result = await supabase!
+    .from('user_trades')
+    .delete()
+    .eq('id', tradeId)
+    .eq('user_id', userId)
+
+  if (result.error) {
+    console.warn('Failed to delete trade:', result.error.message)
+    throw result.error
+  }
+}
+
+export async function deleteUserTradesBySymbol(symbol: string): Promise<void> {
+  const userId = await requireUserId()
+
+  const result = await supabase!
+    .from('user_trades')
+    .delete()
+    .eq('user_id', userId)
+    .eq('symbol', symbol.toUpperCase())
+
+  if (result.error) {
+    console.warn('Failed to delete trades by symbol:', result.error.message)
+    throw result.error
   }
 }

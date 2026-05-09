@@ -29,6 +29,7 @@ type MarketSummaryModalProps = {
   open: boolean
   onClose: () => void
   summary: MarketSummary | null
+  activeIndex?: 'kse100' | 'kse30'
 }
 
 const NUMBER_FONT = 'var(--wc-number-font)'
@@ -207,7 +208,7 @@ function StatRow({ label, value, valueColor }: { label: string; value: string; v
 const fmtIndex = (v: number) => v.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const fmtNumber = (v: number) => v.toLocaleString('en-PK')
 
-export function MarketSummaryModal({ open, onClose, summary }: MarketSummaryModalProps) {
+export function MarketSummaryModal({ open, onClose, summary, activeIndex = 'kse100' }: MarketSummaryModalProps) {
   const reduce = useReducedMotion()
   const theme = useTheme()
   const isXs = useMediaQuery(theme.breakpoints.down('sm'))
@@ -300,6 +301,7 @@ export function MarketSummaryModal({ open, onClose, summary }: MarketSummaryModa
   const pos30 = summary.kse30_change >= 0
   const changeColor = pos ? COLORS.success : COLORS.error
   const change30Color = pos30 ? COLORS.success : COLORS.error
+  const activeLabel = activeIndex === 'kse100' ? 'KSE 100' : 'KSE 30'
   const candleUp = COLORS.success
   const candleDown = COLORS.error
   const chartHeight = isXs ? 320 : 360
@@ -376,7 +378,7 @@ export function MarketSummaryModal({ open, onClose, summary }: MarketSummaryModa
             Market Summary
           </Typography>
           <Typography sx={{ fontFamily: SERIF, fontSize: 16, fontWeight: 700, color: COLORS.text }}>
-            KSE 100 · {formattedDate}
+            {activeLabel} · {formattedDate}
           </Typography>
         </Box>
 
@@ -521,7 +523,7 @@ export function MarketSummaryModal({ open, onClose, summary }: MarketSummaryModa
                 mb: 1.2,
               }}
             >
-              KSE 100 Trend
+              {activeLabel} Trend
             </Typography>
             <Box sx={{ display: 'flex', gap: 0.3, bgcolor: COLORS.surface, p: 0.4, borderRadius: '8px', border: `1px solid ${COLORS.border}` }}>
               {(['1W', '1M', 'YTD', '1Y'] as const).map((key) => (

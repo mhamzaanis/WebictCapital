@@ -46,11 +46,12 @@ type HoldingModalProps = {
   onSave: (holding: Holding) => void
   initialMode?: 'new' | 'manage'
   initialSymbol?: string
+  availableStocks?: { symbol: string; company: string; sector: string; price: number }[]
 }
 
 // ─── Stocks available for adding new holdings ──────────────────────────────────
 
-const availableStocks = [
+const availableStocksHardcoded = [
   { symbol: 'EFERT', company: 'Engro Fertilizers', sector: 'Fertilizer', price: 178.5 },
   { symbol: 'FCCL', company: 'Fauji Cement', sector: 'Cement', price: 42.8 },
   { symbol: 'FFC', company: 'Fauji Fertilizer Co.', sector: 'Fertilizer', price: 215.3 },
@@ -219,8 +220,10 @@ function SaveBtn({
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 
-export function HoldingModal({ open, onClose, holdings, onSave, initialMode, initialSymbol }: HoldingModalProps) {
+export function HoldingModal({ open, onClose, holdings, onSave, initialMode, initialSymbol, availableStocks: stocksProp }: HoldingModalProps) {
   const reduce = useReducedMotion()
+
+  const stocks = stocksProp ?? availableStocksHardcoded
 
   const isManage = initialMode === 'manage'
 
@@ -268,10 +271,10 @@ export function HoldingModal({ open, onClose, holdings, onSave, initialMode, ini
   const currentPrice = isManage
     ? (managedHolding?.price ?? 0)
     : selectedStock
-      ? (availableStocks.find(s => s.symbol === selectedStock)?.price ?? 0)
+      ? (stocks.find(s => s.symbol === selectedStock)?.price ?? 0)
       : 0
 
-  const stockDetail = useMemo(() => availableStocks.find(s => s.symbol === selectedStock), [selectedStock])
+  const stockDetail = useMemo(() => stocks.find(s => s.symbol === selectedStock), [selectedStock])
 
   const totalPL = totalShares * currentPrice - totalCostBasis
   const totalPLPct = totalCostBasis > 0 ? (totalPL / totalCostBasis) * 100 : 0
@@ -512,7 +515,7 @@ export function HoldingModal({ open, onClose, holdings, onSave, initialMode, ini
               sx={selectSx}
             >
               <MenuItem value="" disabled>Choose a stock…</MenuItem>
-              {availableStocks
+              {stocks
                 .filter(s => !holdings.some(h => h.symbol === s.symbol))
                 .map(s => (
                   <MenuItem key={s.symbol} value={s.symbol}>
