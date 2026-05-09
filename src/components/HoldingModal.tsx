@@ -22,6 +22,7 @@ export type BuyLot = {
   id: string
   shares: number
   price: number
+  date: string
 }
 
 export type Holding = {
@@ -44,6 +45,7 @@ type HoldingModalProps = {
   onClose: () => void
   holdings: Holding[]
   onSave: (holding: Holding) => void
+  onDelete?: (symbol: string) => void
   initialMode?: 'new' | 'manage'
   initialHolding?: Holding | null
   availableStocks?: { symbol: string; company: string; sector: string; price: number }[]
@@ -109,6 +111,12 @@ const SlideUp = forwardRef(function Transition(
 
 const fmt = (v: number) => v.toLocaleString('en-PK')
 const fmtPkr = (v: number) => `Rs. ${fmt(Math.round(v))}`
+const todayIso = () => new Date().toISOString().slice(0, 10)
+const fmtTradeDate = (value: string) => {
+  const d = new Date(value + 'T00:00:00')
+  if (Number.isNaN(d.getTime())) return value
+  return d.toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' })
+}
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
@@ -224,7 +232,7 @@ function SaveBtn({
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 
-export function HoldingModal({ open, onClose, holdings, onSave, initialMode, initialHolding, availableStocks: stocksProp }: HoldingModalProps) {
+export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initialMode, initialHolding, availableStocks: stocksProp }: HoldingModalProps) {
   const reduce = useReducedMotion()
 
   const stocks = stocksProp ?? availableStocksHardcoded
@@ -243,6 +251,7 @@ export function HoldingModal({ open, onClose, holdings, onSave, initialMode, ini
   const [showBuyForm, setShowBuyForm] = useState(false)
   const [buyShares, setBuyShares] = useState('')
   const [buyPrice, setBuyPrice] = useState('')
+  const [buyDate, setBuyDate] = useState(todayIso())
 
   // Sell inline form (manage mode only)
   const [showSellForm, setShowSellForm] = useState(false)
@@ -304,6 +313,7 @@ export function HoldingModal({ open, onClose, holdings, onSave, initialMode, ini
     setShowSellForm(false)
     setBuyShares('')
     setBuyPrice('')
+    setBuyDate(todayIso())
     setSellShares('')
     setEditingLotId(null)
     setEditShares('')
@@ -316,8 +326,8 @@ export function HoldingModal({ open, onClose, holdings, onSave, initialMode, ini
     if (isManage && managedHolding) {
       setLots(
         managedHolding.buyLots.length > 0
-          ? managedHolding.buyLots.map(l => ({ ...l }))
-          : [{ id: 'lot-1', shares: managedHolding.shares, price: managedHolding.avgCost }]
+          ? managedHolding.buyLots.map(l => ({ ...l, date: l.date ?? todayIso() }))
+          : [{ id: 'lot-1', shares: managedHolding.shares, price: managedHolding.avgCost, date: todayIso() }]
       )
       setSelectedStock('')
     } else {
@@ -327,6 +337,7 @@ export function HoldingModal({ open, onClose, holdings, onSave, initialMode, ini
     setShowSellForm(false)
     setBuyShares('')
     setBuyPrice('')
+    setBuyDate(todayIso())
     setSellShares('')
     setEditingLotId(null)
     setEditShares('')
@@ -336,7 +347,7 @@ export function HoldingModal({ open, onClose, holdings, onSave, initialMode, ini
   useEffect(() => {
     if (!open || isManage) return
     if (existingHolding) {
-      setLots(existingHolding.buyLots.map(l => ({ ...l })))
+      setLots(existingHolding.buyLots.map(l => ({ ...l, date: l.date ?? todayIso() })))
       return
     }
     if (selectedStock) setLots([])
@@ -352,10 +363,12 @@ export function HoldingModal({ open, onClose, holdings, onSave, initialMode, ini
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
       shares,
       price,
+      date: buyDate || todayIso(),
     }
     setLots(prev => [...prev, newLot])
     setBuyShares('')
     setBuyPrice('')
+    setBuyDate(todayIso())
     setShowBuyForm(false)
   }
 
@@ -385,6 +398,13 @@ export function HoldingModal({ open, onClose, holdings, onSave, initialMode, ini
   }
 
   const handleClose = () => {
+    resetForm()
+    onClose()
+  }
+
+  const handleDelete = () => {
+    if (!managedHolding || !onDelete) return
+    onDelete(managedHolding.symbol)
     resetForm()
     onClose()
   }
@@ -764,6 +784,9 @@ export function HoldingModal({ open, onClose, holdings, onSave, initialMode, ini
                         <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.ink2 }}>
                           @ Rs. {lot.price.toFixed(2)}
                         </Typography>
+                        <Typography sx={{ fontFamily: serif, fontSize: 10.5, color: C.muted, mt: 0.2 }}>
+                          {fmtTradeDate(lot.date)}
+                        </Typography>
                       </Box>
                       <Box sx={{ textAlign: 'right', mr: 1 }}>
                         <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.muted }}>
@@ -840,6 +863,16 @@ export function HoldingModal({ open, onClose, holdings, onSave, initialMode, ini
                 fullWidth
                 sx={inputSx}
                 slotProps={{ htmlInput: { min: 0, step: '0.01' } }}
+              />
+              <TextField
+                label="Buy Date"
+                type="date"
+                value={buyDate}
+                onChange={(e) => setBuyDate(e.target.value)}
+                fullWidth
+                sx={{ ...inputSx, gridColumn: '1 / -1' }}
+                slotProps={{ htmlInput: { max: todayIso() } }}
+                InputLabelProps={{ shrink: true }}
               />
             </Box>
 
@@ -947,7 +980,17 @@ export function HoldingModal({ open, onClose, holdings, onSave, initialMode, ini
         )}
 
         {/* ── Save button ────────────────────────────────────────────────── */}
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', pt: 1 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pt: 1 }}>
+          {isManage && managedHolding && onDelete ? (
+            <ActionBtn
+              onClick={handleDelete}
+              icon={<DeleteOutlineRoundedIcon sx={{ fontSize: 16 }} />}
+              label="Delete holding"
+              color={C.neg}
+            />
+          ) : (
+            <Box />
+          )}
           <SaveBtn
             onClick={handleSave}
             disabled={!canSave}

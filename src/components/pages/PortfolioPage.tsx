@@ -2,9 +2,6 @@
 
 import AddRoundedIcon from '@mui/icons-material/AddRounded'
 import SettingsIcon from '@mui/icons-material/Settings';
-import MoreHorizRoundedIcon from '@mui/icons-material/MoreHorizRounded'
-import EditRoundedIcon from '@mui/icons-material/EditRounded'
-import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 import TrendingDownIcon from '@mui/icons-material/TrendingDown'
 import StarBorderIcon from '@mui/icons-material/StarBorder'
@@ -14,7 +11,7 @@ import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined
 import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined'
 import GoogleIcon from '@mui/icons-material/Google'
 import {
-  Box, Container, Divider, IconButton, Menu, MenuItem, Stack, Typography,
+  Box, Container, Divider, IconButton, Stack, Typography,
 } from '@mui/material'
 import { motion, useReducedMotion } from 'motion/react'
 import { useState, useMemo, memo, useEffect, useCallback, useRef } from 'react'
@@ -262,19 +259,11 @@ function ColHead({ children, align = 'left' }: { children: React.ReactNode; alig
 // ─── HoldingRow ───────────────────────────────────────────────────────────────
 
 function HoldingRow({
-  h, index, onEdit, onDelete,
-}: { h: Holding; index: number; onEdit: (s: string) => void; onDelete: (s: string) => void }) {
+  h, index, onEdit,
+}: { h: Holding; index: number; onEdit: (s: string) => void }) {
   const reduce = useReducedMotion()
   const [hov, setHov] = useState(false)
-  const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null)
-
-  const handleMenuOpen = useCallback((e: React.MouseEvent<HTMLElement>) => {
-    e.stopPropagation()
-    setMenuAnchor(e.currentTarget)
-  }, [])
-  const handleMenuClose = useCallback(() => setMenuAnchor(null), [])
-  const handleEdit = useCallback(() => { onEdit(h.symbol); handleMenuClose() }, [h.symbol, onEdit, handleMenuClose])
-  const handleDelete = useCallback(() => { onDelete(h.symbol); handleMenuClose() }, [h.symbol, onDelete, handleMenuClose])
+  const handleEdit = useCallback(() => { onEdit(h.symbol) }, [h.symbol, onEdit])
 
   const posToday = h.todayPL >= 0
   const posTotal = h.totalPL >= 0
@@ -287,13 +276,14 @@ function HoldingRow({
       transition={{ duration: 0.36, delay: index * 0.055, ease: [0.22, 1, 0.36, 1] }}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
+      onClick={handleEdit}
       sx={{
         py: 1.2, px: 1.2, mx: -1.2, borderRadius: '8px',
         minHeight: 72,
         maxHeight: 72,
         bgcolor: hov ? 'rgba(10,36,99,0.03)' : 'transparent',
         transition: 'background-color 0.18s ease',
-        cursor: 'default',
+        cursor: 'pointer',
       }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1.5, sm: 2 } }}>
@@ -378,32 +368,6 @@ function HoldingRow({
           <Typography sx={{ fontSize: 9, color: 'var(--wc-text-secondary)', fontFamily: SERIF, mt: 0.2 }}>Total</Typography>
         </Box>
 
-        {/* Actions */}
-        <Box sx={{ minWidth: 32, flexShrink: 0, display: 'flex', justifyContent: 'flex-end' }}>
-          <IconButton
-            size="small"
-            onClick={handleMenuOpen}
-            sx={{ color: hov ? 'var(--wc-text-primary)' : 'var(--wc-text-secondary)' }}
-          >
-            <MoreHorizRoundedIcon sx={{ fontSize: 18 }} />
-          </IconButton>
-          <Menu
-            anchorEl={menuAnchor}
-            open={Boolean(menuAnchor)}
-            onClose={handleMenuClose}
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-          >
-            <MenuItem onClick={handleEdit} sx={{ fontFamily: SERIF, fontSize: 12 }}>
-              <EditRoundedIcon sx={{ fontSize: 16, mr: 1, color: 'var(--wc-primary)' }} />
-              Edit holding
-            </MenuItem>
-            <MenuItem onClick={handleDelete} sx={{ fontFamily: SERIF, fontSize: 12, color: 'var(--wc-error)' }}>
-              <DeleteOutlineRoundedIcon sx={{ fontSize: 16, mr: 1, color: 'var(--wc-error)' }} />
-              Delete holding
-            </MenuItem>
-          </Menu>
-        </Box>
       </Box>
     </Box>
   )
@@ -714,6 +678,7 @@ export function PortfolioPage() {
               id: `${symbol.toLowerCase()}-${b.id}`,
               shares: b.quantity,
               price: b.price,
+              date: b.trade_date,
             })),
           })
         }
@@ -862,7 +827,7 @@ export function PortfolioPage() {
         for (const lot of holding.buyLots) {
           await insertUserTrade({
             symbol: holding.symbol, trade_type: 'BUY',
-            quantity: lot.shares, price: lot.price, trade_date: today,
+            quantity: lot.shares, price: lot.price, trade_date: lot.date || today,
           })
         }
       } catch { /* silent */ }
@@ -1236,7 +1201,7 @@ export function PortfolioPage() {
                     ) : (
                       holdings.map((h, i) => (
                         <Box key={h.symbol}>
-                          <HoldingRow h={h} index={i} onEdit={handleEditHolding} onDelete={handleDeleteHolding} />
+                          <HoldingRow h={h} index={i} onEdit={handleEditHolding} />
                           {i < holdings.length - 1 && <Divider sx={{ borderColor: 'var(--wc-divider)', opacity: 0.5 }} />}
                         </Box>
                       ))
@@ -1366,7 +1331,7 @@ export function PortfolioPage() {
 
       <StockDrawer open={drawerOpen} onClose={handleCloseDrawer} stock={drawerStock} loading={drawerLoading} error={drawerError} />
       <MarketSummaryModal open={marketModalOpen} onClose={closeMarketModal} summary={marketSummary} activeIndex={marketModalIndex} />
-      <HoldingModal open={holdModalOpen} onClose={closeHoldModal} holdings={holdings} onSave={handleSaveHolding} initialMode={holdModalMode} initialHolding={holdModalHolding} availableStocks={holdingAvailableStocks.length > 0 ? holdingAvailableStocks : undefined} />
+      <HoldingModal open={holdModalOpen} onClose={closeHoldModal} holdings={holdings} onSave={handleSaveHolding} onDelete={handleDeleteHolding} initialMode={holdModalMode} initialHolding={holdModalHolding} availableStocks={holdingAvailableStocks.length > 0 ? holdingAvailableStocks : undefined} />
       <WatchlistModal
         open={watchModalOpen}
         onClose={closeWatchModal}
