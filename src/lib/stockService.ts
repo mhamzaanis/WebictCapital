@@ -66,38 +66,72 @@ export function hasStockService(): boolean {
   return hasSupabaseConfig && supabase !== null
 }
 
+const MARKET_CACHE_TTL_MS = 12 * 60 * 60 * 1000
+const USER_CACHE_TTL_MS = 12 * 60 * 60 * 1000
+
+let marketCache: { data: MarketSymbolSnapshot[]; fetchedAt: number } | null = null
+let marketInFlight: Promise<MarketSymbolSnapshot[]> | null = null
+
+const tradesCache = new Map<string, { data: UserTrade[]; fetchedAt: number }>()
+const tradesInFlight = new Map<string, Promise<UserTrade[]>>()
+
+const watchlistCache = new Map<string, { data: string[]; fetchedAt: number }>()
+const watchlistInFlight = new Map<string, Promise<string[]>>()
+
+function clearUserCaches(userId: string): void {
+  tradesCache.delete(userId)
+  watchlistCache.delete(userId)
+}
+
 export async function fetchUniqueSymbols(): Promise<MarketSymbolSnapshot[]> {
   if (!hasStockService() || !supabase) return []
 
-  const { data, error } = await supabase.rpc('get_unique_symbols')
-  if (error) {
-    console.warn('Failed to fetch unique symbols:', error.message)
-    return []
+  if (marketCache && Date.now() - marketCache.fetchedAt < MARKET_CACHE_TTL_MS) {
+    return marketCache.data
   }
-  return ((data ?? []) as Array<{
-    symbol: string
-    company: string | null
-    sector?: string | null
-    section?: string | null
-    price: number | null
-    change: number | null
-    changePct: number | null
-    volume: number | null
-    spark: number[] | null
-  }>).map((row) => ({
-    symbol: (row.symbol ?? '').trim().toUpperCase(),
-    company: row.company ?? (row.symbol ?? '').trim().toUpperCase(),
-    sector: row.sector ?? row.section ?? '',
-    price: toNum(row.price),
-    change: toNum(row.change),
-    changePct: toNum(row.changePct),
-    volume: fmtVolume(toNum(row.volume)),
-    spark: (row.spark ?? []).map(toNum),
-  }))
+  if (marketInFlight) return marketInFlight
+
+  marketInFlight = (async () => {
+    const { data, error } = await supabase.rpc('get_unique_symbols')
+    if (error) {
+      console.warn('Failed to fetch unique symbols:', error.message)
+      return marketCache?.data ?? []
+    }
+    const mapped = ((data ?? []) as Array<{
+      symbol: string
+      company: string | null
+      sector?: string | null
+      section?: string | null
+      price: number | null
+      change: number | null
+      changePct: number | null
+      volume: number | null
+      spark: number[] | null
+    }>).map((row) => ({
+      symbol: (row.symbol ?? '').trim().toUpperCase(),
+      company: row.company ?? (row.symbol ?? '').trim().toUpperCase(),
+      sector: row.sector ?? row.section ?? '',
+      price: toNum(row.price),
+      change: toNum(row.change),
+      changePct: toNum(row.changePct),
+      volume: fmtVolume(toNum(row.volume)),
+      spark: (row.spark ?? []).map(toNum),
+    }))
+    marketCache = { data: mapped, fetchedAt: Date.now() }
+    return mapped
+  })()
+
+  try {
+    return await marketInFlight
+  } finally {
+    marketInFlight = null
+  }
 }
 
 async function getCurrentUserId(): Promise<string | null> {
   if (!hasStockService() || !supabase) return null
+  const { data: { session } } = await supabase.auth.getSession()
+  if (session?.user?.id) return session.user.id
   const { data: { user } } = await supabase.auth.getUser()
   return user?.id ?? null
 }
@@ -194,14 +228,32 @@ export async function fetchWatchlistSymbols(): Promise<string[]> {
   const userId = await getCurrentUserId()
   if (!userId) return []
 
-  const result = await supabase!
-    .from('watchlists')
-    .select('symbol')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: true })
+  const cached = watchlistCache.get(userId)
+  if (cached && Date.now() - cached.fetchedAt < USER_CACHE_TTL_MS) {
+    return cached.data
+  }
+  const inFlight = watchlistInFlight.get(userId)
+  if (inFlight) return inFlight
 
-  if (result.error) return []
-  return ((result.data ?? []) as { symbol: string }[]).map((r) => r.symbol)
+  const request = (async () => {
+    const result = await supabase!
+      .from('watchlists')
+      .select('symbol')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: true })
+
+    if (result.error) return watchlistCache.get(userId)?.data ?? []
+    const data = ((result.data ?? []) as { symbol: string }[]).map((r) => r.symbol)
+    watchlistCache.set(userId, { data, fetchedAt: Date.now() })
+    return data
+  })()
+
+  watchlistInFlight.set(userId, request)
+  try {
+    return await request
+  } finally {
+    watchlistInFlight.delete(userId)
+  }
 }
 
 export async function addToWatchlist(symbol: string): Promise<void> {
@@ -222,7 +274,10 @@ export async function addToWatchlist(symbol: string): Promise<void> {
 
   if (result.error) {
     console.warn('Failed to add to watchlist:', result.error.message)
+    return
   }
+
+  clearUserCaches(userId)
 }
 
 export async function removeFromWatchlist(symbol: string): Promise<void> {
@@ -236,7 +291,10 @@ export async function removeFromWatchlist(symbol: string): Promise<void> {
 
   if (result.error) {
     console.warn('Failed to remove from watchlist:', result.error.message)
+    return
   }
+
+  clearUserCaches(userId)
 }
 
 // ─── User Trades (Holdings) Operations ──────────────────────────────────────────
@@ -245,17 +303,35 @@ export async function fetchUserTrades(): Promise<UserTrade[]> {
   const userId = await getCurrentUserId()
   if (!userId) return []
 
-  const result = await supabase!
-    .from('user_trades')
-    .select('id,symbol,trade_type,quantity,price,trade_date')
-    .eq('user_id', userId)
-    .order('trade_date', { ascending: false })
-
-  if (result.error) {
-    console.warn('Failed to fetch user trades:', result.error.message)
-    return []
+  const cached = tradesCache.get(userId)
+  if (cached && Date.now() - cached.fetchedAt < USER_CACHE_TTL_MS) {
+    return cached.data
   }
-  return (result.data ?? []) as UserTrade[]
+  const inFlight = tradesInFlight.get(userId)
+  if (inFlight) return inFlight
+
+  const request = (async () => {
+    const result = await supabase!
+      .from('user_trades')
+      .select('id,symbol,trade_type,quantity,price,trade_date')
+      .eq('user_id', userId)
+      .order('trade_date', { ascending: false })
+
+    if (result.error) {
+      console.warn('Failed to fetch user trades:', result.error.message)
+      return tradesCache.get(userId)?.data ?? []
+    }
+    const data = (result.data ?? []) as UserTrade[]
+    tradesCache.set(userId, { data, fetchedAt: Date.now() })
+    return data
+  })()
+
+  tradesInFlight.set(userId, request)
+  try {
+    return await request
+  } finally {
+    tradesInFlight.delete(userId)
+  }
 }
 
 export async function insertUserTrade(trade: UserTrade): Promise<void> {
@@ -276,6 +352,8 @@ export async function insertUserTrade(trade: UserTrade): Promise<void> {
     console.warn('Failed to insert trade:', result.error.message)
     throw result.error
   }
+
+  clearUserCaches(userId)
 }
 
 export async function deleteUserTrade(tradeId: number): Promise<void> {
@@ -291,6 +369,8 @@ export async function deleteUserTrade(tradeId: number): Promise<void> {
     console.warn('Failed to delete trade:', result.error.message)
     throw result.error
   }
+
+  clearUserCaches(userId)
 }
 
 export async function deleteUserTradesBySymbol(symbol: string): Promise<void> {
@@ -306,4 +386,6 @@ export async function deleteUserTradesBySymbol(symbol: string): Promise<void> {
     console.warn('Failed to delete trades by symbol:', result.error.message)
     throw result.error
   }
+
+  clearUserCaches(userId)
 }
