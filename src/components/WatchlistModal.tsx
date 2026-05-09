@@ -1,7 +1,7 @@
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded'
 import AddRoundedIcon from '@mui/icons-material/AddRounded'
+import RemoveRoundedIcon from '@mui/icons-material/RemoveRounded'
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded'
-import CheckRoundedIcon from '@mui/icons-material/CheckRounded'
 import {
   Box,
   Dialog,
@@ -23,6 +23,7 @@ import { fetchUniqueSymbols } from '../lib/stockService'
 export type WatchItem = {
   symbol: string
   company: string
+  sector: string
   price: number
   change: number
   changePct: number
@@ -35,6 +36,7 @@ type WatchlistModalProps = {
   onClose: () => void
   watchlist: WatchItem[]
   onAdd: (item: WatchItem) => void
+  onRemove: (symbol: string) => void
   availableStocks?: WatchItem[]
 }
 
@@ -77,11 +79,12 @@ const fmt = (v: number) => v.toLocaleString('en-PK')
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
 function StockRow({
-  stock, alreadyAdded, onAdd, index,
+  stock, alreadyAdded, onAdd, onRemove, index,
 }: {
   stock: WatchItem
   alreadyAdded: boolean
   onAdd: () => void
+  onRemove: () => void
   index: number
 }) {
   const reduce = useReducedMotion()
@@ -150,10 +153,13 @@ function StockRow({
         </Typography>
       </Box>
 
-      {/* Add button */}
+      {/* Add/Remove button */}
       <Box sx={{ flexShrink: 0 }}>
         {alreadyAdded ? (
           <Box
+            component={motion.button}
+            onClick={onRemove}
+            whileTap={{ scale: 0.94 }}
             sx={{
               display: 'flex',
               alignItems: 'center',
@@ -161,14 +167,19 @@ function StockRow({
               px: 1.2,
               py: 0.5,
               borderRadius: '6px',
-              bgcolor: C.posBg,
-              border: `1px solid ${C.pos}30`,
+              cursor: 'pointer',
+              bgcolor: C.negBg,
+              border: `1px solid ${C.neg}30`,
+              fontFamily: mono,
+              fontSize: 10,
+              fontWeight: 600,
+              color: C.neg,
+              transition: 'all 0.2s ease',
+              outline: 'none',
+              '&:hover': { borderColor: C.neg, bgcolor: 'rgba(155,28,46,0.12)' },
             }}
           >
-            <CheckRoundedIcon sx={{ fontSize: 13, color: C.pos }} />
-            <Typography sx={{ fontFamily: mono, fontSize: 10, fontWeight: 600, color: C.pos }}>
-              Added
-            </Typography>
+            <RemoveRoundedIcon sx={{ fontSize: 13 }} />
           </Box>
         ) : (
           <Box
@@ -198,7 +209,7 @@ function StockRow({
             }}
           >
             <AddRoundedIcon sx={{ fontSize: 13 }} />
-            Add
+          
           </Box>
         )}
       </Box>
@@ -208,7 +219,7 @@ function StockRow({
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 
-export function WatchlistModal({ open, onClose, watchlist, onAdd, availableStocks: stocksProp }: WatchlistModalProps) {
+export function WatchlistModal({ open, onClose, watchlist, onAdd, onRemove, availableStocks: stocksProp }: WatchlistModalProps) {
   const reduce = useReducedMotion()
   const [query, setQuery] = useState('')
   const [fetchedStocks, setFetchedStocks] = useState<WatchItem[]>([])
@@ -230,15 +241,16 @@ export function WatchlistModal({ open, onClose, watchlist, onAdd, availableStock
 
   const watchlistSymbols = useMemo(() => new Set(watchlist.map(w => w.symbol)), [watchlist])
 
-  const filtered = useMemo(() => {
+  const { watchedFiltered, availableFiltered } = useMemo(() => {
     const q = query.toLowerCase().trim()
-    if (!q) return fetchedStocks
-    return fetchedStocks.filter(
-      s =>
-        s.symbol.toLowerCase().includes(q) ||
-        s.company.toLowerCase().includes(q)
-    )
-  }, [query, fetchedStocks])
+    const matches = (s: WatchItem) =>
+      !q || s.symbol.toLowerCase().includes(q) || s.company.toLowerCase().includes(q)
+
+    return {
+      watchedFiltered: watchlist.filter(matches),
+      availableFiltered: fetchedStocks.filter((s) => !watchlistSymbols.has(s.symbol) && matches(s)),
+    }
+  }, [query, fetchedStocks, watchlist, watchlistSymbols])
 
   const handleClose = () => {
     setQuery('')
@@ -364,7 +376,7 @@ export function WatchlistModal({ open, onClose, watchlist, onAdd, availableStock
       <Box sx={{ overflowY: 'auto', px: { xs: 2.5, md: 3.5 }, py: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
           <Typography sx={{ fontFamily: mono, fontSize: 10, color: C.muted, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-            {filtered.length} stock{filtered.length !== 1 ? 's' : ''} found
+            {watchedFiltered.length + availableFiltered.length} stock{watchedFiltered.length + availableFiltered.length !== 1 ? 's' : ''} found
           </Typography>
           <Typography sx={{ fontFamily: mono, fontSize: 10, color: C.muted }}>
             {watchlist.length} in watchlist
@@ -385,7 +397,7 @@ export function WatchlistModal({ open, onClose, watchlist, onAdd, availableStock
                 Loading symbols…
               </Typography>
             </Box>
-          ) : filtered.length === 0 ? (
+          ) : watchedFiltered.length + availableFiltered.length === 0 ? (
             <Box
               component={motion.div}
               initial={{ opacity: 0 }}
@@ -398,19 +410,49 @@ export function WatchlistModal({ open, onClose, watchlist, onAdd, availableStock
             </Box>
           ) : (
             <Box key={query} sx={{ pb: 2 }}>
-              {filtered.map((stock, i) => (
-                <Box key={stock.symbol}>
-                  <StockRow
-                    stock={stock}
-                    index={i}
-                    alreadyAdded={watchlistSymbols.has(stock.symbol)}
-                    onAdd={() => onAdd(stock)}
-                  />
-                  {i < filtered.length - 1 && (
-                    <Divider sx={{ borderColor: C.border, opacity: 0.4 }} />
-                  )}
+              {watchedFiltered.length > 0 && (
+                <Box sx={{ mb: 2 }}>
+                  <Typography sx={{ fontFamily: mono, fontSize: 10, color: C.muted, letterSpacing: '0.08em', textTransform: 'uppercase', mb: 1 }}>
+                    Your watchlist
+                  </Typography>
+                  {watchedFiltered.map((stock, i) => (
+                    <Box key={stock.symbol}>
+                      <StockRow
+                        stock={stock}
+                        index={i}
+                        alreadyAdded
+                        onAdd={() => onAdd(stock)}
+                        onRemove={() => onRemove(stock.symbol)}
+                      />
+                      {i < watchedFiltered.length - 1 && (
+                        <Divider sx={{ borderColor: C.border, opacity: 0.4 }} />
+                      )}
+                    </Box>
+                  ))}
                 </Box>
-              ))}
+              )}
+
+              {availableFiltered.length > 0 && (
+                <Box>
+                  <Typography sx={{ fontFamily: mono, fontSize: 10, color: C.muted, letterSpacing: '0.08em', textTransform: 'uppercase', mb: 1 }}>
+                    Add more stocks
+                  </Typography>
+                  {availableFiltered.map((stock, i) => (
+                    <Box key={stock.symbol}>
+                      <StockRow
+                        stock={stock}
+                        index={i}
+                        alreadyAdded={false}
+                        onAdd={() => onAdd(stock)}
+                        onRemove={() => onRemove(stock.symbol)}
+                      />
+                      {i < availableFiltered.length - 1 && (
+                        <Divider sx={{ borderColor: C.border, opacity: 0.4 }} />
+                      )}
+                    </Box>
+                  ))}
+                </Box>
+              )}
             </Box>
           )}
         </AnimatePresence>

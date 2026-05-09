@@ -1,6 +1,7 @@
 // PortfolioPage.tsx — optimised (no shared tokens)
 
 import AddRoundedIcon from '@mui/icons-material/AddRounded'
+import SettingsIcon from '@mui/icons-material/Settings';
 import MoreHorizRoundedIcon from '@mui/icons-material/MoreHorizRounded'
 import EditRoundedIcon from '@mui/icons-material/EditRounded'
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded'
@@ -27,6 +28,7 @@ import { WatchlistModal, type WatchItem } from '../WatchlistModal'
 import {
   hasStockService, fetchStockDetail,
   addToWatchlist as addToWatchlistDb,
+  removeFromWatchlist as removeFromWatchlistDb,
   insertUserTrade, deleteUserTradesBySymbol,
   fetchUserTrades, fetchWatchlistSymbols,
   fetchUniqueSymbols,
@@ -55,10 +57,10 @@ type MarketHistory = Record<'1W' | '1M' | 'YTD' | '1Y', { labels: string[]; valu
 
 // ─── Static data ──────────────────────────────────────────────────────────────
 
-const PORTFOLIO_TREND = [
-  92_680_000, 92_340_000, 91_950_000, 92_120_000, 92_450_000, 92_800_000,
-  93_150_000, 92_900_000, 92_700_000, 92_300_000, 92_500_000, 92_650_000,
-]
+// const PORTFOLIO_TREND = [
+//   92_680_000, 92_340_000, 91_950_000, 92_120_000, 92_450_000, 92_800_000,
+//   93_150_000, 92_900_000, 92_700_000, 92_300_000, 92_500_000, 92_650_000,
+// ]
 const EMPTY_SPARK: number[] = []
 const SECTOR_COLORS = [
   'var(--wc-primary)', '#b77a12', '#0d5c32', '#7c3aed', '#1a4fa8', '#6366f1',
@@ -122,10 +124,10 @@ const cardSx = {
   bgcolor: 'var(--wc-paper)',
   p: { xs: 2.4, md: 3.2 },
   transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
-  '&:hover': {
-    borderColor: 'var(--wc-primary)',
-    boxShadow: '0 4px 24px rgba(10,36,99,0.07)',
-  },
+  // '&:hover': {
+  //   borderColor: 'var(--wc-primary)',
+  //   boxShadow: '0 4px 24px rgba(10,36,99,0.07)',
+  // },
 } as const
 
 const statTileBaseSx = {
@@ -134,10 +136,10 @@ const statTileBaseSx = {
   borderRadius: 1,
   bgcolor: 'var(--wc-surface)',
   transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
-  '&:hover': {
-    borderColor: 'var(--wc-primary)',
-    boxShadow: '0 4px 24px rgba(10,36,99,0.07)',
-  },
+  // '&:hover': {
+  //   borderColor: 'var(--wc-primary)',
+  //   boxShadow: '0 4px 24px rgba(10,36,99,0.07)',
+  // },
 } as const
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -286,7 +288,9 @@ function HoldingRow({
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       sx={{
-        py: 1.4, px: 1.2, mx: -1.2, borderRadius: '8px',
+        py: 1.2, px: 1.2, mx: -1.2, borderRadius: '8px',
+        minHeight: 72,
+        maxHeight: 72,
         bgcolor: hov ? 'rgba(10,36,99,0.03)' : 'transparent',
         transition: 'background-color 0.18s ease',
         cursor: 'default',
@@ -451,18 +455,20 @@ function WatchRow({ item, index, onClick }: { item: WatchItem; index: number; on
       initial={reduce ? false : { opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.32, delay: index * 0.06, ease: [0.22, 1, 0.36, 1] }}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
+      // onMouseEnter={() => setHov(true)}
+      // onMouseLeave={() => setHov(false)}
       onClick={onClick}
       sx={{
-        py: 1.2, pl: 0, pr: 0, borderRadius: '7px',
+        py: 1.1, pl: 0, pr: 0, borderRadius: '7px',
+        minHeight: 64,
+        maxHeight: 64,
         bgcolor: hov ? 'rgba(10,36,99,0.03)' : 'transparent',
         transition: 'background-color 0.18s ease',
         cursor: onClick ? 'pointer' : 'default',
       }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-        <Box sx={{ minWidth: 0, flex: 1 }}>
+        <Box sx={{ minWidth: 0, flex: 1 , }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
             <Typography sx={{
               fontFamily: NUMBER_FONT, fontSize: 12.5, fontWeight: 700,
@@ -473,14 +479,11 @@ function WatchRow({ item, index, onClick }: { item: WatchItem; index: number; on
             }}>
               {item.symbol}
             </Typography>
-            <StarBorderIcon sx={{
-              fontSize: 12, color: 'var(--wc-text-secondary)',
-              opacity: hov ? 1 : 0, transition: 'opacity 0.18s ease',
-            }} />
+            
           </Box>
-          <Typography sx={{ fontSize: 10, color: 'var(--wc-text-secondary)', fontFamily: SERIF, mt: 0.1 }}>
-            {item.company}
-          </Typography>
+          {/* <Typography sx={{ fontSize: 10, color: 'var(--wc-text-secondary)', fontFamily: SERIF, mt: 0.1 }}>
+            {item.sector || item.company}
+          </Typography> */}
         </Box>
 
         <Box sx={{ width: 60, flexShrink: 0 }}>
@@ -531,7 +534,14 @@ function HistRow({ event, index }: { event: HistoryEvent; index: number }) {
       initial={reduce ? false : { opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.32, delay: index * 0.065, ease: [0.22, 1, 0.36, 1] }}
-      sx={{ py: 1.3, display: 'flex', alignItems: 'center', gap: 1.6 }}
+      sx={{
+        py: 1.1,
+        minHeight: 64,
+        maxHeight: 64,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1.6,
+      }}
     >
       <Box sx={{
         width: 36, height: 36, borderRadius: '8px', flexShrink: 0,
@@ -737,8 +747,8 @@ export function PortfolioPage() {
           const dbWatchlist: WatchItem[] = symbols.map((sym) => {
             const live = marketMap.get(sym)
             return live
-              ? { symbol: live.symbol, company: live.company, price: live.price, change: live.change, changePct: live.changePct, volume: live.volume, spark: live.spark }
-              : { symbol: sym, company: sym, price: 0, change: 0, changePct: 0, volume: '--', spark: EMPTY_SPARK }
+              ? { symbol: live.symbol, company: live.company, sector: live.sector, price: live.price, change: live.change, changePct: live.changePct, volume: live.volume, spark: live.spark }
+              : { symbol: sym, company: sym, sector: 'Unclassified', price: 0, change: 0, changePct: 0, volume: '--', spark: EMPTY_SPARK }
           })
           setWatchlist(dbWatchlist)
         } else {
@@ -773,14 +783,13 @@ export function PortfolioPage() {
 
   const watchlistAvailableStocks = useMemo((): WatchItem[] =>
     marketSnapshots.map((m) => ({
-      symbol: m.symbol, company: m.company, price: m.price,
+      symbol: m.symbol, company: m.company, sector: m.sector, price: m.price,
       change: m.change, changePct: m.changePct, volume: m.volume, spark: m.spark,
     })), [marketSnapshots])
 
   const holdingAvailableStocks = useMemo(() =>
     marketSnapshots.map((m) => ({
-      symbol: m.symbol, company: m.company,
-      sector: (m as any).sector ?? '', price: m.price,
+      symbol: m.symbol, company: m.company, sector: m.sector, price: m.price,
     })), [marketSnapshots])
 
   // ── Callbacks ─────────────────────────────────────────────────────────────
@@ -868,6 +877,11 @@ export function PortfolioPage() {
     addToWatchlistDb(item.symbol).catch(() => { /* silent */ })
   }, [])
 
+  const handleRemoveFromWatchlist = useCallback((symbol: string) => {
+    setWatchlist((prev) => prev.filter((w) => w.symbol !== symbol))
+    removeFromWatchlistDb(symbol).catch(() => { /* silent */ })
+  }, [])
+
   const handleEditHolding = useCallback((symbol: string) => {
     if (!requireAuth()) return
     const found = holdings.find((h) => h.symbol === symbol)
@@ -883,11 +897,11 @@ export function PortfolioPage() {
   }, [requireAuth, user])
 
   const openKse100Modal = useCallback(() => { setMarketModalIndex('kse100'); setMarketModalOpen(true) }, [])
-  const openKse30Modal  = useCallback(() => { setMarketModalIndex('kse30');  setMarketModalOpen(true) }, [])
+  const openKse30Modal = useCallback(() => { setMarketModalIndex('kse30'); setMarketModalOpen(true) }, [])
   const closeMarketModal = useCallback(() => setMarketModalOpen(false), [])
-  const closeAuthModal   = useCallback(() => { clearError(); setAuthModalOpen(false) }, [clearError])
-  const closeHoldModal   = useCallback(() => setHoldModalOpen(false), [])
-  const closeWatchModal  = useCallback(() => setWatchModalOpen(false), [])
+  const closeAuthModal = useCallback(() => { clearError(); setAuthModalOpen(false) }, [clearError])
+  const closeHoldModal = useCallback(() => setHoldModalOpen(false), [])
+  const closeWatchModal = useCallback(() => setWatchModalOpen(false), [])
 
   const openAddHolding = useCallback(() => {
     if (!requireAuth()) return
@@ -914,7 +928,7 @@ export function PortfolioPage() {
       }}
     >
       <Container maxWidth="xl" sx={{ maxWidth: '1200px !important', px: { xs: 2.5, md: 5 } }}>
-        <Stack spacing={{ xs: 6, md: 10 }}>
+        <Stack spacing={{ xs: 7, md: 11 }}>
 
           {/* ── Page Header ─────────────────────────────────────────────── */}
           <MotionReveal>
@@ -974,10 +988,10 @@ export function PortfolioPage() {
               </Box>
 
               {/* Two index cards via map — eliminates duplicate JSX */}
-              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' }, gap: 1.5 }}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' }, gap: 2 }}>
                 {([
                   { label: 'KSE 100 Index', close: marketSummary.kse100_close, change: marketSummary.kse100_change, prev: marketSummary.kse100_prev, onClick: openKse100Modal },
-                  { label: 'KSE 30 Index',  close: marketSummary.kse30_close,  change: marketSummary.kse30_change,  prev: marketSummary.kse30_prev,  onClick: openKse30Modal  },
+                  { label: 'KSE 30 Index', close: marketSummary.kse30_close, change: marketSummary.kse30_change, prev: marketSummary.kse30_prev, onClick: openKse30Modal },
                 ] as const).map(({ label, close, change, prev, onClick }) => {
                   const pos = change >= 0
                   const color = pos ? 'var(--wc-success)' : 'var(--wc-error)'
@@ -996,7 +1010,7 @@ export function PortfolioPage() {
                             ? 'linear-gradient(90deg, var(--wc-success), rgba(13,92,50,0.2))'
                             : 'linear-gradient(90deg, var(--wc-error), rgba(180,40,58,0.2))',
                         },
-                        '&:hover': { borderColor: 'var(--wc-primary)', boxShadow: '0 6px 24px rgba(10,36,99,0.08)' },
+                        // '&:hover': { borderColor: 'var(--wc-primary)', boxShadow: '0 6px 24px rgba(10,36,99,0.08)' },
                       }}
                     >
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
@@ -1103,6 +1117,7 @@ export function PortfolioPage() {
             {/* Portfolio Value card */}
             <MotionReveal>
               <Box sx={{
+                mb: 2,
                 border: '1px solid var(--wc-divider)', borderRadius: 1.5,
                 bgcolor: 'var(--wc-paper)', p: { xs: 2.4, md: 3.2 },
                 position: 'relative', overflow: 'hidden',
@@ -1113,7 +1128,7 @@ export function PortfolioPage() {
                     ? 'linear-gradient(90deg, var(--wc-success), rgba(13,92,50,0.15))'
                     : 'linear-gradient(90deg, var(--wc-error), rgba(180,40,58,0.15))',
                 },
-                '&:hover': { borderColor: 'var(--wc-primary)', boxShadow: '0 4px 24px rgba(10,36,99,0.07)' },
+                // '&:hover': { borderColor: 'var(--wc-primary)', boxShadow: '0 4px 24px rgba(10,36,99,0.07)' },
               }}>
                 <SecLabel>Total Portfolio Value</SecLabel>
                 <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2, mb: 3 }}>
@@ -1124,18 +1139,18 @@ export function PortfolioPage() {
                   }}>
                     {fmtPkr(totalMV)}
                   </Typography>
-                  <Box sx={{ width: 140, height: 44 }}>
+                  {/* <Box sx={{ width: 140, height: 44 }}>
                     <SparkLine
                       data={PORTFOLIO_TREND} width={140} height={44}
                       color={totalPL >= 0 ? 'var(--wc-success)' : 'var(--wc-error)'} area
                     />
-                  </Box>
+                  </Box> */}
                 </Box>
                 <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' }, gap: 1.5 }}>
-                  <StatTile label="Day P/L"      value={fmtPkrSigned(dayPL)}   positive={dayPL >= 0}   sub={`${dayPL >= 0 ? '+' : ''}${dayPLPct.toFixed(2)}% today`} />
+                  <StatTile label="Day P/L" value={fmtPkrSigned(dayPL)} positive={dayPL >= 0} sub={`${dayPL >= 0 ? '+' : ''}${dayPLPct.toFixed(2)}% today`} />
                   <StatTile label="Total Return" value={fmtPkrSigned(totalPL)} positive={totalPL >= 0} sub={`${totalPL >= 0 ? '+' : ''}${totalPLPct.toFixed(2)}% all time`} />
                   <StatTile label="Total Shares" value={fmtCompact(totalShares)} sub={`${holdings.length} positions`} />
-                  <StatTile label="Cash Balance" value="Rs. 492,800" sub="Available to invest" />
+                  {/* <StatTile label="Cash Balance" value="Rs. 492,800" sub="Available to invest" /> */}
                 </Box>
               </Box>
             </MotionReveal>
@@ -1183,7 +1198,7 @@ export function PortfolioPage() {
 
             {/* Holdings + Watchlist */}
             <MotionReveal>
-              <Box sx={{ borderTop: '1px solid var(--wc-divider)', pt: 4, mb: 4, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
+              <Box sx={{ borderTop: '1px solid var(--wc-divider)', pt: 4, mb: 5, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
                 <Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, mb: 0.8 }}>
                     <ShowChartIcon sx={{ fontSize: 14, color: 'var(--wc-primary)', opacity: 0.7 }} />
@@ -1198,11 +1213,13 @@ export function PortfolioPage() {
                 </Typography>
               </Box>
 
-              <Box sx={{ display: 'grid', gap: 1.5, gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1.55fr) minmax(0, 1fr)' }, alignItems: 'start' }}>
+              <Box sx={{ mb: 3, display: 'grid', gap: { xs: 2, md: 2.5 }, gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1.55fr) minmax(0, 1fr)' }, alignItems: 'start' }}>
 
                 {/* Holdings table */}
-                <Card sx={{ p: { xs: 2, md: 2.4 }, display: 'flex', flexDirection: 'column', height: 520, '&:hover': { borderColor: 'var(--wc-divider)', boxShadow: 'none' } }}>
-                  <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 2, px: 1.2, mb: 0.5, flexShrink: 0 }}>
+                <Card sx={{ p: { xs: 1, md: 1.4 }, display: 'flex', flexDirection: 'column', height: 520, 
+                // '&:hover': { borderColor: 'var(--wc-divider)', boxShadow: 'none' } 
+                }}>
+                  <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 2, px: 0.5, mb: 0.5, flexShrink: 0 }}>
                     <Box sx={{ width: 40, flexShrink: 0 }} />
                     <Box sx={{ flex: '0 0 134px' }}><ColHead>Stock</ColHead></Box>
                     <Box sx={{ flex: 1, display: { xs: 'none', md: 'block' } }}><ColHead>Price / Shares</ColHead></Box>
@@ -1213,7 +1230,7 @@ export function PortfolioPage() {
                   </Box>
                   <Divider sx={{ borderColor: 'var(--wc-divider)', mb: 0.5, flexShrink: 0, display: { xs: 'none', sm: 'block' } }} />
 
-                  <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', mr: -2.4, pr: 2, scrollbarGutter: 'stable' }}>
+                  <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', px: 1.5, scrollbarGutter: 'stable' }}>
                     {holdings.length === 0 ? (
                       <EmptyState icon={<InboxOutlinedIcon sx={{ fontSize: 20 }} />} title="No holdings yet" subtitle={`Click "Add holding" to build your portfolio.`} />
                     ) : (
@@ -1248,21 +1265,53 @@ export function PortfolioPage() {
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, flexShrink: 0 }}>
                     <Box>
                       <SecLabel>Watchlist</SecLabel>
-                      <Typography sx={{ fontSize: 15, fontWeight: 700, color: 'var(--wc-text-primary)', fontFamily: SERIF, letterSpacing: '-0.01em' }}>
-                        Favourites
+                    </Box>
+
+                    <Box
+                      onClick={openAddWatch}
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.6,
+                        cursor: 'pointer',
+                        transition: 'all 0.25s ease',
+                        '&:hover .settings-icon': {
+                          transform: 'rotate(90deg)',
+                        },
+                        '&:hover .manage-text': {
+                          color: 'var(--wc-text-primary)',
+                        },
+                      }}
+                    >
+                      <SettingsIcon
+                        className="settings-icon"
+                        sx={{
+                          fontSize: 16,
+                          color: '#071f38',
+                          transition: 'transform 0.35s ease',
+                        }}
+                      />
+
+                      <Typography
+                        className="manage-text"
+                        sx={{
+                          fontSize: 11,
+                          fontWeight: 600,
+                          color: 'var(--wc-primary)',
+                          fontFamily: SERIF,
+                          transition: 'color 0.2s ease',
+                          lineHeight: 1,
+                        }}
+                      >
+                        Manage
                       </Typography>
                     </Box>
-                    <Typography
-                      onClick={openAddWatch}
-                      sx={{ fontSize: 11, fontWeight: 600, color: 'var(--wc-primary)', fontFamily: SERIF, cursor: 'pointer', transition: 'color 0.2s ease', '&:hover': { color: 'var(--wc-text-primary)' } }}
-                    >
-                      + Add
-                    </Typography>
                   </Box>
 
                   <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', mr: { xs: -2, md: -2.4 }, pr: 2, scrollbarGutter: 'stable' }}>
                     {watchlist.length === 0 ? (
-                      <EmptyState icon={<StarBorderIcon sx={{ fontSize: 20 }} />} title="No stocks watched yet" subtitle={`Click "+ Add" to start tracking your favourites.`} />
+                      <EmptyState icon={<StarBorderIcon sx={{ fontSize: 20 }} />}
+                        title="No stocks watched yet" subtitle={`Click "+ Add" to start tracking your favourites.`} />
                     ) : (
                       watchlist.map((item, i) => (
                         <Box key={item.symbol}>
@@ -1278,7 +1327,7 @@ export function PortfolioPage() {
 
             {/* Trade History */}
             <MotionReveal>
-              <Card sx={{ p: { xs: 2, md: 2.4 } }}>
+              <Card sx={{ p: { xs: 2.4, md: 3 } }}>
                 <Box sx={{ mb: 2 }}>
                   <SecLabel>Trade History</SecLabel>
                   <Typography sx={{ fontSize: 15, fontWeight: 700, color: 'var(--wc-text-primary)', fontFamily: SERIF, letterSpacing: '-0.01em' }}>
@@ -1318,7 +1367,14 @@ export function PortfolioPage() {
       <StockDrawer open={drawerOpen} onClose={handleCloseDrawer} stock={drawerStock} loading={drawerLoading} error={drawerError} />
       <MarketSummaryModal open={marketModalOpen} onClose={closeMarketModal} summary={marketSummary} activeIndex={marketModalIndex} />
       <HoldingModal open={holdModalOpen} onClose={closeHoldModal} holdings={holdings} onSave={handleSaveHolding} initialMode={holdModalMode} initialHolding={holdModalHolding} availableStocks={holdingAvailableStocks.length > 0 ? holdingAvailableStocks : undefined} />
-      <WatchlistModal open={watchModalOpen} onClose={closeWatchModal} watchlist={watchlist} onAdd={handleAddToWatchlist} availableStocks={watchlistAvailableStocks.length > 0 ? watchlistAvailableStocks : undefined} />
+      <WatchlistModal
+        open={watchModalOpen}
+        onClose={closeWatchModal}
+        watchlist={watchlist}
+        onAdd={handleAddToWatchlist}
+        onRemove={handleRemoveFromWatchlist}
+        availableStocks={watchlistAvailableStocks.length > 0 ? watchlistAvailableStocks : undefined}
+      />
       <AuthModal open={authModalOpen} onClose={closeAuthModal} />
     </Box>
   )
