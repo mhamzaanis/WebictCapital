@@ -192,6 +192,8 @@ export function DataPage() {
         .order('trade_date', { ascending: false })
         .limit(1)
 
+      console.log('market_daily_summary latest trade_date result:', latestDateResult)
+
       if (latestDateResult.error || !latestDateResult.data?.length) {
         if (!cancelled) {
           const message = latestDateResult.error?.message ?? 'No trade_date entries found in Supabase.'

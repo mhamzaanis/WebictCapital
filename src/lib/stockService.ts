@@ -38,7 +38,7 @@ export type MarketSymbolSnapshot = {
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
 
-function toNum(val: unknown): number {
+export function toNum(val: unknown): number {
   if (val === null || val === undefined || val === '') return 0
   if (typeof val === 'number') return Number.isFinite(val) ? val : 0
   if (typeof val === 'string') return parseFloat(val.replace(/,/g, '').trim()) || 0
@@ -72,6 +72,8 @@ const USER_CACHE_TTL_MS = 12 * 60 * 60 * 1000
 let marketCache: { data: MarketSymbolSnapshot[]; fetchedAt: number } | null = null
 let marketInFlight: Promise<MarketSymbolSnapshot[]> | null = null
 
+let summaryRowsInFlight: Promise<DbMarketSummaryRow[]> | null = null
+
 const tradesCache = new Map<string, { data: UserTrade[]; fetchedAt: number }>()
 const tradesInFlight = new Map<string, Promise<UserTrade[]>>()
 
@@ -81,6 +83,118 @@ const watchlistInFlight = new Map<string, Promise<string[]>>()
 function clearUserCaches(userId: string): void {
   tradesCache.delete(userId)
   watchlistCache.delete(userId)
+}
+
+export type DbMarketSummaryRow = {
+  trade_date: string
+  kse100_prev: number | null
+  kse100_close: number | null
+  kse100_change: number | null
+  kse30_prev: number | null
+  kse30_close: number | null
+  kse30_change: number | null
+  prev_volume: number | null
+  curr_volume: number | null
+  advances: number | null
+  declines: number | null
+  unchanged: number | null
+  flu_no: string | null
+}
+
+async function fetchLatestTradeDate(): Promise<string | null> {
+  const { data, error } = await supabase
+    .from('market_daily_summary')
+    .select('trade_date')
+    .order('trade_date', { ascending: false })
+    .limit(1)
+
+  if (!error && data?.length) return data[0].trade_date
+  if (error) console.warn('fetchLatestTradeDate failed:', error.message)
+  return null
+}
+
+/** Returns the latest row. */
+export async function fetchMarketDailySummary(): Promise<DbMarketSummaryRow | null> {
+  const rows = await fetchMarketDailySummaryRows(2)
+  return rows.length > 0 ? rows[0] : null
+}
+
+/**
+ * Fetches up to `limit` rows from market_daily_summary ordered newest-first.
+ */
+export async function fetchMarketDailySummaryRows(
+  limit = 252,
+): Promise<DbMarketSummaryRow[]> {
+  if (!hasStockService() || !supabase) return []
+
+  // Dedup in-flight requests
+  if (summaryRowsInFlight) {
+    const rows = await summaryRowsInFlight
+    if (rows.length >= limit) return rows.slice(0, limit)
+  }
+
+  const fetchLimit = Math.max(1, limit)
+  summaryRowsInFlight = (async () => {
+    const latestTradeDate = await fetchLatestTradeDate()
+    if (!latestTradeDate) {
+      const direct = await supabase
+        .from('market_daily_summary')
+        .select('trade_date,kse100_prev,kse100_close,kse100_change,curr_volume,advances,declines,unchanged')
+        .order('trade_date', { ascending: false })
+        .limit(fetchLimit)
+      if (direct.error || !direct.data?.length) {
+        console.warn('fetchMarketDailySummaryRows returned no rows')
+        return []
+      }
+      return direct.data as DbMarketSummaryRow[]
+    }
+
+    const { data, error } = await supabase
+      .from('market_daily_summary')
+      .select('trade_date,kse100_prev,kse100_close,kse100_change,kse30_prev,kse30_close,kse30_change,prev_volume,curr_volume,advances,declines,unchanged,flu_no')
+      .lte('trade_date', latestTradeDate)
+      .order('trade_date', { ascending: false })
+      .limit(fetchLimit)
+
+    if (error) {
+      if (error.message.includes('column') || error.message.includes('does not exist')) {
+        const fb = await supabase
+          .from('market_daily_summary')
+          .select('trade_date,kse100_prev,kse100_close,kse100_change,curr_volume,advances,declines,unchanged')
+          .lte('trade_date', latestTradeDate)
+          .order('trade_date', { ascending: false })
+          .limit(fetchLimit)
+        if (fb.error || !fb.data?.length) {
+          console.warn('fetchMarketDailySummaryRows fallback failed:', fb.error?.message)
+          return []
+        }
+        return fb.data as DbMarketSummaryRow[]
+      }
+      console.warn('fetchMarketDailySummaryRows failed:', error.message)
+      return []
+    }
+
+    if (!data?.length) {
+      const single = await supabase
+        .from('market_daily_summary')
+        .select('trade_date,kse100_prev,kse100_close,kse100_change,curr_volume,advances,declines,unchanged')
+        .eq('trade_date', latestTradeDate)
+        .limit(1)
+      if (single.error || !single.data?.length) {
+        console.warn('fetchMarketDailySummaryRows returned no rows for trade_date', latestTradeDate)
+        return []
+      }
+      return single.data as DbMarketSummaryRow[]
+    }
+    return data as DbMarketSummaryRow[]
+  })()
+
+  try {
+    const rows = await summaryRowsInFlight
+    return rows.slice(0, limit)
+  } finally {
+    summaryRowsInFlight = null
+  }
 }
 
 export async function fetchUniqueSymbols(): Promise<MarketSymbolSnapshot[]> {

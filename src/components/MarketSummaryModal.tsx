@@ -22,7 +22,8 @@ export type MarketSummary = {
   declines: number
   unchanged: number
   flu_no?: string | null
-  history: Record<'1W' | '1M' | 'YTD' | '1Y', { labels: string[]; values: number[] }>
+  kse100History: Record<'1W' | '1M' | 'YTD' | '1Y', { labels: string[]; values: number[] }>
+  kse30History: Record<'1W' | '1M' | 'YTD' | '1Y', { labels: string[]; values: number[] }>
 }
 
 type MarketSummaryModalProps = {
@@ -233,7 +234,8 @@ export function MarketSummaryModal({ open, onClose, summary, activeIndex = 'kse1
 
   const chartData = useMemo(() => {
     if (!summary) return { ohlc: [] as number[][], labels: [] as string[], volumes: [] as number[], closeLine: [] as number[] }
-    const data = summary.history[range]
+    const historyMap = activeIndex === 'kse100' ? summary.kse100History : summary.kse30History
+    const data = historyMap[range]
     const rawOhlc = data.values.map((v, i) => {
       const open = i > 0 ? data.values[i - 1] : v * 0.998
       const close = v
@@ -293,7 +295,7 @@ export function MarketSummaryModal({ open, onClose, summary, activeIndex = 'kse1
       volumes: compactVolumes,
       closeLine: compactOhlc.map(c => c[1]),
     }
-  }, [range, summary, isXs])
+  }, [range, summary, isXs, activeIndex])
 
   if (!summary) return null
 
@@ -311,12 +313,14 @@ export function MarketSummaryModal({ open, onClose, summary, activeIndex = 'kse1
   const showZoom = totalCandles > (isXs ? 30 : 40)
   const zoomEnd = showZoom ? Math.min(100, ((isXs ? 30 : 40) / totalCandles) * 100) : 100
   const maxVolume = chartData.volumes.length > 0 ? Math.max(...chartData.volumes) : 1
-  const formattedDate = new Date(summary.tradeDate).toLocaleDateString('en-PK', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  })
+  const formattedDate = summary.tradeDate
+    ? new Date(summary.tradeDate).toLocaleDateString('en-PK', {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      })
+    : '—'
 
   return (
     <Dialog
@@ -673,7 +677,7 @@ export function MarketSummaryModal({ open, onClose, summary, activeIndex = 'kse1
                   ],
                   series: [
                     {
-                      name: 'KSE 100',
+                      name: activeLabel,
                       type: 'candlestick',
                       data: chartData.ohlc,
                       xAxisIndex: 0,
@@ -758,7 +762,7 @@ export function MarketSummaryModal({ open, onClose, summary, activeIndex = 'kse1
                       fontFamily: 'DM Mono, monospace',
                     },
                     formatter: (params: { seriesName?: string; value: number | number[] }[]) => {
-                      const candleParam = params.find(p => p.seriesName === 'KSE 100')
+                      const candleParam = params.find(p => p.seriesName === activeLabel)
                       if (!candleParam) return ''
                       const d = candleParam.value as number[]
                       const [open, close, low, high] = d
@@ -766,7 +770,7 @@ export function MarketSummaryModal({ open, onClose, summary, activeIndex = 'kse1
                       const sign = close >= open ? '+' : ''
                       const chgColor = close >= open ? candleUp : candleDown
                       return [
-                        `<div style="font-weight:700;margin-bottom:4px;font-size:10px;color:${COLORS.textSecondary};">KSE 100 INDEX</div>`,
+                        `<div style="font-weight:700;margin-bottom:4px;font-size:10px;color:${COLORS.textSecondary};">${activeLabel} INDEX</div>`,
                         `<div style="display:grid;grid-template-columns:32px 1fr;gap:2px 8px;font-size:11px;">`,
                         `<span style="color:${COLORS.textSecondary}">O</span><span>${fmtIndex(open)}</span>`,
                         `<span style="color:${COLORS.textSecondary}">H</span><span>${fmtIndex(high)}</span>`,

@@ -19,7 +19,7 @@ import ReactECharts from 'echarts-for-react'
 import { MotionReveal } from '../animations/MotionReveal'
 import { CustomButton } from '../CustomButton'
 import { StockDrawer, type StockDetail } from '../StockDrawer'
-import { MarketSummaryModal } from '../MarketSummaryModal'
+import { MarketSummaryModal, type MarketSummary } from '../MarketSummaryModal'
 import { HoldingModal, type Holding } from '../HoldingModal'
 import { WatchlistModal, type WatchItem } from '../WatchlistModal'
 import {
@@ -28,8 +28,8 @@ import {
   removeFromWatchlist as removeFromWatchlistDb,
   insertUserTrade, deleteUserTradesBySymbol,
   fetchUserTrades, fetchWatchlistSymbols,
-  fetchUniqueSymbols,
-  type UserTrade, type MarketSymbolSnapshot,
+  fetchUniqueSymbols, fetchMarketDailySummaryRows,
+  type UserTrade, type MarketSymbolSnapshot, type DbMarketSummaryRow,
 } from '../../lib/stockService'
 import { useAuth } from '../../context/AuthContext'
 import { AuthModal } from '../AuthModal'
@@ -51,6 +51,15 @@ type HistoryEvent = {
 }
 
 type MarketHistory = Record<'1W' | '1M' | 'YTD' | '1Y', { labels: string[]; values: number[] }>
+
+type IndexCardData = {
+  /** Spark values derived from last ~12 close values from the DB. */
+  spark: number[]
+  /** ISO date string of the previous row (second-to-last DB entry). */
+  prevDate: string | null
+  /** Close value of the previous row — used as a sanity check label. */
+  prevClose: number
+}
 
 // ─── Static data ──────────────────────────────────────────────────────────────
 
@@ -76,42 +85,84 @@ const fmtCompact = (v: number) => {
   return v.toString()
 }
 
-// ─── Market history helpers ───────────────────────────────────────────────────
-
-const buildTradingDates = (endDate: string, count: number) => {
-  const dates: Date[] = []
-  const cursor = new Date(endDate)
-  while (dates.length < count) {
-    const day = cursor.getDay()
-    if (day !== 0 && day !== 6) dates.push(new Date(cursor))
-    cursor.setDate(cursor.getDate() - 1)
-  }
-  return dates.reverse()
+const toNum = (v: unknown): number => {
+  if (typeof v === 'number') return Number.isFinite(v) ? v : 0
+  if (typeof v === 'string') return parseFloat(v.replace(/,/g, '').trim()) || 0
+  return 0
 }
 
-const formatShortDate = (d: Date) =>
-  d.toLocaleDateString('en-PK', { month: 'short', day: 'numeric' })
+// ─── Real market history builder ──────────────────────────────────────────────
 
-const buildTradingSeries = (
-  endDate: string, count: number, startValue: number, endValue: number,
-) => {
-  const dates = buildTradingDates(endDate, count)
-  const values = dates.map((_, i) => {
-    const t = count > 1 ? i / (count - 1) : 1
-    const trend = startValue + (endValue - startValue) * t
-    const wiggle =
-      Math.sin(i * 0.7) * (startValue * 0.002) + Math.cos(i * 0.33) * (startValue * 0.0016)
-    return Math.max(1, trend + wiggle)
+const EMPTY_MARKET_HISTORY: MarketHistory = {
+  '1W': { labels: [], values: [] },
+  '1M': { labels: [], values: [] },
+  'YTD': { labels: [], values: [] },
+  '1Y': { labels: [], values: [] },
+}
+
+const fmtDateLabel = (dateStr: string) => {
+  const d = new Date(dateStr + 'T00:00:00')
+  return d.toLocaleDateString('en-PK', { month: 'short', day: 'numeric' })
+}
+
+/** Build 1W/1M/YTD/1Y history from real DB rows (newest-first). */
+function buildRealMarketHistory(
+  rows: DbMarketSummaryRow[],
+  closeKey: 'kse100_close' | 'kse30_close',
+): MarketHistory {
+  if (rows.length === 0) return EMPTY_MARKET_HISTORY
+
+  // Reverse to oldest-first for chart display
+  const sorted = [...rows].reverse()
+
+  const buildSlice = (data: DbMarketSummaryRow[]) => ({
+    labels: data.map((r) => fmtDateLabel(r.trade_date)),
+    values: data.map((r) => ((r[closeKey] as number) ?? 0)),
   })
-  return { labels: dates.map(formatShortDate), values }
+
+  // YTD: from Jan 1 of current year
+  const currentYear = new Date().getFullYear()
+  const ytdRows = sorted.filter((r) => {
+    const y = new Date(r.trade_date + 'T00:00:00').getFullYear()
+    return y === currentYear
+  })
+
+  return {
+    '1W': buildSlice(sorted.slice(-5)),
+    '1M': buildSlice(sorted.slice(-22)),
+    'YTD': buildSlice(ytdRows.length > 0 ? ytdRows : sorted.slice(-90)),
+    '1Y': buildSlice(sorted),
+  }
 }
 
-const buildMarketHistory = (tradeDate: string, closeValue: number): MarketHistory => ({
-  '1W': buildTradingSeries(tradeDate, 7, 167_210, closeValue),
-  '1M': buildTradingSeries(tradeDate, 22, 168_420, closeValue),
-  'YTD': buildTradingSeries(tradeDate, 90, 163_540, closeValue),
-  '1Y': buildTradingSeries(tradeDate, 252, 155_820, closeValue),
-})
+function normalizeSummaryRows(rows: DbMarketSummaryRow[]): DbMarketSummaryRow[] {
+  return rows.map((row) => {
+    const kse100Prev = toNum(row.kse100_prev)
+    const kse100Change = toNum(row.kse100_change)
+    const kse100CloseRaw = toNum(row.kse100_close)
+    const kse100Close = kse100CloseRaw !== 0 ? kse100CloseRaw : (kse100Prev + kse100Change)
+
+    const kse30Prev = toNum(row.kse30_prev)
+    const kse30Change = toNum(row.kse30_change)
+    const kse30CloseRaw = toNum(row.kse30_close)
+    const kse30Close = kse30CloseRaw !== 0 ? kse30CloseRaw : (kse30Prev + kse30Change)
+
+    return {
+      ...row,
+      kse100_prev: kse100Prev,
+      kse100_close: kse100Close,
+      kse100_change: kse100Change !== 0 ? kse100Change : (kse100Close - kse100Prev),
+      kse30_prev: kse30Prev,
+      kse30_close: kse30Close,
+      kse30_change: kse30Change !== 0 ? kse30Change : (kse30Close - kse30Prev),
+      prev_volume: toNum(row.prev_volume),
+      curr_volume: toNum(row.curr_volume),
+      advances: toNum(row.advances),
+      declines: toNum(row.declines),
+      unchanged: toNum(row.unchanged),
+    }
+  })
+}
 
 // ─── Static sx objects (module-level — not re-created on every render) ────────
 
@@ -584,32 +635,73 @@ export function PortfolioPage() {
     marketSnapshotsRef.current = data
   }, [])
 
-  const marketSummary = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10)
-    return {
-      tradeDate: today,
-      kse100_prev: 165_823.88,
-      kse100_close: 162_994.17,
-      kse100_change: -2_829.71,
-      kse30_prev: 74_980.25,
-      kse30_close: 73_220.19,
-      kse30_change: -1_760.06,
-      prev_volume: 912_550_000,
-      curr_volume: 837_371_894,
-      advances: 101,
-      declines: 348,
-      unchanged: 36,
-      flu_no: 'KSE-2026-04-30',
-      history: buildMarketHistory(today, 162_994.17),
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  const [marketSummary, setMarketSummary] = useState<MarketSummary>(() => ({
+    tradeDate: '',
+    kse100_prev: 0, kse100_close: 0, kse100_change: 0,
+    kse30_prev: 0, kse30_close: 0, kse30_change: 0,
+    prev_volume: 0, curr_volume: 0,
+    advances: 0, declines: 0, unchanged: 0,
+    flu_no: null,
+    kse100History: EMPTY_MARKET_HISTORY,
+    kse30History: EMPTY_MARKET_HISTORY,
+  }))
+
+  // Per-index card data built from the latest DB rows
+  const [kse100Card, setKse100Card] = useState<IndexCardData>({ spark: [], prevDate: null, prevClose: 0 })
+  const [kse30Card, setKse30Card] = useState<IndexCardData>({ spark: [], prevDate: null, prevClose: 0 })
 
   useEffect(() => {
     if (isLocked) setAuthModalOpen(true)
   }, [isLocked])
 
-  // ── Data loading ──────────────────────────────────────────────────────────
+  // ── Consolidated data loading (single effect — reduces network calls) ────
+
+  /** Shared helper: processes summary rows into marketSummary + card sparklines. */
+  const processSummaryRows = useCallback((summaryRows: DbMarketSummaryRow[]) => {
+    if (summaryRows.length === 0) return
+
+    const normalized = normalizeSummaryRows(summaryRows)
+    const latest = normalized[0]
+    const prior = normalized[1] ?? null
+
+    const kse100Close = latest.kse100_close ?? 0
+    const kse30Close = latest.kse30_close ?? 0
+
+    setMarketSummary({
+      tradeDate: latest.trade_date,
+      kse100_prev: latest.kse100_prev ?? 0,
+      kse100_close: kse100Close,
+      kse100_change: latest.kse100_change ?? 0,
+      kse30_prev: latest.kse30_prev ?? 0,
+      kse30_close: kse30Close,
+      kse30_change: latest.kse30_change ?? 0,
+      prev_volume: latest.prev_volume ?? 0,
+      curr_volume: latest.curr_volume ?? 0,
+      advances: latest.advances ?? 0,
+      declines: latest.declines ?? 0,
+      unchanged: latest.unchanged ?? 0,
+      flu_no: latest.flu_no,
+      kse100History: buildRealMarketHistory(normalized, 'kse100_close'),
+      kse30History: buildRealMarketHistory(normalized, 'kse30_close'),
+    })
+
+    // Sparklines: use last 12 close values for a richer line
+    const kse100Spark = normalized.slice(0, 12).reverse().map((r) => r.kse100_close ?? 0)
+    const kse30Spark = normalized.slice(0, 12).reverse().map((r) => r.kse30_close ?? 0)
+    const kse100PrevClose = prior?.kse100_close ?? kse100Close
+    const kse30PrevClose = prior?.kse30_close ?? kse30Close
+
+    setKse100Card({
+      spark: kse100Spark.length >= 2 ? kse100Spark : [kse100Close, kse100Close],
+      prevDate: prior?.trade_date ?? null,
+      prevClose: kse100PrevClose,
+    })
+    setKse30Card({
+      spark: kse30Spark.length >= 2 ? kse30Spark : [kse30Close, kse30Close],
+      prevDate: prior?.trade_date ?? null,
+      prevClose: kse30PrevClose,
+    })
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -617,19 +709,28 @@ export function PortfolioPage() {
     const loadMarketOnly = async () => {
       if (!hasStockService()) return
       try {
-        const data = await fetchUniqueSymbols()
-        if (!cancelled) syncSnapshots(data)
+        // Single parallel fetch for both market data sources
+        const [summaryRows, snapshots] = await Promise.all([
+          fetchMarketDailySummaryRows(252),
+          fetchUniqueSymbols(),
+        ])
+        if (cancelled) return
+        processSummaryRows(summaryRows)
+        syncSnapshots(snapshots)
       } catch { /* silent */ }
     }
 
     const loadUserData = async () => {
       try {
-        const [trades, marketData] = await Promise.all([
+        // Single parallel fetch for ALL data sources
+        const [summaryRows, trades, marketData] = await Promise.all([
+          fetchMarketDailySummaryRows(252),
           fetchUserTrades(),
           hasStockService() ? fetchUniqueSymbols() : Promise.resolve([] as MarketSymbolSnapshot[]),
         ])
         if (cancelled) return
 
+        processSummaryRows(summaryRows)
         syncSnapshots(marketData)
 
         const marketMap = new Map(marketData.map((m) => [m.symbol, m]))
@@ -729,7 +830,7 @@ export function PortfolioPage() {
     }
 
     return () => { cancelled = true }
-  }, [user, authLoading, syncSnapshots])
+  }, [user, authLoading, syncSnapshots, processSummaryRows])
 
   // ── Derived values ────────────────────────────────────────────────────────
 
@@ -946,20 +1047,39 @@ export function PortfolioPage() {
                   </Typography>
                 </Box>
                 <Typography sx={{ fontSize: 11, color: 'var(--wc-text-secondary)', fontFamily: NUMBER_FONT }}>
-                  {new Date(marketSummary.tradeDate).toLocaleDateString('en-PK', {
-                    weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
-                  })}
+                  Last Updated: {marketSummary.tradeDate
+                    ? new Date(marketSummary.tradeDate).toLocaleDateString('en-PK', {
+                        weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
+                      })
+                    : '—'}
                 </Typography>
               </Box>
 
-              {/* Two index cards via map — eliminates duplicate JSX */}
+              {/* Two index cards — each using its own sparkline from the DB */}
               <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' }, gap: 2 }}>
                 {([
-                  { label: 'KSE 100 Index', close: marketSummary.kse100_close, change: marketSummary.kse100_change, prev: marketSummary.kse100_prev, onClick: openKse100Modal },
-                  { label: 'KSE 30 Index', close: marketSummary.kse30_close, change: marketSummary.kse30_change, prev: marketSummary.kse30_prev, onClick: openKse30Modal },
-                ] as const).map(({ label, close, change, prev, onClick }) => {
+                  {
+                    label: 'KSE 100 Index',
+                    close: marketSummary.kse100_close,
+                    change: marketSummary.kse100_change,
+                    prev: marketSummary.kse100_prev,
+                    card: kse100Card,
+                    onClick: openKse100Modal,
+                  },
+                  {
+                    label: 'KSE 30 Index',
+                    close: marketSummary.kse30_close,
+                    change: marketSummary.kse30_change,
+                    prev: marketSummary.kse30_prev,
+                    card: kse30Card,
+                    onClick: openKse30Modal,
+                  },
+                ] as const).map(({ label, close, change, prev, card, onClick }) => {
                   const pos = change >= 0
                   const color = pos ? 'var(--wc-success)' : 'var(--wc-error)'
+                  const prevDateLabel = card.prevDate
+                    ? new Date(card.prevDate + 'T00:00:00').toLocaleDateString('en-PK', { day: 'numeric', month: 'short' })
+                    : null
                   return (
                     <Box
                       key={label}
@@ -983,12 +1103,19 @@ export function PortfolioPage() {
                           <Typography sx={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', color: 'var(--wc-text-secondary)', textTransform: 'uppercase', fontFamily: SERIF, mb: 0.4 }}>
                             {label}
                           </Typography>
-                          <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 12, fontWeight: 600, color: 'var(--wc-text-secondary)' }}>
-                            Close {close.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 12, fontWeight: 600, color: 'var(--wc-text-primary)' }}>
+                            {close.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </Typography>
+                          {prevDateLabel && card.prevClose > 0 && (
+                            <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 10, color: 'var(--wc-text-secondary)', mt: 0.15 }}>
+                              Prev ({prevDateLabel}):&nbsp;
+                              {card.prevClose.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </Typography>
+                          )}
                         </Box>
-                        <Box sx={{ width: 80, height: 36 }}>
-                          <SparkLine data={marketSummary.history['1W'].values} width={80} height={36} color={color} area />
+                        {/* Per-index sparkline: [prevClose → latestClose] */}
+                        <Box sx={{ width: 80, height: 40 }}>
+                          <SparkLine data={card.spark.length >= 2 ? card.spark : [close, close]} width={80} height={40} color={color} area />
                         </Box>
                       </Box>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -1000,7 +1127,7 @@ export function PortfolioPage() {
                           {change >= 0 ? '+' : ''}{change.toFixed(2)}
                         </Typography>
                         <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 11, color: 'var(--wc-text-secondary)', ml: 0.5 }}>
-                          {change >= 0 ? '+' : ''}{((change / prev) * 100).toFixed(2)}%
+                          {prev !== 0 ? `${change >= 0 ? '+' : ''}${((change / prev) * 100).toFixed(2)}%` : '—'}
                         </Typography>
                       </Box>
                     </Box>

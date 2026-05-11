@@ -1,0 +1,57 @@
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.datatable (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  trade_date date NOT NULL,
+  symbol text NOT NULL,
+  company text NOT NULL,
+  open numeric,
+  high numeric,
+  low numeric,
+  close numeric,
+  turnover bigint,
+  change numeric,
+  section text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT datatable_pkey PRIMARY KEY (id),
+  CONSTRAINT datatable_date_fk FOREIGN KEY (trade_date) REFERENCES public.market_daily_summary(trade_date)
+);
+CREATE TABLE public.market_daily_summary (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  trade_date date NOT NULL UNIQUE,
+  kse100_prev numeric,
+  kse100_close numeric,
+  kse100_change numeric,
+  kse30_prev numeric,
+  kse30_close numeric,
+  kse30_change numeric,
+  prev_volume bigint,
+  curr_volume bigint,
+  advances integer,
+  declines integer,
+  unchanged integer,
+  flu_no text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT market_daily_summary_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.user_trades (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  user_id uuid NOT NULL,
+  symbol text NOT NULL,
+  trade_type text NOT NULL CHECK (trade_type = ANY (ARRAY['BUY'::text, 'SELL'::text])),
+  quantity integer NOT NULL CHECK (quantity > 0),
+  price numeric NOT NULL CHECK (price >= 0::numeric),
+  trade_date date NOT NULL DEFAULT CURRENT_DATE,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT user_trades_pkey PRIMARY KEY (id),
+  CONSTRAINT user_trades_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.watchlists (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  user_id uuid NOT NULL,
+  symbol text NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT watchlists_pkey PRIMARY KEY (id),
+  CONSTRAINT watchlists_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
