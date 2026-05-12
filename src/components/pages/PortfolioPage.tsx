@@ -18,6 +18,7 @@ import { useState, useMemo, memo, useEffect, useCallback, useRef } from 'react'
 import ReactECharts from 'echarts-for-react'
 import { MotionReveal } from '../animations/MotionReveal'
 import { CustomButton } from '../CustomButton'
+import { PulseSkeleton } from '../PulseSkeleton'
 import { StockDrawer, type StockDetail } from '../StockDrawer'
 import { MarketSummaryModal, type MarketSummary } from '../MarketSummaryModal'
 import { HoldingModal, type Holding } from '../HoldingModal'
@@ -191,6 +192,97 @@ const statTileBaseSx = {
 } as const
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
+
+function SkeletonIndexCard() {
+  return (
+    <Box
+      sx={{
+        p: 2,
+        border: '1px solid var(--wc-divider)',
+        borderRadius: 1.5,
+        bgcolor: 'var(--wc-paper)',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      <PulseSkeleton shape="text" width={110} height={12} />
+      <PulseSkeleton shape="text" width={140} height={18} sx={{ mt: 0.6 }} />
+      <PulseSkeleton shape="text" width={120} height={12} sx={{ mt: 0.4 }} />
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1.2 }}>
+        <PulseSkeleton shape="rounded" width={80} height={40} />
+        <PulseSkeleton shape="text" width={90} height={24} />
+      </Box>
+    </Box>
+  )
+}
+
+function SkeletonHoldingRow() {
+  return (
+    <Box sx={{ py: 1.2, px: 1.2, mx: -1.2 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1.5, sm: 2 } }}>
+        <PulseSkeleton shape="rounded" width={40} height={40} />
+        <Box sx={{ minWidth: 0, flex: { xs: '0 0 90px', sm: '0 0 134px' } }}>
+          <PulseSkeleton shape="text" width={80} height={14} />
+          <PulseSkeleton shape="text" width={110} height={10} sx={{ mt: 0.3 }} />
+          <PulseSkeleton shape="rounded" width={60} height={14} sx={{ mt: 0.6 }} />
+        </Box>
+        <Box sx={{ flex: 1, display: { xs: 'none', md: 'block' } }}>
+          <PulseSkeleton shape="text" width={90} height={14} />
+          <PulseSkeleton shape="text" width={120} height={10} sx={{ mt: 0.3 }} />
+        </Box>
+        <Box sx={{ textAlign: 'right', display: { xs: 'none', sm: 'block' }, minWidth: 72, flexShrink: 0 }}>
+          <PulseSkeleton shape="text" width={60} height={12} />
+          <PulseSkeleton shape="text" width={40} height={9} sx={{ mt: 0.3 }} />
+        </Box>
+        <Box sx={{ textAlign: 'right', minWidth: { xs: 78, sm: 90 }, flexShrink: 0 }}>
+          <PulseSkeleton shape="text" width={70} height={12} />
+          <PulseSkeleton shape="text" width={40} height={9} sx={{ mt: 0.3 }} />
+        </Box>
+        <Box sx={{ textAlign: 'right', minWidth: { xs: 78, sm: 95 }, flexShrink: 0 }}>
+          <PulseSkeleton shape="text" width={70} height={12} />
+          <PulseSkeleton shape="text" width={40} height={9} sx={{ mt: 0.3 }} />
+        </Box>
+      </Box>
+    </Box>
+  )
+}
+
+function SkeletonWatchRow() {
+  return (
+    <Box sx={{ py: 1.1 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <Box sx={{ minWidth: 0, flex: 1 }}>
+          <PulseSkeleton shape="text" width={60} height={12} />
+        </Box>
+        <PulseSkeleton shape="rounded" width={60} height={30} />
+        <Box sx={{ textAlign: 'right', minWidth: 90, flexShrink: 0 }}>
+          <PulseSkeleton shape="text" width={70} height={12} />
+          <PulseSkeleton shape="text" width={70} height={10} sx={{ mt: 0.3 }} />
+        </Box>
+        <Box sx={{ textAlign: 'right', minWidth: 44, display: { xs: 'none', sm: 'block' }, flexShrink: 0 }}>
+          <PulseSkeleton shape="text" width={36} height={10} />
+          <PulseSkeleton shape="text" width={28} height={9} sx={{ mt: 0.3 }} />
+        </Box>
+      </Box>
+    </Box>
+  )
+}
+
+function SkeletonHistoryRow() {
+  return (
+    <Box sx={{ py: 1.1, display: 'flex', alignItems: 'center', gap: 1.6 }}>
+      <PulseSkeleton shape="rounded" width={36} height={36} />
+      <Box sx={{ flex: 1 }}>
+        <PulseSkeleton shape="text" width={160} height={12} />
+        <PulseSkeleton shape="text" width={220} height={10} sx={{ mt: 0.4 }} />
+      </Box>
+      <Box sx={{ textAlign: 'right' }}>
+        <PulseSkeleton shape="text" width={70} height={12} />
+        <PulseSkeleton shape="text" width={50} height={9} sx={{ mt: 0.3 }} />
+      </Box>
+    </Box>
+  )
+}
 
 function SecLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -622,6 +714,9 @@ export function PortfolioPage() {
   const [marketModalIndex, setMarketModalIndex] = useState<'kse100' | 'kse30'>('kse100')
   const [marketSnapshots, setMarketSnapshots] = useState<MarketSymbolSnapshot[]>([])
   const marketSnapshotsRef = useRef<MarketSymbolSnapshot[]>([])
+  const [marketLoading, setMarketLoading] = useState(true)
+  const [marketHistoryLoading, setMarketHistoryLoading] = useState(false)
+  const [userLoading, setUserLoading] = useState(false)
   const [sectorAllocation, setSectorAllocation] = useState<
     { sector: string; value: number; color: string }[]
   >([])
@@ -708,23 +803,29 @@ export function PortfolioPage() {
 
     const loadMarketOnly = async () => {
       if (!hasStockService()) return
+      setMarketLoading(true)
       try {
         // Single parallel fetch for both market data sources
         const [summaryRows, snapshots] = await Promise.all([
-          fetchMarketDailySummaryRows(252),
+          fetchMarketDailySummaryRows(2),
           fetchUniqueSymbols(),
         ])
         if (cancelled) return
         processSummaryRows(summaryRows)
         syncSnapshots(snapshots)
       } catch { /* silent */ }
+      finally {
+        if (!cancelled) setMarketLoading(false)
+      }
     }
 
     const loadUserData = async () => {
+      setMarketLoading(true)
+      setUserLoading(true)
       try {
         // Single parallel fetch for ALL data sources
         const [summaryRows, trades, marketData] = await Promise.all([
-          fetchMarketDailySummaryRows(252),
+          fetchMarketDailySummaryRows(2),
           fetchUserTrades(),
           hasStockService() ? fetchUniqueSymbols() : Promise.resolve([] as MarketSymbolSnapshot[]),
         ])
@@ -760,11 +861,22 @@ export function PortfolioPage() {
         for (const [symbol, data] of holdingsMap) {
           if (data.quantity <= 0) continue
           const live = marketMap.get(symbol)
-          const currentPrice = live?.price ?? data.totalCost / data.quantity
+          const totalBuyQty = data.buys.reduce((sum, b) => sum + b.quantity, 0)
+          const totalBuyCost = data.buys.reduce((sum, b) => sum + b.quantity * b.price, 0)
+          const avgBuyPrice = totalBuyQty > 0 ? totalBuyCost / totalBuyQty : 0
+          const fallbackPrice = avgBuyPrice > 0 ? avgBuyPrice : (data.totalCost / data.quantity)
+          const currentPrice = live?.price ?? fallbackPrice
+          const prevFromChange = live ? currentPrice - (live.change ?? 0) : 0
+          const prevFromSpark = live?.spark && live.spark.length >= 2
+            ? live.spark[live.spark.length - 2]
+            : 0
+          const previousPrice = prevFromChange > 0 ? prevFromChange : (prevFromSpark > 0 ? prevFromSpark : currentPrice)
           const currentValue = currentPrice * data.quantity
-          const avgCost = data.totalCost / data.quantity
-          const totalPL = currentValue - data.totalCost
-          const totalPLPct = data.totalCost !== 0 ? (totalPL / data.totalCost) * 100 : 0
+          const costBasis = avgBuyPrice > 0 ? avgBuyPrice * data.quantity : data.totalCost
+          const totalPL = currentValue - costBasis
+          const totalPLPct = costBasis !== 0 ? (totalPL / costBasis) * 100 : 0
+          const todayPL = (currentPrice - previousPrice) * data.quantity
+          const todayPLPct = previousPrice !== 0 ? ((currentPrice - previousPrice) / previousPrice) * 100 : 0
           const sector = (live as any)?.sector || 'Unclassified'
           const shortSector = sector.length > 20 ? sector.slice(0, 18) + '…' : sector
 
@@ -772,8 +884,8 @@ export function PortfolioPage() {
 
           userHoldings.push({
             symbol, company: live?.company ?? symbol, sector: shortSector,
-            shares: data.quantity, price: currentPrice, avgCost,
-            marketValue: currentValue, todayPL: 0, todayPLPct: 0,
+            shares: data.quantity, price: currentPrice, avgCost: avgBuyPrice || (costBasis / data.quantity),
+            marketValue: currentValue, todayPL, todayPLPct,
             totalPL, totalPLPct,
             buyLots: data.buys.map((b) => ({
               id: `${symbol.toLowerCase()}-${b.id}`,
@@ -821,6 +933,12 @@ export function PortfolioPage() {
           setWatchlist([])
         }
       } catch { /* silent degrade */ }
+      finally {
+        if (!cancelled) {
+          setMarketLoading(false)
+          setUserLoading(false)
+        }
+      }
     }
 
     if (!user || authLoading) {
@@ -846,6 +964,27 @@ export function PortfolioPage() {
     [totalMV, totalPL],
   )
   const totalShares = useMemo(() => holdings.reduce((s, h) => s + h.shares, 0), [holdings])
+
+  const showMarketSkeleton = marketLoading && !marketSummary.tradeDate
+  const showUserSkeleton = userLoading
+  const hasMarketHistory =
+    marketSummary.kse100History['1Y'].values.length > 30 ||
+    marketSummary.kse30History['1Y'].values.length > 30
+
+  useEffect(() => {
+    if (!marketModalOpen || marketHistoryLoading || hasMarketHistory) return
+    let cancelled = false
+    setMarketHistoryLoading(true)
+    fetchMarketDailySummaryRows(252)
+      .then((rows) => {
+        if (cancelled || rows.length === 0) return
+        processSummaryRows(rows)
+      })
+      .finally(() => {
+        if (!cancelled) setMarketHistoryLoading(false)
+      })
+    return () => { cancelled = true }
+  }, [marketModalOpen, marketHistoryLoading, hasMarketHistory, processSummaryRows])
 
   const watchlistAvailableStocks = useMemo((): WatchItem[] =>
     marketSnapshots.map((m) => ({
@@ -1057,82 +1196,84 @@ export function PortfolioPage() {
 
               {/* Two index cards — each using its own sparkline from the DB */}
               <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' }, gap: 2 }}>
-                {([
-                  {
-                    label: 'KSE 100 Index',
-                    close: marketSummary.kse100_close,
-                    change: marketSummary.kse100_change,
-                    prev: marketSummary.kse100_prev,
-                    card: kse100Card,
-                    onClick: openKse100Modal,
-                  },
-                  {
-                    label: 'KSE 30 Index',
-                    close: marketSummary.kse30_close,
-                    change: marketSummary.kse30_change,
-                    prev: marketSummary.kse30_prev,
-                    card: kse30Card,
-                    onClick: openKse30Modal,
-                  },
-                ] as const).map(({ label, close, change, prev, card, onClick }) => {
-                  const pos = change >= 0
-                  const color = pos ? 'var(--wc-success)' : 'var(--wc-error)'
-                  const prevDateLabel = card.prevDate
-                    ? new Date(card.prevDate + 'T00:00:00').toLocaleDateString('en-PK', { day: 'numeric', month: 'short' })
-                    : null
-                  return (
-                    <Box
-                      key={label}
-                      onClick={onClick}
-                      sx={{
-                        p: 2, border: '1px solid var(--wc-divider)', borderRadius: 1.5,
-                        bgcolor: pos ? 'rgba(13,92,50,0.03)' : 'rgba(180,40,58,0.03)',
-                        cursor: 'pointer', position: 'relative', overflow: 'hidden',
-                        transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
-                        '&::before': {
-                          content: '""', position: 'absolute', top: 0, left: 0, right: 0, height: '3px',
-                          background: pos
-                            ? 'linear-gradient(90deg, var(--wc-success), rgba(13,92,50,0.2))'
-                            : 'linear-gradient(90deg, var(--wc-error), rgba(180,40,58,0.2))',
-                        },
-                        // '&:hover': { borderColor: 'var(--wc-primary)', boxShadow: '0 6px 24px rgba(10,36,99,0.08)' },
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                        <Box>
-                          <Typography sx={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', color: 'var(--wc-text-secondary)', textTransform: 'uppercase', fontFamily: SERIF, mb: 0.4 }}>
-                            {label}
-                          </Typography>
-                          <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 12, fontWeight: 600, color: 'var(--wc-text-primary)' }}>
-                            {close.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </Typography>
-                          {prevDateLabel && card.prevClose > 0 && (
-                            <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 10, color: 'var(--wc-text-secondary)', mt: 0.15 }}>
-                              Prev ({prevDateLabel}):&nbsp;
-                              {card.prevClose.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {showMarketSkeleton
+                  ? [0, 1].map((i) => <SkeletonIndexCard key={i} />)
+                  : ([
+                    {
+                      label: 'KSE 100 Index',
+                      close: marketSummary.kse100_close,
+                      change: marketSummary.kse100_change,
+                      prev: marketSummary.kse100_prev,
+                      card: kse100Card,
+                      onClick: openKse100Modal,
+                    },
+                    {
+                      label: 'KSE 30 Index',
+                      close: marketSummary.kse30_close,
+                      change: marketSummary.kse30_change,
+                      prev: marketSummary.kse30_prev,
+                      card: kse30Card,
+                      onClick: openKse30Modal,
+                    },
+                  ] as const).map(({ label, close, change, prev, card, onClick }) => {
+                    const pos = change >= 0
+                    const color = pos ? 'var(--wc-success)' : 'var(--wc-error)'
+                    const prevDateLabel = card.prevDate
+                      ? new Date(card.prevDate + 'T00:00:00').toLocaleDateString('en-PK', { day: 'numeric', month: 'short' })
+                      : null
+                    return (
+                      <Box
+                        key={label}
+                        onClick={onClick}
+                        sx={{
+                          p: 2, border: '1px solid var(--wc-divider)', borderRadius: 1.5,
+                          bgcolor: pos ? 'rgba(13,92,50,0.03)' : 'rgba(180,40,58,0.03)',
+                          cursor: 'pointer', position: 'relative', overflow: 'hidden',
+                          transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+                          '&::before': {
+                            content: '""', position: 'absolute', top: 0, left: 0, right: 0, height: '3px',
+                            background: pos
+                              ? 'linear-gradient(90deg, var(--wc-success), rgba(13,92,50,0.2))'
+                              : 'linear-gradient(90deg, var(--wc-error), rgba(180,40,58,0.2))',
+                          },
+                          // '&:hover': { borderColor: 'var(--wc-primary)', boxShadow: '0 6px 24px rgba(10,36,99,0.08)' },
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                          <Box>
+                            <Typography sx={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', color: 'var(--wc-text-secondary)', textTransform: 'uppercase', fontFamily: SERIF, mb: 0.4 }}>
+                              {label}
                             </Typography>
-                          )}
+                            <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 12, fontWeight: 600, color: 'var(--wc-text-primary)' }}>
+                              {close.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </Typography>
+                            {prevDateLabel && card.prevClose > 0 && (
+                              <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 10, color: 'var(--wc-text-secondary)', mt: 0.15 }}>
+                                Prev ({prevDateLabel}):&nbsp;
+                                {card.prevClose.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </Typography>
+                            )}
+                          </Box>
+                          {/* Per-index sparkline: [prevClose → latestClose] */}
+                          <Box sx={{ width: 80, height: 40 }}>
+                            <SparkLine data={card.spark.length >= 2 ? card.spark : [close, close]} width={80} height={40} color={color} area />
+                          </Box>
                         </Box>
-                        {/* Per-index sparkline: [prevClose → latestClose] */}
-                        <Box sx={{ width: 80, height: 40 }}>
-                          <SparkLine data={card.spark.length >= 2 ? card.spark : [close, close]} width={80} height={40} color={color} area />
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          {pos
+                            ? <TrendingUpIcon sx={{ fontSize: 14, color }} />
+                            : <TrendingDownIcon sx={{ fontSize: 14, color }} />
+                          }
+                          <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 18, fontWeight: 800, color, letterSpacing: '-0.02em' }}>
+                            {change >= 0 ? '+' : ''}{change.toFixed(2)}
+                          </Typography>
+                          <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 11, color: 'var(--wc-text-secondary)', ml: 0.5 }}>
+                            {prev !== 0 ? `${change >= 0 ? '+' : ''}${((change / prev) * 100).toFixed(2)}%` : '—'}
+                          </Typography>
                         </Box>
                       </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        {pos
-                          ? <TrendingUpIcon sx={{ fontSize: 14, color }} />
-                          : <TrendingDownIcon sx={{ fontSize: 14, color }} />
-                        }
-                        <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 18, fontWeight: 800, color, letterSpacing: '-0.02em' }}>
-                          {change >= 0 ? '+' : ''}{change.toFixed(2)}
-                        </Typography>
-                        <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 11, color: 'var(--wc-text-secondary)', ml: 0.5 }}>
-                          {prev !== 0 ? `${change >= 0 ? '+' : ''}${((change / prev) * 100).toFixed(2)}%` : '—'}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  )
-                })}
+                    )
+                  })}
               </Box>
             </Box>
           </MotionReveal>
@@ -1231,12 +1372,6 @@ export function PortfolioPage() {
                   }}>
                     {fmtPkr(totalMV)}
                   </Typography>
-                  {/* <Box sx={{ width: 140, height: 44 }}>
-                    <SparkLine
-                      data={PORTFOLIO_TREND} width={140} height={44}
-                      color={totalPL >= 0 ? 'var(--wc-success)' : 'var(--wc-error)'} area
-                    />
-                  </Box> */}
                 </Box>
                 <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' }, gap: 1.5 }}>
                   <StatTile label="Day P/L" value={fmtPkrSigned(dayPL)} positive={dayPL >= 0} sub={`${dayPL >= 0 ? '+' : ''}${dayPLPct.toFixed(2)}% today`} />
@@ -1323,7 +1458,14 @@ export function PortfolioPage() {
                   <Divider sx={{ borderColor: 'var(--wc-divider)', mb: 0.5, flexShrink: 0, display: { xs: 'none', sm: 'block' } }} />
 
                   <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', px: 1.5, scrollbarGutter: 'stable' }}>
-                    {holdings.length === 0 ? (
+                    {showUserSkeleton ? (
+                      Array.from({ length: 5 }).map((_, i) => (
+                        <Box key={`holding-skel-${i}`}>
+                          <SkeletonHoldingRow />
+                          {i < 4 && <Divider sx={{ borderColor: 'var(--wc-divider)', opacity: 0.5 }} />}
+                        </Box>
+                      ))
+                    ) : holdings.length === 0 ? (
                       <EmptyState icon={<InboxOutlinedIcon sx={{ fontSize: 20 }} />} title="No holdings yet" subtitle={`Click "Add holding" to build your portfolio.`} />
                     ) : (
                       holdings.map((h, i) => (
@@ -1401,7 +1543,14 @@ export function PortfolioPage() {
                   </Box>
 
                   <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', mr: { xs: -2, md: -2.4 }, pr: 2, scrollbarGutter: 'stable' }}>
-                    {watchlist.length === 0 ? (
+                    {showUserSkeleton ? (
+                      Array.from({ length: 5 }).map((_, i) => (
+                        <Box key={`watch-skel-${i}`}>
+                          <SkeletonWatchRow />
+                          {i < 4 && <Divider sx={{ borderColor: 'var(--wc-divider)', opacity: 0.4 }} />}
+                        </Box>
+                      ))
+                    ) : watchlist.length === 0 ? (
                       <EmptyState icon={<StarBorderIcon sx={{ fontSize: 20 }} />}
                         title="No stocks watched yet" subtitle={`Click "+ Add" to start tracking your favourites.`} />
                     ) : (
@@ -1426,7 +1575,14 @@ export function PortfolioPage() {
                     Recent activity
                   </Typography>
                 </Box>
-                {historyEvents.length === 0 ? (
+                {showUserSkeleton ? (
+                  Array.from({ length: 4 }).map((_, i) => (
+                    <Box key={`history-skel-${i}`}>
+                      <SkeletonHistoryRow />
+                      {i < 3 && <Divider sx={{ borderColor: 'var(--wc-divider)', opacity: 0.4 }} />}
+                    </Box>
+                  ))
+                ) : historyEvents.length === 0 ? (
                   <EmptyState icon={<ReceiptLongOutlinedIcon sx={{ fontSize: 20 }} />} title="No trade history yet" subtitle="Your buy and sell activity will appear here." />
                 ) : (
                   historyEvents.map((ev, i) => (
@@ -1457,7 +1613,13 @@ export function PortfolioPage() {
       </Container>
 
       <StockDrawer open={drawerOpen} onClose={handleCloseDrawer} stock={drawerStock} loading={drawerLoading} error={drawerError} />
-      <MarketSummaryModal open={marketModalOpen} onClose={closeMarketModal} summary={marketSummary} activeIndex={marketModalIndex} />
+      <MarketSummaryModal
+        open={marketModalOpen}
+        onClose={closeMarketModal}
+        summary={marketSummary}
+        activeIndex={marketModalIndex}
+        loading={showMarketSkeleton || marketHistoryLoading}
+      />
       <HoldingModal open={holdModalOpen} onClose={closeHoldModal} holdings={holdings} onSave={handleSaveHolding} onDelete={handleDeleteHolding} initialMode={holdModalMode} initialHolding={holdModalHolding} availableStocks={holdingAvailableStocks.length > 0 ? holdingAvailableStocks : undefined} />
       <WatchlistModal
         open={watchModalOpen}

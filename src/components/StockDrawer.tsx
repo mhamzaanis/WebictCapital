@@ -6,7 +6,6 @@ import {
   Box,
   Dialog,
   IconButton,
-  Skeleton,
   Typography,
   Slide,
 } from '@mui/material'
@@ -15,6 +14,7 @@ import type { TransitionProps } from '@mui/material/transitions'
 import { motion, useReducedMotion, AnimatePresence } from 'motion/react'
 import { useMemo, useState, forwardRef, useEffect, useRef } from 'react'
 import ReactECharts from 'echarts-for-react'
+import { PulseSkeleton } from './PulseSkeleton'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -515,10 +515,10 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
       >
         <Box sx={{ position: 'sticky', top: 0, zIndex: 10, bgcolor: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(12px)', borderBottom: `1px solid ${C.border}`, px: { xs: 2.5, md: 3.5 }, py: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, minWidth: 0 }}>
-            <Skeleton variant="rounded" width={44} height={44} />
+            <PulseSkeleton shape="rounded" width={44} height={44} />
             <Box sx={{ flex: 1 }}>
-              <Skeleton variant="text" width={180} height={20} />
-              <Skeleton variant="text" width={140} height={14} />
+              <PulseSkeleton shape="text" width={180} height={20} />
+              <PulseSkeleton shape="text" width={140} height={14} />
             </Box>
           </Box>
           <IconButton onClick={onClose} size="small" sx={{ color: C.muted, bgcolor: C.surface, border: `1px solid ${C.border}`, borderRadius: '8px', width: 32, height: 32 }}>
@@ -528,39 +528,39 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
         <Box sx={{ overflowY: 'auto', px: { xs: 2.5, md: 3.5 }, py: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
           <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
             <Box sx={{ minWidth: 220 }}>
-              <Skeleton variant="text" width={180} height={34} />
-              <Skeleton variant="text" width={220} height={14} />
+              <PulseSkeleton shape="text" width={180} height={34} />
+              <PulseSkeleton shape="text" width={220} height={14} />
             </Box>
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
               {[0, 1, 2].map((i) => (
-                <Skeleton key={i} variant="rounded" width={120} height={64} />
+                <PulseSkeleton key={i} shape="rounded" width={120} height={64} />
               ))}
             </Box>
           </Box>
 
           <Box sx={{ border: `1px solid ${C.border}`, borderRadius: '12px', bgcolor: C.surface }}>
             <Box sx={{ px: 2.5, pt: 2, pb: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Skeleton variant="text" width={140} height={16} />
+              <PulseSkeleton shape="text" width={140} height={16} />
               <Box sx={{ display: 'flex', gap: 0.6 }}>
                 {[0, 1, 2, 3].map((i) => (
-                  <Skeleton key={i} variant="rounded" width={36} height={22} />
+                  <PulseSkeleton key={i} shape="rounded" width={36} height={22} />
                 ))}
               </Box>
             </Box>
             <Box sx={{ px: 1, pb: 1.5, height: chartHeight }}>
-              <Skeleton variant="rounded" height={chartHeight} />
+              <PulseSkeleton shape="rounded" height={chartHeight} />
             </Box>
           </Box>
 
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
             {[0, 1].map((i) => (
               <Box key={i} sx={{ border: `1px solid ${C.border}`, borderRadius: '12px', bgcolor: C.bg, p: 2.5 }}>
-                <Skeleton variant="text" width={120} height={16} />
-                <Skeleton variant="rounded" height={36} sx={{ mt: 1.5 }} />
+                <PulseSkeleton shape="text" width={120} height={16} />
+                <PulseSkeleton shape="rounded" height={36} sx={{ mt: 1.5 }} />
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1.5 }}>
-                  <Skeleton variant="text" width={60} height={12} />
-                  <Skeleton variant="text" width={60} height={12} />
-                  <Skeleton variant="text" width={60} height={12} />
+                  <PulseSkeleton shape="text" width={60} height={12} />
+                  <PulseSkeleton shape="text" width={60} height={12} />
+                  <PulseSkeleton shape="text" width={60} height={12} />
                 </Box>
               </Box>
             ))}
@@ -569,17 +569,17 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
             {[0, 1].map((i) => (
               <Box key={i} sx={{ border: `1px solid ${C.border}`, borderRadius: '12px', bgcolor: C.bg, p: 2.5 }}>
-                <Skeleton variant="text" width={120} height={16} />
+                <PulseSkeleton shape="text" width={120} height={16} />
                 {[0, 1, 2, 3, 4].map((j) => (
-                  <Skeleton key={j} variant="rounded" height={22} sx={{ mt: 1.2 }} />
+                  <PulseSkeleton key={j} shape="rounded" height={22} sx={{ mt: 1.2 }} />
                 ))}
               </Box>
             ))}
           </Box>
 
           <Box sx={{ borderTop: `1px solid ${C.border}`, pt: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
-            <Skeleton variant="text" width={180} height={12} />
-            <Skeleton variant="text" width={110} height={12} />
+            <PulseSkeleton shape="text" width={180} height={12} />
+            <PulseSkeleton shape="text" width={110} height={12} />
           </Box>
         </Box>
       </Dialog>

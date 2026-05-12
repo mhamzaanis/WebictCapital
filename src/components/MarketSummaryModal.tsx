@@ -7,6 +7,7 @@ import ReactECharts from 'echarts-for-react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { forwardRef, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactElement, Ref } from 'react'
+import { PulseSkeleton } from './PulseSkeleton'
 
 export type MarketSummary = {
   tradeDate: string
@@ -31,6 +32,7 @@ type MarketSummaryModalProps = {
   onClose: () => void
   summary: MarketSummary | null
   activeIndex?: 'kse100' | 'kse30'
+  loading?: boolean
 }
 
 const NUMBER_FONT = 'var(--wc-number-font)'
@@ -209,7 +211,7 @@ function StatRow({ label, value, valueColor }: { label: string; value: string; v
 const fmtIndex = (v: number) => v.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const fmtNumber = (v: number) => v.toLocaleString('en-PK')
 
-export function MarketSummaryModal({ open, onClose, summary, activeIndex = 'kse100' }: MarketSummaryModalProps) {
+export function MarketSummaryModal({ open, onClose, summary, activeIndex = 'kse100', loading = false }: MarketSummaryModalProps) {
   const reduce = useReducedMotion()
   const theme = useTheme()
   const isXs = useMediaQuery(theme.breakpoints.down('sm'))
@@ -296,6 +298,131 @@ export function MarketSummaryModal({ open, onClose, summary, activeIndex = 'kse1
       closeLine: compactOhlc.map(c => c[1]),
     }
   }, [range, summary, isXs, activeIndex])
+
+  if (loading && !summary) {
+    return (
+      <Dialog
+        open={open}
+        onClose={onClose}
+        fullWidth
+        maxWidth={false}
+        slots={{ transition: SlideUp }}
+        slotProps={{
+          transition: { timeout: reduce ? 0 : 320 },
+          backdrop: {
+            sx: {
+              bgcolor: 'rgba(5,10,20,0.45)',
+              backdropFilter: 'blur(6px)',
+            },
+          },
+          paper: {
+            sx: {
+              width: { xs: '100%', sm: '90vw', md: 880 },
+              maxWidth: '100vw',
+              maxHeight: { xs: '100dvh', sm: '92dvh' },
+              borderRadius: { xs: 0, sm: '16px' },
+              border: `1px solid ${COLORS.border}`,
+              bgcolor: COLORS.bg,
+              overflow: 'hidden',
+              boxShadow: '0 40px 80px rgba(8,14,26,0.2), 0 0 0 1px rgba(10,36,99,0.06)',
+            },
+          },
+        }}
+      >
+        <Box
+          sx={{
+            position: 'sticky',
+            top: 0,
+            zIndex: 10,
+            bgcolor: 'rgba(255,255,255,0.95)',
+            backdropFilter: 'blur(12px)',
+            borderBottom: `1px solid ${COLORS.border}`,
+            px: { xs: 2.5, md: 3.5 },
+            py: 2,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 2,
+          }}
+        >
+          <Box>
+            <PulseSkeleton shape="text" width={140} height={12} />
+            <PulseSkeleton shape="text" width={220} height={18} />
+          </Box>
+          <IconButton
+            onClick={onClose}
+            size="small"
+            sx={{
+              color: COLORS.textSecondary,
+              bgcolor: COLORS.surface,
+              border: `1px solid ${COLORS.border}`,
+              borderRadius: '8px',
+              width: 32,
+              height: 32,
+            }}
+          >
+            <CloseRoundedIcon sx={{ fontSize: 16 }} />
+          </IconButton>
+        </Box>
+
+        <Box sx={{ overflowY: 'auto', px: { xs: 2.5, md: 3.5 }, py: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5 }}>
+            {[0, 1].map((i) => (
+              <Box
+                key={i}
+                sx={{
+                  border: `1px solid ${COLORS.border}`,
+                  borderRadius: '12px',
+                  bgcolor: COLORS.surface,
+                  px: 2,
+                  py: 1.6,
+                }}
+              >
+                <PulseSkeleton shape="text" width={120} height={12} />
+                <PulseSkeleton shape="text" width={140} height={24} sx={{ mt: 0.6 }} />
+                <PulseSkeleton shape="text" width={100} height={12} sx={{ mt: 0.6 }} />
+              </Box>
+            ))}
+          </Box>
+
+          <Box sx={{ border: `1px solid ${COLORS.border}`, borderRadius: '12px', bgcolor: COLORS.surface }}>
+            <Box sx={{ px: 2.5, pt: 2, pb: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <PulseSkeleton shape="text" width={140} height={14} />
+              <Box sx={{ display: 'flex', gap: 0.6 }}>
+                {[0, 1, 2, 3].map((i) => (
+                  <PulseSkeleton key={i} shape="rounded" width={36} height={22} />
+                ))}
+              </Box>
+            </Box>
+            <Box sx={{ px: 1, pb: 1.5, height: isXs ? 320 : 360 }}>
+              <PulseSkeleton shape="rounded" height={isXs ? 320 : 360} />
+            </Box>
+          </Box>
+
+          <Box sx={{ display: 'grid', gap: 1.5, gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' } }}>
+            {[0, 1, 2, 3].map((i) => (
+              <Box key={i} sx={{ border: `1px solid ${COLORS.border}`, borderRadius: 1.25, bgcolor: COLORS.bg, px: 1.8, py: 1.6 }}>
+                <PulseSkeleton shape="text" width={90} height={10} />
+                <PulseSkeleton shape="text" width={120} height={18} sx={{ mt: 0.6 }} />
+                <PulseSkeleton shape="text" width={70} height={10} sx={{ mt: 0.6 }} />
+              </Box>
+            ))}
+          </Box>
+
+          <Box sx={{ border: `1px solid ${COLORS.border}`, borderRadius: '12px', bgcolor: COLORS.bg, p: 2.5 }}>
+            <PulseSkeleton shape="text" width={140} height={14} />
+            {[0, 1, 2].map((i) => (
+              <PulseSkeleton key={i} shape="text" width={200} height={14} sx={{ mt: 1 }} />
+            ))}
+            <PulseSkeleton shape="rounded" height={10} sx={{ mt: 1.4 }} />
+            {[0, 1, 2].map((i) => (
+              <PulseSkeleton key={`row-${i}`} shape="text" width={160} height={14} sx={{ mt: 1 }} />
+            ))}
+          </Box>
+        </Box>
+      </Dialog>
+    )
+  }
 
   if (!summary) return null
 

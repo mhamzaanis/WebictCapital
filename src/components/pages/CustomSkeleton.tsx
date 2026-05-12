@@ -1,7 +1,6 @@
 import {
 	Box,
 	Paper,
-	Skeleton,
 	Table,
 	TableBody,
 	TableCell,
@@ -9,6 +8,7 @@ import {
 	TableHead,
 	TableRow,
 } from '@mui/material'
+import { PulseSkeleton } from '../PulseSkeleton'
 
 const MONO = '"Playfair Display", serif'
 
@@ -24,15 +24,8 @@ const headCell = {
 	whiteSpace: 'nowrap' as const,
 }
 
-const skeletonPulseSx = {
-	bgcolor: 'var(--wc-primary-light)',
-	'&::after': {
-		background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.65), transparent)',
-	},
-}
-
 export function TabLabelSkeleton() {
-	return <Skeleton variant="rounded" animation="wave" width={72} height={18} sx={skeletonPulseSx} />
+	return <PulseSkeleton shape="rounded" width={72} height={18} />
 }
 
 export function StatCardsSkeleton() {
@@ -54,8 +47,8 @@ export function StatCardsSkeleton() {
 						borderRadius: 1.2,
 					}}
 				>
-					<Skeleton variant="text" width="62%" height={14} animation="wave" sx={skeletonPulseSx} />
-					<Skeleton variant="text" width="74%" height={28} animation="wave" sx={{ ...skeletonPulseSx, mt: 0.3 }} />
+					<PulseSkeleton shape="text" width="62%" height={14} />
+					<PulseSkeleton shape="text" width="74%" height={28} sx={{ mt: 0.3 }} />
 				</Paper>
 			))}
 		</Box>
@@ -88,19 +81,18 @@ export function PriceTableSkeleton() {
 						{Array.from({ length: 8 }).map((_, idx) => (
 							<TableRow key={`skeleton-row-${idx}`}>
 								<TableCell sx={{ py: 1.1 }}>
-									<Skeleton variant="text" width={56} height={16} animation="wave" sx={skeletonPulseSx} />
+									<PulseSkeleton shape="text" width={56} height={16} />
 								</TableCell>
 								<TableCell sx={{ py: 1.1 }}>
-									<Skeleton variant="text" width="88%" height={16} animation="wave" sx={skeletonPulseSx} />
+									<PulseSkeleton shape="text" width="88%" height={16} />
 								</TableCell>
 								{Array.from({ length: 6 }).map((__, cellIdx) => (
 									<TableCell key={`skeleton-cell-${idx}-${cellIdx}`} align="right" sx={{ py: 1.1 }}>
-										<Skeleton
-											variant="text"
+										<PulseSkeleton
+											shape="text"
 											width={cellIdx === 5 ? 42 : 54}
 											height={16}
-											animation="wave"
-											sx={{ ...skeletonPulseSx, ml: 'auto' }}
+											sx={{ ml: 'auto' }}
 										/>
 									</TableCell>
 								))}
@@ -120,8 +112,8 @@ export function PriceTableSkeleton() {
 					alignItems: 'center',
 				}}
 			>
-				<Skeleton variant="text" width={110} height={16} animation="wave" sx={skeletonPulseSx} />
-				<Skeleton variant="text" width={90} height={16} animation="wave" sx={skeletonPulseSx} />
+				<PulseSkeleton shape="text" width={110} height={16} />
+				<PulseSkeleton shape="text" width={90} height={16} />
 			</Box>
 		</Box>
 	)

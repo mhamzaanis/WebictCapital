@@ -55,3 +55,62 @@ CREATE TABLE public.watchlists (
   CONSTRAINT watchlists_pkey PRIMARY KEY (id),
   CONSTRAINT watchlists_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
 );
+
+Indexes:
+[
+  {
+    "tablename": "datatable",
+    "indexname": "datatable_pkey",
+    "indexdef": "CREATE UNIQUE INDEX datatable_pkey ON public.datatable USING btree (id)"
+  },
+  {
+    "tablename": "datatable",
+    "indexname": "datatable_symbol_date_uq",
+    "indexdef": "CREATE UNIQUE INDEX datatable_symbol_date_uq ON public.datatable USING btree (symbol, trade_date)"
+  },
+  {
+    "tablename": "datatable",
+    "indexname": "datatable_trade_date_idx",
+    "indexdef": "CREATE INDEX datatable_trade_date_idx ON public.datatable USING btree (trade_date DESC)"
+  },
+  {
+    "tablename": "datatable",
+    "indexname": "datatable_symbol_idx",
+    "indexdef": "CREATE INDEX datatable_symbol_idx ON public.datatable USING btree (symbol)"
+  },
+  {
+    "tablename": "datatable",
+    "indexname": "datatable_section_idx",
+    "indexdef": "CREATE INDEX datatable_section_idx ON public.datatable USING btree (section)"
+  },
+  {
+    "tablename": "market_daily_summary",
+    "indexname": "market_daily_summary_pkey",
+    "indexdef": "CREATE UNIQUE INDEX market_daily_summary_pkey ON public.market_daily_summary USING btree (id)"
+  },
+  {
+    "tablename": "market_daily_summary",
+    "indexname": "market_daily_summary_trade_date_key",
+    "indexdef": "CREATE UNIQUE INDEX market_daily_summary_trade_date_key ON public.market_daily_summary USING btree (trade_date)"
+  },
+  {
+    "tablename": "user_trades",
+    "indexname": "user_trades_pkey",
+    "indexdef": "CREATE UNIQUE INDEX user_trades_pkey ON public.user_trades USING btree (id)"
+  },
+  {
+    "tablename": "user_trades",
+    "indexname": "user_trades_user_id_idx",
+    "indexdef": "CREATE INDEX user_trades_user_id_idx ON public.user_trades USING btree (user_id)"
+  },
+  {
+    "tablename": "watchlists",
+    "indexname": "watchlists_pkey",
+    "indexdef": "CREATE UNIQUE INDEX watchlists_pkey ON public.watchlists USING btree (id)"
+  },
+  {
+    "tablename": "watchlists",
+    "indexname": "watchlists_user_id_symbol_key",
+    "indexdef": "CREATE UNIQUE INDEX watchlists_user_id_symbol_key ON public.watchlists USING btree (user_id, symbol)"
+  }
+]
