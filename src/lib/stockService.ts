@@ -73,6 +73,8 @@ let marketCache: { data: MarketSymbolSnapshot[]; fetchedAt: number } | null = nu
 let marketInFlight: Promise<MarketSymbolSnapshot[]> | null = null
 
 let summaryRowsInFlight: Promise<DbMarketSummaryRow[]> | null = null
+let summaryCache: { rows: DbMarketSummaryRow[]; fetchedAt: number } | null = null
+const SUMMARY_CACHE_TTL_MS = 10 * 60 * 1000 // 10 min — daily data, short enough for intraday updates
 
 const tradesCache = new Map<string, { data: UserTrade[]; fetchedAt: number }>()
 const tradesInFlight = new Map<string, Promise<UserTrade[]>>()
@@ -126,6 +128,12 @@ export async function fetchMarketDailySummaryRows(
   limit = 252,
 ): Promise<DbMarketSummaryRow[]> {
   if (!hasStockService() || !supabase) return []
+
+  // Serve from cache when fresh enough and contains sufficient rows
+  if (summaryCache && Date.now() - summaryCache.fetchedAt < SUMMARY_CACHE_TTL_MS) {
+    if (summaryCache.rows.length >= limit) return summaryCache.rows.slice(0, limit)
+    // Cache exists but doesn't have enough rows — fall through to fetch more
+  }
 
   // Dedup in-flight requests
   if (summaryRowsInFlight) {
@@ -191,6 +199,7 @@ export async function fetchMarketDailySummaryRows(
 
   try {
     const rows = await summaryRowsInFlight
+    if (rows.length > 0) summaryCache = { rows, fetchedAt: Date.now() }
     return rows.slice(0, limit)
   } finally {
     summaryRowsInFlight = null

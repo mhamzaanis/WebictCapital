@@ -716,6 +716,7 @@ export function PortfolioPage() {
   const marketSnapshotsRef = useRef<MarketSymbolSnapshot[]>([])
   const [marketLoading, setMarketLoading] = useState(true)
   const [marketHistoryLoading, setMarketHistoryLoading] = useState(false)
+  const marketHistoryLoadingRef = useRef(false)
   const [userLoading, setUserLoading] = useState(false)
   const [sectorAllocation, setSectorAllocation] = useState<
     { sector: string; value: number; color: string }[]
@@ -972,8 +973,9 @@ export function PortfolioPage() {
     marketSummary.kse30History['1Y'].values.length > 30
 
   useEffect(() => {
-    if (!marketModalOpen || marketHistoryLoading || hasMarketHistory) return
+    if (!marketModalOpen || marketHistoryLoadingRef.current || hasMarketHistory) return
     let cancelled = false
+    marketHistoryLoadingRef.current = true
     setMarketHistoryLoading(true)
     fetchMarketDailySummaryRows(252)
       .then((rows) => {
@@ -981,10 +983,16 @@ export function PortfolioPage() {
         processSummaryRows(rows)
       })
       .finally(() => {
-        if (!cancelled) setMarketHistoryLoading(false)
+        if (!cancelled) {
+          marketHistoryLoadingRef.current = false
+          setMarketHistoryLoading(false)
+        }
       })
-    return () => { cancelled = true }
-  }, [marketModalOpen, marketHistoryLoading, hasMarketHistory, processSummaryRows])
+    return () => {
+      cancelled = true
+      marketHistoryLoadingRef.current = false
+    }
+  }, [marketModalOpen, hasMarketHistory, processSummaryRows])
 
   const watchlistAvailableStocks = useMemo((): WatchItem[] =>
     marketSnapshots.map((m) => ({

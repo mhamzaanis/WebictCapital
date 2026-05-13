@@ -299,7 +299,7 @@ export function MarketSummaryModal({ open, onClose, summary, activeIndex = 'kse1
     }
   }, [range, summary, isXs, activeIndex])
 
-  if (loading && !summary) {
+  if (loading || !summary) {
     return (
       <Dialog
         open={open}
