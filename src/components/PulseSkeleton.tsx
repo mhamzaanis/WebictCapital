@@ -20,6 +20,11 @@ export function PulseSkeleton({
   ...rest
 }: PulseSkeletonProps) {
   const resolvedVariant = variant ?? shape ?? 'rounded'
+  const resolvedSx: SkeletonProps['sx'] = [
+    baseSkeletonSx,
+    ...(borderRadius != null ? [{ borderRadius }] : []),
+    ...(Array.isArray(sx) ? sx : sx ? [sx] : []),
+  ]
 
   return (
     <Skeleton
@@ -27,7 +32,7 @@ export function PulseSkeleton({
       variant={resolvedVariant}
       width={width}
       height={height}
-      sx={[baseSkeletonSx, borderRadius != null ? { borderRadius } : null, sx]}
+      sx={resolvedSx}
       {...rest}
     />
   )

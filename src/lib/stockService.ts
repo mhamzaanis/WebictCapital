@@ -104,6 +104,7 @@ export type DbMarketSummaryRow = {
 }
 
 async function fetchLatestTradeDate(): Promise<string | null> {
+  if (!hasStockService() || !supabase) return null
   const { data, error } = await supabase
     .from('market_daily_summary')
     .select('trade_date')
