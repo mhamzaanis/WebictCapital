@@ -1076,23 +1076,22 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
                       color: C.ink,
                       fontFamily: 'DM Mono, monospace',
                     },
-                    formatter: (params: { seriesName?: string; value: number | number[] }[]) => {
+                    formatter: (params: { seriesName?: string; value: number | number[]; dataIndex?: number }[]) => {
                       const candleParam = params.find(p => p.seriesName === stock.symbol)
                       if (!candleParam) return ''
                       const d = candleParam.value as number[]
-                      const [open, close, low, high] = d
-                      const chg = ((close - open) / open * 100).toFixed(2)
-                      const sign = close >= open ? '+' : ''
-                      const chgColor = close >= open ? candleUp : candleDown
+                      const close = d[1]
+                      const dataIndex = candleParam.dataIndex ?? -1
+                      const volumeValue = dataIndex >= 0 ? chartData.volumes[dataIndex] : null
+                      const volumeLabel = volumeValue != null
+                        ? volumeValue.toLocaleString('en-PK')
+                        : '—'
                       return [
                         `<div style="font-weight:700;margin-bottom:4px;font-size:10px;color:${C.muted};">${stock.symbol}</div>`,
-                        `<div style="display:grid;grid-template-columns:32px 1fr;gap:2px 8px;font-size:11px;">`,
-                        `<span style="color:${C.muted}">O</span><span>Rs.${fmt(open)}</span>`,
-                        `<span style="color:${C.muted}">H</span><span>Rs.${fmt(high)}</span>`,
-                        `<span style="color:${C.muted}">L</span><span>Rs.${fmt(low)}</span>`,
-                        `<span style="color:${C.muted}">C</span><span style="font-weight:700">Rs.${fmt(close)}</span>`,
+                        `<div style="display:grid;grid-template-columns:46px 1fr;gap:2px 10px;font-size:11px;">`,
+                        `<span style="color:${C.muted}">Price</span><span style="font-weight:700">Rs.${fmt(close)}</span>`,
+                        `<span style="color:${C.muted}">Turnover</span><span>${volumeLabel}</span>`,
                         `</div>`,
-                        `<div style="margin-top:4px;padding-top:4px;border-top:1px solid ${C.border};color:${chgColor};font-weight:700;font-size:12px">${sign}${chg}%</div>`,
                       ].join('')
                     },
                   },

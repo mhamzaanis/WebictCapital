@@ -29,8 +29,8 @@ import {
   removeFromWatchlist as removeFromWatchlistDb,
   insertUserTrade, deleteUserTradesBySymbol,
   fetchUserTrades, fetchWatchlistSymbols,
-  fetchUniqueSymbols, fetchMarketDailySummaryRows,
-  type UserTrade, type MarketSymbolSnapshot, type DbMarketSummaryRow,
+  fetchUniqueSymbols, fetchMarketDailySummaryRows, fetchMarketHistoryRows,
+  type UserTrade, type MarketSymbolSnapshot, type DbMarketSummaryRow, type MarketHistoryRow,
 } from '../../lib/stockService'
 import { useAuth } from '../../context/AuthContext'
 import { AuthModal } from '../AuthModal'
@@ -108,7 +108,7 @@ const fmtDateLabel = (dateStr: string) => {
 
 /** Build 1W/1M/YTD/1Y history from real DB rows (newest-first). */
 function buildRealMarketHistory(
-  rows: DbMarketSummaryRow[],
+  rows: MarketHistoryRow[],
   closeKey: 'kse100_close' | 'kse30_close',
 ): MarketHistory {
   if (rows.length === 0) return EMPTY_MARKET_HISTORY
@@ -116,7 +116,7 @@ function buildRealMarketHistory(
   // Reverse to oldest-first for chart display
   const sorted = [...rows].reverse()
 
-  const buildSlice = (data: DbMarketSummaryRow[]) => ({
+  const buildSlice = (data: Array<MarketHistoryRow | DbMarketSummaryRow>) => ({
     labels: data.map((r) => fmtDateLabel(r.trade_date)),
     values: data.map((r) => ((r[closeKey] as number) ?? 0)),
   })
@@ -717,6 +717,7 @@ export function PortfolioPage() {
   const [marketLoading, setMarketLoading] = useState(true)
   const [marketHistoryLoading, setMarketHistoryLoading] = useState(false)
   const marketHistoryLoadingRef = useRef(false)
+  const marketHistoryLoadedRef = useRef({ kse100: false, kse30: false })
   const [userLoading, setUserLoading] = useState(false)
   const [sectorAllocation, setSectorAllocation] = useState<
     { sector: string; value: number; color: string }[]
@@ -968,22 +969,33 @@ export function PortfolioPage() {
 
   const showMarketSkeleton = marketLoading && !marketSummary.tradeDate
   const showUserSkeleton = userLoading
-  const hasMarketHistory =
-    marketSummary.kse100History['1Y'].values.length > 30 ||
-    marketSummary.kse30History['1Y'].values.length > 30
+  const hasMarketHistory = marketModalIndex === 'kse100'
+    ? marketSummary.kse100History['1Y'].values.length > 30
+    : marketSummary.kse30History['1Y'].values.length > 30
 
   useEffect(() => {
-    if (!marketModalOpen || marketHistoryLoadingRef.current || hasMarketHistory) return
+    if (
+      !marketModalOpen ||
+      marketHistoryLoadingRef.current ||
+      hasMarketHistory ||
+      marketHistoryLoadedRef.current[marketModalIndex]
+    ) return
     let cancelled = false
     marketHistoryLoadingRef.current = true
     setMarketHistoryLoading(true)
-    fetchMarketDailySummaryRows(252)
+    const closeKey = marketModalIndex === 'kse100' ? 'kse100_close' : 'kse30_close'
+    fetchMarketHistoryRows(closeKey, 252)
       .then((rows) => {
         if (cancelled || rows.length === 0) return
-        processSummaryRows(rows)
+        const history = buildRealMarketHistory(rows, closeKey)
+        setMarketSummary((prev) => (closeKey === 'kse100_close'
+          ? { ...prev, kse100History: history }
+          : { ...prev, kse30History: history }
+        ))
       })
       .finally(() => {
         if (!cancelled) {
+          marketHistoryLoadedRef.current[marketModalIndex] = true
           marketHistoryLoadingRef.current = false
           setMarketHistoryLoading(false)
         }
@@ -992,7 +1004,7 @@ export function PortfolioPage() {
       cancelled = true
       marketHistoryLoadingRef.current = false
     }
-  }, [marketModalOpen, hasMarketHistory, processSummaryRows])
+  }, [marketModalOpen, hasMarketHistory, marketModalIndex])
 
   const watchlistAvailableStocks = useMemo((): WatchItem[] =>
     marketSnapshots.map((m) => ({

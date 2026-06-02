@@ -103,6 +103,9 @@ export type DbMarketSummaryRow = {
   flu_no: string | null
 }
 
+export type MarketHistoryRow = Pick<DbMarketSummaryRow, 'trade_date'> &
+  Partial<Pick<DbMarketSummaryRow, 'kse100_close' | 'kse30_close'>>
+
 async function fetchLatestTradeDate(): Promise<string | null> {
   if (!hasStockService() || !supabase) return null
   const { data, error } = await supabase
@@ -205,6 +208,42 @@ export async function fetchMarketDailySummaryRows(
   } finally {
     summaryRowsInFlight = null
   }
+}
+
+/**
+ * Fetches minimal history rows for a single index (trade_date + close column only).
+ */
+export async function fetchMarketHistoryRows(
+  closeKey: 'kse100_close' | 'kse30_close',
+  limit = 252,
+): Promise<MarketHistoryRow[]> {
+  if (!hasStockService() || !supabase) return []
+
+  if (summaryCache && Date.now() - summaryCache.fetchedAt < SUMMARY_CACHE_TTL_MS) {
+    const cached = summaryCache.rows.slice(0, limit).map((row) => ({
+      trade_date: row.trade_date,
+      [closeKey]: row[closeKey],
+    }))
+    if (cached.length >= limit) return cached as MarketHistoryRow[]
+  }
+
+  const latestTradeDate = await fetchLatestTradeDate()
+  if (!latestTradeDate) return []
+
+  const selectCols = `trade_date,${closeKey}`
+  const { data, error } = await supabase
+    .from('market_daily_summary')
+    .select(selectCols)
+    .lte('trade_date', latestTradeDate)
+    .order('trade_date', { ascending: false })
+    .limit(Math.max(1, limit))
+
+  if (error || !data?.length) {
+    if (error) console.warn('fetchMarketHistoryRows failed:', error.message)
+    return []
+  }
+
+  return data as MarketHistoryRow[]
 }
 
 export async function fetchUniqueSymbols(): Promise<MarketSymbolSnapshot[]> {
