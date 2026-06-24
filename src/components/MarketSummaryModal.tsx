@@ -4,7 +4,7 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 import { Box, Dialog, IconButton, Slide, Typography, useMediaQuery, useTheme } from '@mui/material'
 import type { TransitionProps } from '@mui/material/transitions'
 import ReactECharts from 'echarts-for-react'
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { motion, useReducedMotion } from 'motion/react'
 import { forwardRef, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactElement, Ref } from 'react'
 import { PulseSkeleton } from './PulseSkeleton'
@@ -23,15 +23,14 @@ export type MarketSummary = {
   declines: number
   unchanged: number
   flu_no?: string | null
-  kse100History: Record<'1W' | '1M' | 'YTD' | '1Y', { labels: string[]; values: number[] }>
-  kse30History: Record<'1W' | '1M' | 'YTD' | '1Y', { labels: string[]; values: number[] }>
+  kse100History: Record<'1M' | 'YTD' | '1Y', { labels: string[]; values: number[]; volumes: number[] }>
+  kse30History: Record<'1M' | 'YTD' | '1Y', { labels: string[]; values: number[]; volumes: number[] }>
 }
 
 type MarketSummaryModalProps = {
   open: boolean
   onClose: () => void
   summary: MarketSummary | null
-  activeIndex?: 'kse100' | 'kse30'
   loading?: boolean
 }
 
@@ -48,61 +47,15 @@ const COLORS = {
   success: 'var(--wc-success)',
   error: 'var(--wc-error)',
 }
-
-function BreadthBar({ advances, declines, unchanged }: { advances: number; declines: number; unchanged: number }) {
-  const total = advances + declines + unchanged
-  const advPct = (advances / total) * 100
-  const decPct = (declines / total) * 100
-  const unchPct = (unchanged / total) * 100
-
-  return (
-    <Box sx={{ mt: 1.2 }}>
-      <Box sx={{ display: 'flex', borderRadius: '99px', overflow: 'hidden', height: 8, gap: 0.3 }}>
-        <Box
-          component={motion.div}
-          initial={{ width: 0 }}
-          animate={{ width: `${advPct}%` }}
-          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-          sx={{ bgcolor: COLORS.success, borderRadius: '99px', minWidth: advPct > 0 ? 4 : 0 }}
-        />
-        <Box
-          component={motion.div}
-          initial={{ width: 0 }}
-          animate={{ width: `${decPct}%` }}
-          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1], delay: 0.08 }}
-          sx={{ bgcolor: COLORS.error, borderRadius: '99px', minWidth: decPct > 0 ? 4 : 0 }}
-        />
-        <Box
-          component={motion.div}
-          initial={{ width: 0 }}
-          animate={{ width: `${unchPct}%` }}
-          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1], delay: 0.16 }}
-          sx={{ bgcolor: '#c8d6e5', borderRadius: '99px', minWidth: unchPct > 0 ? 4 : 0 }}
-        />
-      </Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: COLORS.success }} />
-          <Typography sx={{ fontSize: 10, color: COLORS.textSecondary, fontFamily: NUMBER_FONT }}>
-            Adv {advances}
-          </Typography>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: COLORS.error }} />
-          <Typography sx={{ fontSize: 10, color: COLORS.textSecondary, fontFamily: NUMBER_FONT }}>
-            Dec {declines}
-          </Typography>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#c8d6e5' }} />
-          <Typography sx={{ fontSize: 10, color: COLORS.textSecondary, fontFamily: NUMBER_FONT }}>
-            Unch {unchanged}
-          </Typography>
-        </Box>
-      </Box>
-    </Box>
-  )
+const CHART = {
+  primary: '#0a2463',
+  success: '#0d5c32',
+  border: '#e2eaf5',
+  text: '#080e1a',
+  textSecondary: '#6b7e96',
+  tooltipBg: 'rgba(255,255,255,0.97)',
 }
+
 
 const SlideUp = forwardRef(function Transition(
   props: TransitionProps & { children: ReactElement },
@@ -116,17 +69,20 @@ function RangeBtn({ label, active, onClick }: { label: string; active: boolean; 
     <Box
       component={motion.button}
       onClick={onClick}
-      whileTap={{ scale: 0.96 }}
+      // whileHover={{ scale: active ? 1 : 1.04 }}
+      whileTap={{ scale: 0.92 }}
+      transition={{ duration: 0.12 }}
       sx={{
-        border: 'none',
+        border: active ? `1px solid ${COLORS.primary}` : '1px solid transparent',
         borderRadius: '6px',
         cursor: 'pointer',
         px: 1.5,
         py: 0.6,
         bgcolor: active ? COLORS.primary : 'transparent',
-        transition: 'background 0.2s ease',
+        transition: 'background 0.15s ease, border-color 0.15s ease',
         outline: 'none',
-        '&:hover': { bgcolor: active ? COLORS.primary : 'rgba(10,36,99,0.08)' },
+        boxShadow: active ? '0 2px 8px rgba(10,36,99,0.22)' : 'none',
+        // '&:hover': { bgcolor: active ? COLORS.primary : 'rgba(10,36,99,0.07)' },
       }}
     >
       <Typography
@@ -197,25 +153,15 @@ function InfoTile({ label, value, sub, onClick }: { label: string; value: string
   )
 }
 
-function StatRow({ label, value, valueColor }: { label: string; value: string; valueColor?: string }) {
-  return (
-    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 0.8 }}>
-      <Typography sx={{ fontSize: 12, color: COLORS.textSecondary, fontFamily: SERIF }}>{label}</Typography>
-      <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 12.5, fontWeight: 600, color: valueColor ?? COLORS.text }}>
-        {value}
-      </Typography>
-    </Box>
-  )
-}
 
 const fmtIndex = (v: number) => v.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const fmtNumber = (v: number) => v.toLocaleString('en-PK')
 
-export function MarketSummaryModal({ open, onClose, summary, activeIndex = 'kse100', loading = false }: MarketSummaryModalProps) {
+export function MarketSummaryModal({ open, onClose, summary, loading = false }: MarketSummaryModalProps) {
   const reduce = useReducedMotion()
   const theme = useTheme()
   const isXs = useMediaQuery(theme.breakpoints.down('sm'))
-  const [range, setRange] = useState<'1W' | '1M' | 'YTD' | '1Y'>('1M')
+  const [range, setRange] = useState<'1M' | 'YTD' | '1Y'>('1M')
 
   // Force chart remount after dialog finishes opening so it measures correct width
   const chartRef = useRef<ReactECharts>(null)
@@ -223,81 +169,40 @@ export function MarketSummaryModal({ open, onClose, summary, activeIndex = 'kse1
 
   useEffect(() => {
     if (!open) return
-    // Wait for slide-up transition to complete (~350ms) then remount chart
-    const timer = setTimeout(() => setChartKey((k) => k + 1), 380)
+    const timer = setTimeout(() => setChartKey((k) => k + 1), 350)
     return () => clearTimeout(timer)
   }, [open])
 
+  // Remount chart when browser tab becomes visible again —
+  // canvas context is lost while backgrounded and can't be recovered by resize alone
   useEffect(() => {
     if (!open) return
-    const timer = setTimeout(() => chartRef.current?.getEchartsInstance()?.resize(), 400)
-    return () => clearTimeout(timer)
-  }, [open, chartKey, range])
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        setTimeout(() => setChartKey((k) => k + 1), 100)
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
+  }, [open])
 
   const chartData = useMemo(() => {
-    if (!summary) return { ohlc: [] as number[][], labels: [] as string[], volumes: [] as number[], closeLine: [] as number[] }
-    const historyMap = activeIndex === 'kse100' ? summary.kse100History : summary.kse30History
-    const data = historyMap[range]
-    const rawOhlc = data.values.map((v, i) => {
-      const open = i > 0 ? data.values[i - 1] : v * 0.998
-      const close = v
-      const low = Math.min(open, close) * (1 - 0.004 - Math.sin(i * 0.7) * 0.004)
-      const high = Math.max(open, close) * (1 + 0.004 + Math.cos(i * 0.6) * 0.004)
-      return [open, close, low, high]
-    })
+    const kse100 = summary?.kse100History[range] ?? { labels: [], values: [], volumes: [] }
+    const kse30 = summary?.kse30History[range] ?? { labels: [], values: [], volumes: [] }
+    const useKse100 = kse100.labels.length >= kse30.labels.length
 
-    // Generate synthetic volumes (based on price change magnitude)
-    const rawVolumes = rawOhlc.map((candle, i) => {
-      const base = summary.curr_volume || 100000
-      const changeRatio = Math.abs(candle[1] - candle[0]) / Math.max(candle[0], 1)
-      return Math.round(base * (0.6 + changeRatio * 8 + Math.sin(i * 1.3) * 0.25))
-    })
-
-    // Smarter aggregation: show a window of visible candles, keep all data for zoom
-    const maxVisible = isXs ? 40 : 50
-    const needsAggregation = rawOhlc.length > maxVisible * 2
-
-    if (!needsAggregation) {
-      return {
-        ohlc: rawOhlc,
-        labels: data.labels,
-        volumes: rawVolumes,
-        closeLine: rawOhlc.map(c => c[1]),
-      }
-    }
-
-    // Aggregate into buckets for very large datasets
-    const bucketSize = Math.ceil(rawOhlc.length / (maxVisible * 2))
-    const compactOhlc: number[][] = []
-    const compactLabels: string[] = []
-    const compactVolumes: number[] = []
-
-    for (let i = 0; i < rawOhlc.length; i += bucketSize) {
-      const slice = rawOhlc.slice(i, i + bucketSize)
-      const volSlice = rawVolumes.slice(i, i + bucketSize)
-      if (!slice.length) continue
-      const open = slice[0][0]
-      const close = slice[slice.length - 1][1]
-      let low = slice[0][2]
-      let high = slice[0][3]
-      let totalVol = 0
-      for (let j = 0; j < slice.length; j++) {
-        low = Math.min(low, slice[j][2])
-        high = Math.max(high, slice[j][3])
-        totalVol += volSlice[j] || 0
-      }
-      compactOhlc.push([open, close, low, high])
-      compactLabels.push(data.labels[Math.min(i + slice.length - 1, data.labels.length - 1)])
-      compactVolumes.push(totalVol)
-    }
+    // Volume: use curr_volume as a single daily figure spread across the range.
+    // Real per-day volume isn't in history rows, so we show a flat reference bar
+    // at each point to give visual weight without fabricating data.
+    const count = useKse100 ? kse100.labels.length : kse30.labels.length
 
     return {
-      ohlc: compactOhlc,
-      labels: compactLabels,
-      volumes: compactVolumes,
-      closeLine: compactOhlc.map(c => c[1]),
+      labels: useKse100 ? kse100.labels : kse30.labels,
+      kse100Values: kse100.values,
+      kse30Values: kse30.values,
+      volumeValues: (useKse100 ? kse100 : kse30).volumes ?? Array(count).fill(summary?.curr_volume ?? 0),
     }
-  }, [range, summary, isXs, activeIndex])
+  }, [range, summary])
 
   if (loading || !summary) {
     return (
@@ -430,23 +335,14 @@ export function MarketSummaryModal({ open, onClose, summary, activeIndex = 'kse1
   const pos30 = summary.kse30_change >= 0
   const changeColor = pos ? COLORS.success : COLORS.error
   const change30Color = pos30 ? COLORS.success : COLORS.error
-  const activeLabel = activeIndex === 'kse100' ? 'KSE 100' : 'KSE 30'
-  const candleUp = COLORS.success
-  const candleDown = COLORS.error
   const chartHeight = isXs ? 320 : 360
-
-  // Determine if we need dataZoom (scrollable chart)
-  const totalCandles = chartData.ohlc.length
-  const showZoom = totalCandles > (isXs ? 30 : 40)
-  const zoomEnd = showZoom ? Math.min(100, ((isXs ? 30 : 40) / totalCandles) * 100) : 100
-  const maxVolume = chartData.volumes.length > 0 ? Math.max(...chartData.volumes) : 1
   const formattedDate = summary.tradeDate
     ? new Date(summary.tradeDate).toLocaleDateString('en-PK', {
-        weekday: 'short',
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-      })
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    })
     : '—'
 
   return (
@@ -509,7 +405,7 @@ export function MarketSummaryModal({ open, onClose, summary, activeIndex = 'kse1
             Market Summary
           </Typography>
           <Typography sx={{ fontFamily: SERIF, fontSize: 16, fontWeight: 700, color: COLORS.text }}>
-            {activeLabel} · {formattedDate}
+            Market Comparison · {formattedDate}
           </Typography>
         </Box>
 
@@ -617,6 +513,78 @@ export function MarketSummaryModal({ open, onClose, summary, activeIndex = 'kse1
           </Box>
         </Box>
 
+        {/* ── SESSION STATS ── */}
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' },
+            gap: 1.5,
+          }}
+        >
+          {[
+            {
+              label: 'Volume (Today)',
+              value: fmtNumber(summary.curr_volume),
+              sub: summary.prev_volume > 0
+                ? `vs ${fmtNumber(summary.prev_volume)} prev`
+                : undefined,
+              highlight: summary.curr_volume > summary.prev_volume ? CHART.success
+                : summary.curr_volume < summary.prev_volume ? '#b94040'
+                  : undefined,
+            },
+            {
+              label: 'Advancing',
+              value: fmtNumber(summary.advances),
+              highlight: CHART.success,
+            },
+            {
+              label: 'Declining',
+              value: fmtNumber(summary.declines),
+              highlight: '#b94040',
+            },
+            {
+              label: 'Unchanged',
+              value: fmtNumber(summary.unchanged),
+              highlight: undefined,
+            },
+          ].map(({ label, value, sub, highlight }) => (
+            <Box
+              key={label}
+              sx={{
+                px: 1.6,
+                py: 1.2,
+                border: `1px solid ${CHART.border}`,
+                borderRadius: '10px',
+                bgcolor: COLORS.bg,
+              }}
+            >
+              <Typography sx={{
+                fontSize: 9, fontWeight: 700, letterSpacing: '0.1em',
+                textTransform: 'uppercase', color: CHART.textSecondary,
+                fontFamily: NUMBER_FONT, mb: 0.4,
+              }}>
+                {label}
+              </Typography>
+              <Typography sx={{
+                fontFamily: NUMBER_FONT, fontSize: 14, fontWeight: 700,
+                color: highlight ?? CHART.text, letterSpacing: '-0.02em', lineHeight: 1,
+              }}>
+                {value}
+              </Typography>
+              {sub && (
+                <Typography sx={{
+                  fontSize: 9.5, color: CHART.textSecondary,
+                  fontFamily: SERIF, mt: 0.3, lineHeight: 1.3,
+                }}>
+                  {sub}
+                </Typography>
+              )}
+            </Box>
+          ))}
+        </Box>
+
+        {/* ── CHART CARD ── */}
+
         {/* ── CHART CARD ── */}
         <Box
           component={motion.div}
@@ -627,10 +595,7 @@ export function MarketSummaryModal({ open, onClose, summary, activeIndex = 'kse1
             border: `1px solid ${COLORS.border}`,
             borderRadius: '12px',
             bgcolor: COLORS.surface,
-            // FIX: use 'visible' so chart SVG marks/tooltips near edges aren't clipped
-            overflow: 'visible',
-            // Keep the visual rounded corner appearance on child elements
-            '& > *:first-of-type': { borderRadius: '12px 12px 0 0' },
+            overflow: 'hidden',
           }}
         >
           {/* Chart header */}
@@ -644,273 +609,196 @@ export function MarketSummaryModal({ open, onClose, summary, activeIndex = 'kse1
               justifyContent: 'space-between',
             }}
           >
-            <Typography
-              sx={{
-                fontSize: 11,
-                fontFamily: SERIF,
-                letterSpacing: '0.18em',
-                textTransform: 'uppercase',
-                color: COLORS.primary,
-                mb: 1.2,
-              }}
-            >
-              {activeLabel} Trend
-            </Typography>
+            <Box>
+              <Typography
+                sx={{
+                  fontSize: 11,
+                  fontFamily: SERIF,
+                  letterSpacing: '0.18em',
+                  textTransform: 'uppercase',
+                  color: COLORS.primary,
+                  mb: 0.3,
+                }}
+              >
+                KSE 100 vs KSE 30 Trend
+              </Typography>
+              <Typography sx={{ fontSize: 10.5, color: CHART.textSecondary, fontFamily: SERIF, mb: 1.2 }}>
+                Closing values · {formattedDate}
+              </Typography>
+            </Box>
             <Box sx={{ display: 'flex', gap: 0.3, bgcolor: COLORS.surface, p: 0.4, borderRadius: '8px', border: `1px solid ${COLORS.border}` }}>
-              {(['1W', '1M', 'YTD', '1Y'] as const).map((key) => (
+              {(['1M', 'YTD', '1Y'] as const).map((key) => (
                 <RangeBtn key={key} label={key} active={range === key} onClick={() => setRange(key)} />
               ))}
             </Box>
           </Box>
 
-          <AnimatePresence mode="wait">
-            <Box
-              key={range}
-              component={motion.div}
-              initial={reduce ? false : { opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              // FIX: use fixed height (not minHeight) so chart fills exactly this space
-              sx={{ px: 1, pb: 1.5, height: chartHeight }}
-            >
-              <ReactECharts
-                key={chartKey}
-                ref={chartRef}
-                style={{ height: chartHeight, width: '100%' }}
-                opts={{ renderer: 'svg' }}
-                option={{
-                  animation: true,
-                  animationDuration: 600,
-                  animationEasing: 'cubicOut',
-                  grid: [
-                    {
-                      // Main candle grid
-                      left: isXs ? 52 : 64,
-                      right: isXs ? 12 : 24,
-                      top: 16,
-                      bottom: showZoom ? (isXs ? 90 : 100) : (isXs ? 70 : 80),
-                      height: showZoom ? (chartHeight - (isXs ? 155 : 170)) : (chartHeight - (isXs ? 120 : 130)),
+          {/* <AnimatePresence mode="wait"> */}
+          <Box sx={{ px: 1, pb: 1.5, pt: 0.5, height: chartHeight }}>
+            <ReactECharts
+              key={`${chartKey}-${range}`}
+              ref={chartRef}
+              style={{ height: '100%', width: '100%' }}
+              opts={{ renderer: 'canvas' }}
+              notMerge
+              option={{
+                animation: true,
+                animationDuration: 600,
+                animationEasing: 'cubicOut',
+                grid: {
+                  left: isXs ? 52 : 64,
+                  right: isXs ? 12 : 24,
+                  top: 18,
+                  bottom: isXs ? 40 : 48,
+                },
+                xAxis: {
+                  type: 'category',
+                  data: chartData.labels,
+                  boundaryGap: false,
+                  axisLine: { lineStyle: { color: CHART.border } },
+                  axisTick: { show: false },
+                  axisLabel: {
+                    fontSize: isXs ? 8 : 9,
+                    color: CHART.textSecondary,
+                    fontFamily: 'DM Mono, monospace',
+                    interval: Math.max(0, Math.ceil(chartData.labels.length / (isXs ? 6 : 8)) - 1),
+                  },
+                },
+                yAxis: [
+                  {
+                    // Price axis (left)
+                    type: 'value',
+                    scale: true,
+                    axisLine: { show: false },
+                    axisTick: { show: false },
+                    splitLine: {
+                      lineStyle: { color: CHART.border, type: 'dashed', opacity: 0.6 },
                     },
-                    {
-                      // Volume grid
-                      left: isXs ? 52 : 64,
-                      right: isXs ? 12 : 24,
-                      bottom: showZoom ? (isXs ? 60 : 68) : (isXs ? 28 : 34),
-                      height: isXs ? 28 : 36,
-                    },
-                  ],
-                  xAxis: [
-                    {
-                      type: 'category',
-                      data: chartData.labels,
-                      boundaryGap: true,
-                      axisLine: { show: false },
-                      axisTick: { show: false },
-                      axisLabel: { show: false },
-                      gridIndex: 0,
-                    },
-                    {
-                      type: 'category',
-                      data: chartData.labels,
-                      boundaryGap: true,
-                      gridIndex: 1,
-                      axisLine: { show: false },
-                      axisTick: { show: false },
-                      axisLabel: {
-                        show: true,
-                        fontSize: isXs ? 8 : 9,
-                        color: COLORS.textSecondary,
-                        fontFamily: 'DM Mono, monospace',
-                        interval: Math.max(0, Math.ceil(chartData.labels.length / (isXs ? 5 : 7)) - 1),
-                        rotate: 0,
-                      },
-                    },
-                  ],
-                  yAxis: [
-                    {
-                      type: 'value',
-                      scale: true,
-                      gridIndex: 0,
-                      axisLine: { show: false },
-                      axisTick: { show: false },
-                      splitLine: {
-                        lineStyle: {
-                          color: COLORS.border,
-                          type: 'dashed',
-                          opacity: 0.4,
-                        },
-                      },
-                      axisLabel: {
-                        show: true,
-                        fontSize: isXs ? 8 : 9,
-                        color: COLORS.textSecondary,
-                        fontFamily: 'DM Mono, monospace',
-                        formatter: (v: number) => v >= 1000 ? `${(v / 1000).toFixed(1)}K` : v.toString(),
-                      },
-                    },
-                    {
-                      type: 'value',
-                      gridIndex: 1,
-                      axisLine: { show: false },
-                      axisTick: { show: false },
-                      splitLine: { show: false },
-                      axisLabel: { show: false },
-                      max: maxVolume * 3,
-                    },
-                  ],
-                  dataZoom: showZoom ? [
-                    {
-                      type: 'slider',
-                      xAxisIndex: [0, 1],
-                      start: 100 - zoomEnd,
-                      end: 100,
-                      bottom: isXs ? 10 : 14,
-                      height: isXs ? 18 : 22,
-                      borderColor: COLORS.border,
-                      fillerColor: 'rgba(10,36,99,0.08)',
-                      handleStyle: {
-                        color: COLORS.primary,
-                        borderColor: COLORS.primary,
-                      },
-                      moveHandleSize: 4,
-                      textStyle: {
-                        fontSize: 9,
-                        color: COLORS.textSecondary,
-                        fontFamily: 'DM Mono, monospace',
-                      },
-                      dataBackground: {
-                        lineStyle: { color: 'rgba(10,36,99,0.15)', width: 1 },
-                        areaStyle: { color: 'rgba(10,36,99,0.05)' },
-                      },
-                      selectedDataBackground: {
-                        lineStyle: { color: COLORS.primary, width: 1 },
-                        areaStyle: { color: 'rgba(10,36,99,0.12)' },
-                      },
-                    },
-                    {
-                      type: 'inside',
-                      xAxisIndex: [0, 1],
-                      start: 100 - zoomEnd,
-                      end: 100,
-                    },
-                  ] : [
-                    {
-                      type: 'inside',
-                      xAxisIndex: [0, 1],
-                      start: 0,
-                      end: 100,
-                    },
-                  ],
-                  series: [
-                    {
-                      name: activeLabel,
-                      type: 'candlestick',
-                      data: chartData.ohlc,
-                      xAxisIndex: 0,
-                      yAxisIndex: 0,
-                      barMaxWidth: isXs ? 14 : 18,
-                      barMinWidth: 2,
-                      itemStyle: {
-                        color: candleUp,
-                        color0: candleDown,
-                        borderColor: candleUp,
-                        borderColor0: candleDown,
-                        borderWidth: 1,
-                      },
-                      emphasis: {
-                        itemStyle: {
-                          borderWidth: 2,
-                          shadowBlur: 6,
-                          shadowColor: 'rgba(0,0,0,0.12)',
-                        },
-                      },
-                    },
-                    {
-                      name: 'Close',
-                      type: 'line',
-                      data: chartData.closeLine,
-                      xAxisIndex: 0,
-                      yAxisIndex: 0,
-                      smooth: 0.3,
-                      symbol: 'none',
-                      lineStyle: {
-                        width: 1.2,
-                        color: 'rgba(10,36,99,0.25)',
-                      },
-                      areaStyle: {
-                        color: {
-                          type: 'linear',
-                          x: 0, y: 0, x2: 0, y2: 1,
-                          colorStops: [
-                            { offset: 0, color: 'rgba(10,36,99,0.08)' },
-                            { offset: 1, color: 'rgba(10,36,99,0.01)' },
-                          ],
-                        },
-                      },
-                      z: 0,
-                    },
-                    {
-                      name: 'Volume',
-                      type: 'bar',
-                      data: chartData.volumes.map((v, i) => ({
-                        value: v,
-                        itemStyle: {
-                          color: chartData.ohlc[i] && chartData.ohlc[i][1] >= chartData.ohlc[i][0]
-                            ? 'rgba(13,92,50,0.25)'
-                            : 'rgba(155,28,46,0.25)',
-                        },
-                      })),
-                      xAxisIndex: 1,
-                      yAxisIndex: 1,
-                      barMaxWidth: isXs ? 12 : 16,
-                      barMinWidth: 1,
-                    },
-                  ],
-                  tooltip: {
-                    trigger: 'axis',
-                    axisPointer: {
-                      type: 'cross',
-                      crossStyle: { color: COLORS.textSecondary, width: 0.5 },
-                      lineStyle: { color: COLORS.border, width: 1, type: 'dashed' },
-                      label: {
-                        backgroundColor: COLORS.primary,
-                        fontSize: 9,
-                        fontFamily: 'DM Mono, monospace',
-                      },
-                    },
-                    backgroundColor: 'rgba(255,255,255,0.96)',
-                    borderColor: COLORS.border,
-                    borderRadius: 8,
-                    padding: [10, 14],
-                    textStyle: {
-                      fontSize: 11,
-                      color: COLORS.text,
+                    axisLabel: {
+                      show: true,
+                      fontSize: isXs ? 8 : 9,
+                      color: CHART.textSecondary,
                       fontFamily: 'DM Mono, monospace',
-                    },
-                    formatter: (params: { seriesName?: string; value: number | number[]; dataIndex?: number }[]) => {
-                      const candleParam = params.find(p => p.seriesName === activeLabel)
-                      if (!candleParam) return ''
-                      const d = candleParam.value as number[]
-                      const close = d[1]
-                      const dataIndex = candleParam.dataIndex ?? -1
-                      const volumeValue = dataIndex >= 0 ? chartData.volumes[dataIndex] : null
-                      const volumeLabel = volumeValue != null
-                        ? volumeValue.toLocaleString('en-PK')
-                        : '—'
-                      return [
-                        `<div style="font-weight:700;margin-bottom:4px;font-size:10px;color:${COLORS.textSecondary};">${activeLabel} INDEX</div>`,
-                        `<div style="display:grid;grid-template-columns:46px 1fr;gap:2px 10px;font-size:11px;">`,
-                        `<span style="color:${COLORS.textSecondary}">Price</span><span style="font-weight:700">${fmtIndex(close)}</span>`,
-                        `<span style="color:${COLORS.textSecondary}">Turnover</span><span>${volumeLabel}</span>`,
-                        `</div>`,
-                      ].join('')
+                      formatter: (v: number) => v >= 1000 ? `${(v / 1000).toFixed(1)}K` : v.toString(),
                     },
                   },
-                }}
-              />
-            </Box>
-          </AnimatePresence>
+                  {
+                    // Volume axis (right, hidden — bars fill bottom 25% of chart)
+                    type: 'value',
+                    show: false,
+                    min: 0,
+                    max: (value: { max: number }) => value.max * 4,
+                  },
+                ],
+                series: [
+                  {
+                    name: 'KSE 100',
+                    type: 'line',
+                    yAxisIndex: 0,
+                    data: chartData.kse100Values,
+                    smooth: 0.3,
+                    symbol: 'circle',
+                    symbolSize: 5,
+                    showSymbol: false,
+                    lineStyle: { width: 2.2, color: CHART.primary },
+                    itemStyle: { color: CHART.primary },
+                    areaStyle: { color: 'rgba(10,36,99,0.07)' },
+                    z: 3,
+                  },
+                  {
+                    name: 'KSE 30',
+                    type: 'line',
+                    yAxisIndex: 0,
+                    data: chartData.kse30Values,
+                    smooth: 0.3,
+                    symbol: 'circle',
+                    symbolSize: 5,
+                    showSymbol: false,
+                    lineStyle: { width: 2.2, color: CHART.success },
+                    itemStyle: { color: CHART.success },
+                    areaStyle: { color: 'rgba(13,92,50,0.06)' },
+                    z: 3,
+                  },
+                  {
+                    name: 'Volume',
+                    type: 'bar',
+                    yAxisIndex: 1,
+                    data: chartData.volumeValues,
+                    barMaxWidth: 6,
+                    itemStyle: {
+                      color: 'rgba(10,36,99,0.12)',
+                      borderRadius: [2, 2, 0, 0],
+                    },
+                    emphasis: {
+                      itemStyle: { color: 'rgba(10,36,99,0.28)' },
+                    },
+                    z: 1,
+                  },
+                ],
+                tooltip: {
+                  trigger: 'axis',
+                  axisPointer: {
+                    type: 'line',
+                    lineStyle: {
+                      color: CHART.border,
+                      width: 1,
+                      type: 'dashed',
+                    },
+                  },
+                  backgroundColor: CHART.tooltipBg,
+                  borderColor: CHART.border,
+                  borderWidth: 1,
+                  borderRadius: 8,
+                  padding: [10, 14],
+                  textStyle: {
+                    fontSize: 11,
+                    color: CHART.text,
+                    fontFamily: 'DM Mono, monospace',
+                  },
+                  formatter: (params: { seriesName?: string; value: number | number[] }[]) => {
+                    const kse100 = params.find((p) => p.seriesName === 'KSE 100')?.value as number | undefined
+                    const kse30 = params.find((p) => p.seriesName === 'KSE 30')?.value as number | undefined
+                    const vol = params.find((p) => p.seriesName === 'Volume')?.value as number | undefined
+                    if (kse100 == null && kse30 == null) return ''
+                    const fmtVol = (v: number) => {
+                      if (v >= 1_000_000_000) return `${(v / 1_000_000_000).toFixed(2)}B`
+                      if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(2)}M`
+                      if (v >= 1_000) return `${(v / 1_000).toFixed(0)}K`
+                      return v.toString()
+                    }
+                    return [
+                      `<div style="font-weight:700;margin-bottom:6px;font-size:10px;color:${CHART.textSecondary};letter-spacing:0.06em;text-transform:uppercase;">Index Comparison</div>`,
+                      `<div style="display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:11px;align-items:center;">`,
+                      `<span style="display:inline-flex;align-items:center;gap:5px;color:${CHART.textSecondary}"><span style="width:10px;height:2px;background:${CHART.primary};display:inline-block;border-radius:2px;"></span>KSE 100</span>`,
+                      `<span style="font-weight:700;color:${CHART.primary}">${kse100 != null ? fmtIndex(kse100) : '—'}</span>`,
+                      `<span style="display:inline-flex;align-items:center;gap:5px;color:${CHART.textSecondary}"><span style="width:10px;height:2px;background:${CHART.success};display:inline-block;border-radius:2px;"></span>KSE 30</span>`,
+                      `<span style="font-weight:700;color:${CHART.success}">${kse30 != null ? fmtIndex(kse30) : '—'}</span>`,
+                      vol != null ? `<span style="color:${CHART.textSecondary};margin-top:2px;">Vol</span><span style="font-weight:600;color:${CHART.text}">${fmtVol(vol)}</span>` : '',
+                      `</div>`,
+                    ].join('')
+                  },
+                },
+              }}
+            />
+          </Box>
+          {/* Legend */}
+          <Box sx={{ display: 'flex', gap: 2.5, px: 2.5, pb: 2, mt: -0.5, alignItems: 'center' }}>
+            {[
+              { label: 'KSE 100', color: COLORS.primary, bar: false },
+              { label: 'KSE 30', color: COLORS.success, bar: false },
+              { label: 'Volume', color: 'rgba(10,36,99,0.25)', bar: true },
+            ].map(({ label, color, bar }) => (
+              <Box key={label} sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
+                {bar
+                  ? <Box sx={{ width: 10, height: 10, bgcolor: color, borderRadius: '2px' }} />
+                  : <Box sx={{ width: 20, height: 2, bgcolor: color, borderRadius: '99px' }} />}
+                <Typography sx={{ fontSize: 10, fontFamily: NUMBER_FONT, color: COLORS.textSecondary, fontWeight: 600, letterSpacing: '0.06em' }}>
+                  {label}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+          {/* </AnimatePresence> */}
         </Box>
 
         {/* ── INFO TILES ── */}
@@ -922,30 +810,29 @@ export function MarketSummaryModal({ open, onClose, summary, activeIndex = 'kse1
         </Box>
 
         {/* ── MARKET BREADTH ── */}
-        <Box sx={{ border: `1px solid ${COLORS.border}`, borderRadius: '12px', bgcolor: COLORS.bg, p: 2.5 }}>
-          <Typography
-            sx={{
-              fontSize: 11,
-              fontFamily: SERIF,
-              letterSpacing: '0.18em',
-              textTransform: 'uppercase',
-              color: COLORS.primary,
-              mb: 1.2,
-            }}
-          >
-            Market Breadth
-          </Typography>
-          <StatRow label="Volume (Prev)" value={fmtNumber(summary.prev_volume)} />
-          <StatRow label="Volume (Curr)" value={fmtNumber(summary.curr_volume)} />
-          <BreadthBar advances={summary.advances} declines={summary.declines} unchanged={summary.unchanged} />
-          <Box sx={{ mt: 2 }}>
-            <StatRow label="Advancing" value={fmtNumber(summary.advances)} valueColor={COLORS.success} />
-            <StatRow label="Declining" value={fmtNumber(summary.declines)} valueColor={COLORS.error} />
-            <StatRow label="Unchanged" value={fmtNumber(summary.unchanged)} />
-          </Box>
-          {summary.flu_no && <StatRow label="Flu No" value={summary.flu_no} />}
+        {/* <Box sx={{ border: `1px solid ${COLORS.border}`, borderRadius: '12px', bgcolor: COLORS.bg, p: 2.5 }}>
+        <Typography
+          sx={{
+            fontSize: 11,
+            fontFamily: SERIF,
+            letterSpacing: '0.18em',
+            textTransform: 'uppercase',
+            color: COLORS.primary,
+            mb: 1.2,
+          }}
+        >
+          Market Breadth
+        </Typography>
+        <BreadthBar advances={summary.advances} declines={summary.declines} unchanged={summary.unchanged} />
+        <Box sx={{ mt: 2 }}>
+          <StatRow label="Advancing" value={fmtNumber(summary.advances)} valueColor={COLORS.success} />
+          <StatRow label="Declining" value={fmtNumber(summary.declines)} valueColor={COLORS.error} />
+          <StatRow label="Unchanged" value={fmtNumber(summary.unchanged)} />
         </Box>
+        {summary.flu_no && <StatRow label="Flu No" v
+        alue={summary.flu_no} />}
+      </Box> */}
       </Box>
-    </Dialog>
+    </Dialog >
   )
 }

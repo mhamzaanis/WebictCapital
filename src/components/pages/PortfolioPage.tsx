@@ -51,16 +51,7 @@ type HistoryEvent = {
   date: string
 }
 
-type MarketHistory = Record<'1W' | '1M' | 'YTD' | '1Y', { labels: string[]; values: number[] }>
-
-type IndexCardData = {
-  /** Spark values derived from last ~12 close values from the DB. */
-  spark: number[]
-  /** ISO date string of the previous row (second-to-last DB entry). */
-  prevDate: string | null
-  /** Close value of the previous row — used as a sanity check label. */
-  prevClose: number
-}
+type MarketHistory = Record<'1M' | 'YTD' | '1Y', { labels: string[]; values: number[]; volumes: number[] }>
 
 // ─── Static data ──────────────────────────────────────────────────────────────
 
@@ -93,12 +84,10 @@ const toNum = (v: unknown): number => {
 }
 
 // ─── Real market history builder ──────────────────────────────────────────────
-
 const EMPTY_MARKET_HISTORY: MarketHistory = {
-  '1W': { labels: [], values: [] },
-  '1M': { labels: [], values: [] },
-  'YTD': { labels: [], values: [] },
-  '1Y': { labels: [], values: [] },
+  '1M': { labels: [], values: [], volumes: [] },
+  'YTD': { labels: [], values: [], volumes: [] },
+  '1Y': { labels: [], values: [], volumes: [] },
 }
 
 const fmtDateLabel = (dateStr: string) => {
@@ -119,6 +108,7 @@ function buildRealMarketHistory(
   const buildSlice = (data: Array<MarketHistoryRow | DbMarketSummaryRow>) => ({
     labels: data.map((r) => fmtDateLabel(r.trade_date)),
     values: data.map((r) => ((r[closeKey] as number) ?? 0)),
+    volumes: data.map((r) => ((r as DbMarketSummaryRow).curr_volume ?? (r as MarketHistoryRow).curr_volume ?? 0)),
   })
 
   // YTD: from Jan 1 of current year
@@ -129,7 +119,6 @@ function buildRealMarketHistory(
   })
 
   return {
-    '1W': buildSlice(sorted.slice(-5)),
     '1M': buildSlice(sorted.slice(-22)),
     'YTD': buildSlice(ytdRows.length > 0 ? ytdRows : sorted.slice(-90)),
     '1Y': buildSlice(sorted),
@@ -575,7 +564,7 @@ function WatchRow({ item, index, onClick }: { item: WatchItem; index: number; on
       }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-        <Box sx={{ minWidth: 0, flex: 1 , }}>
+        <Box sx={{ minWidth: 0, flex: 1, }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
             <Typography sx={{
               fontFamily: NUMBER_FONT, fontSize: 12.5, fontWeight: 700,
@@ -586,7 +575,7 @@ function WatchRow({ item, index, onClick }: { item: WatchItem; index: number; on
             }}>
               {item.symbol}
             </Typography>
-            
+
           </Box>
           {/* <Typography sx={{ fontSize: 10, color: 'var(--wc-text-secondary)', fontFamily: SERIF, mt: 0.1 }}>
             {item.sector || item.company}
@@ -711,7 +700,6 @@ export function PortfolioPage() {
   const [drawerLoading, setDrawerLoading] = useState(false)
   const [drawerError, setDrawerError] = useState<string | null>(null)
   const [authModalOpen, setAuthModalOpen] = useState(false)
-  const [marketModalIndex, setMarketModalIndex] = useState<'kse100' | 'kse30'>('kse100')
   const [marketSnapshots, setMarketSnapshots] = useState<MarketSymbolSnapshot[]>([])
   const marketSnapshotsRef = useRef<MarketSymbolSnapshot[]>([])
   const [marketLoading, setMarketLoading] = useState(true)
@@ -743,10 +731,6 @@ export function PortfolioPage() {
     kse30History: EMPTY_MARKET_HISTORY,
   }))
 
-  // Per-index card data built from the latest DB rows
-  const [kse100Card, setKse100Card] = useState<IndexCardData>({ spark: [], prevDate: null, prevClose: 0 })
-  const [kse30Card, setKse30Card] = useState<IndexCardData>({ spark: [], prevDate: null, prevClose: 0 })
-
   useEffect(() => {
     if (isLocked) setAuthModalOpen(true)
   }, [isLocked])
@@ -759,7 +743,6 @@ export function PortfolioPage() {
 
     const normalized = normalizeSummaryRows(summaryRows)
     const latest = normalized[0]
-    const prior = normalized[1] ?? null
 
     const kse100Close = latest.kse100_close ?? 0
     const kse30Close = latest.kse30_close ?? 0
@@ -783,21 +766,6 @@ export function PortfolioPage() {
     })
 
     // Sparklines: use last 12 close values for a richer line
-    const kse100Spark = normalized.slice(0, 12).reverse().map((r) => r.kse100_close ?? 0)
-    const kse30Spark = normalized.slice(0, 12).reverse().map((r) => r.kse30_close ?? 0)
-    const kse100PrevClose = prior?.kse100_close ?? kse100Close
-    const kse30PrevClose = prior?.kse30_close ?? kse30Close
-
-    setKse100Card({
-      spark: kse100Spark.length >= 2 ? kse100Spark : [kse100Close, kse100Close],
-      prevDate: prior?.trade_date ?? null,
-      prevClose: kse100PrevClose,
-    })
-    setKse30Card({
-      spark: kse30Spark.length >= 2 ? kse30Spark : [kse30Close, kse30Close],
-      prevDate: prior?.trade_date ?? null,
-      prevClose: kse30PrevClose,
-    })
   }, [])
 
   useEffect(() => {
@@ -969,33 +937,37 @@ export function PortfolioPage() {
 
   const showMarketSkeleton = marketLoading && !marketSummary.tradeDate
   const showUserSkeleton = userLoading
-  const hasMarketHistory = marketModalIndex === 'kse100'
-    ? marketSummary.kse100History['1Y'].values.length > 30
-    : marketSummary.kse30History['1Y'].values.length > 30
+  const hasMarketHistory =
+    marketSummary.kse100History['1Y'].values.length > 30 &&
+    marketSummary.kse30History['1Y'].values.length > 30
 
   useEffect(() => {
     if (
       !marketModalOpen ||
       marketHistoryLoadingRef.current ||
-      hasMarketHistory ||
-      marketHistoryLoadedRef.current[marketModalIndex]
+      (marketHistoryLoadedRef.current.kse100 && marketHistoryLoadedRef.current.kse30) ||
+      hasMarketHistory
     ) return
     let cancelled = false
     marketHistoryLoadingRef.current = true
     setMarketHistoryLoading(true)
-    const closeKey = marketModalIndex === 'kse100' ? 'kse100_close' : 'kse30_close'
-    fetchMarketHistoryRows(closeKey, 252)
-      .then((rows) => {
-        if (cancelled || rows.length === 0) return
-        const history = buildRealMarketHistory(rows, closeKey)
-        setMarketSummary((prev) => (closeKey === 'kse100_close'
-          ? { ...prev, kse100History: history }
-          : { ...prev, kse30History: history }
-        ))
+    Promise.all([
+      fetchMarketHistoryRows('kse100_close', 252),
+      fetchMarketHistoryRows('kse30_close', 252),
+    ])
+      .then(([kse100Rows, kse30Rows]) => {
+        if (cancelled) return
+        const kse100History = kse100Rows.length > 0 ? buildRealMarketHistory(kse100Rows, 'kse100_close') : null
+        const kse30History = kse30Rows.length > 0 ? buildRealMarketHistory(kse30Rows, 'kse30_close') : null
+        setMarketSummary((prev) => ({
+          ...prev,
+          ...(kse100History ? { kse100History } : {}),
+          ...(kse30History ? { kse30History } : {}),
+        }))
       })
       .finally(() => {
         if (!cancelled) {
-          marketHistoryLoadedRef.current[marketModalIndex] = true
+          marketHistoryLoadedRef.current = { kse100: true, kse30: true }
           marketHistoryLoadingRef.current = false
           setMarketHistoryLoading(false)
         }
@@ -1004,7 +976,7 @@ export function PortfolioPage() {
       cancelled = true
       marketHistoryLoadingRef.current = false
     }
-  }, [marketModalOpen, hasMarketHistory, marketModalIndex])
+  }, [marketModalOpen, hasMarketHistory])
 
   const watchlistAvailableStocks = useMemo((): WatchItem[] =>
     marketSnapshots.map((m) => ({
@@ -1121,8 +1093,7 @@ export function PortfolioPage() {
     if (user) deleteUserTradesBySymbol(symbol).catch(() => { /* silent */ })
   }, [requireAuth, user])
 
-  const openKse100Modal = useCallback(() => { setMarketModalIndex('kse100'); setMarketModalOpen(true) }, [])
-  const openKse30Modal = useCallback(() => { setMarketModalIndex('kse30'); setMarketModalOpen(true) }, [])
+  const openMarketModal = useCallback(() => { setMarketModalOpen(true) }, [])
   const closeMarketModal = useCallback(() => setMarketModalOpen(false), [])
   const closeAuthModal = useCallback(() => { clearError(); setAuthModalOpen(false) }, [clearError])
   const closeHoldModal = useCallback(() => setHoldModalOpen(false), [])
@@ -1198,103 +1169,84 @@ export function PortfolioPage() {
           {/* ── Market Snapshot ──────────────────────────────────────────── */}
           <MotionReveal>
             <Box>
-              <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2, mb: 2.5 }}>
-                <Box>
-                  <SecLabel>Market Snapshot</SecLabel>
-                  <Typography sx={{ fontSize: 15, fontWeight: 700, color: 'var(--wc-text-primary)', fontFamily: SERIF, letterSpacing: '-0.01em' }}>
-                    Daily summary from PSX.
-                  </Typography>
-                </Box>
-                <Typography sx={{ fontSize: 11, color: 'var(--wc-text-secondary)', fontFamily: NUMBER_FONT }}>
-                  Last Updated: {marketSummary.tradeDate
-                    ? new Date(marketSummary.tradeDate).toLocaleDateString('en-PK', {
-                        weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
-                      })
-                    : '—'}
+              <Box sx={{ mb: 2.5 }}>
+                <SecLabel>Market Snapshot</SecLabel>
+                <Typography sx={{ fontSize: 15, fontWeight: 700, color: 'var(--wc-text-primary)', fontFamily: SERIF, letterSpacing: '-0.01em' }}>
+                  Daily summary from PSX.
                 </Typography>
               </Box>
 
-              {/* Two index cards — each using its own sparkline from the DB */}
-              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' }, gap: 2 }}>
-                {showMarketSkeleton
-                  ? [0, 1].map((i) => <SkeletonIndexCard key={i} />)
-                  : ([
-                    {
-                      label: 'KSE 100 Index',
-                      close: marketSummary.kse100_close,
-                      change: marketSummary.kse100_change,
-                      prev: marketSummary.kse100_prev,
-                      card: kse100Card,
-                      onClick: openKse100Modal,
+              {/* Single market card that opens the summary modal */}
+              {showMarketSkeleton ? (
+                <SkeletonIndexCard />
+              ) : (
+                <Box
+                  onClick={openMarketModal}
+                  sx={{
+                    p: { xs: 2.4, md: 3.2 },
+                    border: '1px solid var(--wc-divider)',
+                    borderRadius: 1.5,
+                    bgcolor: 'var(--wc-paper)',
+                    cursor: 'pointer',
+                    transition: 'border-color 0.18s ease, box-shadow 0.18s ease',
+                    '&:hover': {
+                      borderColor: 'rgba(10,36,99,0.25)',
+                      boxShadow: '0 4px 20px rgba(10,36,99,0.06)',
                     },
-                    {
-                      label: 'KSE 30 Index',
-                      close: marketSummary.kse30_close,
-                      change: marketSummary.kse30_change,
-                      prev: marketSummary.kse30_prev,
-                      card: kse30Card,
-                      onClick: openKse30Modal,
-                    },
-                  ] as const).map(({ label, close, change, prev, card, onClick }) => {
-                    const pos = change >= 0
-                    const color = pos ? 'var(--wc-success)' : 'var(--wc-error)'
-                    const prevDateLabel = card.prevDate
-                      ? new Date(card.prevDate + 'T00:00:00').toLocaleDateString('en-PK', { day: 'numeric', month: 'short' })
-                      : null
-                    return (
-                      <Box
-                        key={label}
-                        onClick={onClick}
-                        sx={{
-                          p: 2, border: '1px solid var(--wc-divider)', borderRadius: 1.5,
-                          bgcolor: pos ? 'rgba(13,92,50,0.03)' : 'rgba(180,40,58,0.03)',
-                          cursor: 'pointer', position: 'relative', overflow: 'hidden',
-                          transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
-                          '&::before': {
-                            content: '""', position: 'absolute', top: 0, left: 0, right: 0, height: '3px',
-                            background: pos
-                              ? 'linear-gradient(90deg, var(--wc-success), rgba(13,92,50,0.2))'
-                              : 'linear-gradient(90deg, var(--wc-error), rgba(180,40,58,0.2))',
-                          },
-                          // '&:hover': { borderColor: 'var(--wc-primary)', boxShadow: '0 6px 24px rgba(10,36,99,0.08)' },
-                        }}
-                      >
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                          <Box>
-                            <Typography sx={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', color: 'var(--wc-text-secondary)', textTransform: 'uppercase', fontFamily: SERIF, mb: 0.4 }}>
-                              {label}
-                            </Typography>
-                            <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 12, fontWeight: 600, color: 'var(--wc-text-primary)' }}>
-                              {close.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </Typography>
-                            {prevDateLabel && card.prevClose > 0 && (
-                              <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 10, color: 'var(--wc-text-secondary)', mt: 0.15 }}>
-                                Prev ({prevDateLabel}):&nbsp;
-                                {card.prevClose.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                              </Typography>
-                            )}
-                          </Box>
-                          {/* Per-index sparkline: [prevClose → latestClose] */}
-                          <Box sx={{ width: 80, height: 40 }}>
-                            <SparkLine data={card.spark.length >= 2 ? card.spark : [close, close]} width={80} height={40} color={color} area />
-                          </Box>
-                        </Box>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                          {pos
-                            ? <TrendingUpIcon sx={{ fontSize: 14, color }} />
-                            : <TrendingDownIcon sx={{ fontSize: 14, color }} />
-                          }
-                          <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 18, fontWeight: 800, color, letterSpacing: '-0.02em' }}>
-                            {change >= 0 ? '+' : ''}{change.toFixed(2)}
-                          </Typography>
-                          <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 11, color: 'var(--wc-text-secondary)', ml: 0.5 }}>
-                            {prev !== 0 ? `${change >= 0 ? '+' : ''}${((change / prev) * 100).toFixed(2)}%` : '—'}
-                          </Typography>
-                        </Box>
+                  }}
+                >
+                  {/* Two-column: left = indices, right = change indicators */}
+                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 2.5 }}>
+                    {/* KSE 100 */}
+                    <Box>
+                      <Typography sx={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--wc-text-secondary)', fontFamily: NUMBER_FONT, mb: 0.6 }}>
+                        KSE 100
+                      </Typography>
+                      <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: { xs: 20, md: 24 }, fontWeight: 700, color: 'var(--wc-text-primary)', letterSpacing: '-0.03em', lineHeight: 1 }}>
+                        {marketSummary.kse100_close.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </Typography>
+                      <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.4, mt: 0.6 }}>
+                        {marketSummary.kse100_change >= 0
+                          ? <TrendingUpIcon sx={{ fontSize: 12, color: 'var(--wc-success)' }} />
+                          : <TrendingDownIcon sx={{ fontSize: 12, color: 'var(--wc-error)' }} />}
+                        <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 11, fontWeight: 600, color: marketSummary.kse100_change >= 0 ? 'var(--wc-success)' : 'var(--wc-error)' }}>
+                          {marketSummary.kse100_change >= 0 ? '+' : ''}{marketSummary.kse100_change.toFixed(2)}
+                        </Typography>
                       </Box>
-                    )
-                  })}
-              </Box>
+                    </Box>
+
+                    {/* KSE 30 */}
+                    <Box sx={{ borderLeft: '1px solid var(--wc-divider)', pl: 2 }}>
+                      <Typography sx={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--wc-text-secondary)', fontFamily: NUMBER_FONT, mb: 0.6 }}>
+                        KSE 30
+                      </Typography>
+                      <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: { xs: 20, md: 24 }, fontWeight: 700, color: 'var(--wc-text-primary)', letterSpacing: '-0.03em', lineHeight: 1 }}>
+                        {marketSummary.kse30_close.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </Typography>
+                      <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.4, mt: 0.6 }}>
+                        {marketSummary.kse30_change >= 0
+                          ? <TrendingUpIcon sx={{ fontSize: 12, color: 'var(--wc-success)' }} />
+                          : <TrendingDownIcon sx={{ fontSize: 12, color: 'var(--wc-error)' }} />}
+                        <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 11, fontWeight: 600, color: marketSummary.kse30_change >= 0 ? 'var(--wc-success)' : 'var(--wc-error)' }}>
+                          {marketSummary.kse30_change >= 0 ? '+' : ''}{marketSummary.kse30_change.toFixed(2)}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+
+                  {/* Footer row */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pt: 2, borderTop: '1px solid var(--wc-divider)' }}>
+                    <Typography sx={{ fontSize: 10.5, color: 'var(--wc-text-secondary)', fontFamily: SERIF }}>
+                      {marketSummary.tradeDate
+                        ? new Date(marketSummary.tradeDate).toLocaleDateString('en-PK', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+                        : '—'}
+                    </Typography>
+                    <Typography sx={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--wc-primary)', fontFamily: NUMBER_FONT }}>
+                      View chart →
+                    </Typography>
+                  </Box>
+                </Box>
+              )}
             </Box>
           </MotionReveal>
 
@@ -1463,8 +1415,9 @@ export function PortfolioPage() {
               <Box sx={{ mb: 3, display: 'grid', gap: { xs: 2, md: 2.5 }, gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1.55fr) minmax(0, 1fr)' }, alignItems: 'start' }}>
 
                 {/* Holdings table */}
-                <Card sx={{ p: { xs: 1, md: 1.4 }, display: 'flex', flexDirection: 'column', height: 520, 
-                // '&:hover': { borderColor: 'var(--wc-divider)', boxShadow: 'none' } 
+                <Card sx={{
+                  p: { xs: 1, md: 1.4 }, display: 'flex', flexDirection: 'column', height: 520,
+                  // '&:hover': { borderColor: 'var(--wc-divider)', boxShadow: 'none' } 
                 }}>
                   <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 2, px: 0.5, mb: 0.5, flexShrink: 0 }}>
                     <Box sx={{ width: 40, flexShrink: 0 }} />
@@ -1637,7 +1590,6 @@ export function PortfolioPage() {
         open={marketModalOpen}
         onClose={closeMarketModal}
         summary={marketSummary}
-        activeIndex={marketModalIndex}
         loading={showMarketSkeleton || marketHistoryLoading}
       />
       <HoldingModal open={holdModalOpen} onClose={closeHoldModal} holdings={holdings} onSave={handleSaveHolding} onDelete={handleDeleteHolding} initialMode={holdModalMode} initialHolding={holdModalHolding} availableStocks={holdingAvailableStocks.length > 0 ? holdingAvailableStocks : undefined} />

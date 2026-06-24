@@ -104,9 +104,9 @@ export type DbMarketSummaryRow = {
 }
 
 export type MarketHistoryRow = Pick<DbMarketSummaryRow, 'trade_date'> &
-  Partial<Pick<DbMarketSummaryRow, 'kse100_close' | 'kse30_close'>>
+  Partial<Pick<DbMarketSummaryRow, 'kse100_close' | 'kse30_close' | 'curr_volume'>>
 
-type MarketHistoryDbRow = Pick<DbMarketSummaryRow, 'trade_date' | 'kse100_close' | 'kse30_close'>
+type MarketHistoryDbRow = Pick<DbMarketSummaryRow, 'trade_date' | 'kse100_close' | 'kse30_close' | 'curr_volume'>
 
 async function fetchLatestTradeDate(): Promise<string | null> {
   if (!hasStockService() || !supabase) return null
@@ -225,6 +225,7 @@ export async function fetchMarketHistoryRows(
     const cached = summaryCache.rows.slice(0, limit).map((row) => ({
       trade_date: row.trade_date,
       [closeKey]: row[closeKey],
+      curr_volume: row.curr_volume,
     }))
     if (cached.length >= limit) return cached as MarketHistoryRow[]
   }
@@ -232,7 +233,7 @@ export async function fetchMarketHistoryRows(
   const latestTradeDate = await fetchLatestTradeDate()
   if (!latestTradeDate) return []
 
-  const selectCols = `trade_date,${closeKey}`
+  const selectCols = `trade_date,${closeKey},curr_volume`
   const { data, error } = await supabase
     .from('market_daily_summary')
     .select(selectCols)
@@ -248,6 +249,7 @@ export async function fetchMarketHistoryRows(
   return (data as unknown as MarketHistoryDbRow[]).map((row) => ({
     trade_date: row.trade_date,
     [closeKey]: row[closeKey],
+    curr_volume: row.curr_volume,
   }))
 }
 
