@@ -9,7 +9,13 @@ export const navItems: NavItem[] = [
       {label: 'Masterclasses', href: '/masterclasses'},
     ],
   },
-  { label: 'My Portfolio', href: '/portfolio' },
+  { label: 'Tools', 
+    href: '/portfolio',
+    children: [
+      { label: 'My Portfolio', href: '/portfolio' },
+      { label: 'SIP Calculator', href: '/sip-calculator' },
+    ]
+  },
   { label: 'Data', href: '/data' },
   { label: 'Advisory', href: '/advisory' },
   // { label: 'Our team', href: '#' },
