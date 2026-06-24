@@ -106,6 +106,8 @@ export type DbMarketSummaryRow = {
 export type MarketHistoryRow = Pick<DbMarketSummaryRow, 'trade_date'> &
   Partial<Pick<DbMarketSummaryRow, 'kse100_close' | 'kse30_close'>>
 
+type MarketHistoryDbRow = Pick<DbMarketSummaryRow, 'trade_date' | 'kse100_close' | 'kse30_close'>
+
 async function fetchLatestTradeDate(): Promise<string | null> {
   if (!hasStockService() || !supabase) return null
   const { data, error } = await supabase
@@ -243,7 +245,10 @@ export async function fetchMarketHistoryRows(
     return []
   }
 
-  return data as MarketHistoryRow[]
+  return (data as unknown as MarketHistoryDbRow[]).map((row) => ({
+    trade_date: row.trade_date,
+    [closeKey]: row[closeKey],
+  }))
 }
 
 export async function fetchUniqueSymbols(): Promise<MarketSymbolSnapshot[]> {
