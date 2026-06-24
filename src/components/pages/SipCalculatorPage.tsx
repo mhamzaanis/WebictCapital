@@ -718,7 +718,7 @@ export function SipCalculatorPage() {
                         '&:hover': { '& .sip-title': { color: PRIMARY } },
                       }}
                     >
-                      <Typography sx={{ fontSize: 22, mb: 1.2 }}>{item.icon}</Typography>
+                      
                       <Typography
                         className="sip-title"
                         sx={{
