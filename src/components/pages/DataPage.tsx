@@ -2,17 +2,15 @@ import {
   Alert,
   Box,
   Container,
-  InputAdornment,
   Stack,
-  TextField,
   Typography,
 } from '@mui/material'
-import SearchIcon from '@mui/icons-material/Search'
 import { hasSupabaseConfig, supabase } from '../../lib/supabase'
 import { useEffect, useMemo, useState } from 'react'
 import { PriceTableSkeleton, StatCardsSkeleton } from './CustomSkeleton'
 import { CustomDataTable } from './CustomDataTable'
 import { CustomStatsCards } from './CustomStatsCards'
+import { FiltersBar, type MovementFilter } from './FiltersBar.tsx'
 
 // -- Types --------------------------------------------------------------------
 
@@ -67,8 +65,6 @@ type DbSummaryRow = {
   declines: number | null
   unchanged: number | null
 }
-
-type MovementFilter = 'all' | 'gainers' | 'losers' | 'unchanged'
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -140,21 +136,6 @@ async function fetchSupabaseTradeDay(tradeDate: string): Promise<PsxData> {
 }
 
 const MONO = '"JetBrains Mono", "Fira Code", "Cascadia Code", monospace'
-
-const filterFieldSx = {
-  '& .MuiOutlinedInput-root': {
-    bgcolor: '#ffffff',
-    color: '#0d1c30',
-    fontFamily: MONO,
-    fontSize: 12,
-    borderRadius: 1,
-    '& fieldset': { borderColor: '#dde7f4' },
-    '&:hover fieldset': { borderColor: '#0a2463' },
-    '&.Mui-focused fieldset': { borderColor: '#0a2463', borderWidth: '1.5px' },
-  },
-  '& .MuiInputLabel-root.Mui-focused': { color: '#0a2463' },
-  '& input::placeholder': { color: '#8097b0', opacity: 1 },
-}
 
 // -- Component ----------------------------------------------------------------
 
@@ -299,63 +280,6 @@ export function DataPage() {
     }
   }, [stocks, activeData])
 
-  const FiltersBar = ({ disabled }: { disabled: boolean }) => (
-    <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5}>
-      <TextField
-        placeholder="Search symbol or company…"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        disabled={disabled}
-        size="small"
-        fullWidth
-        slotProps={{
-          input: {
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon sx={{ color: '#8097b0', fontSize: 15 }} />
-              </InputAdornment>
-            ),
-          },
-        }}
-        sx={{ width: { xs: '100%', md: '50%' }, ...filterFieldSx }}
-      />
-
-      <TextField
-        select
-        size="small"
-        label="Movement"
-        value={movementFilter}
-        onChange={(e) => setMovementFilter(e.target.value as MovementFilter)}
-        disabled={disabled}
-        slotProps={{ select: { native: true } }}
-        sx={{ width: { xs: '100%', md: '25%' }, ...filterFieldSx }}
-      >
-        <option value="all">All</option>
-        <option value="gainers">Gainers</option>
-        <option value="losers">Losers</option>
-        <option value="unchanged">Unchanged</option>
-      </TextField>
-
-      <TextField
-        select
-        size="small"
-        label="Industry"
-        value={industryFilter}
-        onChange={(e) => setIndustryFilter(e.target.value)}
-        disabled={disabled}
-        slotProps={{ select: { native: true } }}
-        sx={{ width: { xs: '100%', md: '25%' }, ...filterFieldSx }}
-      >
-        <option value="all">All Industries</option>
-        {industryOptions.map((industry) => (
-          <option key={industry} value={industry}>
-            {industry}
-          </option>
-        ))}
-      </TextField>
-    </Stack>
-  )
-
   return (
     <Box
       component="main"
@@ -427,7 +351,16 @@ export function DataPage() {
           {status === 'loading' && (
             <>
               <StatCardsSkeleton />
-              <FiltersBar disabled />
+              <FiltersBar
+                disabled
+                search={search}
+                setSearch={setSearch}
+                movementFilter={movementFilter}
+                setMovementFilter={setMovementFilter}
+                industryFilter={industryFilter}
+                setIndustryFilter={setIndustryFilter}
+                industryOptions={industryOptions}
+              />
               <PriceTableSkeleton />
             </>
           )}
@@ -474,7 +407,16 @@ export function DataPage() {
                 monoFont={MONO}
               />
 
-              <FiltersBar disabled={false} />
+              <FiltersBar
+                disabled={false}
+                search={search}
+                setSearch={setSearch}
+                movementFilter={movementFilter}
+                setMovementFilter={setMovementFilter}
+                industryFilter={industryFilter}
+                setIndustryFilter={setIndustryFilter}
+                industryOptions={industryOptions}
+              />
 
               {search && (
                 <Typography sx={{ fontSize: 11, color: '#8097b0' }}>
