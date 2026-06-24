@@ -7,6 +7,7 @@ import { GlossaryPage } from './components/pages/GlossaryPage'
 import { HomePage } from './components/pages/HomePage'
 import { MasterclassesPage } from './components/pages/MasterclassesPage'
 import { PortfolioPage } from './components/pages/PortfolioPage'
+import { SipCalculatorPage } from './components/pages/SipCalculatorPage'
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <Route path="/glossary" element={<GlossaryPage />} />
         <Route path="/masterclasses" element={<MasterclassesPage />} />
         <Route path="/portfolio" element={<PortfolioPage />} />
+        <Route path="/sip-calculator" element={<SipCalculatorPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

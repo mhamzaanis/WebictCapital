@@ -1,4 +1,4 @@
-import type { FooterColumn, NavItem} from '../types/content'
+import type { FooterColumn, NavItem } from '../types/content'
 
 export const navItems: NavItem[] = [
   {
@@ -6,16 +6,16 @@ export const navItems: NavItem[] = [
     href: '/glossary',
     children: [
       { label: 'Glossary', href: '/glossary' },
-      {label: 'Masterclasses', href: '/masterclasses'},
+      { label: 'Masterclasses', href: '/masterclasses' },
     ],
   },
-  { label: 'Tools', 
-    href: '/portfolio',
+  {
+    label: 'Tools', href: '#',
     children: [
-      { label: 'My Portfolio', href: '/portfolio' },
       { label: 'SIP Calculator', href: '/sip-calculator' },
     ]
   },
+  { label: 'My Portfolio', href: '/portfolio' },
   { label: 'Data', href: '/data' },
   { label: 'Advisory', href: '/advisory' },
   // { label: 'Our team', href: '#' },
@@ -125,7 +125,8 @@ export const navItems: NavItem[] = [
 // ]
 
 export const footerColumns: FooterColumn[] = [
-  {title: 'Social Media',
+  {
+    title: 'Social Media',
     links: [
       { label: 'Twitter', href: 'https://twitter.com/webictcapital' },
       { label: 'LinkedIn', href: 'https://www.linkedin.com/company/webictcapital' },
@@ -135,13 +136,14 @@ export const footerColumns: FooterColumn[] = [
   {
     title: 'Webict Capital',
     links: [
-    { label: 'Glossary', href: '/glossary' },
-    { label: 'Masterclasses', href: '/masterclasses'},
-    { label: 'Portfolio', href: '/portfolio' },
-    { label: 'Data', href: '/data' },
-    { label: 'Advisory', href: '/advisory' },
-    { label: 'About us', href: '/about' },
+      { label: 'Glossary', href: '/glossary' },
+      { label: 'Masterclasses', href: '/masterclasses' },
+      { label: 'SIP Calculator', href: '/sip-calculator' },
+      { label: 'Portfolio', href: '/portfolio' },
+      { label: 'Data', href: '/data' },
+      { label: 'Advisory', href: '/advisory' },
+      { label: 'About us', href: '/about' },
     ],
-    
+
   }
 ]
