@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Box, Container, Grid, IconButton, Slider, Stack, Typography } from '@mui/material'
+import {
+  Box, Collapse, Container, Grid, IconButton, Slider, Stack,
+  Switch, Table, TableBody, TableCell, TableHead, TableRow, Tooltip, Typography,
+} from '@mui/material'
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
+import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded'
+import KeyboardArrowUpRoundedIcon from '@mui/icons-material/KeyboardArrowUpRounded'
 import AddRoundedIcon from '@mui/icons-material/AddRounded'
 import RemoveRoundedIcon from '@mui/icons-material/RemoveRounded'
 import * as echarts from 'echarts/core'
@@ -56,28 +62,48 @@ export function SipCalculatorPage() {
   const [monthly, setMonthly] = useState(10_000)
   const [annualRate, setAnnualRate] = useState(15)
   const [years, setYears] = useState(10)
+  const [adjustInflation, setAdjustInflation] = useState(false)
+  const [showSchedule, setShowSchedule] = useState(false)
+  const INFLATION_RATE = 0.09 // 9% assumed long-term PKR inflation
 
   const chartRef = useRef<HTMLDivElement>(null)
   const chartInstance = useRef<echarts.ECharts | null>(null)
 
-  const { invested, returns, futureValue } = useMemo(
+  const { invested, returns, futureValue: nominalFutureValue } = useMemo(
     () => computeSIP(monthly, annualRate, years, initialAmount),
     [monthly, annualRate, years, initialAmount],
   )
+
+  const futureValue = useMemo(() => {
+    if (!adjustInflation) return nominalFutureValue
+    // Discount nominal FV by inflation to get real purchasing power
+    return nominalFutureValue / Math.pow(1 + INFLATION_RATE, years)
+  }, [nominalFutureValue, adjustInflation, years])
+
+  const realReturns = futureValue - invested
 
   // Build year-by-year series
   const yearlyData = useMemo(() => {
     const labels: string[] = []
     const investedArr: number[] = []
     const fvArr: number[] = []
+    const scheduleRows: { year: number; invested: number; gains: number; balance: number }[] = []
     for (let y = 1; y <= years; y++) {
       labels.push(`Yr ${y}`)
       const d = computeSIP(monthly, annualRate, y, initialAmount)
+      const nomFV = Math.round(d.futureValue)
+      const realFV = adjustInflation ? Math.round(nomFV / Math.pow(1 + INFLATION_RATE, y)) : nomFV
       investedArr.push(Math.round(d.invested))
-      fvArr.push(Math.round(d.futureValue))
+      fvArr.push(realFV)
+      scheduleRows.push({
+        year: y,
+        invested: Math.round(d.invested),
+        gains: realFV - Math.round(d.invested),
+        balance: realFV,
+      })
     }
-    return { labels, investedArr, fvArr }
-  }, [monthly, annualRate, years, initialAmount])
+    return { labels, investedArr, fvArr, scheduleRows }
+  }, [monthly, annualRate, years, initialAmount, adjustInflation])
 
   const buildChartOption = useCallback(() => {
     return {
@@ -256,20 +282,23 @@ export function SipCalculatorPage() {
           </MotionReveal>
 
           {/* ── Main layout ────────────────────────────────────────────────── */}
-          <Grid container spacing={{ xs: 4, md: 6 }} sx={{ alignItems: 'flex-start' }}>
+          <Grid container spacing={{ xs: 4, md: 6 }} sx={{ alignItems: 'stretch' }}>
 
             {/* ── Left — sliders ─────────────────────────────────────────── */}
             <Grid size={{ xs: 12, md: 5 }}>
               <MotionReveal delay={0.05}>
                 <Box
                   sx={{
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
                     border: '1px solid #e2eaf5',
                     borderRadius: 1.5,
                     bgcolor: '#fafbfd',
                     p: { xs: 3, md: 3.5 },
                   }}
                 >
-                  <Stack spacing={4.5}>
+                  <Stack spacing={4.5} sx={{ flexGrow: 1, justifyContent: 'space-between' }}>
 
                     {/* Initial Investment */}
                     <SliderField
@@ -309,24 +338,32 @@ export function SipCalculatorPage() {
                     />
 
                     {/* Annual return */}
-                    <SliderField
-                      id="annual-return"
-                      label="Expected Annual Return"
-                      value={annualRate}
-                      min={1}
-                      max={50}
-                      step={0.1}
-                      display={`${annualRate}% p.a.`}
-                      onChange={(v) => setAnnualRate(v)}
-                      marks={[
-                        { value: 1, label: '1%' },
-                        { value: 10, label: '10%' },
-                        { value: 20, label: '20%' },
-                        { value: 30, label: '30%' },
-                        { value: 40, label: '40%' },
-                        { value: 50, label: '50%' },
-                      ]}
-                    />
+                    <Box>
+                      <SliderField
+                        id="annual-return"
+                        label="Expected Annual Return"
+                        value={annualRate}
+                        min={1}
+                        max={50}
+                        step={0.1}
+                        display={`${annualRate}% p.a.`}
+                        onChange={(v) => setAnnualRate(v)}
+                        marks={[
+                          { value: 1, label: '1%' },
+                          { value: 10, label: '10%' },
+                          { value: 20, label: '20%' },
+                          { value: 30, label: '30%' },
+                          { value: 40, label: '40%' },
+                          { value: 50, label: '50%' },
+                        ]}
+                      />
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6, mt: 1.2 }}>
+                        <InfoOutlinedIcon sx={{ fontSize: 12, color: '#a0b4cc' }} />
+                        <Typography sx={{ fontSize: 11, color: '#a0b4cc', lineHeight: 1.5, fontStyle: 'italic' }}>
+                          The KSE-100 has historically returned ~14–16% p.a. over a 10-year horizon.
+                        </Typography>
+                      </Box>
+                    </Box>
 
                     {/* Investment period */}
                     <SliderField
@@ -347,6 +384,43 @@ export function SipCalculatorPage() {
                       ]}
                     />
 
+                    {/* Inflation toggle */}
+                    <Box
+                      sx={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        bgcolor: adjustInflation ? 'rgba(10,36,99,0.04)' : 'transparent',
+                        border: '1px solid', borderColor: adjustInflation ? 'rgba(10,36,99,0.14)' : '#e2eaf5',
+                        borderRadius: 1.5, px: 2, py: 1.2, transition: 'all 0.2s',
+                      }}
+                    >
+                      <Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.7, mb: 0.3 }}>
+                          <Typography sx={{
+                            fontSize: 12, fontFamily: '"Playfair Display", serif',
+                            letterSpacing: '0.1em', textTransform: 'uppercase',
+                            color: adjustInflation ? PRIMARY : '#4a5e78', fontWeight: 600,
+                          }}>
+                            Adjust for Inflation
+                          </Typography>
+                          <Tooltip title="Discounts the final portfolio value using an estimated 9% long-term PKR inflation rate, showing real purchasing power." placement="top" arrow>
+                            <InfoOutlinedIcon sx={{ fontSize: 13, color: '#a0b4cc', cursor: 'help' }} />
+                          </Tooltip>
+                        </Box>
+                        <Typography sx={{ fontSize: 11, color: '#8097b0', lineHeight: 1.4 }}>
+                          {adjustInflation ? `Real value at 9% inflation` : 'Show nominal returns'}
+                        </Typography>
+                      </Box>
+                      <Switch
+                        checked={adjustInflation}
+                        onChange={(e) => setAdjustInflation(e.target.checked)}
+                        size="small"
+                        sx={{
+                          '& .MuiSwitch-switchBase.Mui-checked': { color: PRIMARY },
+                          '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': { bgcolor: PRIMARY },
+                        }}
+                      />
+                    </Box>
+
                   </Stack>
                 </Box>
               </MotionReveal>
@@ -354,7 +428,7 @@ export function SipCalculatorPage() {
 
             {/* ── Right — results + chart ─────────────────────────────────── */}
             <Grid size={{ xs: 12, md: 7 }}>
-              <Stack spacing={3}>
+              <Stack spacing={3} sx={{ height: '100%' }}>
 
                 {/* Summary cards */}
                 <MotionReveal delay={0.08}>
@@ -363,10 +437,10 @@ export function SipCalculatorPage() {
                       <SummaryCard label="Invested Amount" value={formatPKR(invested)} accent={false} />
                     </Grid>
                     <Grid size={{ xs: 12, sm: 4 }}>
-                      <SummaryCard label="Est. Returns" value={formatPKR(returns)} accent={false} green />
+                      <SummaryCard label={adjustInflation ? 'Real Returns' : 'Est. Returns'} value={formatPKR(realReturns)} accent={false} green />
                     </Grid>
                     <Grid size={{ xs: 12, sm: 4 }}>
-                      <SummaryCard label="Total Value" value={formatPKR(futureValue)} accent />
+                      <SummaryCard label={adjustInflation ? 'Real Value (Today ₨)' : 'Total Value'} value={formatPKR(futureValue)} accent />
                     </Grid>
                   </Grid>
                 </MotionReveal>
@@ -375,6 +449,10 @@ export function SipCalculatorPage() {
                 <MotionReveal delay={0.12}>
                   <Box
                     sx={{
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      flexGrow: 1,
                       border: '1px solid #e2eaf5',
                       borderRadius: 1.5,
                       bgcolor: '#fafbfd',
@@ -394,6 +472,67 @@ export function SipCalculatorPage() {
                       Wealth Growth Over Time
                     </Typography>
                     <Box ref={chartRef} sx={{ width: '100%', height: { xs: 260, md: 320 } }} />
+
+                    {/* Year-by-Year Schedule Toggle */}
+                    <Box
+                      onClick={() => setShowSchedule(p => !p)}
+                      sx={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        mt: 2, pt: 2, borderTop: '1px solid #e2eaf5', cursor: 'pointer',
+                        '&:hover': { '& .schedule-label': { color: PRIMARY } },
+                      }}
+                    >
+                      <Typography
+                        className="schedule-label"
+                        sx={{
+                          fontSize: 11, fontFamily: '"Playfair Display", serif',
+                          letterSpacing: '0.14em', textTransform: 'uppercase',
+                          color: '#8097b0', transition: 'color 0.2s',
+                        }}
+                      >
+                        View Detailed Schedule
+                      </Typography>
+                      {showSchedule
+                        ? <KeyboardArrowUpRoundedIcon sx={{ fontSize: 18, color: PRIMARY }} />
+                        : <KeyboardArrowDownRoundedIcon sx={{ fontSize: 18, color: '#8097b0' }} />}
+                    </Box>
+
+                    <Collapse in={showSchedule} timeout="auto">
+                      <Box sx={{ 
+                        overflowX: 'auto', 
+                        mt: 1.5,
+                        maxHeight: 280,
+                        overflowY: 'auto',
+                        '&::-webkit-scrollbar': { width: '5px', height: '5px' },
+                        '&::-webkit-scrollbar-track': { bgcolor: '#f0f4fb', borderRadius: '4px' },
+                        '&::-webkit-scrollbar-thumb': { bgcolor: '#c8d6ec', borderRadius: '4px' },
+                        '&::-webkit-scrollbar-thumb:hover': { bgcolor: '#a0b4cc' },
+                      }}>
+                        <Table size="small" sx={{ minWidth: 360 }}>
+                          <TableHead>
+                            <TableRow>
+                              {['Year', 'Amount Invested', 'Wealth Gained', 'Year-End Balance'].map(h => (
+                                <TableCell key={h} sx={{
+                                  fontSize: 9, fontFamily: '"Playfair Display", serif',
+                                  letterSpacing: '0.1em', textTransform: 'uppercase',
+                                  color: '#8097b0', borderBottom: '1px solid #e2eaf5', pb: 1,
+                                }}>{h}</TableCell>
+                              ))}
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {yearlyData.scheduleRows.map((row) => (
+                              <TableRow key={row.year} sx={{ '&:last-child td': { borderBottom: 0 } }}>
+                                <TableCell sx={{ fontSize: 12, fontFamily: '"Noto Sans Mono", monospace', color: '#4a5e78', py: 0.8 }}>Yr {row.year}</TableCell>
+                                <TableCell sx={{ fontSize: 12, fontFamily: '"Noto Sans Mono", monospace', color: '#4a5e78', py: 0.8 }}>{formatPKR(row.invested)}</TableCell>
+                                <TableCell sx={{ fontSize: 12, fontFamily: '"Noto Sans Mono", monospace', color: SECONDARY_LINE, py: 0.8 }}>{formatPKR(row.gains)}</TableCell>
+                                <TableCell sx={{ fontSize: 12, fontFamily: '"Noto Sans Mono", monospace', fontWeight: 700, color: PRIMARY, py: 0.8 }}>{formatPKR(row.balance)}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </Box>
+                    </Collapse>
                   </Box>
                 </MotionReveal>
 
@@ -503,6 +642,71 @@ export function SipCalculatorPage() {
                       )}
                       <Typography sx={{ fontSize: 13, color: '#4a5e78', lineHeight: 1.65 }}>
                         {item.desc}
+                      </Typography>
+                    </Box>
+                  </Grid>
+                ))}
+              </Grid>
+            </Box>
+          </MotionReveal>
+
+          {/* ── Why Choose SIP? ─────────────────────────────────────────── */}
+          <MotionReveal delay={0.03}>
+            <Box sx={{ borderTop: '1px solid #e2eaf5', pt: 5 }}>
+              <Typography
+                sx={{
+                  fontSize: 11, fontFamily: '"Playfair Display", serif',
+                  letterSpacing: '0.18em', textTransform: 'uppercase',
+                  color: PRIMARY, mb: 1.5,
+                }}
+              >
+                Why Choose SIP?
+              </Typography>
+              <Typography
+                sx={{
+                  fontSize: { xs: 20, md: 24 }, fontWeight: 700, color: '#080e1a',
+                  letterSpacing: '-0.02em', mb: 4,
+                }}
+              >
+                The principles behind compounding wealth.
+              </Typography>
+              <Grid container spacing={{ xs: 2, md: 3 }}>
+                {[
+                  {
+                    title: 'Rupee Cost Averaging',
+                    icon: '⚖️',
+                    body: 'By investing a fixed amount every month, you automatically buy more units when prices are low and fewer when they are high — mitigating the impact of short-term market volatility without requiring you to time the market.',
+                  },
+                  {
+                    title: 'Power of Compounding',
+                    icon: '📈',
+                    body: 'Every rupee of return you earn begins generating its own returns. Starting even 5 years earlier can more than double your final corpus — making the earliest years of a SIP the most valuable ones.',
+                  },
+                  {
+                    title: 'Financial Discipline',
+                    icon: '🏦',
+                    body: 'A SIP automates your savings decision, removing emotion from investing. By treating investments like a fixed monthly expense, you build wealth systematically and avoid the pitfalls of reactive, lump-sum investing.',
+                  },
+                ].map((item) => (
+                  <Grid key={item.title} size={{ xs: 12, sm: 4 }}>
+                    <Box
+                      sx={{
+                        borderTop: `2px solid ${PRIMARY}`, pt: 2.5, pr: 1,
+                        '&:hover': { '& .sip-title': { color: PRIMARY } },
+                      }}
+                    >
+                      <Typography sx={{ fontSize: 22, mb: 1.2 }}>{item.icon}</Typography>
+                      <Typography
+                        className="sip-title"
+                        sx={{
+                          fontSize: 14, fontFamily: '"Playfair Display", serif',
+                          fontWeight: 700, color: '#080e1a', mb: 1, transition: 'color 0.2s',
+                        }}
+                      >
+                        {item.title}
+                      </Typography>
+                      <Typography sx={{ fontSize: 13, color: '#4a5e78', lineHeight: 1.78 }}>
+                        {item.body}
                       </Typography>
                     </Box>
                   </Grid>
