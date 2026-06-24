@@ -282,10 +282,15 @@ export function SipCalculatorPage() {
           </MotionReveal>
 
           {/* ── Main layout ────────────────────────────────────────────────── */}
-          <Grid container spacing={{ xs: 4, md: 6 }} sx={{ alignItems: 'stretch' }}>
+          <Grid container spacing={{ xs: 4, md: 6 }}
+            sx={{ alignItems: 'flex-start' }}
+          >
 
             {/* ── Left — sliders ─────────────────────────────────────────── */}
-            <Grid size={{ xs: 12, md: 5 }}>
+            <Grid
+              size={{ xs: 12, md: 5 }}
+              sx={{ height: { xs: 'auto', md: 640 }, '& > div': { height: '100%', display: 'flex', flexDirection: 'column' } }}
+            >
               <MotionReveal delay={0.05}>
                 <Box
                   sx={{
@@ -298,7 +303,9 @@ export function SipCalculatorPage() {
                     p: { xs: 3, md: 3.5 },
                   }}
                 >
-                  <Stack spacing={4.5} sx={{ flexGrow: 1, justifyContent: 'space-between' }}>
+                  <Stack spacing={4.5}
+                    sx={{ flexGrow: 1, justifyContent: 'space-between' }}
+                  >
 
                     {/* Initial Investment */}
                     <SliderField
@@ -427,8 +434,16 @@ export function SipCalculatorPage() {
             </Grid>
 
             {/* ── Right — results + chart ─────────────────────────────────── */}
-            <Grid size={{ xs: 12, md: 7 }}>
-              <Stack spacing={3} sx={{ height: '100%' }}>
+            <Grid size={{ xs: 12, md: 7 }} sx={{ height: { xs: 'auto', md: 640 } }}>
+              <Stack
+                spacing={3}
+                sx={{
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  overflow: 'hidden',
+                }}
+              >
 
                 {/* Summary cards */}
                 <MotionReveal delay={0.08}>
@@ -445,96 +460,98 @@ export function SipCalculatorPage() {
                   </Grid>
                 </MotionReveal>
 
-                {/* Chart */}
-                <MotionReveal delay={0.12}>
-                  <Box
-                    sx={{
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      flexGrow: 1,
-                      border: '1px solid #e2eaf5',
-                      borderRadius: 1.5,
-                      bgcolor: '#fafbfd',
-                      p: { xs: 2.5, md: 3 },
-                    }}
-                  >
-                    <Typography
-                      sx={{
-                        fontSize: 11,
-                        fontFamily: '"Playfair Display", serif',
-                        letterSpacing: '0.14em',
-                        textTransform: 'uppercase',
-                        color: PRIMARY,
-                        mb: 2,
-                      }}
-                    >
-                      Wealth Growth Over Time
-                    </Typography>
-                    <Box ref={chartRef} sx={{ width: '100%', height: { xs: 260, md: 320 } }} />
-
-                    {/* Year-by-Year Schedule Toggle */}
+                <Box
+                  sx={{
+                    flex: 1,
+                    minHeight: 0,
+                    overflowY: 'auto',
+                    overflowX: 'hidden',
+                    pr: 1.5,
+                    pb: 2,
+                    '&::-webkit-scrollbar': { width: '5px' },
+                    '&::-webkit-scrollbar-track': { bgcolor: 'transparent' },
+                    '&::-webkit-scrollbar-thumb': { bgcolor: '#c8d6ec', borderRadius: '4px' },
+                    '&::-webkit-scrollbar-thumb:hover': { bgcolor: '#a0b4cc' },
+                  }}
+                >
+                  {/* Chart */}
+                  <MotionReveal delay={0.12}>
                     <Box
-                      onClick={() => setShowSchedule(p => !p)}
                       sx={{
-                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        mt: 2, pt: 2, borderTop: '1px solid #e2eaf5', cursor: 'pointer',
-                        '&:hover': { '& .schedule-label': { color: PRIMARY } },
+                        border: '1px solid #e2eaf5',
+                        borderRadius: 1.5,
+                        bgcolor: '#fafbfd',
+                        p: { xs: 2.5, md: 3 },
                       }}
                     >
                       <Typography
-                        className="schedule-label"
                         sx={{
-                          fontSize: 11, fontFamily: '"Playfair Display", serif',
-                          letterSpacing: '0.14em', textTransform: 'uppercase',
-                          color: '#8097b0', transition: 'color 0.2s',
+                          fontSize: 11,
+                          fontFamily: '"Playfair Display", serif',
+                          letterSpacing: '0.14em',
+                          textTransform: 'uppercase',
+                          color: PRIMARY,
+                          mb: 2,
                         }}
                       >
-                        View Detailed Schedule
+                        Wealth Growth Over Time
                       </Typography>
-                      {showSchedule
-                        ? <KeyboardArrowUpRoundedIcon sx={{ fontSize: 18, color: PRIMARY }} />
-                        : <KeyboardArrowDownRoundedIcon sx={{ fontSize: 18, color: '#8097b0' }} />}
-                    </Box>
+                      <Box ref={chartRef} sx={{ width: '100%', height: { xs: 260, md: 320 } }} />
 
-                    <Collapse in={showSchedule} timeout="auto">
-                      <Box sx={{ 
-                        overflowX: 'auto', 
-                        mt: 1.5,
-                        maxHeight: 280,
-                        overflowY: 'auto',
-                        '&::-webkit-scrollbar': { width: '5px', height: '5px' },
-                        '&::-webkit-scrollbar-track': { bgcolor: '#f0f4fb', borderRadius: '4px' },
-                        '&::-webkit-scrollbar-thumb': { bgcolor: '#c8d6ec', borderRadius: '4px' },
-                        '&::-webkit-scrollbar-thumb:hover': { bgcolor: '#a0b4cc' },
-                      }}>
-                        <Table size="small" sx={{ minWidth: 360 }}>
-                          <TableHead>
-                            <TableRow>
-                              {['Year', 'Amount Invested', 'Wealth Gained', 'Year-End Balance'].map(h => (
-                                <TableCell key={h} sx={{
-                                  fontSize: 9, fontFamily: '"Playfair Display", serif',
-                                  letterSpacing: '0.1em', textTransform: 'uppercase',
-                                  color: '#8097b0', borderBottom: '1px solid #e2eaf5', pb: 1,
-                                }}>{h}</TableCell>
-                              ))}
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {yearlyData.scheduleRows.map((row) => (
-                              <TableRow key={row.year} sx={{ '&:last-child td': { borderBottom: 0 } }}>
-                                <TableCell sx={{ fontSize: 12, fontFamily: '"Noto Sans Mono", monospace', color: '#4a5e78', py: 0.8 }}>Yr {row.year}</TableCell>
-                                <TableCell sx={{ fontSize: 12, fontFamily: '"Noto Sans Mono", monospace', color: '#4a5e78', py: 0.8 }}>{formatPKR(row.invested)}</TableCell>
-                                <TableCell sx={{ fontSize: 12, fontFamily: '"Noto Sans Mono", monospace', color: SECONDARY_LINE, py: 0.8 }}>{formatPKR(row.gains)}</TableCell>
-                                <TableCell sx={{ fontSize: 12, fontFamily: '"Noto Sans Mono", monospace', fontWeight: 700, color: PRIMARY, py: 0.8 }}>{formatPKR(row.balance)}</TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
+                      {/* Year-by-Year Schedule Toggle */}
+                      <Box
+                        onClick={() => setShowSchedule(p => !p)}
+                        sx={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          mt: 2, pt: 2, borderTop: '1px solid #e2eaf5', cursor: 'pointer',
+                          '&:hover': { '& .schedule-label': { color: PRIMARY } },
+                        }}
+                      >
+                        <Typography
+                          className="schedule-label"
+                          sx={{
+                            fontSize: 11, fontFamily: '"Playfair Display", serif',
+                            letterSpacing: '0.14em', textTransform: 'uppercase',
+                            color: '#8097b0', transition: 'color 0.2s',
+                          }}
+                        >
+                          View Detailed Schedule
+                        </Typography>
+                        {showSchedule
+                          ? <KeyboardArrowUpRoundedIcon sx={{ fontSize: 18, color: PRIMARY }} />
+                          : <KeyboardArrowDownRoundedIcon sx={{ fontSize: 18, color: '#8097b0' }} />}
                       </Box>
-                    </Collapse>
-                  </Box>
-                </MotionReveal>
+
+                      <Collapse in={showSchedule} timeout="auto">
+                        <Box sx={{ overflowX: 'auto', mt: 1.5 }}>
+                          <Table size="small" sx={{ minWidth: 360 }}>
+                            <TableHead>
+                              <TableRow>
+                                {['Year', 'Amount Invested', 'Wealth Gained', 'Year-End Balance'].map(h => (
+                                  <TableCell key={h} sx={{
+                                    fontSize: 9, fontFamily: '"Playfair Display", serif',
+                                    letterSpacing: '0.1em', textTransform: 'uppercase',
+                                    color: '#8097b0', borderBottom: '1px solid #e2eaf5', pb: 1,
+                                  }}>{h}</TableCell>
+                                ))}
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {yearlyData.scheduleRows.map((row) => (
+                                <TableRow key={row.year} sx={{ '&:last-child td': { borderBottom: 0 } }}>
+                                  <TableCell sx={{ fontSize: 12, fontFamily: '"Noto Sans Mono", monospace', color: '#4a5e78', py: 0.8 }}>Yr {row.year}</TableCell>
+                                  <TableCell sx={{ fontSize: 12, fontFamily: '"Noto Sans Mono", monospace', color: '#4a5e78', py: 0.8 }}>{formatPKR(row.invested)}</TableCell>
+                                  <TableCell sx={{ fontSize: 12, fontFamily: '"Noto Sans Mono", monospace', color: SECONDARY_LINE, py: 0.8 }}>{formatPKR(row.gains)}</TableCell>
+                                  <TableCell sx={{ fontSize: 12, fontFamily: '"Noto Sans Mono", monospace', fontWeight: 700, color: PRIMARY, py: 0.8 }}>{formatPKR(row.balance)}</TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </Box>
+                      </Collapse>
+                    </Box>
+                  </MotionReveal>
+                </Box>
 
               </Stack>
             </Grid>
