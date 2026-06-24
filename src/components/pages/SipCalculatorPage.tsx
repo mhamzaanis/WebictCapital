@@ -434,14 +434,20 @@ export function SipCalculatorPage() {
             </Grid>
 
             {/* ── Right — results + chart ─────────────────────────────────── */}
-            <Grid size={{ xs: 12, md: 7 }} sx={{ height: { xs: 'auto', md: 640 } }}>
+            <Grid
+              size={{ xs: 12, md: 7 }}
+              sx={{
+                height: { xs: 'auto', md: 640 },
+              }}
+            >
               <Stack
                 spacing={3}
                 sx={{
-                  height: '100%',
+                  height: { xs: 'auto', md: '100%' },
                   display: 'flex',
                   flexDirection: 'column',
                   overflow: 'hidden',
+                  minHeight: 0,
                 }}
               >
 
@@ -467,7 +473,7 @@ export function SipCalculatorPage() {
                     overflowY: 'auto',
                     overflowX: 'hidden',
                     pr: 1.5,
-                    pb: 2,
+                    pb: 0,
                     '&::-webkit-scrollbar': { width: '5px' },
                     '&::-webkit-scrollbar-track': { bgcolor: 'transparent' },
                     '&::-webkit-scrollbar-thumb': { bgcolor: '#c8d6ec', borderRadius: '4px' },
@@ -691,17 +697,17 @@ export function SipCalculatorPage() {
                 {[
                   {
                     title: 'Rupee Cost Averaging',
-                    icon: '⚖️',
+                    // icon: '⚖️',
                     body: 'By investing a fixed amount every month, you automatically buy more units when prices are low and fewer when they are high — mitigating the impact of short-term market volatility without requiring you to time the market.',
                   },
                   {
                     title: 'Power of Compounding',
-                    icon: '📈',
+                    // icon: '📈',
                     body: 'Every rupee of return you earn begins generating its own returns. Starting even 5 years earlier can more than double your final corpus — making the earliest years of a SIP the most valuable ones.',
                   },
                   {
                     title: 'Financial Discipline',
-                    icon: '🏦',
+                    // icon: '🏦',
                     body: 'A SIP automates your savings decision, removing emotion from investing. By treating investments like a fixed monthly expense, you build wealth systematically and avoid the pitfalls of reactive, lump-sum investing.',
                   },
                 ].map((item) => (
