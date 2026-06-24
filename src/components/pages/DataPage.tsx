@@ -1,18 +1,16 @@
 import {
   Box,
   Container,
-  InputAdornment,
   Stack,
-  TextField,
   Typography,
 } from '@mui/material'
-import SearchIcon from '@mui/icons-material/Search'
 import { motion, useReducedMotion } from 'motion/react'
 import { hasSupabaseConfig, supabase } from '../../lib/supabase'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { PriceTableSkeleton, StatCardsSkeleton } from './CustomSkeleton'
 import { CustomDataTable } from './CustomDataTable'
 import { CustomStatsCards } from './CustomStatsCards'
+import { FiltersBar, type MovementFilter } from './FiltersBar.tsx'
 import { MotionReveal } from '../animations/MotionReveal'
 
 // -- Types --------------------------------------------------------------------
@@ -68,8 +66,6 @@ type DbSummaryRow = {
   declines: number | null
   unchanged: number | null
 }
-
-type MovementFilter = 'all' | 'gainers' | 'losers' | 'unchanged'
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -140,25 +136,8 @@ async function fetchSupabaseTradeDay(tradeDate: string): Promise<PsxData> {
   }
 }
 
-// -- Design tokens ------------------------------------------------------------
-
 const NUMBER_FONT = 'var(--wc-number-font)'
 const SERIF = '"Playfair Display", serif'
-
-const filterFieldSx = {
-  '& .MuiOutlinedInput-root': {
-    bgcolor: 'var(--wc-paper)',
-    color: 'var(--wc-text-primary)',
-    fontFamily: 'inherit',
-    fontSize: 12,
-    borderRadius: 1,
-    '& fieldset': { borderColor: 'var(--wc-divider)' },
-    '&:hover fieldset': { borderColor: 'var(--wc-primary)' },
-    '&.Mui-focused fieldset': { borderColor: 'var(--wc-primary)', borderWidth: '1.5px' },
-  },
-  '& .MuiInputLabel-root.Mui-focused': { color: 'var(--wc-primary)' },
-  '& input::placeholder': { color: 'var(--wc-text-secondary)', opacity: 1 },
-}
 
 // -- Component ----------------------------------------------------------------
 
@@ -306,68 +285,6 @@ export function DataPage() {
     }
   }, [stocks, activeData])
 
-  // -- Render helpers ---------------------------------------------------------
-
-  const FiltersBar = useCallback(
-    ({ disabled }: { disabled: boolean }) => (
-      <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5}>
-        <TextField
-          placeholder="Search symbol or company…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          disabled={disabled}
-          size="small"
-          fullWidth
-          slotProps={{
-            input: {
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon sx={{ color: 'var(--wc-text-secondary)', fontSize: 15 }} />
-                </InputAdornment>
-              ),
-            },
-          }}
-          sx={{ width: { xs: '100%', md: '50%' }, ...filterFieldSx }}
-        />
-
-        <TextField
-          select
-          size="small"
-          label="Movement"
-          value={movementFilter}
-          onChange={(e) => setMovementFilter(e.target.value as MovementFilter)}
-          disabled={disabled}
-          slotProps={{ select: { native: true } }}
-          sx={{ width: { xs: '100%', md: '25%' }, ...filterFieldSx }}
-        >
-          <option value="all">All</option>
-          <option value="gainers">Gainers</option>
-          <option value="losers">Losers</option>
-          <option value="unchanged">Unchanged</option>
-        </TextField>
-
-        <TextField
-          select
-          size="small"
-          label="Industry"
-          value={industryFilter}
-          onChange={(e) => setIndustryFilter(e.target.value)}
-          disabled={disabled}
-          slotProps={{ select: { native: true } }}
-          sx={{ width: { xs: '100%', md: '25%' }, ...filterFieldSx }}
-        >
-          <option value="all">All Industries</option>
-          {industryOptions.map((industry) => (
-            <option key={industry} value={industry}>
-              {industry}
-            </option>
-          ))}
-        </TextField>
-      </Stack>
-    ),
-    [search, movementFilter, industryFilter, industryOptions],
-  )
-
   return (
     <Box
       component="main"
@@ -458,7 +375,16 @@ export function DataPage() {
             <MotionReveal>
               <Stack spacing={3}>
                 <StatCardsSkeleton />
-                <FiltersBar disabled />
+                <FiltersBar
+                  disabled
+                  search={search}
+                  setSearch={setSearch}
+                  movementFilter={movementFilter}
+                  setMovementFilter={setMovementFilter}
+                  industryFilter={industryFilter}
+                  setIndustryFilter={setIndustryFilter}
+                  industryOptions={industryOptions}
+                />
                 <PriceTableSkeleton />
               </Stack>
             </MotionReveal>
@@ -533,14 +459,14 @@ export function DataPage() {
                     py: 1.5,
                   }}
                 >
-                  <Typography sx={{ fontSize: 10, fontFamily: NUMBER_FONT, color: 'var(--wc-text-secondary)', letterSpacing: '0.04em', mb: 0.6 }}>
+                  {/* <Typography sx={{ fontSize: 10, fontFamily: NUMBER_FONT, color: 'var(--wc-text-secondary)', letterSpacing: '0.04em', mb: 0.6 }}>
                     REQUIRED ENV VARIABLES
-                  </Typography>
-                  <Typography sx={{ fontSize: 12, fontFamily: NUMBER_FONT, color: 'var(--wc-text-primary)', lineHeight: 1.8 }}>
-                    <code>VITE_SUPABASE_URL</code>
-                    <br />
-                    <code>VITE_SUPABASE_ANON_KEY</code>
-                  </Typography>
+                  </Typography> */}
+                  {/* <Typography sx={{ fontSize: 12, fontFamily: NUMBER_FONT, color: 'var(--wc-text-primary)', lineHeight: 1.8 }}> */}
+                    {/* <code>VITE_SUPABASE_URL</code> */}
+                    {/* <br /> */}
+                    {/* <code>VITE_SUPABASE_ANON_KEY</code> */}
+                  {/* </Typography> */}
                   {fetchError && (
                     <Box sx={{ mt: 1 }}>
                       <Typography sx={{ fontSize: 10, fontFamily: NUMBER_FONT, color: 'var(--wc-error)', letterSpacing: '0.04em', mb: 0.4 }}>
@@ -578,7 +504,7 @@ export function DataPage() {
                 <Box
                   sx={{
                     borderTop: '1px solid var(--wc-divider)',
-                    pt: 4,
+                    pt: 2,
                     display: 'flex',
                     flexDirection: 'column',
                     gap: 2,
@@ -586,7 +512,7 @@ export function DataPage() {
                 >
                   <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
                     <Box>
-                      <Typography
+                      {/* <Typography
                         sx={{
                           fontSize: 11,
                           fontFamily: SERIF,
@@ -597,19 +523,28 @@ export function DataPage() {
                         }}
                       >
                         All Listings
-                      </Typography>
-                      <Typography sx={{ fontSize: { xs: 14, md: 16 }, fontWeight: 700, color: 'var(--wc-text-primary)', fontFamily: SERIF }}>
+                      </Typography> */}
+                      {/* <Typography sx={{ fontSize: { xs: 14, md: 16 }, fontWeight: 700, color: 'var(--wc-text-primary)', fontFamily: SERIF }}>
                         {stocks.length.toLocaleString()} symbols on the exchange.
-                      </Typography>
+                      </Typography> */}
                     </Box>
-                    {search && (
+                    {/* {search && (
                       <Typography sx={{ fontSize: 11, color: 'var(--wc-text-secondary)', fontFamily: NUMBER_FONT }}>
                         Showing {displayedStocks.length} of {stocks.length}
                       </Typography>
-                    )}
+                    )} */}
                   </Box>
 
-                  <FiltersBar disabled={false} />
+                  <FiltersBar
+                    disabled={false}
+                    search={search}
+                    setSearch={setSearch}
+                    movementFilter={movementFilter}
+                    setMovementFilter={setMovementFilter}
+                    industryFilter={industryFilter}
+                    setIndustryFilter={setIndustryFilter}
+                    industryOptions={industryOptions}
+                  />
                 </Box>
               </MotionReveal>
 

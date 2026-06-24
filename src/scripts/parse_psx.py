@@ -37,7 +37,7 @@ from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 import pdfplumber
-import requests
+from curl_cffi import requests
 from postgrest.exceptions import APIError
 from supabase import Client, create_client
 
@@ -201,10 +201,20 @@ def download_pdf(d: date) -> bytes | None:
         for template in PDF_URL_TEMPLATES
     ]
 
+    # Standard headers to look like a normal user clicking a link
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/pdf,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.5",
+        "Referer": "https://dps.psx.com.pk/",
+        "Connection": "keep-alive",
+    }
+
     for url in urls:
         for attempt in range(1, MAX_RETRIES + 1):
             try:
-                resp = requests.get(url, timeout=30)
+                # We added headers=headers and impersonate="chrome"
+                resp = requests.get(url, headers=headers, impersonate="chrome120", timeout=30)
                 if resp.status_code == 404:
                     break
                 if resp.status_code == 200:
