@@ -173,19 +173,6 @@ export function MarketSummaryModal({ open, onClose, summary, loading = false }: 
     return () => clearTimeout(timer)
   }, [open])
 
-  // Remount chart when browser tab becomes visible again —
-  // canvas context is lost while backgrounded and can't be recovered by resize alone
-  useEffect(() => {
-    if (!open) return
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        setTimeout(() => setChartKey((k) => k + 1), 100)
-      }
-    }
-    document.addEventListener('visibilitychange', handleVisibility)
-    return () => document.removeEventListener('visibilitychange', handleVisibility)
-  }, [open])
-
   const chartData = useMemo(() => {
     const kse100 = summary?.kse100History[range] ?? { labels: [], values: [], volumes: [] }
     const kse30 = summary?.kse30History[range] ?? { labels: [], values: [], volumes: [] }

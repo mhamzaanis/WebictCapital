@@ -747,22 +747,36 @@ export function PortfolioPage() {
     const kse100Close = latest.kse100_close ?? 0
     const kse30Close = latest.kse30_close ?? 0
 
-    setMarketSummary({
-      tradeDate: latest.trade_date,
-      kse100_prev: latest.kse100_prev ?? 0,
-      kse100_close: kse100Close,
-      kse100_change: latest.kse100_change ?? 0,
-      kse30_prev: latest.kse30_prev ?? 0,
-      kse30_close: kse30Close,
-      kse30_change: latest.kse30_change ?? 0,
-      prev_volume: latest.prev_volume ?? 0,
-      curr_volume: latest.curr_volume ?? 0,
-      advances: latest.advances ?? 0,
-      declines: latest.declines ?? 0,
-      unchanged: latest.unchanged ?? 0,
-      flu_no: latest.flu_no,
-      kse100History: buildRealMarketHistory(normalized, 'kse100_close'),
-      kse30History: buildRealMarketHistory(normalized, 'kse30_close'),
+    setMarketSummary((prev) => {
+      // If full history was already loaded lazily, preserve it so that
+      // re-fetches triggered by auth / tab-switch don't shrink the chart
+      // back to 2 data points.  (30 is an arbitrary guard — real history
+      // has 252 rows, initial fetch only yields 2.)
+      const hasFullHistory =
+        prev.kse100History['1Y'].values.length > 30 &&
+        prev.kse30History['1Y'].values.length > 30
+
+      return {
+        tradeDate: latest.trade_date,
+        kse100_prev: latest.kse100_prev ?? 0,
+        kse100_close: kse100Close,
+        kse100_change: latest.kse100_change ?? 0,
+        kse30_prev: latest.kse30_prev ?? 0,
+        kse30_close: kse30Close,
+        kse30_change: latest.kse30_change ?? 0,
+        prev_volume: latest.prev_volume ?? 0,
+        curr_volume: latest.curr_volume ?? 0,
+        advances: latest.advances ?? 0,
+        declines: latest.declines ?? 0,
+        unchanged: latest.unchanged ?? 0,
+        flu_no: latest.flu_no,
+        kse100History: hasFullHistory
+          ? prev.kse100History
+          : buildRealMarketHistory(normalized, 'kse100_close'),
+        kse30History: hasFullHistory
+          ? prev.kse30History
+          : buildRealMarketHistory(normalized, 'kse30_close'),
+      }
     })
 
     // Sparklines: use last 12 close values for a richer line
