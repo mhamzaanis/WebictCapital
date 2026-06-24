@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Box, Container, Grid, InputAdornment, OutlinedInput, Slider, Stack, Typography } from '@mui/material'
+import { Box, Container, Grid, IconButton, Slider, Stack, Typography } from '@mui/material'
+import AddRoundedIcon from '@mui/icons-material/AddRounded'
+import RemoveRoundedIcon from '@mui/icons-material/RemoveRounded'
 import * as echarts from 'echarts/core'
 import { LineChart } from 'echarts/charts'
 import {
@@ -27,15 +29,16 @@ function formatK(value: number) {
   return `${value}`
 }
 
-function computeSIP(monthly: number, annualRate: number, years: number) {
+function computeSIP(monthly: number, annualRate: number, years: number, initialAmount: number = 0) {
   const months = years * 12
   const r = annualRate / 100 / 12
-  const invested = monthly * months
+  const invested = initialAmount + (monthly * months)
+  const fvInitial = initialAmount * Math.pow(1 + r, months)
   let futureValue: number
   if (r === 0) {
     futureValue = invested
   } else {
-    futureValue = monthly * ((Math.pow(1 + r, months) - 1) / r) * (1 + r)
+    futureValue = fvInitial + monthly * ((Math.pow(1 + r, months) - 1) / r) * (1 + r)
   }
   const returns = futureValue - invested
   return { invested, returns, futureValue }
@@ -49,6 +52,7 @@ const SECONDARY_LINE = '#1a6640'
 // ── component ─────────────────────────────────────────────────────────────────
 
 export function SipCalculatorPage() {
+  const [initialAmount, setInitialAmount] = useState(0)
   const [monthly, setMonthly] = useState(10_000)
   const [annualRate, setAnnualRate] = useState(15)
   const [years, setYears] = useState(10)
@@ -57,8 +61,8 @@ export function SipCalculatorPage() {
   const chartInstance = useRef<echarts.ECharts | null>(null)
 
   const { invested, returns, futureValue } = useMemo(
-    () => computeSIP(monthly, annualRate, years),
-    [monthly, annualRate, years],
+    () => computeSIP(monthly, annualRate, years, initialAmount),
+    [monthly, annualRate, years, initialAmount],
   )
 
   // Build year-by-year series
@@ -68,12 +72,12 @@ export function SipCalculatorPage() {
     const fvArr: number[] = []
     for (let y = 1; y <= years; y++) {
       labels.push(`Yr ${y}`)
-      const d = computeSIP(monthly, annualRate, y)
+      const d = computeSIP(monthly, annualRate, y, initialAmount)
       investedArr.push(Math.round(d.invested))
       fvArr.push(Math.round(d.futureValue))
     }
     return { labels, investedArr, fvArr }
-  }, [monthly, annualRate, years])
+  }, [monthly, annualRate, years, initialAmount])
 
   const buildChartOption = useCallback(() => {
     return {
@@ -267,6 +271,24 @@ export function SipCalculatorPage() {
                 >
                   <Stack spacing={4.5}>
 
+                    {/* Initial Investment */}
+                    <SliderField
+                      id="initial-investment"
+                      label="Initial Investment"
+                      value={initialAmount}
+                      min={0}
+                      max={5_000_000}
+                      step={10_000}
+                      display={formatPKR(initialAmount)}
+                      onChange={(v) => setInitialAmount(v)}
+                      marks={[
+                        { value: 0, label: '₨0' },
+                        { value: 1_000_000, label: '₨10L' },
+                        { value: 2_500_000, label: '₨25L' },
+                        { value: 5_000_000, label: '₨50L' },
+                      ]}
+                    />
+
                     {/* Monthly investment */}
                     <SliderField
                       id="monthly-investment"
@@ -275,7 +297,7 @@ export function SipCalculatorPage() {
                       min={1_000}
                       max={1_000_000}
                       step={1_000}
-                      prefix="₨"
+                      display={formatPKR(monthly)}
                       onChange={(v) => setMonthly(v)}
                       marks={[
                         { value: 1_000, label: '₨1K' },
@@ -294,7 +316,7 @@ export function SipCalculatorPage() {
                       min={1}
                       max={50}
                       step={0.1}
-                      suffix="%"
+                      display={`${annualRate}% p.a.`}
                       onChange={(v) => setAnnualRate(v)}
                       marks={[
                         { value: 1, label: '1%' },
@@ -314,7 +336,7 @@ export function SipCalculatorPage() {
                       min={1}
                       max={40}
                       step={1}
-                      suffix="Yrs"
+                      display={`${years} yr${years > 1 ? 's' : ''}`}
                       onChange={(v) => setYears(v)}
                       marks={[
                         { value: 1, label: '1yr' },
@@ -536,8 +558,7 @@ function SliderField({
   min,
   max,
   step,
-  prefix = '',
-  suffix = '',
+  display,
   onChange,
   marks,
 }: {
@@ -547,43 +568,24 @@ function SliderField({
   min: number
   max: number
   step: number
-  prefix?: string
-  suffix?: string
+  display: string
   onChange: (v: number) => void
   marks?: { value: number; label: string }[]
 }) {
-  const [inputValue, setInputValue] = useState(String(value))
-
-  useEffect(() => {
-    setInputValue(String(value))
-  }, [value])
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value
-    setInputValue(val)
-    const num = parseFloat(val)
-    if (!isNaN(num)) {
-      onChange(num)
-    }
+  const handleDecrement = () => {
+    onChange(Math.max(min, value - step))
   }
 
-  const handleBlur = () => {
-    let num = parseFloat(inputValue)
-    if (isNaN(num)) {
-      num = min
-    } else {
-      num = Math.max(min, Math.min(max, num))
-    }
-    onChange(num)
-    setInputValue(String(num))
+  const handleIncrement = () => {
+    onChange(Math.min(max, value + step))
   }
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: 1.5 }}>
         <Typography
           component="label"
-          htmlFor={`${id}-input`}
+          htmlFor={id}
           sx={{
             fontSize: 12,
             fontFamily: '"Playfair Display", serif',
@@ -595,85 +597,92 @@ function SliderField({
         >
           {label}
         </Typography>
-        <OutlinedInput
-          id={`${id}-input`}
-          size="small"
-          value={inputValue}
-          onChange={handleInputChange}
-          onBlur={handleBlur}
-          startAdornment={prefix ? (
-            <InputAdornment position="start" sx={{ '& .MuiTypography-root': { fontSize: 13, fontFamily: '"Noto Sans Mono", monospace', fontWeight: 600, color: PRIMARY } }}>
-              {prefix}
-            </InputAdornment>
-          ) : null}
-          endAdornment={suffix ? (
-            <InputAdornment position="end" sx={{ '& .MuiTypography-root': { fontSize: 13, fontFamily: '"Noto Sans Mono", monospace', fontWeight: 600, color: PRIMARY } }}>
-              {suffix}
-            </InputAdornment>
-          ) : null}
-          inputProps={{
-            type: 'number',
-            min: min,
-            max: max,
-            step: step,
-            style: {
-              textAlign: 'right',
-              fontFamily: '"Noto Sans Mono", monospace',
-              fontSize: 14,
-              fontWeight: 700,
-              color: PRIMARY,
-              padding: '6px 8px',
-            }
-          }}
+        <Typography
           sx={{
-            width: 140,
+            fontFamily: '"Noto Sans Mono", monospace',
+            fontSize: 15,
+            fontWeight: 700,
+            color: PRIMARY,
+            letterSpacing: '-0.01em',
+          }}
+        >
+          {display}
+        </Typography>
+      </Box>
+      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+        <IconButton
+          onClick={handleDecrement}
+          disabled={value <= min}
+          size="small"
+          sx={{
+            color: PRIMARY,
+            border: '1px solid #dde7f4',
             bgcolor: '#ffffff',
-            borderRadius: 1,
-            '& fieldset': { borderColor: '#dde7f4' },
-            '&:hover fieldset': { borderColor: '#0a2463' },
-            '&.Mui-focused fieldset': { borderColor: '#0a2463', borderWidth: '1.5px' },
-            '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
-              WebkitAppearance: 'none',
-              margin: 0,
+            width: 28,
+            height: 28,
+            mt: '1px',
+            '&:hover': { bgcolor: '#f0f4fb', borderColor: PRIMARY },
+            '&.Mui-disabled': { borderColor: '#e2eaf5', color: '#c8d6ec' }
+          }}
+          aria-label={`Decrease ${label}`}
+        >
+          <RemoveRoundedIcon sx={{ fontSize: 16 }} />
+        </IconButton>
+
+        <Slider
+          id={id}
+          value={value}
+          min={min}
+          max={max}
+          step={step}
+          marks={marks}
+          onChange={(_, v) => onChange(v as number)}
+          aria-label={label}
+          sx={{
+            flex: 1,
+            mx: 0.5,
+            color: PRIMARY,
+            height: 4,
+            '& .MuiSlider-thumb': {
+              width: 14,
+              height: 14,
+              bgcolor: '#fff',
+              border: `2px solid ${PRIMARY}`,
+              boxShadow: '0 2px 8px rgba(10,36,99,0.18)',
+              '&:hover': { boxShadow: '0 0 0 6px rgba(10,36,99,0.1)' },
             },
-            '& input[type=number]': {
-              MozAppearance: 'textfield',
+            '& .MuiSlider-track': { border: 'none' },
+            '& .MuiSlider-rail': { bgcolor: '#e2eaf5', opacity: 1 },
+            '& .MuiSlider-mark': { bgcolor: '#c8d6ec', width: 3, height: 3, borderRadius: '50%' },
+            '& .MuiSlider-markLabel': {
+              fontSize: 9,
+              fontFamily: '"Noto Sans Mono", monospace',
+              color: '#a0b4cc',
+              top: 28,
             },
+            '& .MuiSlider-markLabelActive': { color: '#4a5e78' },
           }}
         />
+
+        <IconButton
+          onClick={handleIncrement}
+          disabled={value >= max}
+          size="small"
+          sx={{
+            color: PRIMARY,
+            border: '1px solid #dde7f4',
+            bgcolor: '#ffffff',
+            width: 28,
+            height: 28,
+            mt: '1px',
+            '&:hover': { bgcolor: '#f0f4fb', borderColor: PRIMARY },
+            '&.Mui-disabled': { borderColor: '#e2eaf5', color: '#c8d6ec' }
+          }}
+          aria-label={`Increase ${label}`}
+        >
+          <AddRoundedIcon sx={{ fontSize: 16 }} />
+        </IconButton>
       </Box>
-      <Slider
-        id={id}
-        value={value}
-        min={min}
-        max={max}
-        step={step}
-        marks={marks}
-        onChange={(_, v) => onChange(v as number)}
-        aria-label={label}
-        sx={{
-          color: PRIMARY,
-          height: 4,
-          '& .MuiSlider-thumb': {
-            width: 14,
-            height: 14,
-            bgcolor: '#fff',
-            border: `2px solid ${PRIMARY}`,
-            boxShadow: '0 2px 8px rgba(10,36,99,0.18)',
-            '&:hover': { boxShadow: '0 0 0 6px rgba(10,36,99,0.1)' },
-          },
-          '& .MuiSlider-track': { border: 'none' },
-          '& .MuiSlider-rail': { bgcolor: '#e2eaf5', opacity: 1 },
-          '& .MuiSlider-mark': { bgcolor: '#c8d6ec', width: 3, height: 3, borderRadius: '50%' },
-          '& .MuiSlider-markLabel': {
-            fontSize: 9,
-            fontFamily: '"Noto Sans Mono", monospace',
-            color: '#a0b4cc',
-            top: 28,
-          },
-          '& .MuiSlider-markLabelActive': { color: '#4a5e78' },
-        }}
-      />
     </Box>
   )
 }
