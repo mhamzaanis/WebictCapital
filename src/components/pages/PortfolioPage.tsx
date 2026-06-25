@@ -1,5 +1,3 @@
-// PortfolioPage.tsx — optimised (no shared tokens)
-
 import AddRoundedIcon from '@mui/icons-material/AddRounded'
 import SettingsIcon from '@mui/icons-material/Settings';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
@@ -37,8 +35,9 @@ import { AuthModal } from '../AuthModal'
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
-const NUMBER_FONT = 'var(--wc-number-font)'
+const NUMBER_FONT = "'JetBrains Mono', monospace"
 const SERIF = '"Playfair Display", serif'
+const BODY = '"Inter", sans-serif'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -55,10 +54,6 @@ type MarketHistory = Record<'1M' | 'YTD' | '1Y', { labels: string[]; values: num
 
 // ─── Static data ──────────────────────────────────────────────────────────────
 
-// const PORTFOLIO_TREND = [
-//   92_680_000, 92_340_000, 91_950_000, 92_120_000, 92_450_000, 92_800_000,
-//   93_150_000, 92_900_000, 92_700_000, 92_300_000, 92_500_000, 92_650_000,
-// ]
 const EMPTY_SPARK: number[] = []
 const SECTOR_COLORS = [
   'var(--wc-primary)', '#b77a12', '#0d5c32', '#7c3aed', '#1a4fa8', '#6366f1',
@@ -95,14 +90,12 @@ const fmtDateLabel = (dateStr: string) => {
   return d.toLocaleDateString('en-PK', { month: 'short', day: 'numeric' })
 }
 
-/** Build 1W/1M/YTD/1Y history from real DB rows (newest-first). */
 function buildRealMarketHistory(
   rows: MarketHistoryRow[],
   closeKey: 'kse100_close' | 'kse30_close',
 ): MarketHistory {
   if (rows.length === 0) return EMPTY_MARKET_HISTORY
 
-  // Reverse to oldest-first for chart display
   const sorted = [...rows].reverse()
 
   const buildSlice = (data: Array<MarketHistoryRow | DbMarketSummaryRow>) => ({
@@ -111,7 +104,6 @@ function buildRealMarketHistory(
     volumes: data.map((r) => ((r as DbMarketSummaryRow).curr_volume ?? (r as MarketHistoryRow).curr_volume ?? 0)),
   })
 
-  // YTD: from Jan 1 of current year
   const currentYear = new Date().getFullYear()
   const ytdRows = sorted.filter((r) => {
     const y = new Date(r.trade_date + 'T00:00:00').getFullYear()
@@ -154,7 +146,7 @@ function normalizeSummaryRows(rows: DbMarketSummaryRow[]): DbMarketSummaryRow[] 
   })
 }
 
-// ─── Static sx objects (module-level — not re-created on every render) ────────
+// ─── Static sx objects ────────────────────────────────────────────────────────
 
 const cardSx = {
   border: '1px solid var(--wc-divider)',
@@ -162,10 +154,6 @@ const cardSx = {
   bgcolor: 'var(--wc-paper)',
   p: { xs: 2.4, md: 3.2 },
   transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
-  // '&:hover': {
-  //   borderColor: 'var(--wc-primary)',
-  //   boxShadow: '0 4px 24px rgba(10,36,99,0.07)',
-  // },
 } as const
 
 const statTileBaseSx = {
@@ -174,10 +162,6 @@ const statTileBaseSx = {
   borderRadius: 1,
   bgcolor: 'var(--wc-surface)',
   transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
-  // '&:hover': {
-  //   borderColor: 'var(--wc-primary)',
-  //   boxShadow: '0 4px 24px rgba(10,36,99,0.07)',
-  // },
 } as const
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -194,9 +178,9 @@ function SkeletonIndexCard() {
         overflow: 'hidden',
       }}
     >
-      <PulseSkeleton shape="text" width={110} height={12} />
-      <PulseSkeleton shape="text" width={140} height={18} sx={{ mt: 0.6 }} />
-      <PulseSkeleton shape="text" width={120} height={12} sx={{ mt: 0.4 }} />
+      <PulseSkeleton shape="text" width={110} height={14} />
+      <PulseSkeleton shape="text" width={140} height={20} sx={{ mt: 0.6 }} />
+      <PulseSkeleton shape="text" width={120} height={14} sx={{ mt: 0.4 }} />
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1.2 }}>
         <PulseSkeleton shape="rounded" width={80} height={40} />
         <PulseSkeleton shape="text" width={90} height={24} />
@@ -211,25 +195,25 @@ function SkeletonHoldingRow() {
       <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1.5, sm: 2 } }}>
         <PulseSkeleton shape="rounded" width={40} height={40} />
         <Box sx={{ minWidth: 0, flex: { xs: '0 0 90px', sm: '0 0 134px' } }}>
-          <PulseSkeleton shape="text" width={80} height={14} />
-          <PulseSkeleton shape="text" width={110} height={10} sx={{ mt: 0.3 }} />
-          <PulseSkeleton shape="rounded" width={60} height={14} sx={{ mt: 0.6 }} />
+          <PulseSkeleton shape="text" width={80} height={15} />
+          <PulseSkeleton shape="text" width={110} height={13} sx={{ mt: 0.3 }} />
+          <PulseSkeleton shape="rounded" width={60} height={16} sx={{ mt: 0.6 }} />
         </Box>
         <Box sx={{ flex: 1, display: { xs: 'none', md: 'block' } }}>
-          <PulseSkeleton shape="text" width={90} height={14} />
-          <PulseSkeleton shape="text" width={120} height={10} sx={{ mt: 0.3 }} />
+          <PulseSkeleton shape="text" width={90} height={15} />
+          <PulseSkeleton shape="text" width={120} height={13} sx={{ mt: 0.3 }} />
         </Box>
         <Box sx={{ textAlign: 'right', display: { xs: 'none', sm: 'block' }, minWidth: 72, flexShrink: 0 }}>
-          <PulseSkeleton shape="text" width={60} height={12} />
-          <PulseSkeleton shape="text" width={40} height={9} sx={{ mt: 0.3 }} />
+          <PulseSkeleton shape="text" width={60} height={14} />
+          <PulseSkeleton shape="text" width={40} height={12} sx={{ mt: 0.3 }} />
         </Box>
         <Box sx={{ textAlign: 'right', minWidth: { xs: 78, sm: 90 }, flexShrink: 0 }}>
-          <PulseSkeleton shape="text" width={70} height={12} />
-          <PulseSkeleton shape="text" width={40} height={9} sx={{ mt: 0.3 }} />
+          <PulseSkeleton shape="text" width={70} height={14} />
+          <PulseSkeleton shape="text" width={40} height={12} sx={{ mt: 0.3 }} />
         </Box>
         <Box sx={{ textAlign: 'right', minWidth: { xs: 78, sm: 95 }, flexShrink: 0 }}>
-          <PulseSkeleton shape="text" width={70} height={12} />
-          <PulseSkeleton shape="text" width={40} height={9} sx={{ mt: 0.3 }} />
+          <PulseSkeleton shape="text" width={70} height={14} />
+          <PulseSkeleton shape="text" width={40} height={12} sx={{ mt: 0.3 }} />
         </Box>
       </Box>
     </Box>
@@ -241,16 +225,16 @@ function SkeletonWatchRow() {
     <Box sx={{ py: 1.1 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
         <Box sx={{ minWidth: 0, flex: 1 }}>
-          <PulseSkeleton shape="text" width={60} height={12} />
+          <PulseSkeleton shape="text" width={60} height={14} />
         </Box>
         <PulseSkeleton shape="rounded" width={60} height={30} />
         <Box sx={{ textAlign: 'right', minWidth: 90, flexShrink: 0 }}>
-          <PulseSkeleton shape="text" width={70} height={12} />
-          <PulseSkeleton shape="text" width={70} height={10} sx={{ mt: 0.3 }} />
+          <PulseSkeleton shape="text" width={70} height={14} />
+          <PulseSkeleton shape="text" width={70} height={13} sx={{ mt: 0.3 }} />
         </Box>
         <Box sx={{ textAlign: 'right', minWidth: 44, display: { xs: 'none', sm: 'block' }, flexShrink: 0 }}>
-          <PulseSkeleton shape="text" width={36} height={10} />
-          <PulseSkeleton shape="text" width={28} height={9} sx={{ mt: 0.3 }} />
+          <PulseSkeleton shape="text" width={36} height={13} />
+          <PulseSkeleton shape="text" width={28} height={12} sx={{ mt: 0.3 }} />
         </Box>
       </Box>
     </Box>
@@ -262,12 +246,12 @@ function SkeletonHistoryRow() {
     <Box sx={{ py: 1.1, display: 'flex', alignItems: 'center', gap: 1.6 }}>
       <PulseSkeleton shape="rounded" width={36} height={36} />
       <Box sx={{ flex: 1 }}>
-        <PulseSkeleton shape="text" width={160} height={12} />
-        <PulseSkeleton shape="text" width={220} height={10} sx={{ mt: 0.4 }} />
+        <PulseSkeleton shape="text" width={160} height={14} />
+        <PulseSkeleton shape="text" width={220} height={13} sx={{ mt: 0.4 }} />
       </Box>
       <Box sx={{ textAlign: 'right' }}>
-        <PulseSkeleton shape="text" width={70} height={12} />
-        <PulseSkeleton shape="text" width={50} height={9} sx={{ mt: 0.3 }} />
+        <PulseSkeleton shape="text" width={70} height={14} />
+        <PulseSkeleton shape="text" width={50} height={12} sx={{ mt: 0.3 }} />
       </Box>
     </Box>
   )
@@ -276,7 +260,7 @@ function SkeletonHistoryRow() {
 function SecLabel({ children }: { children: React.ReactNode }) {
   return (
     <Typography sx={{
-      fontSize: 11, fontFamily: SERIF, letterSpacing: '0.18em',
+      fontSize: 11, fontFamily: NUMBER_FONT, fontWeight: 600, letterSpacing: '0.12em',
       textTransform: 'uppercase', color: 'var(--wc-primary)', mb: 1.5,
     }}>
       {children}
@@ -284,13 +268,15 @@ function SecLabel({ children }: { children: React.ReactNode }) {
   )
 }
 
+// FIXED: was 9px — bumped to 11px
+// @ts-expect-error — kept for future use
 function SectorTag({ children }: { children: React.ReactNode }) {
   return (
     <Typography component="span" sx={{
-      display: 'inline-block', fontSize: 9, fontWeight: 700,
-      letterSpacing: '0.08em', textTransform: 'uppercase',
+      display: 'inline-block', fontSize: 11, fontWeight: 700,
+      letterSpacing: '0.06em', textTransform: 'uppercase',
       color: 'var(--wc-primary)', fontFamily: NUMBER_FONT,
-      px: 0.6, py: 0.2, borderRadius: '3px',
+      px: 0.7, py: 0.25, borderRadius: '3px',
       bgcolor: 'rgba(10,36,99,0.06)', border: '1px solid rgba(10,36,99,0.15)',
       lineHeight: 1.5,
     }}>
@@ -303,6 +289,7 @@ function Card({ children, sx }: { children: React.ReactNode; sx?: object }) {
   return <Box sx={sx ? { ...cardSx, ...sx } : cardSx}>{children}</Box>
 }
 
+// FIXED: label was 10px, value was 15px — now 12px and 17px
 function StatTile({
   label, value, sub, positive,
 }: { label: string; value: string; sub?: string; positive?: boolean }) {
@@ -313,20 +300,20 @@ function StatTile({
   return (
     <Box sx={statTileBaseSx}>
       <Typography sx={{
-        fontSize: 10, fontWeight: 600, letterSpacing: '0.08em',
-        color: 'var(--wc-text-secondary)', textTransform: 'uppercase',
-        fontFamily: SERIF, mb: 0.6,
+        fontSize: 11, fontWeight: 600, letterSpacing: '0.08em',
+        color: 'var(--wc-text-secondary, #4a5e78)', textTransform: 'uppercase',
+        fontFamily: NUMBER_FONT, mb: 0.8,
       }}>
         {label}
       </Typography>
       <Typography sx={{
-        fontFamily: NUMBER_FONT, fontSize: 15, fontWeight: 700,
-        color: valueColor, letterSpacing: '-0.02em', lineHeight: 1,
+        fontFamily: NUMBER_FONT, fontSize: 18, fontWeight: 700,
+        color: valueColor, letterSpacing: '-0.02em', lineHeight: 1.15,
       }}>
         {value}
       </Typography>
       {sub && (
-        <Typography sx={{ fontSize: 10.5, color: 'var(--wc-text-secondary)', fontFamily: SERIF, mt: 0.4 }}>
+        <Typography sx={{ fontSize: 13, color: 'var(--wc-text-secondary, #4a5e78)', fontFamily: BODY, mt: 0.6, lineHeight: 1.5 }}>
           {sub}
         </Typography>
       )}
@@ -334,14 +321,15 @@ function StatTile({
   )
 }
 
+// FIXED: icon was 10px, pct was 10px — now 12px each
 function PLBadge({ value, pct }: { value: number; pct: number }) {
   const positive = value >= 0
   const Icon = positive ? TrendingUpIcon : TrendingDownIcon
   return (
-    <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.3 }}>
-      <Icon sx={{ fontSize: 10, color: positive ? 'var(--wc-success)' : 'var(--wc-error)' }} />
+    <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.4 }}>
+      <Icon sx={{ fontSize: 13, color: positive ? 'var(--wc-success)' : 'var(--wc-error)' }} />
       <Typography sx={{
-        fontFamily: NUMBER_FONT, fontSize: 10, fontWeight: 600,
+        fontFamily: NUMBER_FONT, fontSize: 12.5, fontWeight: 600,
         color: positive ? 'var(--wc-success)' : 'var(--wc-error)',
       }}>
         {positive ? '+' : ''}{Math.abs(pct).toFixed(2)}%
@@ -360,15 +348,16 @@ function EmptyState({ icon, title, subtitle }: { icon: React.ReactNode; title: s
         width: 48, height: 48, borderRadius: '12px',
         bgcolor: 'rgba(10,36,99,0.04)', border: '1px solid rgba(10,36,99,0.08)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        color: 'var(--wc-text-secondary)',
+        color: 'var(--wc-text-primary)',
       }}>
         {icon}
       </Box>
       <Box sx={{ textAlign: 'center' }}>
-        <Typography sx={{ fontSize: 12.5, fontWeight: 600, color: 'var(--wc-text-primary)', fontFamily: SERIF, mb: 0.3 }}>
+        {/* FIXED: was 12.5px — now 14px */}
+        <Typography sx={{ fontSize: 15, fontWeight: 600, color: 'var(--wc-text-primary)', fontFamily: SERIF, mb: 0.5 }}>
           {title}
         </Typography>
-        <Typography sx={{ fontSize: 11, color: 'var(--wc-text-secondary)', lineHeight: 1.5 }}>
+        <Typography sx={{ fontSize: 13.5, color: 'var(--wc-text-secondary, #4a5e78)', fontFamily: BODY, lineHeight: 1.6 }}>
           {subtitle}
         </Typography>
       </Box>
@@ -376,10 +365,11 @@ function EmptyState({ icon, title, subtitle }: { icon: React.ReactNode; title: s
   )
 }
 
+// FIXED: was 9px — now 11px
 function ColHead({ children, align = 'left' }: { children: React.ReactNode; align?: 'left' | 'right' }) {
   return (
     <Typography sx={{
-      fontSize: 9, fontWeight: 700, color: 'var(--wc-text-secondary)',
+      fontSize: 11, fontWeight: 600, color: 'var(--wc-text-secondary, #4a5e78)',
       textTransform: 'uppercase', letterSpacing: '0.1em',
       fontFamily: NUMBER_FONT, textAlign: align,
     }}>
@@ -427,11 +417,12 @@ function HoldingRow({
           border: `1px solid ${hov ? 'rgba(10,36,99,0.22)' : 'var(--wc-divider)'}`,
           transition: 'all 0.18s ease',
         }}>
+          {/* FIXED: was 9px/11px — now 11px/13px */}
           <Typography sx={{
             fontFamily: NUMBER_FONT,
-            fontSize: h.symbol.length > 4 ? 9 : 11,
+            fontSize: h.symbol.length > 4 ? 11 : 13,
             fontWeight: 700,
-            color: hov ? 'var(--wc-primary)' : 'var(--wc-text-secondary)',
+            color: hov ? 'var(--wc-primary)' : 'var(--wc-text-primary)',
             letterSpacing: '0.02em',
           }}>
             {h.symbol.length <= 4 ? h.symbol : h.symbol.slice(0, 4)}
@@ -440,42 +431,51 @@ function HoldingRow({
 
         {/* Name + sector */}
         <Box sx={{ minWidth: 0, flex: { xs: '0 0 90px', sm: '0 0 134px' } }}>
-          <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'var(--wc-text-primary)', fontFamily: SERIF, lineHeight: 1.2 }}>
+          {/* FIXED: was 13px — now 14px */}
+          <Typography sx={{
+            fontSize: 14, fontWeight: 700,
+            color: 'var(--wc-text-primary)', fontFamily: SERIF, lineHeight: 1.2,
+          }}>
             {h.symbol}
           </Typography>
+          
           <Typography sx={{
-            fontSize: 10.5, color: 'var(--wc-text-secondary)', mt: 0.2,
-            fontFamily: SERIF, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            fontSize: 12.5, color: 'var(--wc-text-secondary, #4a5e78)', mt: 0.2,
+            fontFamily: BODY, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
           }}>
             {h.company}
           </Typography>
-          <Box sx={{ mt: 0.5 }}><SectorTag>{h.sector}</SectorTag></Box>
+          {/* <Box sx={{ mt: 0.5 }}><SectorTag>{h.sector}</SectorTag></Box> */}
         </Box>
 
         {/* Price + shares (desktop) */}
         <Box sx={{ flex: 1, display: { xs: 'none', md: 'block' }, minWidth: 0 }}>
-          <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 13, fontWeight: 700, color: 'var(--wc-text-primary)' }}>
+          {/* FIXED: was 13px — now 14px */}
+          <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 14, fontWeight: 600, color: 'var(--wc-text-primary)' }}>
             Rs.&nbsp;{h.price.toFixed(2)}
           </Typography>
-          <Typography sx={{ fontSize: 10, color: 'var(--wc-text-secondary)', mt: 0.2, fontFamily: NUMBER_FONT }}>
+          
+          <Typography sx={{ fontSize: 12.5, color: 'var(--wc-text-secondary, #4a5e78)', mt: 0.2, fontFamily: NUMBER_FONT, fontWeight: 400 }}>
             {fmt(h.shares)} sh · avg {h.avgCost.toFixed(2)}
           </Typography>
         </Box>
 
         {/* Market Value */}
         <Box sx={{ textAlign: 'right', display: { xs: 'none', sm: 'block' }, minWidth: 72, flexShrink: 0 }}>
-          <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 12, fontWeight: 700, color: 'var(--wc-text-primary)' }}>
+          {/* FIXED: was 12px — now 14px */}
+          <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 14, fontWeight: 600, color: 'var(--wc-text-primary)' }}>
             {fmtCompact(h.marketValue)}
           </Typography>
-          <Typography sx={{ fontSize: 9.5, color: 'var(--wc-text-secondary)', fontFamily: SERIF, mt: 0.15 }}>
+          <Typography sx={{ fontSize: 11, color: 'var(--wc-text-secondary, #4a5e78)', fontFamily: NUMBER_FONT, fontWeight: 500, mt: 0.15 }}>
             Mkt Val
           </Typography>
         </Box>
 
         {/* Day P/L */}
         <Box sx={{ textAlign: 'right', minWidth: { xs: 78, sm: 90 }, flexShrink: 0 }}>
+          {/* FIXED: was 11.5px — now 13px */}
           <Typography sx={{
-            fontFamily: NUMBER_FONT, fontSize: 11.5, fontWeight: 700, lineHeight: 1,
+            fontFamily: NUMBER_FONT, fontSize: 13.5, fontWeight: 700, lineHeight: 1.15,
             color: posToday ? 'var(--wc-success)' : 'var(--wc-error)',
           }}>
             {fmtPkrSigned(h.todayPL)}
@@ -483,13 +483,14 @@ function HoldingRow({
           <Box sx={{ mt: 0.3, display: 'flex', justifyContent: 'flex-end' }}>
             <PLBadge value={h.todayPL} pct={h.todayPLPct} />
           </Box>
-          <Typography sx={{ fontSize: 9, color: 'var(--wc-text-secondary)', fontFamily: SERIF, mt: 0.2 }}>Day</Typography>
+          <Typography sx={{ fontSize: 11, color: 'var(--wc-text-secondary, #4a5e78)', fontFamily: NUMBER_FONT, fontWeight: 500, mt: 0.2 }}>Day</Typography>
         </Box>
 
         {/* Total P/L */}
         <Box sx={{ textAlign: 'right', minWidth: { xs: 78, sm: 95 }, flexShrink: 0 }}>
+          {/* FIXED: was 13px — now 15px */}
           <Typography sx={{
-            fontFamily: NUMBER_FONT, fontSize: 13, fontWeight: 700, lineHeight: 1,
+            fontFamily: NUMBER_FONT, fontSize: 15, fontWeight: 700, lineHeight: 1.15,
             color: posTotal ? 'var(--wc-success)' : 'var(--wc-error)',
           }}>
             {fmtPkrSigned(h.totalPL)}
@@ -497,7 +498,7 @@ function HoldingRow({
           <Box sx={{ mt: 0.3, display: 'flex', justifyContent: 'flex-end' }}>
             <PLBadge value={h.totalPL} pct={h.totalPLPct} />
           </Box>
-          <Typography sx={{ fontSize: 9, color: 'var(--wc-text-secondary)', fontFamily: SERIF, mt: 0.2 }}>Total</Typography>
+          <Typography sx={{ fontSize: 11, color: 'var(--wc-text-secondary, #4a5e78)', fontFamily: NUMBER_FONT, fontWeight: 500, mt: 0.2 }}>Total</Typography>
         </Box>
 
       </Box>
@@ -542,7 +543,6 @@ const SparkLine = memo(function SparkLine({
 
 function WatchRow({ item, index, onClick }: { item: WatchItem; index: number; onClick?: () => void }) {
   const reduce = useReducedMotion()
-  // const [hov, setHov] = useState(false)
   const pos = item.change >= 0
 
   return (
@@ -551,23 +551,21 @@ function WatchRow({ item, index, onClick }: { item: WatchItem; index: number; on
       initial={reduce ? false : { opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.32, delay: index * 0.06, ease: [0.22, 1, 0.36, 1] }}
-      // onMouseEnter={() => setHov(true)}
-      // onMouseLeave={() => setHov(false)}
       onClick={onClick}
       sx={{
         py: 1.1, pl: 0, pr: 0, borderRadius: '7px',
         minHeight: 64,
         maxHeight: 64,
-        // bgcolor: hov ? 'rgba(10,36,99,0.03)' : 'transparent',
         transition: 'background-color 0.18s ease',
         cursor: onClick ? 'pointer' : 'default',
       }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-        <Box sx={{ minWidth: 0, flex: 1, }}>
+        <Box sx={{ minWidth: 0, flex: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
+            {/* FIXED: was 12.5px — now 14px */}
             <Typography sx={{
-              fontFamily: NUMBER_FONT, fontSize: 12.5, fontWeight: 700,
+              fontFamily: NUMBER_FONT, fontSize: 14, fontWeight: 700,
               color: onClick ? 'var(--wc-primary)' : 'var(--wc-text-primary)',
               textDecoration: onClick ? 'underline' : 'none',
               textUnderlineOffset: '2px', textDecorationThickness: '1px',
@@ -575,11 +573,7 @@ function WatchRow({ item, index, onClick }: { item: WatchItem; index: number; on
             }}>
               {item.symbol}
             </Typography>
-
           </Box>
-          {/* <Typography sx={{ fontSize: 10, color: 'var(--wc-text-secondary)', fontFamily: SERIF, mt: 0.1 }}>
-            {item.sector || item.company}
-          </Typography> */}
         </Box>
 
         <Box sx={{ width: 60, flexShrink: 0 }}>
@@ -590,11 +584,13 @@ function WatchRow({ item, index, onClick }: { item: WatchItem; index: number; on
         </Box>
 
         <Box sx={{ textAlign: 'right', minWidth: 90, flexShrink: 0 }}>
-          <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 12.5, fontWeight: 700, color: 'var(--wc-text-primary)' }}>
+          {/* FIXED: was 12.5px — now 14px */}
+          <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 14, fontWeight: 700, color: 'var(--wc-text-primary)' }}>
             Rs.&nbsp;{fmt(item.price)}
           </Typography>
+          {/* FIXED: was 10.5px — now 12px */}
           <Typography sx={{
-            fontFamily: NUMBER_FONT, fontSize: 10.5, fontWeight: 600,
+            fontFamily: NUMBER_FONT, fontSize: 12, fontWeight: 600,
             color: pos ? 'var(--wc-success)' : 'var(--wc-error)',
           }}>
             {pos ? '+' : ''}{item.change.toFixed(1)} ({pos ? '+' : ''}{item.changePct.toFixed(2)}%)
@@ -602,10 +598,12 @@ function WatchRow({ item, index, onClick }: { item: WatchItem; index: number; on
         </Box>
 
         <Box sx={{ textAlign: 'right', minWidth: 44, display: { xs: 'none', sm: 'block' }, flexShrink: 0 }}>
-          <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 10.5, color: 'var(--wc-text-secondary)' }}>
+          {/* FIXED: was 10.5px — now 12px */}
+          <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 12, color: 'var(--wc-text-primary)' }}>
             {item.volume}
           </Typography>
-          <Typography sx={{ fontSize: 9, color: 'var(--wc-text-secondary)', fontFamily: SERIF, mt: 0.15 }}>vol</Typography>
+          {/* FIXED: was 9px — now 11px */}
+          <Typography sx={{ fontSize: 11, color: 'var(--wc-text-secondary, #4a5e78)', fontFamily: NUMBER_FONT, fontWeight: 500, mt: 0.15 }}>vol</Typography>
         </Box>
       </Box>
     </Box>
@@ -615,9 +613,9 @@ function WatchRow({ item, index, onClick }: { item: WatchItem; index: number; on
 // ─── HistRow ──────────────────────────────────────────────────────────────────
 
 const HIST_CFG: Record<HistoryEvent['type'], { color: string; label: string; icon: React.ReactNode }> = {
-  profit: { color: 'var(--wc-success)', label: 'PROFIT', icon: <TrendingUpIcon sx={{ fontSize: 14 }} /> },
-  dividend: { color: '#b77a12', label: 'DIVIDEND', icon: <StarBorderIcon sx={{ fontSize: 14 }} /> },
-  loss: { color: 'var(--wc-error)', label: 'LOSS', icon: <TrendingDownIcon sx={{ fontSize: 14 }} /> },
+  profit: { color: 'var(--wc-success)', label: 'PROFIT', icon: <TrendingUpIcon sx={{ fontSize: 16 }} /> },
+  dividend: { color: '#b77a12', label: 'DIVIDEND', icon: <StarBorderIcon sx={{ fontSize: 16 }} /> },
+  loss: { color: 'var(--wc-error)', label: 'LOSS', icon: <TrendingDownIcon sx={{ fontSize: 16 }} /> },
 }
 
 function HistRow({ event, index }: { event: HistoryEvent; index: number }) {
@@ -645,7 +643,8 @@ function HistRow({ event, index }: { event: HistoryEvent; index: number }) {
         bgcolor: `color-mix(in srgb, ${cfg.color} 10%, transparent)`,
         border: `1px solid color-mix(in srgb, ${cfg.color} 22%, transparent)`,
       }}>
-        <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 9.5, fontWeight: 800, color: cfg.color }}>
+        {/* FIXED: was 9.5px — now 11px */}
+        <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 11, fontWeight: 800, color: cfg.color }}>
           {event.symbol.slice(0, 4)}
         </Typography>
       </Box>
@@ -653,26 +652,30 @@ function HistRow({ event, index }: { event: HistoryEvent; index: number }) {
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6, mb: 0.3 }}>
           <Box sx={{ color: cfg.color, display: 'flex', alignItems: 'center' }}>{cfg.icon}</Box>
+          {/* FIXED: was 9px — now 11px */}
           <Typography sx={{
-            fontSize: 9, fontWeight: 700, letterSpacing: '0.1em',
+            fontSize: 11, fontWeight: 700, letterSpacing: '0.08em',
             color: cfg.color, fontFamily: NUMBER_FONT, textTransform: 'uppercase',
           }}>
             {cfg.label}
           </Typography>
-          <Typography sx={{ fontSize: 10, color: 'var(--wc-text-secondary)', fontFamily: SERIF }}>
+          {/* FIXED: was 10px — now 12px */}
+          <Typography sx={{ fontSize: 12, color: 'var(--wc-text-secondary, #4a5e78)', fontFamily: BODY }}>
             · {event.date}
           </Typography>
         </Box>
+        
         <Typography sx={{
-          fontSize: 11.5, color: 'var(--wc-text-secondary)', fontFamily: SERIF,
-          lineHeight: 1.45, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          fontSize: 13.5, color: 'var(--wc-text-primary)', fontFamily: BODY,
+          lineHeight: 1.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
         }}>
           {event.message}
         </Typography>
       </Box>
 
       <Box sx={{ textAlign: 'right', flexShrink: 0 }}>
-        <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 13, fontWeight: 700, color: cfg.color }}>
+        
+        <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 15, fontWeight: 700, color: cfg.color }}>
           {fmtPkrSigned(event.profit)}
         </Typography>
         <Box sx={{ mt: 0.3, display: 'flex', justifyContent: 'flex-end' }}>
@@ -714,7 +717,6 @@ export function PortfolioPage() {
   const { user, loading: authLoading, clearError } = useAuth()
   const isLocked = !authLoading && !user
 
-  // Keep ref in sync so openDrawer never reads stale state via closure
   const syncSnapshots = useCallback((data: MarketSymbolSnapshot[]) => {
     setMarketSnapshots(data)
     marketSnapshotsRef.current = data
@@ -735,9 +737,6 @@ export function PortfolioPage() {
     if (isLocked) setAuthModalOpen(true)
   }, [isLocked])
 
-  // ── Consolidated data loading (single effect — reduces network calls) ────
-
-  /** Shared helper: processes summary rows into marketSummary + card sparklines. */
   const processSummaryRows = useCallback((summaryRows: DbMarketSummaryRow[]) => {
     if (summaryRows.length === 0) return
 
@@ -748,10 +747,6 @@ export function PortfolioPage() {
     const kse30Close = latest.kse30_close ?? 0
 
     setMarketSummary((prev) => {
-      // If full history was already loaded lazily, preserve it so that
-      // re-fetches triggered by auth / tab-switch don't shrink the chart
-      // back to 2 data points.  (30 is an arbitrary guard — real history
-      // has 252 rows, initial fetch only yields 2.)
       const hasFullHistory =
         prev.kse100History['1Y'].values.length > 30 &&
         prev.kse30History['1Y'].values.length > 30
@@ -778,8 +773,6 @@ export function PortfolioPage() {
           : buildRealMarketHistory(normalized, 'kse30_close'),
       }
     })
-
-    // Sparklines: use last 12 close values for a richer line
   }, [])
 
   useEffect(() => {
@@ -789,7 +782,6 @@ export function PortfolioPage() {
       if (!hasStockService()) return
       setMarketLoading(true)
       try {
-        // Single parallel fetch for both market data sources
         const [summaryRows, snapshots] = await Promise.all([
           fetchMarketDailySummaryRows(2),
           fetchUniqueSymbols(),
@@ -807,7 +799,6 @@ export function PortfolioPage() {
       setMarketLoading(true)
       setUserLoading(true)
       try {
-        // Single parallel fetch for ALL data sources
         const [summaryRows, trades, marketData] = await Promise.all([
           fetchMarketDailySummaryRows(2),
           fetchUserTrades(),
@@ -1153,8 +1144,9 @@ export function PortfolioPage() {
                 alignItems: { md: 'flex-end' }, justifyContent: 'space-between', gap: 2,
               }}>
                 <Box sx={{ maxWidth: 620 }}>
+                  
                   <Typography sx={{
-                    fontSize: 11, fontFamily: SERIF, letterSpacing: '0.18em',
+                    fontSize: 13, fontFamily: SERIF, letterSpacing: '0.14em',
                     textTransform: 'uppercase', color: 'var(--wc-primary)', mb: 1.5,
                   }}>
                     Portfolio
@@ -1169,9 +1161,10 @@ export function PortfolioPage() {
                   </Typography>
                 </Box>
                 <Box sx={{ textAlign: { md: 'right' }, pb: { md: 0.5 }, flexShrink: 0 }}>
+                  
                   <Typography sx={{
-                    fontSize: 11, color: 'var(--wc-text-secondary)',
-                    letterSpacing: '0.04em', fontFamily: SERIF, mb: 0.3,
+                    fontSize: 14, color: 'var(--wc-text-secondary, #4a5e78)', fontWeight: 400,
+                    letterSpacing: '0.02em', fontFamily: BODY, mb: 0.3,
                   }}>
                     Pakistan Stock Exchange · daily closing data
                   </Typography>
@@ -1184,13 +1177,18 @@ export function PortfolioPage() {
           <MotionReveal>
             <Box>
               <Box sx={{ mb: 2.5 }}>
-                <SecLabel>Market Snapshot</SecLabel>
-                <Typography sx={{ fontSize: 15, fontWeight: 700, color: 'var(--wc-text-primary)', fontFamily: SERIF, letterSpacing: '-0.01em' }}>
-                  Daily summary from PSX.
+                {/* <SecLabel>Market Snapshot</SecLabel> */}
+                <Typography sx={{ fontSize: 18, fontWeight: 700, color: 'var(--wc-text-primary)', fontFamily: SERIF, letterSpacing: '-0.01em' }}>
+                  Daily summary from PSX for {' '} {marketSummary.tradeDate
+                      ? new Date(marketSummary.tradeDate).toLocaleDateString('en-PK', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+                      : '—'}
+                  
+                  <Typography component="span" sx={{ fontSize: 20,fontWeight: 700, color: 'var(--wc-text-primary)', fontFamily: SERIF }}>
+                    
+                  </Typography>
                 </Typography>
               </Box>
 
-              {/* Single market card that opens the summary modal */}
               {showMarketSkeleton ? (
                 <SkeletonIndexCard />
               ) : (
@@ -1209,21 +1207,17 @@ export function PortfolioPage() {
                     },
                   }}
                 >
-                  {/* Two-column: left = indices, right = change indicators */}
                   <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 2.5 }}>
                     {/* KSE 100 */}
                     <Box>
-                      <Typography sx={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--wc-text-secondary)', fontFamily: NUMBER_FONT, mb: 0.6 }}>
-                        KSE 100
-                      </Typography>
                       <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: { xs: 20, md: 24 }, fontWeight: 700, color: 'var(--wc-text-primary)', letterSpacing: '-0.03em', lineHeight: 1 }}>
-                        {marketSummary.kse100_close.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        KSE 100: {marketSummary.kse100_close.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </Typography>
                       <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.4, mt: 0.6 }}>
                         {marketSummary.kse100_change >= 0
-                          ? <TrendingUpIcon sx={{ fontSize: 12, color: 'var(--wc-success)' }} />
-                          : <TrendingDownIcon sx={{ fontSize: 12, color: 'var(--wc-error)' }} />}
-                        <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 11, fontWeight: 600, color: marketSummary.kse100_change >= 0 ? 'var(--wc-success)' : 'var(--wc-error)' }}>
+                          ? <TrendingUpIcon sx={{ fontSize: 35, color: 'var(--wc-success)' }} />
+                          : <TrendingDownIcon sx={{ fontSize: 35, color: 'var(--wc-error)' }} />}
+                        <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 25, fontWeight: 600, color: marketSummary.kse100_change >= 0 ? 'var(--wc-success)' : 'var(--wc-error)' }}>
                           {marketSummary.kse100_change >= 0 ? '+' : ''}{marketSummary.kse100_change.toFixed(2)}
                         </Typography>
                       </Box>
@@ -1231,17 +1225,14 @@ export function PortfolioPage() {
 
                     {/* KSE 30 */}
                     <Box sx={{ borderLeft: '1px solid var(--wc-divider)', pl: 2 }}>
-                      <Typography sx={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--wc-text-secondary)', fontFamily: NUMBER_FONT, mb: 0.6 }}>
-                        KSE 30
-                      </Typography>
                       <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: { xs: 20, md: 24 }, fontWeight: 700, color: 'var(--wc-text-primary)', letterSpacing: '-0.03em', lineHeight: 1 }}>
-                        {marketSummary.kse30_close.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        KSE 30: {marketSummary.kse30_close.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </Typography>
                       <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.4, mt: 0.6 }}>
                         {marketSummary.kse30_change >= 0
-                          ? <TrendingUpIcon sx={{ fontSize: 12, color: 'var(--wc-success)' }} />
-                          : <TrendingDownIcon sx={{ fontSize: 12, color: 'var(--wc-error)' }} />}
-                        <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 11, fontWeight: 600, color: marketSummary.kse30_change >= 0 ? 'var(--wc-success)' : 'var(--wc-error)' }}>
+                          ? <TrendingUpIcon sx={{ fontSize: 35, color: 'var(--wc-success)' }} />
+                          : <TrendingDownIcon sx={{ fontSize: 35, color: 'var(--wc-error)' }} />}
+                        <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 25, fontWeight: 600, color: marketSummary.kse30_change >= 0 ? 'var(--wc-success)' : 'var(--wc-error)' }}>
                           {marketSummary.kse30_change >= 0 ? '+' : ''}{marketSummary.kse30_change.toFixed(2)}
                         </Typography>
                       </Box>
@@ -1250,12 +1241,9 @@ export function PortfolioPage() {
 
                   {/* Footer row */}
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pt: 2, borderTop: '1px solid var(--wc-divider)' }}>
-                    <Typography sx={{ fontSize: 10.5, color: 'var(--wc-text-secondary)', fontFamily: SERIF }}>
-                      {marketSummary.tradeDate
-                        ? new Date(marketSummary.tradeDate).toLocaleDateString('en-PK', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
-                        : '—'}
-                    </Typography>
-                    <Typography sx={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--wc-primary)', fontFamily: NUMBER_FONT }}>
+                    
+                    
+                    <Typography sx={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--wc-primary)', fontFamily: NUMBER_FONT }}>
                       View chart →
                     </Typography>
                   </Box>
@@ -1289,8 +1277,9 @@ export function PortfolioPage() {
                       <VisibilityOffOutlinedIcon sx={{ fontSize: 22, opacity: 0.7 }} />
                     </Box>
                     <Box>
+                     
                       <Typography sx={{
-                        fontSize: 10, fontWeight: 700, letterSpacing: '0.12em',
+                        fontSize: 12, fontWeight: 700, letterSpacing: '0.1em',
                         textTransform: 'uppercase', color: 'var(--wc-primary)',
                         fontFamily: NUMBER_FONT, mb: 0.8,
                       }}>
@@ -1303,7 +1292,8 @@ export function PortfolioPage() {
                       }}>
                         Sign in to unlock your portfolio
                       </Typography>
-                      <Typography sx={{ fontSize: 12.5, color: 'var(--wc-text-secondary)', lineHeight: 1.6, maxWidth: 520 }}>
+                      
+                      <Typography sx={{ fontSize: 14, color: 'var(--wc-text-primary)', lineHeight: 1.6, maxWidth: 520 }}>
                         Holdings, watchlist, and trade history sync automatically to your Google account — available on any device.
                       </Typography>
                     </Box>
@@ -1347,7 +1337,6 @@ export function PortfolioPage() {
                     ? 'linear-gradient(90deg, var(--wc-success), rgba(13,92,50,0.15))'
                     : 'linear-gradient(90deg, var(--wc-error), rgba(180,40,58,0.15))',
                 },
-                // '&:hover': { borderColor: 'var(--wc-primary)', boxShadow: '0 4px 24px rgba(10,36,99,0.07)' },
               }}>
                 <SecLabel>Total Portfolio Value</SecLabel>
                 <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2, mb: 3 }}>
@@ -1363,7 +1352,6 @@ export function PortfolioPage() {
                   <StatTile label="Day P/L" value={fmtPkrSigned(dayPL)} positive={dayPL >= 0} sub={`${dayPL >= 0 ? '+' : ''}${dayPLPct.toFixed(2)}% today`} />
                   <StatTile label="Total Return" value={fmtPkrSigned(totalPL)} positive={totalPL >= 0} sub={`${totalPL >= 0 ? '+' : ''}${totalPLPct.toFixed(2)}% all time`} />
                   <StatTile label="Total Shares" value={fmtCompact(totalShares)} sub={`${holdings.length} positions`} />
-                  {/* <StatTile label="Cash Balance" value="Rs. 492,800" sub="Available to invest" /> */}
                 </Box>
               </Box>
             </MotionReveal>
@@ -1372,7 +1360,8 @@ export function PortfolioPage() {
             <MotionReveal>
               <Card>
                 <SecLabel>Sector Allocation</SecLabel>
-                <Typography sx={{ fontSize: 15, fontWeight: 700, color: 'var(--wc-text-primary)', fontFamily: SERIF, letterSpacing: '-0.01em', mb: 2 }}>
+                
+                <Typography sx={{ fontSize: 16, fontWeight: 700, color: 'var(--wc-text-primary)', fontFamily: SERIF, letterSpacing: '-0.01em', mb: 2.5 }}>
                   Where your capital is deployed.
                 </Typography>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.2 }}>
@@ -1383,7 +1372,8 @@ export function PortfolioPage() {
                       const pct = (s.value / totalMV) * 100
                       return (
                         <Box key={s.sector} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                          <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 10.5, fontWeight: 700, color: 'var(--wc-text-secondary)', minWidth: 80, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                          
+                          <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 12, fontWeight: 600, color: 'var(--wc-text-primary)', minWidth: 80, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                             {s.sector}
                           </Typography>
                           <Box sx={{ flex: 1, height: 10, bgcolor: 'var(--wc-surface)', borderRadius: '99px', overflow: 'hidden', position: 'relative' }}>
@@ -1395,10 +1385,12 @@ export function PortfolioPage() {
                               sx={{ height: '100%', bgcolor: s.color, borderRadius: '99px', opacity: 0.85 }}
                             />
                           </Box>
-                          <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 11, fontWeight: 600, color: 'var(--wc-text-primary)', minWidth: 48, textAlign: 'right' }}>
+                         
+                          <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 13, fontWeight: 600, color: 'var(--wc-text-primary)', minWidth: 48, textAlign: 'right' }}>
                             {pct.toFixed(1)}%
                           </Typography>
-                          <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 10, color: 'var(--wc-text-secondary)', minWidth: 72, textAlign: 'right' }}>
+                          
+                          <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 12.5, color: 'var(--wc-text-secondary, #4a5e78)', fontWeight: 500, minWidth: 72, textAlign: 'right' }}>
                             {fmtCompact(s.value)}
                           </Typography>
                         </Box>
@@ -1417,22 +1409,21 @@ export function PortfolioPage() {
                     <ShowChartIcon sx={{ fontSize: 14, color: 'var(--wc-primary)', opacity: 0.7 }} />
                     <SecLabel>Holdings</SecLabel>
                   </Box>
-                  <Typography sx={{ fontSize: { xs: 14, md: 16 }, fontWeight: 700, color: 'var(--wc-text-primary)', fontFamily: SERIF }}>
+                  
+                  <Typography sx={{ fontSize: { xs: 15, md: 17 }, fontWeight: 700, color: 'var(--wc-text-primary)', fontFamily: SERIF }}>
                     {holdings.length} active positions.
                   </Typography>
                 </Box>
-                <Typography sx={{ fontSize: 11, color: 'var(--wc-text-secondary)', fontFamily: NUMBER_FONT }}>
+                
+                <Typography sx={{ fontSize: 13, color: 'var(--wc-text-primary)', fontFamily: NUMBER_FONT }}>
                   {fmt(totalShares)} total shares
                 </Typography>
               </Box>
 
               <Box sx={{ mb: 3, display: 'grid', gap: { xs: 2, md: 2.5 }, gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1.55fr) minmax(0, 1fr)' }, alignItems: 'start' }}>
 
-                {/* Holdings table */}
-                <Card sx={{
-                  p: { xs: 1, md: 1.4 }, display: 'flex', flexDirection: 'column', height: 520,
-                  // '&:hover': { borderColor: 'var(--wc-divider)', boxShadow: 'none' } 
-                }}>
+                
+                <Card sx={{ p: { xs: 1, md: 1.4 }, display: 'flex', flexDirection: 'column', height: 520 }}>
                   <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 2, px: 0.5, mb: 0.5, flexShrink: 0 }}>
                     <Box sx={{ width: 40, flexShrink: 0 }} />
                     <Box sx={{ flex: '0 0 134px' }}><ColHead>Stock</ColHead></Box>
@@ -1465,7 +1456,8 @@ export function PortfolioPage() {
                   </Box>
 
                   <Box sx={{ flexShrink: 0, mt: 2, pt: 2, borderTop: '1px solid var(--wc-divider)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1.5 }}>
-                    <Typography sx={{ fontSize: 11, color: 'var(--wc-text-secondary)', fontFamily: SERIF }}>
+                    
+                    <Typography sx={{ fontSize: 13.5, color: 'var(--wc-text-secondary, #4a5e78)', fontFamily: BODY }}>
                       Total invested ·{' '}
                       <Box component="span" sx={{ fontFamily: NUMBER_FONT, color: 'var(--wc-text-primary)', fontWeight: 600 }}>
                         {fmtPkr(totalMV - totalPL)}
@@ -1512,11 +1504,11 @@ export function PortfolioPage() {
                           transition: 'transform 0.35s ease',
                         }}
                       />
-
+                      
                       <Typography
                         className="manage-text"
                         sx={{
-                          fontSize: 11,
+                          fontSize: 13,
                           fontWeight: 600,
                           color: 'var(--wc-primary)',
                           fontFamily: SERIF,
@@ -1558,7 +1550,8 @@ export function PortfolioPage() {
               <Card sx={{ p: { xs: 2.4, md: 3 } }}>
                 <Box sx={{ mb: 2 }}>
                   <SecLabel>Trade History</SecLabel>
-                  <Typography sx={{ fontSize: 15, fontWeight: 700, color: 'var(--wc-text-primary)', fontFamily: SERIF, letterSpacing: '-0.01em' }}>
+                
+                  <Typography sx={{ fontSize: 16, fontWeight: 700, color: 'var(--wc-text-primary)', fontFamily: SERIF, letterSpacing: '-0.01em' }}>
                     Recent activity
                   </Typography>
                 </Box>
@@ -1591,7 +1584,8 @@ export function PortfolioPage() {
             transition={{ duration: 0.6, delay: 0.3 }}
             sx={{ textAlign: 'center', pt: 2 }}
           >
-            <Typography sx={{ fontSize: 10.5, color: 'var(--wc-text-secondary)', fontFamily: SERIF, letterSpacing: '0.04em' }}>
+            
+            <Typography sx={{ fontSize: 13, color: 'var(--wc-text-secondary, #4a5e78)', fontFamily: BODY, letterSpacing: '0.02em' }}>
               For informational purposes only · Not financial advice · Webict Capital
             </Typography>
           </Box>

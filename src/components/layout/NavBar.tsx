@@ -464,10 +464,10 @@ export function NavBar() {
       >
         {user && (
           <Box sx={{ px: 2, py: 1.5 }}>
-            <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#080e1a', fontFamily: '"Playfair Display", serif' }}>
+            <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#080e1a', fontFamily: 'var(--wc-font-body)' }}>
               {user.user_metadata?.full_name ?? 'User'}
             </Typography>
-            <Typography sx={{ fontSize: 10.5, color: '#4a5e78', fontFamily: '"Noto Sans Mono", monospace', mt: 0.1 }}>
+            <Typography sx={{ fontSize: 10.5, color: '#4a5e78', fontFamily: 'var(--wc-font-mono)', mt: 0.1 }}>
               {user.email}
             </Typography>
           </Box>
@@ -478,7 +478,7 @@ export function NavBar() {
           sx={{
             fontSize: 12.5,
             color: '#b4283a',
-            fontFamily: '"Playfair Display", serif',
+            fontFamily: 'var(--wc-font-body)',
             py: 1.2,
             gap: 1,
             '&:hover': { bgcolor: 'rgba(180,40,58,0.04)' },
@@ -512,7 +512,7 @@ export function NavBar() {
               <Typography
                 sx={{
                   fontSize: 10,
-                  fontFamily: '"Playfair Display", serif',
+                  fontFamily: 'var(--wc-font-mono)',
                   letterSpacing: '0.18em',
                   textTransform: 'uppercase',
                   color: '#0a2463',
@@ -622,10 +622,10 @@ export function NavBar() {
                   sx={{ width: 32, height: 32, border: '1.5px solid #e2eaf5' }}
                 />
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography sx={{ fontSize: 12.5, fontWeight: 600, color: '#080e1a', fontFamily: '"Playfair Display", serif' }}>
+                  <Typography sx={{ fontSize: 12.5, fontWeight: 600, color: '#080e1a', fontFamily: 'var(--wc-font-body)' }}>
                     {user.user_metadata?.full_name ?? 'User'}
                   </Typography>
-                  <Typography sx={{ fontSize: 10, color: '#4a5e78', fontFamily: '"Noto Sans Mono", monospace', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <Typography sx={{ fontSize: 10, color: '#4a5e78', fontFamily: 'var(--wc-font-mono)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {user.email}
                   </Typography>
                 </Box>
@@ -641,7 +641,7 @@ export function NavBar() {
             <Typography
               sx={{
                 fontSize: 10,
-                fontFamily: '"Playfair Display", serif',
+                fontFamily: 'var(--wc-font-mono)',
                 letterSpacing: '0.12em',
                 color: '#8097b0',
                 textTransform: 'uppercase',

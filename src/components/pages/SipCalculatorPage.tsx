@@ -159,7 +159,7 @@ export function SipCalculatorPage() {
         splitLine: { lineStyle: { color: '#f0f4fb' } },
         axisTick: { show: false },
         axisLabel: {
-          fontFamily: '"Noto Sans Mono", monospace',
+          fontFamily: '"JetBrains Mono", monospace',
           fontSize: 9,
           color: '#8097b0',
           formatter: (v: number) => formatK(v),
@@ -545,10 +545,10 @@ export function SipCalculatorPage() {
                             <TableBody>
                               {yearlyData.scheduleRows.map((row) => (
                                 <TableRow key={row.year} sx={{ '&:last-child td': { borderBottom: 0 } }}>
-                                  <TableCell sx={{ fontSize: 12, fontFamily: '"Noto Sans Mono", monospace', color: '#4a5e78', py: 0.8 }}>Yr {row.year}</TableCell>
-                                  <TableCell sx={{ fontSize: 12, fontFamily: '"Noto Sans Mono", monospace', color: '#4a5e78', py: 0.8 }}>{formatPKR(row.invested)}</TableCell>
-                                  <TableCell sx={{ fontSize: 12, fontFamily: '"Noto Sans Mono", monospace', color: SECONDARY_LINE, py: 0.8 }}>{formatPKR(row.gains)}</TableCell>
-                                  <TableCell sx={{ fontSize: 12, fontFamily: '"Noto Sans Mono", monospace', fontWeight: 700, color: PRIMARY, py: 0.8 }}>{formatPKR(row.balance)}</TableCell>
+                                      <TableCell sx={{ fontSize: 12, fontFamily: '"JetBrains Mono", monospace', color: '#4a5e78', py: 0.8 }}>Yr {row.year}</TableCell>
+                                      <TableCell sx={{ fontSize: 12, fontFamily: '"JetBrains Mono", monospace', color: '#4a5e78', py: 0.8 }}>{formatPKR(row.invested)}</TableCell>
+                                      <TableCell sx={{ fontSize: 12, fontFamily: '"JetBrains Mono", monospace', color: SECONDARY_LINE, py: 0.8 }}>{formatPKR(row.gains)}</TableCell>
+                                      <TableCell sx={{ fontSize: 12, fontFamily: '"JetBrains Mono", monospace', fontWeight: 700, color: PRIMARY, py: 0.8 }}>{formatPKR(row.balance)}</TableCell>
                                 </TableRow>
                               ))}
                             </TableBody>
@@ -641,7 +641,7 @@ export function SipCalculatorPage() {
                       </Typography>
                       <Typography
                         sx={{
-                          fontFamily: '"Noto Sans Mono", monospace',
+                          fontFamily: '"JetBrains Mono", monospace',
                           fontSize: { xs: 22, md: 26 },
                           fontWeight: 700,
                           color: item.color,
@@ -657,7 +657,7 @@ export function SipCalculatorPage() {
                             fontSize: 11,
                             color: '#8097b0',
                             mb: 0.6,
-                            fontFamily: '"Noto Sans Mono", monospace',
+                            fontFamily: '"JetBrains Mono", monospace',
                           }}
                         >
                           {item.pct}% of total portfolio
@@ -826,7 +826,7 @@ function SliderField({
         </Typography>
         <Typography
           sx={{
-            fontFamily: '"Noto Sans Mono", monospace',
+            fontFamily: '"JetBrains Mono", monospace',
             fontSize: 15,
             fontWeight: 700,
             color: PRIMARY,
@@ -883,7 +883,7 @@ function SliderField({
             '& .MuiSlider-mark': { bgcolor: '#c8d6ec', width: 3, height: 3, borderRadius: '50%' },
             '& .MuiSlider-markLabel': {
               fontSize: 9,
-              fontFamily: '"Noto Sans Mono", monospace',
+              fontFamily: '"JetBrains Mono", monospace',
               color: '#a0b4cc',
               top: 28,
             },
@@ -959,7 +959,7 @@ function SummaryCard({
       </Typography>
       <Typography
         sx={{
-          fontFamily: '"Noto Sans Mono", monospace',
+          fontFamily: '"JetBrains Mono", monospace',
           fontSize: { xs: 14, sm: 15, md: 16 },
           fontWeight: 700,
           color: textColor,

@@ -42,7 +42,7 @@ type WatchlistModalProps = {
 
 // ─── Design tokens ─────────────────────────────────────────────────────────────
 
-const mono = 'var(--wc-number-font, "DM Mono", monospace)'
+const mono = 'var(--wc-font-mono)'
 const serif = '"Playfair Display", serif'
 
 const C = {

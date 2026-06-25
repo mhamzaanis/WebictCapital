@@ -25,34 +25,34 @@ export const siteTheme = createTheme({
     },
   },
   typography: {
-    fontFamily: '"Playfair Display", serif',
+    fontFamily: 'var(--wc-font-body)',
     button: {
-      fontFamily: '"Playfair Display", serif',
+      fontFamily: 'var(--wc-font-body)',
       textTransform: 'none',
       fontWeight: 500,
     },
     h1: {
-      fontFamily: '"Playfair Display", serif',
+      fontFamily: 'var(--wc-font-display)',
       fontWeight: 700,
     },
     h2: {
-      fontFamily: '"Playfair Display", serif',
+      fontFamily: 'var(--wc-font-display)',
       fontWeight: 700,
     },
     h3: {
-      fontFamily: '"Playfair Display", serif',
+      fontFamily: 'var(--wc-font-display)',
       fontWeight: 700,
     },
     h4: {
-      fontFamily: '"Playfair Display", serif',
+      fontFamily: 'var(--wc-font-display)',
       fontWeight: 700,
     },
     h5: {
-      fontFamily: '"Playfair Display", serif',
+      fontFamily: 'var(--wc-font-display)',
       fontWeight: 700,
     },
     h6: {
-      fontFamily: '"Playfair Display", serif',
+      fontFamily: 'var(--wc-font-display)',
       fontWeight: 700,
     },
   },
@@ -63,6 +63,9 @@ export const siteTheme = createTheme({
     MuiCssBaseline: {
       styleOverrides: {
         ':root': {
+          '--wc-font-display': '"Playfair Display", serif',
+          '--wc-font-body': '"Inter", sans-serif',
+          '--wc-font-mono': '"JetBrains Mono", monospace',
           '--wc-text-primary': '#080e1a',
           '--wc-text-secondary': '#4a5e78',
           '--wc-primary': '#0a2463',
@@ -75,12 +78,12 @@ export const siteTheme = createTheme({
           '--wc-error': '#b4283a',
           '--wc-bg': '#ffffff',
           '--wc-paper': '#fafbfd',
-          '--wc-number-font': '"Noto Sans Mono", monospace',
+          '--wc-number-font': '"JetBrains Mono", monospace',
         },
         body: {
           backgroundColor: '#ffffff',
           color: '#080e1a',
-          fontFamily: '"Playfair Display", serif',
+          fontFamily: 'var(--wc-font-body)',
           fontVariantNumeric: 'tabular-nums lining-nums',
           fontFeatureSettings: '"tnum" 1, "lnum" 1',
         },
@@ -106,6 +109,7 @@ export const siteTheme = createTheme({
       styleOverrides: {
         root: {
           borderRadius: 6,
+          fontFamily: 'var(--wc-font-body)',
         },
       },
     },

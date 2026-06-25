@@ -647,7 +647,7 @@ export function MarketSummaryModal({ open, onClose, summary, loading = false }: 
                   axisLabel: {
                     fontSize: isXs ? 8 : 9,
                     color: CHART.textSecondary,
-                    fontFamily: 'DM Mono, monospace',
+                    fontFamily: '"JetBrains Mono", monospace',
                     interval: Math.max(0, Math.ceil(chartData.labels.length / (isXs ? 6 : 8)) - 1),
                   },
                 },
@@ -665,7 +665,7 @@ export function MarketSummaryModal({ open, onClose, summary, loading = false }: 
                       show: true,
                       fontSize: isXs ? 8 : 9,
                       color: CHART.textSecondary,
-                      fontFamily: 'DM Mono, monospace',
+                      fontFamily: '"JetBrains Mono", monospace',
                       formatter: (v: number) => v >= 1000 ? `${(v / 1000).toFixed(1)}K` : v.toString(),
                     },
                   },
@@ -740,7 +740,7 @@ export function MarketSummaryModal({ open, onClose, summary, loading = false }: 
                   textStyle: {
                     fontSize: 11,
                     color: CHART.text,
-                    fontFamily: 'DM Mono, monospace',
+                    fontFamily: '"JetBrains Mono", monospace',
                   },
                   formatter: (params: { seriesName?: string; value: number | number[] }[]) => {
                     const kse100 = params.find((p) => p.seriesName === 'KSE 100')?.value as number | undefined

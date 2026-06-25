@@ -10,7 +10,7 @@ type AuthModalProps = {
   onClose: () => void
 }
 
-const NUMBER_FONT = 'var(--wc-number-font)'
+const NUMBER_FONT = 'var(--wc-font-mono)'
 const SERIF = '"Playfair Display", serif'
 
 const SlideUp = forwardRef(function Transition(
