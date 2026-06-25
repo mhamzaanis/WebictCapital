@@ -1,7 +1,6 @@
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 import TrendingDownIcon from '@mui/icons-material/TrendingDown'
-import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import {
   Box,
   Dialog,
@@ -99,43 +98,43 @@ const fmt = (v: number) => v.toLocaleString('en-PK', { minimumFractionDigits: 2,
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
-function Tag({ children, color = C.accentMid }: { children: React.ReactNode; color?: string }) {
-  return (
-    <Typography
-      component="span"
-      sx={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        fontSize: 9.5,
-        fontWeight: 700,
-        letterSpacing: '0.1em',
-        textTransform: 'uppercase',
-        color,
-        fontFamily: mono,
-        px: 0.9,
-        py: 0.3,
-        borderRadius: '4px',
-        bgcolor: `${color}14`,
-        border: `1px solid ${color}30`,
-        lineHeight: 1.6,
-      }}
-    >
-      {children}
-    </Typography>
-  )
-}
+// function Tag({ children, color = C.accentMid }: { children: React.ReactNode; color?: string }) {
+//   return (
+//     <Typography
+//       component="span"
+//       sx={{
+//         display: 'inline-flex',
+//         alignItems: 'center',
+//         fontSize: 11,
+//         fontWeight: 700,
+//         letterSpacing: '0.1em',
+//         textTransform: 'uppercase',
+//         color,
+//         fontFamily: mono,
+//         px: 0.9,
+//         py: 0.3,
+//         borderRadius: '4px',
+//         bgcolor: `${color}14`,
+//         border: `1px solid ${color}30`,
+//         lineHeight: 1.6,
+//       }}
+//     >
+//       {children}
+//     </Typography>
+//   )
+// }
 
 function SectionTitle({ children, index }: { children: React.ReactNode; index?: number }) {
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, mb: 2 }}>
-      {index !== undefined && (
-        <Typography sx={{ fontFamily: mono, fontSize: 9, color: C.muted, letterSpacing: '0.06em', mt: '1px' }}>
+        {index !== undefined && (
+        <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.muted, letterSpacing: '0.06em', mt: '1px' }}>
           {String(index + 1).padStart(2, '0')}
         </Typography>
       )}
       <Typography
         sx={{
-          fontSize: 9.5,
+          fontSize: 11,
           fontFamily: mono,
           letterSpacing: '0.16em',
           textTransform: 'uppercase',
@@ -252,7 +251,7 @@ function RangeBar({
       </Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
         <Box>
-          <Typography sx={{ fontSize: 9, color: C.muted, fontFamily: mono, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+          <Typography sx={{ fontSize: 11, color: C.muted, fontFamily: mono, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
             {lowLabel}
           </Typography>
           <Typography sx={{ fontFamily: mono, fontSize: 11.5, fontWeight: 700, color: C.ink2, mt: 0.3, letterSpacing: '0.01em' }}>
@@ -260,7 +259,7 @@ function RangeBar({
           </Typography>
         </Box>
         <Box sx={{ textAlign: 'center' }}>
-          <Typography sx={{ fontSize: 9, color: C.muted, fontFamily: mono, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+          <Typography sx={{ fontSize: 11, color: C.muted, fontFamily: mono, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
             Current
           </Typography>
           <Typography sx={{ fontFamily: mono, fontSize: 11.5, fontWeight: 700, color, mt: 0.3 }}>
@@ -268,7 +267,7 @@ function RangeBar({
           </Typography>
         </Box>
         <Box sx={{ textAlign: 'right' }}>
-          <Typography sx={{ fontSize: 9, color: C.muted, fontFamily: mono, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+          <Typography sx={{ fontSize: 11, color: C.muted, fontFamily: mono, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
             {highLabel}
           </Typography>
           <Typography sx={{ fontFamily: mono, fontSize: 11.5, fontWeight: 700, color: C.ink2, mt: 0.3 }}>
@@ -351,14 +350,14 @@ function KpiCard({ label, value, sub, color }: { label: string; value: string; s
         },
       }}
     >
-      <Typography sx={{ fontSize: 10, color: C.muted, fontFamily: mono, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+      <Typography sx={{ fontSize: 11, color: C.muted, fontFamily: mono, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
         {label}
       </Typography>
       <Typography sx={{ fontFamily: mono, fontSize: 16, fontWeight: 700, color: accent, letterSpacing: '-0.01em', lineHeight: 1.1 }}>
         {value}
       </Typography>
       {sub && (
-        <Typography sx={{ fontSize: 10, color: C.muted, fontFamily: serif }}>
+        <Typography sx={{ fontSize: 11, color: C.muted, fontFamily: serif }}>
           {sub}
         </Typography>
       )}
@@ -372,7 +371,7 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
   const reduce = useReducedMotion()
   const theme = useTheme()
   const isXs = useMediaQuery(theme.breakpoints.down('sm'))
-  const [range, setRange] = useState<'1W' | '1M' | 'YTD' | '1Y'>('1M')
+  const [range, setRange] = useState<'1M' | 'YTD' | '1Y'>('1M')
 
   // Force chart remount after dialog finishes opening so it measures correct width
   const chartRef = useRef<ReactECharts>(null)
@@ -398,7 +397,7 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
 
   const chartData = useMemo(() => {
     if (!stock) return { ohlc: [] as number[][], labels: [], gain: false, values: [] as number[], volumes: [] as number[], closeLine: [] as number[] }
-    const count = range === '1W' ? 5 : range === '1M' ? 22 : stock.history30.length
+    const count = range === '1M' ? 22 : stock.history30.length
     const values = stock.history30.slice(-count)
     const labels = stock.historyLabels.slice(-count)
     const gain = values.length > 1 && values[values.length - 1] >= values[0]
@@ -636,7 +635,6 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
     )
   }
 
-  // Type guard: TS can't infer stock is non-null across the compound checks above
   if (!stock) return null
 
   return (
@@ -703,8 +701,8 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
             <Typography
               sx={{
                 fontFamily: mono,
-                fontSize: stock.symbol.length > 4 ? 9 : 11,
-                fontWeight: 800,
+                fontSize: stock.symbol.length > 4 ? 11 : 13,
+                fontWeight: 700,
                 color: '#fff',
                 letterSpacing: '0.04em',
                 textAlign: 'center',
@@ -720,7 +718,7 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
               <Typography sx={{ fontFamily: serif, fontSize: 16, fontWeight: 700, color: C.ink, lineHeight: 1.1 }}>
                 {stock.company}
               </Typography>
-              <Tag>{stock.sector}</Tag>
+              {/* <Tag>{stock.sector}</Tag> */}
             </Box>
             <Typography sx={{ fontSize: 11.5, color: C.muted, fontFamily: mono, letterSpacing: '0.03em' }}>
               {stock.symbol} · {stock.industry}
@@ -749,7 +747,7 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
       </Box>
 
       {/* ── SCROLLABLE BODY ─────────────────────────────────────────────────── */}
-      <Box sx={{ overflowY: 'auto', px: { xs: 2.5, md: 3.5 }, py: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
+      <Box sx={{ overflowY: 'auto', px: { xs: 2.5, md: 3.5 }, py: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
 
         {/* ── PRICE HERO ──────────────────────────────────────────────────── */}
         <Box
@@ -765,13 +763,13 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
             gap: 2,
           }}
         >
-          <Box>
-            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5, flexWrap: 'wrap' }}>
+          {/* <Box>
+            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5, flexWrap: 'wrap', mt: 2 }}>
               <Typography
                 sx={{
                   fontFamily: mono,
                   fontSize: { xs: 34, md: 42 },
-                  fontWeight: 800,
+                  fontWeight: 700,
                   color: C.ink,
                   letterSpacing: '-0.04em',
                   lineHeight: 1,
@@ -786,7 +784,7 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
                   alignItems: 'center',
                   gap: 0.5,
                   px: 1.2,
-                  py: 0.5,
+                  py: 0,
                   borderRadius: '8px',
                   bgcolor: pos ? C.posBg : C.negBg,
                   border: `1px solid ${changeColor}25`,
@@ -805,17 +803,103 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
             <Typography sx={{ fontSize: 11, color: C.muted, fontFamily: mono, mt: 0.8, letterSpacing: '0.03em' }}>
               As of {new Date().toLocaleDateString('en-PK', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })} · PSX
             </Typography>
-          </Box>
+          </Box> */}
+          <Box
+  sx={{
+    borderLeft: `4px solid ${changeColor}`,
+    pl: 2,
+    mt: 2,
+  }}
+>
+  <Box
+    sx={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 1.5,
+      flexWrap: 'wrap',
+    }}
+  >
+    {/* Price */}
+    <Typography
+      sx={{
+        fontFamily: mono,
+        fontSize: { xs: 34, md: 42 },
+        fontWeight: 700,
+        color: C.ink,
+        letterSpacing: '-0.04em',
+        lineHeight: 1,
+      }}
+    >
+      {fmt(stock.price)}
+    </Typography>
+
+    {/* Arrow */}
+    {pos ? (
+      <TrendingUpIcon
+        sx={{
+          fontSize: 24,
+          color: changeColor,
+        }}
+      />
+    ) : (
+      <TrendingDownIcon
+        sx={{
+          fontSize: 24,
+          color: changeColor,
+        }}
+      />
+    )}
+
+    {/* Change */}
+    <Typography
+      sx={{
+        fontFamily: mono,
+        fontSize: 15,
+        fontWeight: 700,
+        color: changeColor,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {pos ? '+' : ''}
+      {stock.change.toFixed(2)}
+      {' ('}
+      {pos ? '+' : ''}
+      {stock.changePct.toFixed(2)}%
+      {')'}
+    </Typography>
+  </Box>
+
+  <Typography
+    sx={{
+      fontSize: 11,
+      color: C.muted,
+      fontFamily: mono,
+      mt: 0.8,
+      letterSpacing: '0.03em',
+    }}
+  > 
+    
+    As of{' '}
+    {new Date().toLocaleDateString('en-PK', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    })}{' '}
+    · PSX
+  </Typography>
+</Box>
 
           {/* Mini KPIs */}
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            <KpiCard label="Market Cap" value={stock.marketCap} />
-            <KpiCard label="P/E Ratio" value={stock.pe !== 0 ? stock.pe.toFixed(1) : 'N/A'} color={stock.pe < 0 ? C.neg : C.accentMid} />
-            <KpiCard
+            {/* <KpiCard label="Market Cap" value={stock.marketCap} /> */}
+            {/* <KpiCard label="Change" value={stock.change}/> */}
+            {/* <KpiCard label="P/E Ratio" value={stock.pe !== 0 ? stock.pe.toFixed(1) : '--'} color={stock.pe < 0 ? C.neg : C.accentMid} /> */}
+            {/* <KpiCard
               label="52W Chg"
               value={`${stock.week52ChangePct >= 0 ? '+' : ''}${stock.week52ChangePct.toFixed(1)}%`}
               color={stock.week52ChangePct >= 0 ? C.pos : C.neg}
-            />
+            /> */}
           </Box>
         </Box>
 
@@ -845,9 +929,9 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
               justifyContent: 'space-between',
             }}
           >
-            <SectionTitle index={0}>Price History</SectionTitle>
+            <SectionTitle >Price History</SectionTitle>
             <Box sx={{ display: 'flex', gap: 0.3, bgcolor: C.surfaceDeep, p: 0.4, borderRadius: '8px', border: `1px solid ${C.border}` }}>
-              {(['1W', '1M', 'YTD', '1Y'] as const).map((key) => (
+              {(['1M', 'YTD', '1Y'] as const).map((key) => (
                 <RangeBtn key={key} label={key} active={range === key} onClick={() => setRange(key)} />
               ))}
             </Box>
@@ -908,7 +992,7 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
                       axisTick: { show: false },
                       axisLabel: {
                         show: true,
-                        fontSize: isXs ? 8 : 9,
+                        fontSize: isXs ? 10 : 11,
                         color: C.muted,
                         fontFamily: '"JetBrains Mono", monospace',
                         interval: Math.max(0, Math.ceil(chartData.labels.length / (isXs ? 5 : 7)) - 1),
@@ -932,7 +1016,7 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
                       },
                       axisLabel: {
                         show: true,
-                        fontSize: isXs ? 8 : 9,
+                        fontSize: isXs ? 10 : 11,
                         color: C.muted,
                         fontFamily: '"JetBrains Mono", monospace',
                       },
@@ -963,7 +1047,7 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
                       },
                       moveHandleSize: 4,
                       textStyle: {
-                        fontSize: 9,
+                        fontSize: 10,
                         color: C.muted,
                         fontFamily: '"JetBrains Mono", monospace',
                       },
@@ -1063,7 +1147,7 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
                       lineStyle: { color: C.border, width: 1, type: 'dashed' },
                       label: {
                         backgroundColor: C.accent,
-                        fontSize: 9,
+                        fontSize: 11,
                         fontFamily: '"JetBrains Mono", monospace',
                       },
                     },
@@ -1087,7 +1171,7 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
                         ? volumeValue.toLocaleString('en-PK')
                         : '—'
                       return [
-                        `<div style="font-weight:700;margin-bottom:4px;font-size:10px;color:${C.muted};">${stock.symbol}</div>`,
+                        `<div style="font-weight:700;margin-bottom:4px;font-size:11px;color:${C.muted};">${stock.symbol}</div>`,
                         `<div style="display:grid;grid-template-columns:46px 1fr;gap:2px 10px;font-size:11px;">`,
                         `<span style="color:${C.muted}">Price</span><span style="font-weight:700">Rs.${fmt(close)}</span>`,
                         `<span style="color:${C.muted}">Turnover</span><span>${volumeLabel}</span>`,
@@ -1122,7 +1206,7 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
               current: stock.price,
               lowLabel: '52W Low', highLabel: '52W High',
             },
-          ].map((r, i) => (
+          ].map((r) => (
             <Box
               key={r.title}
               sx={{
@@ -1132,7 +1216,7 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
                 p: 2.5,
               }}
             >
-              <SectionTitle index={i + 1}>{r.title}</SectionTitle>
+              <SectionTitle >{r.title}</SectionTitle>
               <RangeBar
                 low={r.low} high={r.high} current={r.current}
                 lowLabel={r.lowLabel} highLabel={r.highLabel}
@@ -1149,11 +1233,11 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
           initial={reduce ? false : { opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.42, delay: 0.18, ease: [0.22, 1, 0.36, 1] }}
-          sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}
+          sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2, mb: 2 }}
         >
           {/* Trading Stats */}
           <Box sx={{ border: `1px solid ${C.border}`, borderRadius: '12px', bgcolor: C.bg, p: 2.5 }}>
-            <SectionTitle index={3}>Trading Stats</SectionTitle>
+            <SectionTitle >Trading Stats</SectionTitle>
             <StatRow label="Volume" value={stock.volume} />
             <StatRow label="Avg Volume (10d)" value={stock.avgVolume} />
             <StatRow label="Open" value={`Rs.${fmt(stock.open)}`} />
@@ -1163,12 +1247,12 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
 
           {/* Fundamentals */}
           <Box sx={{ border: `1px solid ${C.border}`, borderRadius: '12px', bgcolor: C.bg, p: 2.5 }}>
-            <SectionTitle index={4}>Fundamentals</SectionTitle>
-            <StatRow label="EPS (TTM)" value={stock.eps !== 0 ? `Rs.${stock.eps.toFixed(2)}` : 'N/A'} />
-            <StatRow label="P/E Ratio" value={stock.pe !== 0 ? stock.pe.toFixed(2) : 'N/A'} valueColor={stock.pe < 0 ? C.neg : undefined} highlight />
-            <StatRow label="Price / Book" value={stock.priceToBook !== 0 ? stock.priceToBook.toFixed(2) : 'N/A'} />
-            <StatRow label="Dividend Yield" value={stock.dividendYield !== 0 ? `${stock.dividendYield.toFixed(2)}%` : 'N/A'} valueColor={stock.dividendYield > 0 ? C.pos : C.muted} highlight />
-            <StatRow label="Beta (5Y)" value={stock.beta !== 0 ? stock.beta.toFixed(2) : 'N/A'} valueColor={stock.beta > 1.2 ? C.neg : stock.beta < 0.8 ? C.pos : undefined} highlight />
+            <SectionTitle >Fundamentals</SectionTitle>
+            <StatRow label="EPS (TTM)" value={stock.eps !== 0 ? `Rs.${stock.eps.toFixed(2)}` : '--'} />
+            <StatRow label="P/E Ratio" value={stock.pe !== 0 ? stock.pe.toFixed(2) : '--'} />
+            <StatRow label="Price / Book" value={stock.priceToBook !== 0 ? stock.priceToBook.toFixed(2) : '--'} />
+            <StatRow label="Dividend Yield" value={stock.dividendYield !== 0 ? `${stock.dividendYield.toFixed(2)}%` : '--'} />
+            <StatRow label="Beta (5Y)" value={stock.beta !== 0 ? stock.beta.toFixed(2) : '--'} />
           </Box>
         </Box>
 
@@ -1206,7 +1290,7 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
         )}
 
         {/* ── FOOTER ──────────────────────────────────────────────────── */}
-        <Box
+        {/* <Box
           component={motion.div}
           initial={reduce ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -1220,14 +1304,14 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
             flexWrap: 'wrap',
             gap: 1,
           }}
-        >
-          <Typography sx={{ fontSize: 10, color: C.muted, fontFamily: serif, letterSpacing: '0.03em' }}>
+        > */}
+          {/* <Typography sx={{ fontSize: 11, color: C.muted, fontFamily: serif, letterSpacing: '0.03em' }}>
             Data is indicative · Not financial advice
-          </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
+          </Typography> */}
+          {/* <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
             <Typography
               sx={{
-                fontSize: 10,
+                fontSize: 11,
                 color: C.accentMid,
                 fontFamily: mono,
                 fontWeight: 700,
@@ -1238,8 +1322,8 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
               Webict Capital
             </Typography>
             <OpenInNewIcon sx={{ fontSize: 10, color: C.muted }} />
-          </Box>
-        </Box>
+          </Box> */}
+        {/* </Box> */}
       </Box>
     </Dialog>
   )

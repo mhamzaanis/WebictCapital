@@ -66,8 +66,8 @@ export function hasStockService(): boolean {
   return hasSupabaseConfig && supabase !== null
 }
 
-const MARKET_CACHE_TTL_MS = 12 * 60 * 60 * 1000
-const USER_CACHE_TTL_MS = 12 * 60 * 60 * 1000
+const MARKET_CACHE_TTL_MS = 6 * 60 * 60 * 1000
+const USER_CACHE_TTL_MS = 6 * 60 * 60 * 1000
 
 let marketCache: { data: MarketSymbolSnapshot[]; fetchedAt: number } | null = null
 let marketInFlight: Promise<MarketSymbolSnapshot[]> | null = null

@@ -644,7 +644,7 @@ function HistRow({ event, index }: { event: HistoryEvent; index: number }) {
         border: `1px solid color-mix(in srgb, ${cfg.color} 22%, transparent)`,
       }}>
         {/* FIXED: was 9.5px — now 11px */}
-        <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 11, fontWeight: 800, color: cfg.color }}>
+        <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 11, fontWeight: 700, color: cfg.color }}>
           {event.symbol.slice(0, 4)}
         </Typography>
       </Box>
@@ -713,6 +713,7 @@ export function PortfolioPage() {
   const [sectorAllocation, setSectorAllocation] = useState<
     { sector: string; value: number; color: string }[]
   >([])
+  
 
   const { user, loading: authLoading, clearError } = useAuth()
   const isLocked = !authLoading && !user
@@ -732,6 +733,7 @@ export function PortfolioPage() {
     kse100History: EMPTY_MARKET_HISTORY,
     kse30History: EMPTY_MARKET_HISTORY,
   }))
+  
 
   useEffect(() => {
     if (isLocked) setAuthModalOpen(true)
@@ -774,10 +776,24 @@ export function PortfolioPage() {
       }
     })
   }, [])
+  const lastFetchedUserIdRef = useRef<string | undefined>(undefined)
+  const lastFetchedAuthLoadingRef = useRef<boolean | undefined>(undefined)
 
   useEffect(() => {
+    // While auth is still resolving, we don't yet know whether the user is
+    // logged in. Firing a market-only fetch here would be immediately thrown
+    // away once auth settles and loadUserData runs — so we skip it entirely.
+    if (authLoading) return
+
+    if (lastFetchedUserIdRef.current === user?.id && lastFetchedAuthLoadingRef.current === authLoading) {
+      return
+    }
+    lastFetchedUserIdRef.current = user?.id
+    lastFetchedAuthLoadingRef.current = authLoading
+
     let cancelled = false
 
+    // ── Anonymous / no user ───────────────────────────────────────────────
     const loadMarketOnly = async () => {
       if (!hasStockService()) return
       setMarketLoading(true)
@@ -795,14 +811,18 @@ export function PortfolioPage() {
       }
     }
 
+    // ── Authenticated user ────────────────────────────────────────────────
     const loadUserData = async () => {
       setMarketLoading(true)
       setUserLoading(true)
       try {
-        const [summaryRows, trades, marketData] = await Promise.all([
+        // fetchWatchlistSymbols is included in the same Promise.all so all
+        // four requests fire in parallel — eliminates the extra sequential RTT.
+        const [summaryRows, trades, marketData, watchlistSymbols] = await Promise.all([
           fetchMarketDailySummaryRows(2),
           fetchUserTrades(),
           hasStockService() ? fetchUniqueSymbols() : Promise.resolve([] as MarketSymbolSnapshot[]),
+          fetchWatchlistSymbols(),
         ])
         if (cancelled) return
 
@@ -894,10 +914,9 @@ export function PortfolioPage() {
           }))
         setHistoryEvents(events)
 
-        const symbols = await fetchWatchlistSymbols()
-        if (cancelled) return
-        if (symbols.length > 0) {
-          const dbWatchlist: WatchItem[] = symbols.map((sym) => {
+        // Watchlist resolved in the same Promise.all above — no extra RTT.
+        if (watchlistSymbols.length > 0) {
+          const dbWatchlist: WatchItem[] = watchlistSymbols.map((sym) => {
             const live = marketMap.get(sym)
             return live
               ? { symbol: live.symbol, company: live.company, sector: live.sector, price: live.price, change: live.change, changePct: live.changePct, volume: live.volume, spark: live.spark }
@@ -916,7 +935,7 @@ export function PortfolioPage() {
       }
     }
 
-    if (!user || authLoading) {
+    if (!user) {
       loadMarketOnly()
     } else {
       loadUserData()
@@ -1112,9 +1131,8 @@ export function PortfolioPage() {
   }, [requireAuth])
 
   const openAddWatch = useCallback(() => {
-    if (!requireAuth()) return
     setWatchModalOpen(true)
-  }, [requireAuth])
+  }, [])
 
   // ── Render ────────────────────────────────────────────────────────────────
 

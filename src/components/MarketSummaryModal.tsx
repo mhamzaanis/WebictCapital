@@ -87,7 +87,7 @@ function RangeBtn({ label, active, onClick }: { label: string; active: boolean; 
     >
       <Typography
         sx={{
-          fontSize: 10.5,
+          fontSize: 11,
           fontWeight: 700,
           fontFamily: NUMBER_FONT,
           letterSpacing: '0.06em',
@@ -121,7 +121,7 @@ function InfoTile({ label, value, sub, onClick }: { label: string; value: string
     >
       <Typography
         sx={{
-          fontSize: 10,
+          fontSize: 11,
           fontWeight: 600,
           letterSpacing: '0.08em',
           textTransform: 'uppercase',
@@ -145,7 +145,7 @@ function InfoTile({ label, value, sub, onClick }: { label: string; value: string
         {value}
       </Typography>
       {sub && (
-        <Typography sx={{ fontSize: 10.5, color: COLORS.textSecondary, fontFamily: SERIF, mt: 0.4 }}>
+        <Typography sx={{ fontSize: 11, color: COLORS.textSecondary, fontFamily: SERIF, mt: 0.4 }}>
           {sub}
         </Typography>
       )}
@@ -163,13 +163,25 @@ export function MarketSummaryModal({ open, onClose, summary, loading = false }: 
   const isXs = useMediaQuery(theme.breakpoints.down('sm'))
   const [range, setRange] = useState<'1M' | 'YTD' | '1Y'>('1M')
 
-  // Force chart remount after dialog finishes opening so it measures correct width
+  // Resize the chart once after the dialog's open animation completes so it
+  // measures the correct container width. We only need to remount on the very
+  // first open; subsequent opens just call resize() on the existing instance.
   const chartRef = useRef<ReactECharts>(null)
+  const hasOpenedRef = useRef(false)
   const [chartKey, setChartKey] = useState(0)
 
   useEffect(() => {
     if (!open) return
-    const timer = setTimeout(() => setChartKey((k) => k + 1), 350)
+    if (!hasOpenedRef.current) {
+      // First open: remount the chart so ECharts can measure the real width.
+      hasOpenedRef.current = true
+      const timer = setTimeout(() => setChartKey((k) => k + 1), 350)
+      return () => clearTimeout(timer)
+    }
+    // Subsequent opens: just resize the existing instance after animation.
+    const timer = setTimeout(() => {
+      chartRef.current?.getEchartsInstance()?.resize()
+    }, 350)
     return () => clearTimeout(timer)
   }, [open])
 
@@ -451,12 +463,12 @@ export function MarketSummaryModal({ open, onClose, summary, loading = false }: 
               },
             }}
           >
-            <Typography sx={{ fontSize: 10, color: COLORS.textSecondary, fontFamily: SERIF, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+            <Typography sx={{ fontSize: 11, color: COLORS.textSecondary, fontFamily: SERIF, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
               KSE 100 Change
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6, mt: 0.6 }}>
               {pos ? <TrendingUpIcon sx={{ fontSize: 16, color: changeColor }} /> : <TrendingDownIcon sx={{ fontSize: 16, color: changeColor }} />}
-              <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 20, fontWeight: 800, color: changeColor, letterSpacing: '-0.02em' }}>
+              <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 20, fontWeight: 700, color: changeColor, letterSpacing: '-0.02em' }}>
                 {pos ? '+' : ''}{summary.kse100_change.toFixed(2)}
               </Typography>
             </Box>
@@ -485,12 +497,12 @@ export function MarketSummaryModal({ open, onClose, summary, loading = false }: 
               },
             }}
           >
-            <Typography sx={{ fontSize: 10, color: COLORS.textSecondary, fontFamily: SERIF, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+            <Typography sx={{ fontSize: 11, color: COLORS.textSecondary, fontFamily: SERIF, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
               KSE 30 Change
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6, mt: 0.6 }}>
               {pos30 ? <TrendingUpIcon sx={{ fontSize: 16, color: change30Color }} /> : <TrendingDownIcon sx={{ fontSize: 16, color: change30Color }} />}
-              <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 20, fontWeight: 800, color: change30Color, letterSpacing: '-0.02em' }}>
+              <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 20, fontWeight: 700, color: change30Color, letterSpacing: '-0.02em' }}>
                 {pos30 ? '+' : ''}{summary.kse30_change.toFixed(2)}
               </Typography>
             </Box>
@@ -546,7 +558,7 @@ export function MarketSummaryModal({ open, onClose, summary, loading = false }: 
               }}
             >
               <Typography sx={{
-                fontSize: 9, fontWeight: 700, letterSpacing: '0.1em',
+                fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
                 textTransform: 'uppercase', color: CHART.textSecondary,
                 fontFamily: NUMBER_FONT, mb: 0.4,
               }}>
@@ -560,7 +572,7 @@ export function MarketSummaryModal({ open, onClose, summary, loading = false }: 
               </Typography>
               {sub && (
                 <Typography sx={{
-                  fontSize: 9.5, color: CHART.textSecondary,
+                  fontSize: 11, color: CHART.textSecondary,
                   fontFamily: SERIF, mt: 0.3, lineHeight: 1.3,
                 }}>
                   {sub}
@@ -609,7 +621,7 @@ export function MarketSummaryModal({ open, onClose, summary, loading = false }: 
               >
                 KSE 100 vs KSE 30 Trend
               </Typography>
-              <Typography sx={{ fontSize: 10.5, color: CHART.textSecondary, fontFamily: SERIF, mb: 1.2 }}>
+              <Typography sx={{ fontSize: 11, color: CHART.textSecondary, fontFamily: SERIF, mb: 1.2 }}>
                 Closing values · {formattedDate}
               </Typography>
             </Box>
@@ -754,7 +766,7 @@ export function MarketSummaryModal({ open, onClose, summary, loading = false }: 
                       return v.toString()
                     }
                     return [
-                      `<div style="font-weight:700;margin-bottom:6px;font-size:10px;color:${CHART.textSecondary};letter-spacing:0.06em;text-transform:uppercase;">Index Comparison</div>`,
+                      `<div style="font-weight:700;margin-bottom:6px;font-size:11px;color:${CHART.textSecondary};letter-spacing:0.06em;text-transform:uppercase;">Index Comparison</div>`,
                       `<div style="display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:11px;align-items:center;">`,
                       `<span style="display:inline-flex;align-items:center;gap:5px;color:${CHART.textSecondary}"><span style="width:10px;height:2px;background:${CHART.primary};display:inline-block;border-radius:2px;"></span>KSE 100</span>`,
                       `<span style="font-weight:700;color:${CHART.primary}">${kse100 != null ? fmtIndex(kse100) : '—'}</span>`,
@@ -779,7 +791,7 @@ export function MarketSummaryModal({ open, onClose, summary, loading = false }: 
                 {bar
                   ? <Box sx={{ width: 10, height: 10, bgcolor: color, borderRadius: '2px' }} />
                   : <Box sx={{ width: 20, height: 2, bgcolor: color, borderRadius: '99px' }} />}
-                <Typography sx={{ fontSize: 10, fontFamily: NUMBER_FONT, color: COLORS.textSecondary, fontWeight: 600, letterSpacing: '0.06em' }}>
+                <Typography sx={{ fontSize: 11, fontFamily: NUMBER_FONT, color: COLORS.textSecondary, fontWeight: 600, letterSpacing: '0.06em' }}>
                   {label}
                 </Typography>
               </Box>

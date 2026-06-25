@@ -149,7 +149,7 @@ export function SipCalculatorPage() {
         axisTick: { show: false },
         axisLabel: {
           fontFamily: '"Playfair Display", serif',
-          fontSize: 10,
+          fontSize: 11,
           color: '#8097b0',
         },
       },
@@ -160,7 +160,7 @@ export function SipCalculatorPage() {
         axisTick: { show: false },
         axisLabel: {
           fontFamily: '"JetBrains Mono", monospace',
-          fontSize: 9,
+          fontSize: 11,
           color: '#8097b0',
           formatter: (v: number) => formatK(v),
         },
@@ -535,7 +535,7 @@ export function SipCalculatorPage() {
                               <TableRow>
                                 {['Year', 'Amount Invested', 'Wealth Gained', 'Year-End Balance'].map(h => (
                                   <TableCell key={h} sx={{
-                                    fontSize: 9, fontFamily: '"Playfair Display", serif',
+                                    fontSize: 11, fontFamily: '"Playfair Display", serif',
                                     letterSpacing: '0.1em', textTransform: 'uppercase',
                                     color: '#8097b0', borderBottom: '1px solid #e2eaf5', pb: 1,
                                   }}>{h}</TableCell>
@@ -750,7 +750,7 @@ export function SipCalculatorPage() {
             >
               <Typography
                 sx={{
-                  fontSize: 10,
+                  fontSize: 11,
                   fontFamily: '"Playfair Display", serif',
                   letterSpacing: '0.18em',
                   textTransform: 'uppercase',
@@ -882,7 +882,7 @@ function SliderField({
             '& .MuiSlider-rail': { bgcolor: '#e2eaf5', opacity: 1 },
             '& .MuiSlider-mark': { bgcolor: '#c8d6ec', width: 3, height: 3, borderRadius: '50%' },
             '& .MuiSlider-markLabel': {
-              fontSize: 9,
+              fontSize: 10,
               fontFamily: '"JetBrains Mono", monospace',
               color: '#a0b4cc',
               top: 28,
@@ -947,7 +947,7 @@ function SummaryCard({
     >
       <Typography
         sx={{
-          fontSize: 10,
+          fontSize: 11,
           fontFamily: '"Playfair Display", serif',
           letterSpacing: '0.14em',
           textTransform: 'uppercase',

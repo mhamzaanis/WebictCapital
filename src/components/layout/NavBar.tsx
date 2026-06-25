@@ -112,7 +112,7 @@ export function NavBar() {
                       fontSize: { xs: 22, sm: 26, md: 30 },
                       lineHeight: 1,
                       letterSpacing: '-0.03em',
-                      fontWeight: 800,
+                      fontWeight: 700,
                       color: '#080e1a',
                       transition: 'color 0.22s ease',
                       ...(logoHovered && { color: '#0a2463' }),

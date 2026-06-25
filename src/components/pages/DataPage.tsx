@@ -361,7 +361,7 @@ export function DataPage() {
                     Pakistan Stock Exchange · daily closing data
                   </Typography>
                   {latestTradeDate && (
-                    <Typography sx={{ fontSize: 10.5, color: 'var(--wc-primary)', fontFamily: NUMBER_FONT, fontWeight: 500 }}>
+                    <Typography sx={{ fontSize: 11, color: 'var(--wc-primary)', fontFamily: NUMBER_FONT, fontWeight: 500 }}>
                       Latest: {latestTradeDate}
                     </Typography>
                   )}
@@ -469,7 +469,7 @@ export function DataPage() {
                   {/* </Typography> */}
                   {fetchError && (
                     <Box sx={{ mt: 1 }}>
-                      <Typography sx={{ fontSize: 10, fontFamily: NUMBER_FONT, color: 'var(--wc-error)', letterSpacing: '0.04em', mb: 0.4 }}>
+                      <Typography sx={{ fontSize: 11, fontFamily: NUMBER_FONT, color: 'var(--wc-error)', letterSpacing: '0.04em', mb: 0.4 }}>
                         ERROR
                       </Typography>
                       <Typography sx={{ fontSize: 11, fontFamily: NUMBER_FONT, color: 'var(--wc-text-secondary)', wordBreak: 'break-all' }}>

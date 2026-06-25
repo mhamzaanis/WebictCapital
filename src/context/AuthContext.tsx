@@ -27,6 +27,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  const sessionRef = useRef<Session | null>(null)
+  const userRef = useRef<User | null>(null)
+
+  const updateSessionAndUser = (newSession: Session | null) => {
+    const currentSession = sessionRef.current
+    const isSameSession =
+      currentSession === newSession ||
+      (currentSession !== null &&
+        newSession !== null &&
+        currentSession.access_token === newSession.access_token &&
+        currentSession.user?.id === newSession.user?.id &&
+        currentSession.user?.email === newSession.user?.email &&
+        currentSession.user?.updated_at === newSession.user?.updated_at)
+
+    if (!isSameSession) {
+      sessionRef.current = newSession
+      userRef.current = newSession?.user ?? null
+      setSession(newSession)
+      setUser(newSession?.user ?? null)
+    }
+  }
+
   const mounted = useRef(true)
   useEffect(() => {
     mounted.current = true
@@ -42,16 +64,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (!mounted.current) return
       if (error) setError(error.message)
-      setSession(session)
-      setUser(session?.user ?? null)
+      updateSessionAndUser(session)
       setLoading(false)
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         if (!mounted.current) return
-        setSession(session)
-        setUser(session?.user ?? null)
+        updateSessionAndUser(session)
         setLoading(false)
         if (session) setError(null)
       }
@@ -59,6 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => subscription.unsubscribe()
   }, [])
+
 
   const signInWithGoogle = async () => {
     if (!supabase) return
@@ -80,8 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { error } = await supabase.auth.signOut()
     if (!mounted.current) return
     if (error) { setError(error.message); return }
-    setUser(null)
-    setSession(null)
+    updateSessionAndUser(null)
   }
 
   const clearError = () => setError(null)

@@ -116,7 +116,7 @@ function StockRow({
         <Typography sx={{ fontFamily: mono, fontSize: 12, fontWeight: 700, color: C.ink }}>
           {stock.symbol}
         </Typography>
-        <Typography sx={{ fontSize: 10, color: C.ink2, fontFamily: serif, mt: 0.1 }}>
+        <Typography sx={{ fontSize: 11, color: C.ink2, fontFamily: serif, mt: 0.1 }}>
           {stock.company}
         </Typography>
       </Box>
@@ -131,7 +131,7 @@ function StockRow({
             <Typography
               sx={{
                 fontFamily: mono,
-                fontSize: 10,
+                fontSize: 11,
                 fontWeight: 600,
                 color: pos ? C.pos : C.neg,
               }}
@@ -140,7 +140,7 @@ function StockRow({
             </Typography>
           </>
         ) : (
-          <Typography sx={{ fontFamily: mono, fontSize: 10, color: C.muted }}>
+          <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.muted }}>
             -- --
           </Typography>
         )}
@@ -148,7 +148,7 @@ function StockRow({
 
       {/* Volume */}
       <Box sx={{ textAlign: 'right', minWidth: 44, flexShrink: 0, display: { xs: 'none', sm: 'block' } }}>
-        <Typography sx={{ fontFamily: mono, fontSize: 10.5, color: C.muted }}>
+        <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.muted }}>
           {stock.volume !== '--' ? stock.volume : '--'}
         </Typography>
       </Box>
@@ -171,7 +171,7 @@ function StockRow({
               bgcolor: C.negBg,
               border: `1px solid ${C.neg}30`,
               fontFamily: mono,
-              fontSize: 10,
+              fontSize: 11,
               fontWeight: 600,
               color: C.neg,
               transition: 'all 0.2s ease',
@@ -197,7 +197,7 @@ function StockRow({
               cursor: 'pointer',
               bgcolor: 'transparent',
               fontFamily: mono,
-              fontSize: 10,
+              fontSize: 11,
               fontWeight: 600,
               color: C.accentMid,
               transition: 'all 0.2s ease',
@@ -375,10 +375,10 @@ export function WatchlistModal({ open, onClose, watchlist, onAdd, onRemove, avai
       {/* ── BODY ────────────────────────────────────────────────────────────── */}
       <Box sx={{ overflowY: 'auto', px: { xs: 2.5, md: 3.5 }, py: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-          <Typography sx={{ fontFamily: mono, fontSize: 10, color: C.muted, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+          <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.muted, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
             {watchedFiltered.length + availableFiltered.length} stock{watchedFiltered.length + availableFiltered.length !== 1 ? 's' : ''} found
           </Typography>
-          <Typography sx={{ fontFamily: mono, fontSize: 10, color: C.muted }}>
+          <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.muted }}>
             {watchlist.length} in watchlist
           </Typography>
         </Box>
@@ -412,7 +412,7 @@ export function WatchlistModal({ open, onClose, watchlist, onAdd, onRemove, avai
             <Box key={query} sx={{ pb: 2 }}>
               {watchedFiltered.length > 0 && (
                 <Box sx={{ mb: 2 }}>
-                  <Typography sx={{ fontFamily: mono, fontSize: 10, color: C.muted, letterSpacing: '0.08em', textTransform: 'uppercase', mb: 1 }}>
+                  <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.muted, letterSpacing: '0.08em', textTransform: 'uppercase', mb: 1 }}>
                     Your watchlist
                   </Typography>
                   {watchedFiltered.map((stock, i) => (
@@ -434,7 +434,7 @@ export function WatchlistModal({ open, onClose, watchlist, onAdd, onRemove, avai
 
               {availableFiltered.length > 0 && (
                 <Box>
-                  <Typography sx={{ fontFamily: mono, fontSize: 10, color: C.muted, letterSpacing: '0.08em', textTransform: 'uppercase', mb: 1 }}>
+                  <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.muted, letterSpacing: '0.08em', textTransform: 'uppercase', mb: 1 }}>
                     Add more stocks
                   </Typography>
                   {availableFiltered.map((stock, i) => (

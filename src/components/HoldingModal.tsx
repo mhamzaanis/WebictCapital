@@ -51,29 +51,6 @@ type HoldingModalProps = {
   availableStocks?: { symbol: string; company: string; sector: string; price: number }[]
 }
 
-// ─── Stocks available for adding new holdings ──────────────────────────────────
-
-const availableStocksHardcoded = [
-  { symbol: 'EFERT', company: 'Engro Fertilizers', sector: 'Fertilizer', price: 178.5 },
-  { symbol: 'FCCL', company: 'Fauji Cement', sector: 'Cement', price: 42.8 },
-  { symbol: 'FFC', company: 'Fauji Fertilizer Co.', sector: 'Fertilizer', price: 215.3 },
-  { symbol: 'HBL', company: 'Habib Bank Ltd', sector: 'Banking', price: 117.03 },
-  { symbol: 'HUBC', company: 'Hub Power Co.', sector: 'Energy', price: 158.9 },
-  { symbol: 'KEL', company: 'K-Electric Ltd', sector: 'Energy', price: 5.85 },
-  { symbol: 'LUCK', company: 'Lucky Cement', sector: 'Cement', price: 1024.5 },
-  { symbol: 'MARI', company: 'Mari Petroleum', sector: 'Energy', price: 445.75 },
-  { symbol: 'MCB', company: 'MCB Bank Ltd', sector: 'Banking', price: 198.6 },
-  { symbol: 'MLCF', company: 'Maple Leaf Cement', sector: 'Cement', price: 68.4 },
-  { symbol: 'NESTLE', company: 'Nestlé Pakistan', sector: 'Consumer', price: 5725.49 },
-  { symbol: 'OGDC', company: 'Oil & Gas Dev. Co.', sector: 'Energy', price: 158.4 },
-  { symbol: 'POL', company: 'Pakistan Oilfields', sector: 'Energy', price: 485.2 },
-  { symbol: 'PSO', company: 'Pakistan State Oil', sector: 'Energy', price: 312.9 },
-  { symbol: 'SEARL', company: 'Searle Company', sector: 'Pharma', price: 92.3 },
-  { symbol: 'SYS', company: 'Systems Ltd', sector: 'Technology', price: 312.6 },
-  { symbol: 'TRG', company: 'TRG Pakistan', sector: 'Technology', price: 130.2 },
-  { symbol: 'UBL', company: 'United Bank Ltd', sector: 'Banking', price: 245.6 },
-]
-
 // ─── Design tokens ─────────────────────────────────────────────────────────────
 
 const mono = 'var(--wc-font-mono)'
@@ -124,7 +101,7 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
     <Typography
       sx={{
-        fontSize: 10,
+        fontSize: 11,
         fontWeight: 600,
         letterSpacing: '0.1em',
         textTransform: 'uppercase',
@@ -235,7 +212,7 @@ function SaveBtn({
 export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initialMode, initialHolding, availableStocks: stocksProp }: HoldingModalProps) {
   const reduce = useReducedMotion()
 
-  const stocks = stocksProp ?? availableStocksHardcoded
+  const stocks = stocksProp ?? []
 
   const isManage = initialMode === 'manage'
   const managedHolding = isManage ? (initialHolding ?? null) : null
@@ -649,7 +626,7 @@ export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initia
                           Rs. {fmt(s.price)}
                         </Typography>
                         {alreadyHeld && (
-                          <Typography sx={{ fontFamily: mono, fontSize: 9.5, color: C.muted }}>
+                          <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.muted }}>
                             already held
                           </Typography>
                         )}
@@ -676,28 +653,28 @@ export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initia
               p: 2,
             }}
           >
-            <Typography sx={{ fontSize: 10, color: C.muted, fontFamily: mono, textTransform: 'uppercase', letterSpacing: '0.08em', mb: 1.2 }}>
+            <Typography sx={{ fontSize: 11, color: C.muted, fontFamily: mono, textTransform: 'uppercase', letterSpacing: '0.08em', mb: 1.2 }}>
               Current Position
             </Typography>
             <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1 }}>
               <Box>
-                <Typography sx={{ fontSize: 9, color: C.muted, fontFamily: mono }}>Shares</Typography>
+                <Typography sx={{ fontSize: 11, color: C.muted, fontFamily: mono }}>Shares</Typography>
                 <Typography sx={{ fontFamily: mono, fontSize: 15, fontWeight: 700, color: C.ink }}>{fmt(totalShares)}</Typography>
               </Box>
               <Box>
-                <Typography sx={{ fontSize: 9, color: C.muted, fontFamily: mono }}>Avg Cost</Typography>
+                <Typography sx={{ fontSize: 11, color: C.muted, fontFamily: mono }}>Avg Cost</Typography>
                 <Typography sx={{ fontFamily: mono, fontSize: 15, fontWeight: 700, color: C.accentMid }}>Rs. {avgCost.toFixed(2)}</Typography>
               </Box>
               <Box>
-                <Typography sx={{ fontSize: 9, color: C.muted, fontFamily: mono }}>Market Value</Typography>
+                <Typography sx={{ fontSize: 11, color: C.muted, fontFamily: mono }}>Market Value</Typography>
                 <Typography sx={{ fontFamily: mono, fontSize: 15, fontWeight: 700, color: C.ink }}>{fmtPkr(totalShares * currentPrice)}</Typography>
               </Box>
             </Box>
             <Box sx={{ mt: 1, pt: 1, borderTop: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography sx={{ fontFamily: mono, fontSize: 10, color: C.ink2 }}>
+              <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.ink2 }}>
                 Market price: Rs. {currentPrice.toFixed(2)}
               </Typography>
-              <Typography sx={{ fontFamily: mono, fontSize: 10, fontWeight: 700, color: totalPL >= 0 ? C.pos : C.neg }}>
+              <Typography sx={{ fontFamily: mono, fontSize: 11, fontWeight: 700, color: totalPL >= 0 ? C.pos : C.neg }}>
                 · {totalPL >= 0 ? '+' : ''}{totalPLPct.toFixed(2)}%
               </Typography>
             </Box>
@@ -769,7 +746,7 @@ export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initia
                         slotProps={{ htmlInput: { min: 0, step: '0.01' } }}
                       />
                       <IconButton size="small" onClick={confirmEdit} sx={{ color: C.pos }}>
-                        <Typography sx={{ fontSize: 10, fontWeight: 700, fontFamily: mono }}>OK</Typography>
+                        <Typography sx={{ fontSize: 11, fontWeight: 700, fontFamily: mono }}>OK</Typography>
                       </IconButton>
                       <IconButton size="small" onClick={cancelEdit} sx={{ color: C.muted }}>
                         <CloseRoundedIcon sx={{ fontSize: 14 }} />
@@ -842,7 +819,7 @@ export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initia
               gap: 1.5,
             }}
           >
-            <Typography sx={{ fontSize: 10, color: C.accentMid, fontFamily: mono, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            <Typography sx={{ fontSize: 11, color: C.accentMid, fontFamily: mono, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
               New Purchase
             </Typography>
             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
@@ -886,7 +863,7 @@ export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initia
                 {avgCost > 0 && projectedAvg !== avgCost && (
                   <Typography
                     sx={{
-                      fontFamily: mono, fontSize: 10, fontWeight: 600,
+                      fontFamily: mono, fontSize: 11, fontWeight: 600,
                       color: projectedAvg < avgCost ? C.pos : C.neg,
                     }}
                   >
@@ -894,7 +871,7 @@ export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initia
                   </Typography>
                 )}
                 {avgCost > 0 && projectedAvg === avgCost && (
-                  <Typography sx={{ fontFamily: mono, fontSize: 10, color: C.muted }}>
+                  <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.muted }}>
                     — unchanged
                   </Typography>
                 )}
@@ -934,7 +911,7 @@ export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initia
               gap: 1.5,
             }}
           >
-            <Typography sx={{ fontSize: 10, color: C.neg, fontFamily: mono, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            <Typography sx={{ fontSize: 11, color: C.neg, fontFamily: mono, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
               Sell Shares
             </Typography>
             <TextField
@@ -957,7 +934,7 @@ export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initia
               </Box>
             )}
             {sellShares && Number(sellShares) >= totalShares && (
-              <Typography sx={{ fontFamily: mono, fontSize: 10, color: C.neg }}>
+              <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.neg }}>
                 Cannot sell all shares. Use delete from the portfolio page instead.
               </Typography>
             )}

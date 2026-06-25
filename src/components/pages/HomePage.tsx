@@ -822,7 +822,7 @@ export function HomePage() {
                     fontSize: { xs: '1.7rem', sm: '2rem', md: '2.8rem' },
                     lineHeight: { xs: 1.22, md: 1.14 },
                     letterSpacing: '-0.025em',
-                    fontWeight: 800,
+                    fontWeight: 700,
                     mb: 2,
                     color: '#080e1a',
                   }}
