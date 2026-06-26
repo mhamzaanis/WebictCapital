@@ -26,6 +26,10 @@ type PsxStock = {
   low: string | number | null
   last_rate: string | number | null
   change: string | number | null
+  eps: number | null           
+  pe: number | null            
+  result_period: string | null 
+  period_ending: string | null 
 }
 
 type PsxData = {
@@ -44,16 +48,20 @@ type PsxData = {
   stocks: PsxStock[]
 }
 
-type DbStockRow = {
+type DbStockTableRow = {
   symbol: string
   company: string
   section: string | null
+  trade_date: string
   open: number | null
   high: number | null
   low: number | null
   close: number | null
   turnover: number | null
   change: number | null
+  eps: number | null
+  result_period: string | null
+  period_ending: string | null
 }
 
 type DbSummaryRow = {
@@ -81,18 +89,30 @@ function changeVal(change: string | number | null | undefined): number {
   return toNum(change)
 }
 
-function mapDbStockToPsxStock(stock: DbStockRow): PsxStock {
+// Replace mapDbStockToPsxStock:
+function mapDbStockTableRow(row: DbStockTableRow): PsxStock {
+  const close = row.close != null ? toNum(row.close) : null
+  const eps = row.eps != null ? toNum(row.eps) : null
+  const pe =
+    close != null && eps != null && eps > 0
+      ? parseFloat((close / eps).toFixed(2))
+      : null
+
   return {
-    symbol: stock.symbol,
-    company: stock.company,
-    section: stock.section,
-    industry: stock.section,
-    turnover: stock.turnover,
-    open: stock.open,
-    high: stock.high,
-    low: stock.low,
-    last_rate: stock.close,
-    change: stock.change,
+    symbol: row.symbol,
+    company: row.company,
+    section: row.section,
+    industry: row.section,
+    turnover: row.turnover,
+    open: row.open,
+    high: row.high,
+    low: row.low,
+    last_rate: row.close,
+    change: row.change,
+    eps: eps != null ? parseFloat(eps.toFixed(2)) : null,
+    pe,
+    result_period: row.result_period,
+    period_ending: row.period_ending,
   }
 }
 
@@ -106,16 +126,18 @@ async function fetchSupabaseTradeDay(tradeDate: string): Promise<PsxData> {
       .eq('trade_date', tradeDate)
       .single<DbSummaryRow>(),
     supabase
-      .from('datatable')
-      .select('symbol,company,section,open,high,low,close,turnover,change')
+      .from('v_stock_table')                          // ← single source now
+      .select('symbol,company,section,trade_date,open,high,low,close,turnover,change,eps,result_period,period_ending')
       .eq('trade_date', tradeDate)
+      .neq('section', 'EXCHANGE TRADED FUNDS')
+      .neq('section', 'CLOSE - END MUTUAL FUND')
       .order('symbol', { ascending: true }),
   ])
 
   if (summaryResult.error) throw summaryResult.error
   if (stocksResult.error) throw stocksResult.error
 
-  const rows = ((stocksResult.data ?? []) as DbStockRow[]).map(mapDbStockToPsxStock)
+  const rows = ((stocksResult.data ?? []) as DbStockTableRow[]).map(mapDbStockTableRow)
 
   return {
     date: tradeDate,

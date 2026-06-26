@@ -25,3 +25,5 @@ dist-ssr
 
 /src/scripts/_pycache__/
 .env
+
+*.txt

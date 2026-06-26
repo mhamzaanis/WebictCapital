@@ -3,17 +3,56 @@ import type { StockDetail } from '../components/StockDrawer'
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
-type DbStockRow = {
-  symbol: string
-  company: string
-  section: string | null
-  trade_date: string
-  close: number | null
-  open: number | null
-  high: number | null
-  low: number | null
-  turnover: number | null
-  change: number | null
+// Raw shape returned by get_stock_details RPC
+type RpcStockDetails = {
+  overview: {
+    symbol: string
+    company: string
+    section: string | null
+    trade_date: string
+    open: number | null
+    high: number | null
+    low: number | null
+    close: number | null
+    turnover: number | null
+    change: number | null
+  } | null
+  history: Array<{
+    trade_date: string
+    open: number | null
+    high: number | null
+    low: number | null
+    close: number | null
+    turnover: number | null
+  }> | null
+  financials: Array<{
+    result_type: string | null
+    result_period: string | null
+    period_label: string | null
+    is_annual: boolean | null
+    period_ending: string | null
+    eps: number | null
+    profit_before_tax_mln: number | null
+    profit_after_tax_mln: number | null
+  }> | null
+  latest_yearly: {
+    result_type: string | null
+    result_period: string | null
+    period_label: string | null
+    is_annual: boolean | null
+    period_ending: string | null
+    eps: number | null
+    profit_before_tax_mln: number | null
+    profit_after_tax_mln: number | null
+  } | null
+  pe_ratio: number | null
+  corporate_action: {
+    dividend: string | null
+    bonus: string | null
+    book_closure_start: string | null
+    book_closure_end: string | null
+    agm_date: string | null
+  } | null
 }
 
 export type UserTrade = {
@@ -34,6 +73,8 @@ export type MarketSymbolSnapshot = {
   changePct: number
   volume: string
   spark: number[]
+  eps: number | null
+  pe_ratio: number | null
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
@@ -68,13 +109,23 @@ export function hasStockService(): boolean {
 
 const MARKET_CACHE_TTL_MS = 6 * 60 * 60 * 1000
 const USER_CACHE_TTL_MS = 6 * 60 * 60 * 1000
+const SUMMARY_CACHE_TTL_MS = 10 * 60 * 1000 // 10 min
+const TRADE_DATE_CACHE_TTL_MS = 5 * 60 * 1000  // 5 min
+const STOCK_DETAIL_CACHE_TTL_MS = 30 * 60 * 1000 // 30 min per symbol
 
 let marketCache: { data: MarketSymbolSnapshot[]; fetchedAt: number } | null = null
 let marketInFlight: Promise<MarketSymbolSnapshot[]> | null = null
 
 let summaryRowsInFlight: Promise<DbMarketSummaryRow[]> | null = null
 let summaryCache: { rows: DbMarketSummaryRow[]; fetchedAt: number } | null = null
-const SUMMARY_CACHE_TTL_MS = 10 * 60 * 1000 // 10 min — daily data, short enough for intraday updates
+
+// Cache the latest trade date so we don't hit the DB on every summary fetch
+let tradeDateCache: { date: string; fetchedAt: number } | null = null
+let tradeDateInFlight: Promise<string | null> | null = null
+
+// Per-symbol stock detail cache — keyed by UPPER symbol
+const stockDetailCache = new Map<string, { data: StockDetail; fetchedAt: number }>()
+const stockDetailInFlight = new Map<string, Promise<StockDetail>>()
 
 const tradesCache = new Map<string, { data: UserTrade[]; fetchedAt: number }>()
 const tradesInFlight = new Map<string, Promise<UserTrade[]>>()
@@ -110,15 +161,33 @@ type MarketHistoryDbRow = Pick<DbMarketSummaryRow, 'trade_date' | 'kse100_close'
 
 async function fetchLatestTradeDate(): Promise<string | null> {
   if (!hasStockService() || !supabase) return null
-  const { data, error } = await supabase
-    .from('market_daily_summary')
-    .select('trade_date')
-    .order('trade_date', { ascending: false })
-    .limit(1)
 
-  if (!error && data?.length) return data[0].trade_date
-  if (error) console.warn('fetchLatestTradeDate failed:', error.message)
-  return null
+  // Serve from short-lived cache to avoid a round-trip on every summary fetch
+  if (tradeDateCache && Date.now() - tradeDateCache.fetchedAt < TRADE_DATE_CACHE_TTL_MS) {
+    return tradeDateCache.date
+  }
+  if (tradeDateInFlight) return tradeDateInFlight
+
+  tradeDateInFlight = (async () => {
+    const { data, error } = await supabase!
+      .from('market_daily_summary')
+      .select('trade_date')
+      .order('trade_date', { ascending: false })
+      .limit(1)
+
+    if (!error && data?.length) {
+      tradeDateCache = { date: data[0].trade_date, fetchedAt: Date.now() }
+      return data[0].trade_date as string
+    }
+    if (error) console.warn('fetchLatestTradeDate failed:', error.message)
+    return null
+  })()
+
+  try {
+    return await tradeDateInFlight
+  } finally {
+    tradeDateInFlight = null
+  }
 }
 
 /** Returns the latest row. */
@@ -277,6 +346,8 @@ export async function fetchUniqueSymbols(): Promise<MarketSymbolSnapshot[]> {
       changePct: number | null
       volume: number | null
       spark: number[] | null
+      eps: number | null
+      pe_ratio: number | null
     }>).map((row) => ({
       symbol: (row.symbol ?? '').trim().toUpperCase(),
       company: row.company ?? (row.symbol ?? '').trim().toUpperCase(),
@@ -286,6 +357,8 @@ export async function fetchUniqueSymbols(): Promise<MarketSymbolSnapshot[]> {
       changePct: toNum(row.changePct),
       volume: fmtVolume(toNum(row.volume)),
       spark: (row.spark ?? []).map(toNum),
+      eps: row.eps != null ? toNum(row.eps) : null,
+      pe_ratio: row.pe_ratio != null ? toNum(row.pe_ratio) : null,
     }))
     marketCache = { data: mapped, fetchedAt: Date.now() }
     return mapped
@@ -315,84 +388,116 @@ async function requireUserId(): Promise<string> {
 // ─── Stock Detail Fetch ─────────────────────────────────────────────────────────
 
 export async function fetchStockDetail(symbol: string): Promise<StockDetail> {
-  if (!hasStockService()) {
+  if (!hasStockService() || !supabase) {
     throw new Error('Supabase client is not configured.')
   }
 
-  const result = await supabase!
-    .from('datatable')
-    .select('trade_date,close,open,high,low,turnover,change,company,section')
-    .eq('symbol', symbol.toUpperCase())
-    .order('trade_date', { ascending: false }) // Get newest dates first
-    .limit(252)
+  const key = symbol.trim().toUpperCase()
 
-  if (result.error) throw result.error
-  if (!result.data || result.data.length === 0) {
-    throw new Error(`No data found for symbol "${symbol.toUpperCase()}".`)
+  // Serve from per-symbol cache when still fresh (30 min TTL)
+  const cachedDetail = stockDetailCache.get(key)
+  if (cachedDetail && Date.now() - cachedDetail.fetchedAt < STOCK_DETAIL_CACHE_TTL_MS) {
+    return cachedDetail.data
   }
 
-  const rows = (result.data as DbStockRow[]).reverse()
+  // Deduplicate concurrent requests for the same symbol
+  const existingRequest = stockDetailInFlight.get(key)
+  if (existingRequest) return existingRequest
 
-  const latest = rows[rows.length - 1]
-  const prev = rows.length > 1 ? rows[rows.length - 2] : latest
-  const allCloses = rows.map((r) => toNum(r.close)).filter((c) => c !== 0)
-  const history30 = rows.map((r) => toNum(r.close))
-  const historyLabels = rows.map((r) => fmtDateLabel(r.trade_date))
+  const request = (async (): Promise<StockDetail> => {
+    const { data, error } = await supabase!.rpc('get_stock_details', { p_symbol: key })
 
-  const price = toNum(latest.close)
-  const previousClose = toNum(prev.close)
-  const change = toNum(latest.change)
-  const changePct = previousClose !== 0 ? (change / previousClose) * 100 : 0
-  const open = toNum(latest.open)
-  const dayHigh = toNum(latest.high)
-  const dayLow = toNum(latest.low)
-  const turnover = toNum(latest.turnover)
+    if (error) throw error
+    if (!data) throw new Error(`No data found for symbol "${key}".`)
 
-  const recentTurnovers = rows.slice(-10).map((r) => toNum(r.turnover)).filter((t) => t !== 0)
-  const avgTurnover = recentTurnovers.length > 0
-    ? recentTurnovers.reduce((a, b) => a + b, 0) / recentTurnovers.length
-    : turnover
+    const rpc = data as RpcStockDetails
+    const { overview, history, financials, corporate_action, latest_yearly } = rpc
 
-  const week52Low = allCloses.length > 0 ? Math.min(...allCloses) : price
-  const week52High = allCloses.length > 0 ? Math.max(...allCloses) : price
-  const yearAgoClose = allCloses.length > 0 ? allCloses[0] : price
-  const week52ChangePct = yearAgoClose !== 0 ? ((price - yearAgoClose) / yearAgoClose) * 100 : 0
+    if (!overview) throw new Error(`No data found for symbol "${key}".`)
 
-  const spark = history30.slice(-12)
+    // Sort history oldest → newest (RPC returns DESC)
+    const histRows = (history ?? []).slice().sort(
+      (a, b) => new Date(a.trade_date).getTime() - new Date(b.trade_date).getTime()
+    )
 
-  return {
-    symbol: symbol.toUpperCase(),
-    company: latest.company ?? symbol.toUpperCase(),
-    sector: latest.section ?? '',
-    industry: latest.section ?? '',
-    price,
-    change,
-    changePct,
-    volume: fmtVolume(turnover),
-    avgVolume: fmtVolume(avgTurnover),
-    sharesOutstanding: 'N/A',
-    open,
-    previousClose,
-    dayLow,
-    dayHigh,
-    week52Low,
-    week52High,
-    week52ChangePct,
-    eps: 0,
-    pe: 0,
-    marketCap: 'N/A',
-    dividendYield: 0,
-    beta: 0,
-    roe: 0,
-    debtToEquity: 0,
-    priceToBook: 0,
-    spark,
-    history30,
-    historyLabels,
+    const allCloses = histRows.map((r) => toNum(r.close)).filter((c) => c !== 0)
+    const historyCloses = histRows.map((r) => toNum(r.close))
+    const historyOhlc = histRows.map((r) => ({
+      trade_date: r.trade_date,
+      open: toNum(r.open),
+      high: toNum(r.high),
+      low: toNum(r.low),
+      close: toNum(r.close),
+      turnover: toNum(r.turnover),
+    }))
+    const historyLabels = histRows.map((r) => fmtDateLabel(r.trade_date))
+
+    const price = toNum(overview.close)
+    const change = toNum(overview.change)
+
+    // Derive previous close from second-to-last history row
+    const prevClose = histRows.length > 1 ? toNum(histRows[histRows.length - 2].close) : price
+    const changePct = prevClose !== 0 ? (change / prevClose) * 100 : 0
+
+    const turnover = toNum(overview.turnover)
+    const recentTurnovers = histRows.slice(-10).map((r) => toNum(r.turnover)).filter((t) => t !== 0)
+    const avgTurnover = recentTurnovers.length > 0
+      ? recentTurnovers.reduce((a, b) => a + b, 0) / recentTurnovers.length
+      : turnover
+
+    const week52Low = allCloses.length > 0 ? Math.min(...allCloses) : price
+    const week52High = allCloses.length > 0 ? Math.max(...allCloses) : price
+    const yearAgoClose = allCloses.length > 0 ? allCloses[0] : price
+    const week52ChangePct = yearAgoClose !== 0 ? ((price - yearAgoClose) / yearAgoClose) * 100 : 0
+
+    // Prefer UNCONSOLIDATED; fall back to first available
+    const mainFin = financials && financials.length > 0
+      ? (financials.find(f => f.result_type === 'UNCONSOLIDATED') || financials[0])
+      : null
+    const yearlyFin = latest_yearly
+    const epsVal = yearlyFin?.eps != null ? toNum(yearlyFin.eps) : 0
+    const peVal = rpc.pe_ratio != null ? toNum(rpc.pe_ratio) : 0
+
+    const detail: StockDetail = {
+      symbol: overview.symbol ?? key,
+      company: overview.company ?? key,
+      sector: overview.section ?? '',
+      price,
+      change,
+      changePct,
+      volume: fmtVolume(turnover),
+      avgVolume: fmtVolume(avgTurnover),
+      open: toNum(overview.open),
+      previousClose: prevClose,
+      dayLow: toNum(overview.low),
+      dayHigh: toNum(overview.high),
+      week52Low,
+      week52High,
+      week52ChangePct,
+      eps: epsVal,
+      pe: peVal,
+      financials: mainFin,
+      latestYearly: yearlyFin,
+      corporateAction: corporate_action ?? null,
+      spark: historyCloses.slice(-12),
+      historyOhlc,
+      historyLabels,
+    }
+
+    stockDetailCache.set(key, { data: detail, fetchedAt: Date.now() })
+    return detail
+  })()
+
+  stockDetailInFlight.set(key, request)
+  try {
+    return await request
+  } finally {
+    stockDetailInFlight.delete(key)
   }
 }
 
 // ─── Watchlist Operations ───────────────────────────────────────────────────────
+
 
 export async function fetchWatchlistSymbols(): Promise<string[]> {
   const userId = await getCurrentUserId()
@@ -413,7 +518,7 @@ export async function fetchWatchlistSymbols(): Promise<string[]> {
       .order('created_at', { ascending: true })
 
     if (result.error) return watchlistCache.get(userId)?.data ?? []
-    const data = ((result.data ?? []) as { symbol: string }[]).map((r) => r.symbol)
+    const data = ((result.data ?? []) as { symbol: string }[]).map((r) => r.symbol.trim().toUpperCase())
     watchlistCache.set(userId, { data, fetchedAt: Date.now() })
     return data
   })()

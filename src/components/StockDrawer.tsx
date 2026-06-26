@@ -21,13 +21,11 @@ export type StockDetail = {
   symbol: string
   company: string
   sector: string
-  industry: string
   price: number
   change: number
   changePct: number
   volume: string
   avgVolume: string
-  sharesOutstanding: string
   open: number
   previousClose: number
   dayLow: number
@@ -37,14 +35,43 @@ export type StockDetail = {
   week52ChangePct: number
   eps: number
   pe: number
-  marketCap: string
-  dividendYield: number
-  beta: number
-  roe: number
-  debtToEquity: number
-  priceToBook: number
+  financials: {
+    result_type: string | null
+    result_period: string | null
+    period_label: string | null
+    is_annual: boolean | null
+    period_ending: string | null
+    eps: number | null
+    profit_before_tax_mln: number | null
+    profit_after_tax_mln: number | null
+  } | null
+  latestYearly: {
+    result_type: string | null
+    result_period: string | null
+    period_label: string | null
+    is_annual: boolean | null
+    period_ending: string | null
+    eps: number | null
+    profit_before_tax_mln: number | null
+    profit_after_tax_mln: number | null
+  } | null
+  corporateAction: {
+    dividend: string | null
+    bonus: string | null
+    book_closure_start: string | null
+    book_closure_end: string | null
+    agm_date: string | null
+  } | null
   spark: number[]
-  history30: number[]
+  // historyOhlc is sorted oldest→newest; each entry has full OHLC + turnover
+  historyOhlc: Array<{
+    trade_date: string
+    open: number
+    high: number
+    low: number
+    close: number
+    turnover: number
+  }>
   historyLabels: string[]
 }
 
@@ -127,7 +154,7 @@ const fmt = (v: number) => v.toLocaleString('en-PK', { minimumFractionDigits: 2,
 function SectionTitle({ children, index }: { children: React.ReactNode; index?: number }) {
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, mb: 2 }}>
-        {index !== undefined && (
+      {index !== undefined && (
         <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.muted, letterSpacing: '0.06em', mt: '1px' }}>
           {String(index + 1).padStart(2, '0')}
         </Typography>
@@ -397,25 +424,29 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
 
   const chartData = useMemo(() => {
     if (!stock) return { ohlc: [] as number[][], labels: [], gain: false, values: [] as number[], volumes: [] as number[], closeLine: [] as number[] }
-    const count = range === '1M' ? 22 : stock.history30.length
-    const values = stock.history30.slice(-count)
-    const labels = stock.historyLabels.slice(-count)
-    const gain = values.length > 1 && values[values.length - 1] >= values[0]
-    // Generate synthetic OHLC data from close prices
-    const rawOhlc = values.map((v, i) => {
-      const open = i > 0 ? values[i - 1] : v * 0.998
-      const close = v
-      const low = Math.min(open, close) * (1 - 0.005 - Math.sin(i * 0.7) * 0.005)
-      const high = Math.max(open, close) * (1 + 0.005 + Math.cos(i * 0.6) * 0.005)
-      return [open, close, low, high]
-    })
 
-    // Synthetic volume from price movement magnitude
-    const rawVolumes = rawOhlc.map((candle, i) => {
-      const base = parseInt(String(stock.volume).replace(/[^0-9]/g, ''), 10) || 100000
-      const changeRatio = Math.abs(candle[1] - candle[0]) / Math.max(candle[0], 1)
-      return Math.round(base * (0.5 + changeRatio * 10 + Math.sin(i * 1.3) * 0.2))
+    const histRows = stock.historyOhlc
+    const now = new Date()
+    const currentYear = now.getFullYear()
+
+    let filteredRows: typeof histRows
+    if (range === '1M') {
+      filteredRows = histRows.slice(-22)
+    } else if (range === 'YTD') {
+      const ytd = histRows.filter((r) => new Date(r.trade_date + 'T00:00:00').getFullYear() === currentYear)
+      filteredRows = ytd.length > 0 ? ytd : histRows.slice(-90)
+    } else {
+      filteredRows = histRows
+    }
+
+    const rawOhlc = filteredRows.map((r) => [r.open, r.close, r.low, r.high])
+    const rawVolumes = filteredRows.map((r) => r.turnover)
+    const labels = filteredRows.map((r) => {
+      const d = new Date(r.trade_date + 'T00:00:00')
+      return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })
     })
+    const values = filteredRows.map((r) => r.close)
+    const gain = values.length > 1 && values[values.length - 1] >= values[0]
 
     // Aggregate for very large datasets
     const maxVisible = isXs ? 35 : 45
@@ -721,7 +752,7 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
               {/* <Tag>{stock.sector}</Tag> */}
             </Box>
             <Typography sx={{ fontSize: 11.5, color: C.muted, fontFamily: mono, letterSpacing: '0.03em' }}>
-              {stock.symbol} · {stock.industry}
+              {stock.symbol} · {stock.sector}
             </Typography>
           </Box>
         </Box>
@@ -805,101 +836,118 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
             </Typography>
           </Box> */}
           <Box
-  sx={{
-    borderLeft: `4px solid ${changeColor}`,
-    pl: 2,
-    mt: 2,
-  }}
->
-  <Box
-    sx={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: 1.5,
-      flexWrap: 'wrap',
-    }}
-  >
-    {/* Price */}
-    <Typography
-      sx={{
-        fontFamily: mono,
-        fontSize: { xs: 34, md: 42 },
-        fontWeight: 700,
-        color: C.ink,
-        letterSpacing: '-0.04em',
-        lineHeight: 1,
-      }}
-    >
-      {fmt(stock.price)}
-    </Typography>
+            sx={{
+              width: '100%',
+              background: `linear-gradient(135deg, ${pos ? 'rgba(13,92,50,0.06) 0%, rgba(13,92,50,0.005)' : 'rgba(155,28,46,0.06) 0%, rgba(155,28,46,0.005)'} 100%)`,
+              border: `1px solid ${pos ? 'rgba(13,92,50,0.12)' : 'rgba(155,28,46,0.12)'}`,
+              borderRadius: '16px',
+              p: { xs: 2, sm: 3 },
+              mt: 2,
+              position: 'relative',
+              overflow: 'hidden',
+              boxShadow: '0 4px 20px -2px rgba(0,0,0,0.01)',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '4px',
+                height: '100%',
+                backgroundColor: changeColor,
+              }
+            }}
+          >
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2 }}>
+              <Box>
+                <Typography sx={{ fontSize: 10, fontFamily: mono, color: C.muted, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', mb: 0.5 }}>
+                  Last Traded Price
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5, flexWrap: 'wrap' }}>
+                  <Typography
+                    sx={{
+                      fontFamily: mono,
+                      fontSize: { xs: 34, md: 42 },
+                      fontWeight: 850,
+                      color: C.ink,
+                      letterSpacing: '-0.04em',
+                      lineHeight: 1,
+                    }}
+                  >
+                    Rs.{fmt(stock.price)}
+                  </Typography>
 
-    {/* Arrow */}
-    {pos ? (
-      <TrendingUpIcon
-        sx={{
-          fontSize: 24,
-          color: changeColor,
-        }}
-      />
-    ) : (
-      <TrendingDownIcon
-        sx={{
-          fontSize: 24,
-          color: changeColor,
-        }}
-      />
-    )}
+                  <Box
+                    sx={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 0.5,
+                      px: 1.2,
+                      py: 0.4,
+                      borderRadius: '20px',
+                      bgcolor: pos ? C.posBg : C.negBg,
+                      border: `1px solid ${changeColor}20`,
+                    }}
+                  >
+                    {pos ? (
+                      <TrendingUpIcon sx={{ fontSize: 13, color: changeColor }} />
+                    ) : (
+                      <TrendingDownIcon sx={{ fontSize: 13, color: changeColor }} />
+                    )}
+                    <Typography
+                      sx={{
+                        fontFamily: mono,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        color: changeColor,
+                        letterSpacing: '0.01em',
+                      }}
+                    >
+                      {pos ? '+' : ''}
+                      {stock.change.toFixed(2)}
+                      {' ('}
+                      {pos ? '+' : ''}
+                      {stock.changePct.toFixed(2)}%
+                      {')'}
+                    </Typography>
+                  </Box>
+                </Box>
 
-    {/* Change */}
-    <Typography
-      sx={{
-        fontFamily: mono,
-        fontSize: 15,
-        fontWeight: 700,
-        color: changeColor,
-        whiteSpace: 'nowrap',
-      }}
-    >
-      {pos ? '+' : ''}
-      {stock.change.toFixed(2)}
-      {' ('}
-      {pos ? '+' : ''}
-      {stock.changePct.toFixed(2)}%
-      {')'}
-    </Typography>
-  </Box>
+                <Typography
+                  sx={{
+                    fontSize: 10.5,
+                    color: C.muted,
+                    fontFamily: mono,
+                    mt: 1.2,
+                    letterSpacing: '0.03em',
+                  }}
+                >
+                  As of{' '}
+                  {new Date().toLocaleDateString('en-PK', {
+                    weekday: 'short',
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                  })}{' '}
+                  · PSX
+                </Typography>
+              </Box>
 
-  <Typography
-    sx={{
-      fontSize: 11,
-      color: C.muted,
-      fontFamily: mono,
-      mt: 0.8,
-      letterSpacing: '0.03em',
-    }}
-  > 
-    
-    As of{' '}
-    {new Date().toLocaleDateString('en-PK', {
-      weekday: 'short',
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    })}{' '}
-    · PSX
-  </Typography>
-</Box>
-
-          {/* Mini KPIs */}
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            {/* <KpiCard label="Market Cap" value={stock.marketCap} /> */}
-            {/* <KpiCard label="Change" value={stock.change}/> */}
-            {/* <KpiCard label="P/E Ratio" value={stock.pe !== 0 ? stock.pe.toFixed(1) : '--'} color={stock.pe < 0 ? C.neg : C.accentMid} /> */}
-            {/* <KpiCard
-              label="52W Chg"
-              value={`${stock.week52ChangePct >= 0 ? '+' : ''}${stock.week52ChangePct.toFixed(1)}%`}
-              color={stock.week52ChangePct >= 0 ? C.pos : C.neg}
-            /> */}
+              {/* Quick Metrics */}
+              <Box sx={{ display: 'flex', gap: 1.5 }}>
+                {stock.pe !== 0 && (
+                  <Box sx={{ bgcolor: 'rgba(0,0,0,0.02)', border: `1px solid ${C.border}`, borderRadius: '10px', px: 2, py: 1, textAlign: 'right' }}>
+                    <Typography sx={{ fontSize: 9, color: C.muted, fontFamily: mono, letterSpacing: '0.05em', textTransform: 'uppercase' }}>P/E Ratio</Typography>
+                    <Typography sx={{ fontSize: 14, color: C.accentMid, fontFamily: mono, fontWeight: 700, mt: 0.2 }}>{stock.pe.toFixed(2)}x</Typography>
+                  </Box>
+                )}
+                {stock.eps !== 0 && (
+                  <Box sx={{ bgcolor: 'rgba(0,0,0,0.02)', border: `1px solid ${C.border}`, borderRadius: '10px', px: 2, py: 1, textAlign: 'right' }}>
+                    <Typography sx={{ fontSize: 9, color: C.muted, fontFamily: mono, letterSpacing: '0.05em', textTransform: 'uppercase' }}>EPS (LTM)</Typography>
+                    <Typography sx={{ fontSize: 14, color: C.ink, fontFamily: mono, fontWeight: 700, mt: 0.2 }}>Rs.{stock.eps.toFixed(2)}</Typography>
+                  </Box>
+                )}
+              </Box>
+            </Box>
           </Box>
         </Box>
 
@@ -1158,7 +1206,7 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
                     textStyle: {
                       fontSize: 11,
                       color: C.ink,
-                        fontFamily: '"JetBrains Mono", monospace',
+                      fontFamily: '"JetBrains Mono", monospace',
                     },
                     formatter: (params: { seriesName?: string; value: number | number[]; dataIndex?: number }[]) => {
                       const candleParam = params.find(p => p.seriesName === stock.symbol)
@@ -1233,58 +1281,171 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
           initial={reduce ? false : { opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.42, delay: 0.18, ease: [0.22, 1, 0.36, 1] }}
-          sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2, mb: 2 }}
+          sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}
         >
           {/* Trading Stats */}
-          <Box sx={{ border: `1px solid ${C.border}`, borderRadius: '12px', bgcolor: C.bg, p: 2.5 }}>
-            <SectionTitle >Trading Stats</SectionTitle>
+          <Box sx={{
+            border: `1px solid ${C.border}`,
+            borderTop: `4px solid ${C.accentMid}`,
+            borderRadius: '12px',
+            bgcolor: C.bg,
+            p: 2.5,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.01)',
+          }}>
+            <SectionTitle>Trading Stats</SectionTitle>
             <StatRow label="Volume" value={stock.volume} />
             <StatRow label="Avg Volume (10d)" value={stock.avgVolume} />
             <StatRow label="Open" value={`Rs.${fmt(stock.open)}`} />
             <StatRow label="Prev. Close" value={`Rs.${fmt(stock.previousClose)}`} />
-            <StatRow label="Shares Outstanding" value={stock.sharesOutstanding} />
+            <StatRow label="Day Low" value={`Rs.${fmt(stock.dayLow)}`} />
+            <StatRow label="Day High" value={`Rs.${fmt(stock.dayHigh)}`} />
           </Box>
 
           {/* Fundamentals */}
-          <Box sx={{ border: `1px solid ${C.border}`, borderRadius: '12px', bgcolor: C.bg, p: 2.5 }}>
-            <SectionTitle >Fundamentals</SectionTitle>
-            <StatRow label="EPS (TTM)" value={stock.eps !== 0 ? `Rs.${stock.eps.toFixed(2)}` : '--'} />
-            <StatRow label="P/E Ratio" value={stock.pe !== 0 ? stock.pe.toFixed(2) : '--'} />
-            <StatRow label="Price / Book" value={stock.priceToBook !== 0 ? stock.priceToBook.toFixed(2) : '--'} />
-            <StatRow label="Dividend Yield" value={stock.dividendYield !== 0 ? `${stock.dividendYield.toFixed(2)}%` : '--'} />
-            <StatRow label="Beta (5Y)" value={stock.beta !== 0 ? stock.beta.toFixed(2) : '--'} />
+          <Box sx={{
+            border: `1px solid ${C.border}`,
+            borderTop: `4px solid ${C.accent}`,
+            borderRadius: '12px',
+            bgcolor: C.bg,
+            p: 2.5,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.01)',
+          }}>
+            <SectionTitle>Fundamentals</SectionTitle>
+            
+            {/* ── YEARLY DATA ── */}
+            {stock.latestYearly ? (
+              <Box sx={{ mb: 2 }}>
+                <Typography sx={{ fontSize: 10.5, fontWeight: 800, color: C.accentMid, letterSpacing: '0.08em', textTransform: 'uppercase', mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <span>Yearly Data</span>
+                  <Box sx={{ fontSize: 9, px: 1, py: 0.2, borderRadius: '4px', bgcolor: 'rgba(26,79,168,0.08)', color: C.accentMid, fontFamily: mono, fontWeight: 700 }}>
+                    {stock.latestYearly.period_label || 'FY'}
+                  </Box>
+                </Typography>
+                <StatRow label="Yearly EPS" value={stock.latestYearly.eps != null ? `Rs.${stock.latestYearly.eps.toFixed(2)}` : '--'} />
+                <StatRow label="P/E Ratio" value={stock.pe !== 0 ? `${stock.pe.toFixed(2)}x` : '--'} />
+                <StatRow
+                  label="Profit Before Tax"
+                  value={stock.latestYearly.profit_before_tax_mln != null
+                    ? `Rs.${(stock.latestYearly.profit_before_tax_mln / 1000).toFixed(2)}B`
+                    : '--'}
+                />
+                <StatRow
+                  label="Profit After Tax"
+                  value={stock.latestYearly.profit_after_tax_mln != null
+                    ? `Rs.${(stock.latestYearly.profit_after_tax_mln / 1000).toFixed(2)}B`
+                    : '--'}
+                />
+              </Box>
+            ) : (
+              <>
+                <StatRow label="EPS (LTM)" value={stock.eps !== 0 ? `Rs.${stock.eps.toFixed(2)}` : '--'} />
+                <StatRow label="P/E Ratio" value={stock.pe !== 0 ? `${stock.pe.toFixed(2)}x` : '--'} />
+              </>
+            )}
+
+            {/* ── LATEST DATA (IF NOT YEARLY) ── */}
+            {stock.financials && (!stock.latestYearly || stock.financials.period_ending !== stock.latestYearly.period_ending) && (
+              <Box sx={{ mt: stock.latestYearly ? 2.5 : 0, pt: stock.latestYearly ? 2 : 0, borderTop: stock.latestYearly ? `1px dashed ${C.border}` : 'none' }}>
+                <Typography sx={{ fontSize: 10.5, fontWeight: 800, color: C.pos, letterSpacing: '0.08em', textTransform: 'uppercase', mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <span>Latest Interim</span>
+                  <Box sx={{ fontSize: 9, px: 1, py: 0.2, borderRadius: '4px', bgcolor: 'rgba(13,92,50,0.08)', color: C.pos, fontFamily: mono, fontWeight: 700 }}>
+                    {stock.financials.period_label || stock.financials.result_period || ''}
+                  </Box>
+                </Typography>
+                <StatRow label="Interim EPS" value={stock.financials.eps != null ? `Rs.${stock.financials.eps.toFixed(2)}` : '--'} />
+                <StatRow
+                  label="Profit Before Tax"
+                  value={stock.financials.profit_before_tax_mln != null
+                    ? `Rs.${(stock.financials.profit_before_tax_mln / 1000).toFixed(2)}B`
+                    : '--'}
+                />
+                <StatRow
+                  label="Profit After Tax"
+                  value={stock.financials.profit_after_tax_mln != null
+                    ? `Rs.${(stock.financials.profit_after_tax_mln / 1000).toFixed(2)}B`
+                    : '--'}
+                />
+              </Box>
+            )}
           </Box>
         </Box>
 
-        {/* ── RISK METRICS ──────────────────────────────────────────── */}
-        {(stock.roe !== 0 || stock.debtToEquity !== 0 || stock.beta !== 0) && (
+        {/* ── CORPORATE ACTIONS ──────────────────────────────────────── */}
+        {stock.corporateAction && (
           <Box
             component={motion.div}
             initial={reduce ? false : { opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.42, delay: 0.24, ease: [0.22, 1, 0.36, 1] }}
-            sx={{ border: `1px solid ${C.border}`, borderRadius: '12px', bgcolor: C.bg, p: 2.5 }}
+            sx={{
+              border: `1px solid ${C.border}`,
+              borderTop: `4px solid ${C.pos}`,
+              borderRadius: '12px',
+              bgcolor: C.bg,
+              p: 2.5,
+              mb: 2,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.01)',
+            }}
           >
-            <SectionTitle index={5}>Risk & Quality</SectionTitle>
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', sm: 'repeat(3, 1fr)' }, gap: 1.5 }}>
-              <KpiCard
-                label="ROE"
-                value={`${stock.roe.toFixed(1)}%`}
-                sub={stock.roe > 15 ? 'Strong' : stock.roe < 5 ? 'Weak' : 'Average'}
-                color={stock.roe > 15 ? C.pos : stock.roe < 5 ? C.neg : C.accentMid}
-              />
-              <KpiCard
-                label="Debt / Equity"
-                value={stock.debtToEquity.toFixed(2)}
-                sub={stock.debtToEquity > 1 ? 'High leverage' : 'Conservative'}
-                color={stock.debtToEquity > 1 ? C.neg : C.pos}
-              />
-              <KpiCard
-                label="Beta (5Y)"
-                value={stock.beta.toFixed(2)}
-                sub={stock.beta > 1.2 ? 'High volatility' : stock.beta < 0.8 ? 'Low volatility' : 'Market-like'}
-                color={stock.beta > 1.2 ? C.neg : stock.beta < 0.8 ? C.pos : C.accentMid}
-              />
+            <SectionTitle>Corporate Actions</SectionTitle>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2, mt: 1.5 }}>
+              {stock.corporateAction.dividend && (
+                <Box sx={{
+                  p: 1.5,
+                  borderRadius: '8px',
+                  bgcolor: 'rgba(13,92,50,0.03)',
+                  border: '1px solid rgba(13,92,50,0.1)',
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 4px 8px rgba(0,0,0,0.04)' }
+                }}>
+                  <Typography sx={{ fontSize: 10, color: C.muted, fontFamily: mono, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Dividend</Typography>
+                  <Typography sx={{ fontSize: 13, color: C.pos, fontFamily: mono, fontWeight: 700, mt: 0.5 }}>{stock.corporateAction.dividend}</Typography>
+                </Box>
+              )}
+              {stock.corporateAction.bonus && (
+                <Box sx={{
+                  p: 1.5,
+                  borderRadius: '8px',
+                  bgcolor: 'rgba(26,79,168,0.03)',
+                  border: '1px solid rgba(26,79,168,0.1)',
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 4px 8px rgba(0,0,0,0.04)' }
+                }}>
+                  <Typography sx={{ fontSize: 10, color: C.muted, fontFamily: mono, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Bonus Issue</Typography>
+                  <Typography sx={{ fontSize: 13, color: C.accentMid, fontFamily: mono, fontWeight: 700, mt: 0.5 }}>{stock.corporateAction.bonus}</Typography>
+                </Box>
+              )}
+              {stock.corporateAction.book_closure_start && (
+                <Box sx={{
+                  p: 1.5,
+                  borderRadius: '8px',
+                  bgcolor: 'rgba(0,0,0,0.02)',
+                  border: `1px solid ${C.border}`,
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 4px 8px rgba(0,0,0,0.04)' }
+                }}>
+                  <Typography sx={{ fontSize: 10, color: C.muted, fontFamily: mono, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Book Closure</Typography>
+                  <Typography sx={{ fontSize: 12, color: C.ink2, fontFamily: mono, fontWeight: 600, mt: 0.5 }}>
+                    {[
+                      stock.corporateAction.book_closure_start,
+                      stock.corporateAction.book_closure_end,
+                    ].filter(Boolean).join(' → ')}
+                  </Typography>
+                </Box>
+              )}
+              {stock.corporateAction.agm_date && (
+                <Box sx={{
+                  p: 1.5,
+                  borderRadius: '8px',
+                  bgcolor: 'rgba(0,0,0,0.02)',
+                  border: `1px solid ${C.border}`,
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  '&:hover': { transform: 'translateY(-2px)', boxShadow: '0 4px 8px rgba(0,0,0,0.04)' }
+                }}>
+                  <Typography sx={{ fontSize: 10, color: C.muted, fontFamily: mono, textTransform: 'uppercase', letterSpacing: '0.05em' }}>AGM Date</Typography>
+                  <Typography sx={{ fontSize: 12, color: C.ink2, fontFamily: mono, fontWeight: 600, mt: 0.5 }}>{stock.corporateAction.agm_date}</Typography>
+                </Box>
+              )}
             </Box>
           </Box>
         )}
@@ -1305,10 +1466,10 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
             gap: 1,
           }}
         > */}
-          {/* <Typography sx={{ fontSize: 11, color: C.muted, fontFamily: serif, letterSpacing: '0.03em' }}>
+        {/* <Typography sx={{ fontSize: 11, color: C.muted, fontFamily: serif, letterSpacing: '0.03em' }}>
             Data is indicative · Not financial advice
           </Typography> */}
-          {/* <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
+        {/* <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
             <Typography
               sx={{
                 fontSize: 11,

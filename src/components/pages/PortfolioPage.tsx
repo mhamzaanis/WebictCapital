@@ -438,7 +438,7 @@ function HoldingRow({
           }}>
             {h.symbol}
           </Typography>
-          
+
           <Typography sx={{
             fontSize: 12.5, color: 'var(--wc-text-secondary, #4a5e78)', mt: 0.2,
             fontFamily: BODY, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
@@ -454,7 +454,7 @@ function HoldingRow({
           <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 14, fontWeight: 600, color: 'var(--wc-text-primary)' }}>
             Rs.&nbsp;{h.price.toFixed(2)}
           </Typography>
-          
+
           <Typography sx={{ fontSize: 12.5, color: 'var(--wc-text-secondary, #4a5e78)', mt: 0.2, fontFamily: NUMBER_FONT, fontWeight: 400 }}>
             {fmt(h.shares)} sh · avg {h.avgCost.toFixed(2)}
           </Typography>
@@ -664,7 +664,7 @@ function HistRow({ event, index }: { event: HistoryEvent; index: number }) {
             · {event.date}
           </Typography>
         </Box>
-        
+
         <Typography sx={{
           fontSize: 13.5, color: 'var(--wc-text-primary)', fontFamily: BODY,
           lineHeight: 1.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
@@ -674,7 +674,7 @@ function HistRow({ event, index }: { event: HistoryEvent; index: number }) {
       </Box>
 
       <Box sx={{ textAlign: 'right', flexShrink: 0 }}>
-        
+
         <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 15, fontWeight: 700, color: cfg.color }}>
           {fmtPkrSigned(event.profit)}
         </Typography>
@@ -713,7 +713,7 @@ export function PortfolioPage() {
   const [sectorAllocation, setSectorAllocation] = useState<
     { sector: string; value: number; color: string }[]
   >([])
-  
+
 
   const { user, loading: authLoading, clearError } = useAuth()
   const isLocked = !authLoading && !user
@@ -733,7 +733,7 @@ export function PortfolioPage() {
     kse100History: EMPTY_MARKET_HISTORY,
     kse30History: EMPTY_MARKET_HISTORY,
   }))
-  
+
 
   useEffect(() => {
     if (isLocked) setAuthModalOpen(true)
@@ -776,20 +776,11 @@ export function PortfolioPage() {
       }
     })
   }, [])
-  const lastFetchedUserIdRef = useRef<string | undefined>(undefined)
-  const lastFetchedAuthLoadingRef = useRef<boolean | undefined>(undefined)
 
   useEffect(() => {
-    // While auth is still resolving, we don't yet know whether the user is
-    // logged in. Firing a market-only fetch here would be immediately thrown
-    // away once auth settles and loadUserData runs — so we skip it entirely.
+    // While auth is still resolving we don't know whether the user is
+    // logged in, so skip until it settles.
     if (authLoading) return
-
-    if (lastFetchedUserIdRef.current === user?.id && lastFetchedAuthLoadingRef.current === authLoading) {
-      return
-    }
-    lastFetchedUserIdRef.current = user?.id
-    lastFetchedAuthLoadingRef.current = authLoading
 
     let cancelled = false
 
@@ -1022,23 +1013,6 @@ export function PortfolioPage() {
   }, [user])
 
   const openDrawer = useCallback(async (symbol: string) => {
-    if (!hasStockService()) {
-      const snap = marketSnapshotsRef.current.find((m) => m.symbol === symbol)
-      if (snap) {
-        setDrawerStock({
-          symbol: snap.symbol, company: snap.company, sector: (snap as any).sector ?? '',
-          industry: '', price: snap.price, change: snap.change, changePct: snap.changePct,
-          volume: snap.volume, avgVolume: '--', sharesOutstanding: 'N/A',
-          open: 0, previousClose: 0, dayLow: 0, dayHigh: 0,
-          week52Low: 0, week52High: 0, week52ChangePct: 0,
-          eps: 0, pe: 0, marketCap: 'N/A', dividendYield: 0, beta: 0,
-          roe: 0, debtToEquity: 0, priceToBook: 0,
-          spark: snap.spark, history30: snap.spark, historyLabels: [],
-        })
-        setDrawerOpen(true)
-      }
-      return
-    }
     setDrawerLoading(true)
     setDrawerError(null)
     setDrawerStock(null)
@@ -1117,7 +1091,10 @@ export function PortfolioPage() {
     if (user) deleteUserTradesBySymbol(symbol).catch(() => { /* silent */ })
   }, [requireAuth, user])
 
-  const openMarketModal = useCallback(() => { setMarketModalOpen(true) }, [])
+  const openMarketModal = useCallback(() => {
+    if (!requireAuth()) return
+    setMarketModalOpen(true)
+  }, [requireAuth])
   const closeMarketModal = useCallback(() => setMarketModalOpen(false), [])
   const closeAuthModal = useCallback(() => { clearError(); setAuthModalOpen(false) }, [clearError])
   const closeHoldModal = useCallback(() => setHoldModalOpen(false), [])
@@ -1162,7 +1139,7 @@ export function PortfolioPage() {
                 alignItems: { md: 'flex-end' }, justifyContent: 'space-between', gap: 2,
               }}>
                 <Box sx={{ maxWidth: 620 }}>
-                  
+
                   <Typography sx={{
                     fontSize: 13, fontFamily: SERIF, letterSpacing: '0.14em',
                     textTransform: 'uppercase', color: 'var(--wc-primary)', mb: 1.5,
@@ -1179,7 +1156,7 @@ export function PortfolioPage() {
                   </Typography>
                 </Box>
                 <Box sx={{ textAlign: { md: 'right' }, pb: { md: 0.5 }, flexShrink: 0 }}>
-                  
+
                   <Typography sx={{
                     fontSize: 14, color: 'var(--wc-text-secondary, #4a5e78)', fontWeight: 400,
                     letterSpacing: '0.02em', fontFamily: BODY, mb: 0.3,
@@ -1198,11 +1175,11 @@ export function PortfolioPage() {
                 {/* <SecLabel>Market Snapshot</SecLabel> */}
                 <Typography sx={{ fontSize: 18, fontWeight: 700, color: 'var(--wc-text-primary)', fontFamily: SERIF, letterSpacing: '-0.01em' }}>
                   Daily summary from PSX for {' '} {marketSummary.tradeDate
-                      ? new Date(marketSummary.tradeDate).toLocaleDateString('en-PK', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
-                      : '—'}
-                  
-                  <Typography component="span" sx={{ fontSize: 20,fontWeight: 700, color: 'var(--wc-text-primary)', fontFamily: SERIF }}>
-                    
+                    ? new Date(marketSummary.tradeDate).toLocaleDateString('en-PK', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+                    : '—'}
+
+                  <Typography component="span" sx={{ fontSize: 20, fontWeight: 700, color: 'var(--wc-text-primary)', fontFamily: SERIF }}>
+
                   </Typography>
                 </Typography>
               </Box>
@@ -1259,8 +1236,8 @@ export function PortfolioPage() {
 
                   {/* Footer row */}
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pt: 2, borderTop: '1px solid var(--wc-divider)' }}>
-                    
-                    
+
+
                     <Typography sx={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--wc-primary)', fontFamily: NUMBER_FONT }}>
                       View chart →
                     </Typography>
@@ -1295,7 +1272,7 @@ export function PortfolioPage() {
                       <VisibilityOffOutlinedIcon sx={{ fontSize: 22, opacity: 0.7 }} />
                     </Box>
                     <Box>
-                     
+
                       <Typography sx={{
                         fontSize: 12, fontWeight: 700, letterSpacing: '0.1em',
                         textTransform: 'uppercase', color: 'var(--wc-primary)',
@@ -1310,7 +1287,7 @@ export function PortfolioPage() {
                       }}>
                         Sign in to unlock your portfolio
                       </Typography>
-                      
+
                       <Typography sx={{ fontSize: 14, color: 'var(--wc-text-primary)', lineHeight: 1.6, maxWidth: 520 }}>
                         Holdings, watchlist, and trade history sync automatically to your Google account — available on any device.
                       </Typography>
@@ -1378,7 +1355,7 @@ export function PortfolioPage() {
             <MotionReveal>
               <Card>
                 <SecLabel>Sector Allocation</SecLabel>
-                
+
                 <Typography sx={{ fontSize: 16, fontWeight: 700, color: 'var(--wc-text-primary)', fontFamily: SERIF, letterSpacing: '-0.01em', mb: 2.5 }}>
                   Where your capital is deployed.
                 </Typography>
@@ -1390,7 +1367,7 @@ export function PortfolioPage() {
                       const pct = (s.value / totalMV) * 100
                       return (
                         <Box key={s.sector} sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                          
+
                           <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 12, fontWeight: 600, color: 'var(--wc-text-primary)', minWidth: 80, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                             {s.sector}
                           </Typography>
@@ -1403,11 +1380,11 @@ export function PortfolioPage() {
                               sx={{ height: '100%', bgcolor: s.color, borderRadius: '99px', opacity: 0.85 }}
                             />
                           </Box>
-                         
+
                           <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 13, fontWeight: 600, color: 'var(--wc-text-primary)', minWidth: 48, textAlign: 'right' }}>
                             {pct.toFixed(1)}%
                           </Typography>
-                          
+
                           <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 12.5, color: 'var(--wc-text-secondary, #4a5e78)', fontWeight: 500, minWidth: 72, textAlign: 'right' }}>
                             {fmtCompact(s.value)}
                           </Typography>
@@ -1427,12 +1404,12 @@ export function PortfolioPage() {
                     <ShowChartIcon sx={{ fontSize: 14, color: 'var(--wc-primary)', opacity: 0.7 }} />
                     <SecLabel>Holdings</SecLabel>
                   </Box>
-                  
+
                   <Typography sx={{ fontSize: { xs: 15, md: 17 }, fontWeight: 700, color: 'var(--wc-text-primary)', fontFamily: SERIF }}>
                     {holdings.length} active positions.
                   </Typography>
                 </Box>
-                
+
                 <Typography sx={{ fontSize: 13, color: 'var(--wc-text-primary)', fontFamily: NUMBER_FONT }}>
                   {fmt(totalShares)} total shares
                 </Typography>
@@ -1440,7 +1417,7 @@ export function PortfolioPage() {
 
               <Box sx={{ mb: 3, display: 'grid', gap: { xs: 2, md: 2.5 }, gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1.55fr) minmax(0, 1fr)' }, alignItems: 'start' }}>
 
-                
+
                 <Card sx={{ p: { xs: 1, md: 1.4 }, display: 'flex', flexDirection: 'column', height: 520 }}>
                   <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 2, px: 0.5, mb: 0.5, flexShrink: 0 }}>
                     <Box sx={{ width: 40, flexShrink: 0 }} />
@@ -1474,7 +1451,7 @@ export function PortfolioPage() {
                   </Box>
 
                   <Box sx={{ flexShrink: 0, mt: 2, pt: 2, borderTop: '1px solid var(--wc-divider)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1.5 }}>
-                    
+
                     <Typography sx={{ fontSize: 13.5, color: 'var(--wc-text-secondary, #4a5e78)', fontFamily: BODY }}>
                       Total invested ·{' '}
                       <Box component="span" sx={{ fontFamily: NUMBER_FONT, color: 'var(--wc-text-primary)', fontWeight: 600 }}>
@@ -1522,7 +1499,7 @@ export function PortfolioPage() {
                           transition: 'transform 0.35s ease',
                         }}
                       />
-                      
+
                       <Typography
                         className="manage-text"
                         sx={{
@@ -1568,7 +1545,7 @@ export function PortfolioPage() {
               <Card sx={{ p: { xs: 2.4, md: 3 } }}>
                 <Box sx={{ mb: 2 }}>
                   <SecLabel>Trade History</SecLabel>
-                
+
                   <Typography sx={{ fontSize: 16, fontWeight: 700, color: 'var(--wc-text-primary)', fontFamily: SERIF, letterSpacing: '-0.01em' }}>
                     Recent activity
                   </Typography>
@@ -1602,7 +1579,7 @@ export function PortfolioPage() {
             transition={{ duration: 0.6, delay: 0.3 }}
             sx={{ textAlign: 'center', pt: 2 }}
           >
-            
+
             <Typography sx={{ fontSize: 13, color: 'var(--wc-text-secondary, #4a5e78)', fontFamily: BODY, letterSpacing: '0.02em' }}>
               For informational purposes only · Not financial advice · Webict Capital
             </Typography>
