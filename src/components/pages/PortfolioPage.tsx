@@ -25,7 +25,7 @@ import {
   hasStockService, fetchStockDetail,
   addToWatchlist as addToWatchlistDb,
   removeFromWatchlist as removeFromWatchlistDb,
-  insertUserTrade, deleteUserTradesBySymbol,
+  insertUserTrade, deleteUserTradesBySymbol, deleteUserBuyTradesBySymbol,
   fetchUserTrades, fetchWatchlistSymbols,
   fetchUniqueSymbols, fetchMarketDailySummaryRows, fetchMarketHistoryRows,
   type UserTrade, type MarketSymbolSnapshot, type DbMarketSummaryRow, type MarketHistoryRow,
@@ -43,10 +43,11 @@ const BODY = '"Inter", sans-serif'
 
 type HistoryEvent = {
   symbol: string
-  type: 'profit' | 'dividend' | 'loss'
+  type: 'BUY' | 'SELL'
   message: string
-  profit: number
-  profitPct: number
+  value: number
+  shares: number
+  price: number
   date: string
 }
 
@@ -613,9 +614,8 @@ function WatchRow({ item, index, onClick }: { item: WatchItem; index: number; on
 // ─── HistRow ──────────────────────────────────────────────────────────────────
 
 const HIST_CFG: Record<HistoryEvent['type'], { color: string; label: string; icon: React.ReactNode }> = {
-  profit: { color: 'var(--wc-success)', label: 'PROFIT', icon: <TrendingUpIcon sx={{ fontSize: 16 }} /> },
-  dividend: { color: '#b77a12', label: 'DIVIDEND', icon: <StarBorderIcon sx={{ fontSize: 16 }} /> },
-  loss: { color: 'var(--wc-error)', label: 'LOSS', icon: <TrendingDownIcon sx={{ fontSize: 16 }} /> },
+  BUY: { color: 'var(--wc-success, #00c853)', label: 'BUY', icon: <TrendingUpIcon sx={{ fontSize: 16 }} /> },
+  SELL: { color: 'var(--wc-error, #d50000)', label: 'SELL', icon: <TrendingDownIcon sx={{ fontSize: 16 }} /> },
 }
 
 function HistRow({ event, index }: { event: HistoryEvent; index: number }) {
@@ -643,7 +643,6 @@ function HistRow({ event, index }: { event: HistoryEvent; index: number }) {
         bgcolor: `color-mix(in srgb, ${cfg.color} 10%, transparent)`,
         border: `1px solid color-mix(in srgb, ${cfg.color} 22%, transparent)`,
       }}>
-        {/* FIXED: was 9.5px — now 11px */}
         <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 11, fontWeight: 700, color: cfg.color }}>
           {event.symbol.slice(0, 4)}
         </Typography>
@@ -652,14 +651,12 @@ function HistRow({ event, index }: { event: HistoryEvent; index: number }) {
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6, mb: 0.3 }}>
           <Box sx={{ color: cfg.color, display: 'flex', alignItems: 'center' }}>{cfg.icon}</Box>
-          {/* FIXED: was 9px — now 11px */}
           <Typography sx={{
             fontSize: 11, fontWeight: 700, letterSpacing: '0.08em',
             color: cfg.color, fontFamily: NUMBER_FONT, textTransform: 'uppercase',
           }}>
             {cfg.label}
           </Typography>
-          {/* FIXED: was 10px — now 12px */}
           <Typography sx={{ fontSize: 12, color: 'var(--wc-text-secondary, #4a5e78)', fontFamily: BODY }}>
             · {event.date}
           </Typography>
@@ -674,13 +671,12 @@ function HistRow({ event, index }: { event: HistoryEvent; index: number }) {
       </Box>
 
       <Box sx={{ textAlign: 'right', flexShrink: 0 }}>
-
-        <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 15, fontWeight: 700, color: cfg.color }}>
-          {fmtPkrSigned(event.profit)}
+        <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 14.5, fontWeight: 700, color: 'var(--wc-text-primary)' }}>
+          Rs. {Math.round(event.value).toLocaleString('en-PK')}
         </Typography>
-        <Box sx={{ mt: 0.3, display: 'flex', justifyContent: 'flex-end' }}>
-          <PLBadge value={event.profit} pct={event.profitPct} />
-        </Box>
+        <Typography sx={{ fontSize: 11.5, color: 'var(--wc-text-secondary, #4a5e78)', fontFamily: NUMBER_FONT, mt: 0.2 }}>
+          {event.shares.toLocaleString('en-PK')} @ Rs. {event.price.toLocaleString('en-PK')}
+        </Typography>
       </Box>
     </Box>
   )
@@ -705,6 +701,14 @@ export function PortfolioPage() {
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [marketSnapshots, setMarketSnapshots] = useState<MarketSymbolSnapshot[]>([])
   const marketSnapshotsRef = useRef<MarketSymbolSnapshot[]>([])
+  const isMountedRef = useRef(true)
+
+  useEffect(() => {
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
   const [marketLoading, setMarketLoading] = useState(true)
   const [marketHistoryLoading, setMarketHistoryLoading] = useState(false)
   const marketHistoryLoadingRef = useRef(false)
@@ -777,12 +781,8 @@ export function PortfolioPage() {
     })
   }, [])
 
-  useEffect(() => {
-    // While auth is still resolving we don't know whether the user is
-    // logged in, so skip until it settles.
+  const refreshPortfolio = useCallback(async () => {
     if (authLoading) return
-
-    let cancelled = false
 
     // ── Anonymous / no user ───────────────────────────────────────────────
     const loadMarketOnly = async () => {
@@ -793,12 +793,12 @@ export function PortfolioPage() {
           fetchMarketDailySummaryRows(2),
           fetchUniqueSymbols(),
         ])
-        if (cancelled) return
+        if (!isMountedRef.current) return
         processSummaryRows(summaryRows)
         syncSnapshots(snapshots)
       } catch { /* silent */ }
       finally {
-        if (!cancelled) setMarketLoading(false)
+        if (isMountedRef.current) setMarketLoading(false)
       }
     }
 
@@ -807,15 +807,13 @@ export function PortfolioPage() {
       setMarketLoading(true)
       setUserLoading(true)
       try {
-        // fetchWatchlistSymbols is included in the same Promise.all so all
-        // four requests fire in parallel — eliminates the extra sequential RTT.
         const [summaryRows, trades, marketData, watchlistSymbols] = await Promise.all([
           fetchMarketDailySummaryRows(2),
           fetchUserTrades(),
           hasStockService() ? fetchUniqueSymbols() : Promise.resolve([] as MarketSymbolSnapshot[]),
           fetchWatchlistSymbols(),
         ])
-        if (cancelled) return
+        if (!isMountedRef.current) return
 
         processSummaryRows(summaryRows)
         syncSnapshots(marketData)
@@ -835,8 +833,6 @@ export function PortfolioPage() {
             entry.totalCost += t.quantity * t.price
             entry.buys.push(t)
           } else {
-            entry.quantity -= t.quantity
-            entry.totalCost -= t.quantity * t.price
             entry.sells.push(t)
           }
         }
@@ -897,10 +893,13 @@ export function PortfolioPage() {
           .slice(0, 10)
           .map((t) => ({
             symbol: t.symbol,
-            type: t.trade_type === 'BUY' ? 'profit' : 'loss',
-            message: t.trade_type === 'BUY' ? 'Buy order recorded' : 'Sell order recorded',
-            profit: t.quantity * t.price,
-            profitPct: 0,
+            type: t.trade_type as 'BUY' | 'SELL',
+            message: t.trade_type === 'BUY'
+              ? `Purchased ${t.quantity.toLocaleString('en-PK')} shares of ${t.symbol}`
+              : `Sold ${t.quantity.toLocaleString('en-PK')} shares of ${t.symbol}`,
+            value: t.quantity * t.price,
+            shares: t.quantity,
+            price: t.price,
             date: new Date(t.trade_date).toLocaleDateString('en-PK', { day: 'numeric', month: 'short' }),
           }))
         setHistoryEvents(events)
@@ -919,7 +918,7 @@ export function PortfolioPage() {
         }
       } catch { /* silent degrade */ }
       finally {
-        if (!cancelled) {
+        if (isMountedRef.current) {
           setMarketLoading(false)
           setUserLoading(false)
         }
@@ -927,13 +926,15 @@ export function PortfolioPage() {
     }
 
     if (!user) {
-      loadMarketOnly()
+      await loadMarketOnly()
     } else {
-      loadUserData()
+      await loadUserData()
     }
-
-    return () => { cancelled = true }
   }, [user, authLoading, syncSnapshots, processSummaryRows])
+
+  useEffect(() => {
+    refreshPortfolio()
+  }, [refreshPortfolio])
 
   // ── Derived values ────────────────────────────────────────────────────────
 
@@ -1042,7 +1043,7 @@ export function PortfolioPage() {
     return () => clearTimeout(id)
   }, [])
 
-  const handleSaveHolding = useCallback(async (holding: Holding) => {
+  const handleSaveHolding = useCallback(async (holding: Holding, sellQty?: number, sellPrice?: number) => {
     setHoldings((prev) => {
       const idx = prev.findIndex((h) => h.symbol === holding.symbol)
       if (idx >= 0) {
@@ -1052,17 +1053,29 @@ export function PortfolioPage() {
     })
     if (user) {
       try {
-        await deleteUserTradesBySymbol(holding.symbol)
+        await deleteUserBuyTradesBySymbol(holding.symbol)
         const today = new Date().toISOString().slice(0, 10)
+
+        // Re-insert the surviving buy lots
         for (const lot of holding.buyLots) {
           await insertUserTrade({
             symbol: holding.symbol, trade_type: 'BUY',
             quantity: lot.shares, price: lot.price, trade_date: lot.date || today,
           })
         }
+
+        // Insert a SELL record only if an actual sell was performed in the modal
+        if (sellQty && sellQty > 0) {
+          const finalSellPrice = sellPrice && sellPrice > 0 ? sellPrice : holding.price
+          await insertUserTrade({
+            symbol: holding.symbol, trade_type: 'SELL',
+            quantity: sellQty, price: finalSellPrice, trade_date: today,
+          })
+        }
       } catch { /* silent */ }
+      await refreshPortfolio()
     }
-  }, [user])
+  }, [user, refreshPortfolio])
 
   const handleAddToWatchlist = useCallback((item: WatchItem) => {
     setWatchlist((prev) => {
@@ -1085,11 +1098,29 @@ export function PortfolioPage() {
     setHoldModalOpen(true)
   }, [requireAuth, holdings])
 
-  const handleDeleteHolding = useCallback(async (symbol: string) => {
+  const handleDeleteHolding = useCallback(async (symbol: string, isSell?: boolean, sellPrice?: number) => {
     if (!requireAuth()) return
+    const holding = holdings.find((h) => h.symbol === symbol)
     setHoldings((prev) => prev.filter((h) => h.symbol !== symbol))
-    if (user) deleteUserTradesBySymbol(symbol).catch(() => { /* silent */ })
-  }, [requireAuth, user])
+    if (user) {
+      try {
+        const today = new Date().toISOString().slice(0, 10)
+        // If it's a Sell, we want to record the SELL trade before/after deletion
+        if (isSell && holding && holding.shares > 0) {
+          const finalSellPrice = sellPrice && sellPrice > 0 ? sellPrice : (holding.price > 0 ? holding.price : holding.avgCost)
+          await deleteUserBuyTradesBySymbol(symbol)
+          await insertUserTrade({
+            symbol, trade_type: 'SELL',
+            quantity: holding.shares, price: finalSellPrice, trade_date: today,
+          })
+        } else {
+          // If it's a pure delete (not a sell), we just delete all trades
+          await deleteUserTradesBySymbol(symbol)
+        }
+      } catch { /* silent */ }
+      await refreshPortfolio()
+    }
+  }, [requireAuth, user, holdings, refreshPortfolio])
 
   const openMarketModal = useCallback(() => {
     if (!requireAuth()) return

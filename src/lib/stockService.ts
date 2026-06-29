@@ -664,3 +664,21 @@ export async function deleteUserTradesBySymbol(symbol: string): Promise<void> {
 
   clearUserCaches(userId)
 }
+
+export async function deleteUserBuyTradesBySymbol(symbol: string): Promise<void> {
+  const userId = await requireUserId()
+
+  const result = await supabase!
+    .from('user_trades')
+    .delete()
+    .eq('user_id', userId)
+    .eq('symbol', symbol.toUpperCase())
+    .eq('trade_type', 'BUY')
+
+  if (result.error) {
+    console.warn('Failed to delete buy trades by symbol:', result.error.message)
+    throw result.error
+  }
+
+  clearUserCaches(userId)
+}
