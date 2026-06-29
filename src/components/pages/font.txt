@@ -1,0 +1,64 @@
+# ─── Webict Capital — Typography System ─────────────────────────────────────
+# This file defines the standard fonts for the entire project.
+# Any new component or page MUST use these fonts. No ad-hoc font choices.
+
+## 1. Display / Editorial Headings
+   Font:    Playfair Display
+   Import:  Google Fonts
+   Weights: 400 (Regular), 500 (Medium), 600 (SemiBold), 700 (Bold)
+   Use for: Page titles, section headings, card labels (uppercase),
+            editorial/marketing copy, brand-level typography.
+   CSS:     font-family: '"Playfair Display", serif'
+
+## 2. Body / UI Text
+   Font:    Inter
+   Import:  Google Fonts
+   Weights: 400 (Regular), 500 (Medium), 600 (SemiBold), 700 (Bold)
+   Use for: Paragraphs, descriptions, button labels, navigation items,
+            form labels, tooltips, modal body text, helper text,
+            any general-purpose readable text.
+   CSS:     font-family: '"Inter", sans-serif'
+   Notes:   This is the global body default (set in index.css).
+
+## 3. Numbers / Data / Monospace
+   Font:    JetBrains Mono
+   Import:  Google Fonts
+   Weights: 400 (Regular), 500 (Medium), 600 (SemiBold), 700 (Bold)
+   Use for: Financial figures (prices, P/L, percentages), table data,
+            stock ticker symbols, chart axis labels, stat tiles,
+            any numeric or data-heavy content.
+   CSS:     font-family: '"JetBrains Mono", monospace'
+
+# ─── Size Scale (recommended minimums for readability) ──────────────────────
+
+   10px  — Reserved for decorative marks or slider tick labels only
+   11px  — Minimum for uppercase labels (letter-spacing >= 0.06em)
+   12px  — Secondary metadata, small captions, column headers
+   13px  — Body small, helper text, descriptions
+   14px  — Default body size, table cells, form inputs
+   15px  — Emphasized body text, highlighted values
+   16px  — Section subtitles, card titles
+   18–20px — Page subtitles, KPI values
+   24–38px — Hero numbers, portfolio value, index prices
+
+# ─── Weight Guidelines ──────────────────────────────────────────────────────
+
+   400  — Body text, descriptions, paragraphs
+   500  — Slightly emphasized text, metadata
+   600  — Labels, badges, secondary values, column headers
+   700  — Primary values, headings, prices, P/L figures
+
+# ─── CSS Custom Properties (defined in index.css) ──────────────────────────
+
+   --wc-font-display:  "Playfair Display", serif
+   --wc-font-body:     "Inter", sans-serif
+   --wc-font-mono:     "JetBrains Mono", monospace
+
+# ─── Rules ──────────────────────────────────────────────────────────────────
+
+   1. NEVER use "DM Mono" or "Noto Sans Mono" — they are deprecated.
+   2. NEVER go below 11px for any readable text (except slider tick marks).
+   3. Financial figures MUST use JetBrains Mono for tabular alignment.
+   4. All uppercase labels MUST have letter-spacing >= 0.06em.
+   5. Body/description text MUST have line-height >= 1.5.
+   6. Number font-weight for primary values: 700. For secondary: 500.

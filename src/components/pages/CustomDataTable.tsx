@@ -24,6 +24,8 @@ export type DataTableRow = {
 	low: string | number | null
 	last_rate: string | number | null
 	change: string | number | null
+	eps: number | null
+	pe: number | null
 }
 
 type SortKey = keyof DataTableRow
@@ -56,8 +58,8 @@ function changeVal(change: string | number | null | undefined): number {
 
 function changeColor(change: string | number | null | undefined): string {
 	const n = changeVal(change)
-	if (isNaN(n) || n === 0) return '#6f829d'
-	return n > 0 ? '#1a6640' : '#b4283a'
+	if (isNaN(n) || n === 0) return 'var(--wc-text-secondary)'
+	return n > 0 ? 'var(--wc-success)' : 'var(--wc-error)'
 }
 
 function changeSign(change: string | number | null | undefined): string {
@@ -67,11 +69,15 @@ function changeSign(change: string | number | null | undefined): string {
 }
 
 function compareCells(a: DataTableRow, b: DataTableRow, key: SortKey): number {
-	const numericKeys: SortKey[] = ['turnover', 'open', 'high', 'low', 'last_rate', 'change']
+	const numericKeys: SortKey[] = ['turnover', 'open', 'high', 'low', 'last_rate', 'change', 'eps', 'pe']
 	if (numericKeys.includes(key)) {
 		const an = toNum(a[key])
 		const bn = toNum(b[key])
-		if (!isNaN(an) && !isNaN(bn)) return an - bn
+		// Push nulls to the bottom regardless of sort direction
+		if (isNaN(an) && isNaN(bn)) return 0
+		if (isNaN(an)) return 1
+		if (isNaN(bn)) return -1
+		return an - bn
 	}
 	return (a[key] ?? '').toString().localeCompare((b[key] ?? '').toString())
 }
@@ -99,13 +105,13 @@ export function CustomDataTable({ rows, searchQuery, monoFont }: CustomDataTable
 	}, [rows, searchQuery, rowsPerPage])
 
 	const headCell = {
-		bgcolor: '#fafbfd',
-		color: '#4a5e78',
+		bgcolor: 'var(--wc-paper)',
+		color: 'var(--wc-text-secondary)',
 		fontFamily: monoFont,
 		fontWeight: 700,
 		fontSize: 11,
 		letterSpacing: '0.06em',
-		borderBottom: '1px solid #e2eaf5',
+		borderBottom: '1px solid var(--wc-divider)',
 		py: 1.2,
 		whiteSpace: 'nowrap' as const,
 	}
@@ -132,9 +138,9 @@ export function CustomDataTable({ rows, searchQuery, monoFont }: CustomDataTable
 					}
 				}}
 				sx={{
-					color: `${sortKey === id ? '#0a2463' : '#4a5e78'} !important`,
-					'& .MuiTableSortLabel-icon': { color: '#0a2463 !important' },
-					'&.Mui-active': { color: '#0a2463 !important' },
+					color: `${sortKey === id ? 'var(--wc-primary)' : 'var(--wc-text-secondary)'} !important`,
+					'& .MuiTableSortLabel-icon': { color: 'var(--wc-primary) !important' },
+					'&.Mui-active': { color: 'var(--wc-primary) !important' },
 				}}
 			>
 				{label}
@@ -147,10 +153,10 @@ export function CustomDataTable({ rows, searchQuery, monoFont }: CustomDataTable
 			<TableContainer
 				component={Paper}
 				sx={{
-					bgcolor: '#ffffff',
+					bgcolor: 'var(--wc-bg)',
 					borderRadius: 1.5,
 					maxHeight: { xs: 560, md: 700 },
-					border: '1px solid #e2eaf5',
+					border: '1px solid var(--wc-divider)',
 				}}
 			>
 				<Table stickyHeader size="small" aria-label="PSX stocks table">
@@ -164,6 +170,8 @@ export function CustomDataTable({ rows, searchQuery, monoFont }: CustomDataTable
 							<SortCell id="low" label="LOW" />
 							<SortCell id="last_rate" label="LAST" />
 							<SortCell id="change" label="CHG" />
+							<SortCell id="eps" label="EPS" />
+							<SortCell id="pe" label="P/E" />
 						</TableRow>
 					</TableHead>
 
@@ -176,13 +184,13 @@ export function CustomDataTable({ rows, searchQuery, monoFont }: CustomDataTable
 									key={`${stock.symbol}-${page}-${i}`}
 									hover
 									sx={{
-										'&:hover': { bgcolor: '#f5f8ff' },
-										'& td': { borderBottom: '1px solid #e2eaf5' },
+										'&:hover': { bgcolor: 'var(--wc-primary-light)' },
+										'& td': { borderBottom: '1px solid var(--wc-divider)' },
 									}}
 								>
 									<TableCell
 										sx={{
-											color: '#0a2463',
+											color: 'var(--wc-primary)',
 											fontFamily: monoFont,
 											fontWeight: 700,
 											fontSize: 12,
@@ -195,7 +203,7 @@ export function CustomDataTable({ rows, searchQuery, monoFont }: CustomDataTable
 
 									<TableCell
 										sx={{
-											color: '#4a5e78',
+											color: 'var(--wc-text-secondary)',
 											fontSize: 12,
 											maxWidth: { xs: 140, md: 260 },
 											overflow: 'hidden',
@@ -207,26 +215,26 @@ export function CustomDataTable({ rows, searchQuery, monoFont }: CustomDataTable
 										{stock.company}
 									</TableCell>
 
-									<TableCell align="right" sx={{ color: '#4a5e78', fontFamily: monoFont, fontSize: 11 }}>
+									<TableCell align="right" sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 11 }}>
 										{fmtNum(stock.turnover)}
 									</TableCell>
 
-									<TableCell align="right" sx={{ color: '#4a5e78', fontFamily: monoFont, fontSize: 12 }}>
+									<TableCell align="right" sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 12 }}>
 										{stock.open || '—'}
 									</TableCell>
 
-									<TableCell align="right" sx={{ color: '#1a6640', fontFamily: monoFont, fontSize: 12 }}>
+									<TableCell align="right" sx={{ color: 'var(--wc-success)', fontFamily: monoFont, fontSize: 12 }}>
 										{stock.high || '—'}
 									</TableCell>
 
-									<TableCell align="right" sx={{ color: '#b4283a', fontFamily: monoFont, fontSize: 12 }}>
+									<TableCell align="right" sx={{ color: 'var(--wc-error)', fontFamily: monoFont, fontSize: 12 }}>
 										{stock.low || '—'}
 									</TableCell>
 
 									<TableCell
 										align="right"
 										sx={{
-											color: '#080e1a',
+											color: 'var(--wc-text-primary)',
 											fontFamily: monoFont,
 											fontWeight: 700,
 											fontSize: 13,
@@ -256,6 +264,30 @@ export function CustomDataTable({ rows, searchQuery, monoFont }: CustomDataTable
 											</span>
 										</Stack>
 									</TableCell>
+
+									<TableCell
+										align="right"
+										sx={{
+											color: 'var(--wc-text-secondary)',
+											fontFamily: monoFont,
+											fontSize: 12,
+											whiteSpace: 'nowrap',
+										}}
+									>
+										{stock.eps != null ? stock.eps.toFixed(2) : '—'}
+									</TableCell>
+
+									<TableCell
+										align="right"
+										sx={{
+											color: 'var(--wc-text-secondary)',
+											fontFamily: monoFont,
+											fontSize: 12,
+											whiteSpace: 'nowrap',
+										}}
+									>
+										{stock.pe != null ? `${stock.pe.toFixed(1)}x` : '—'}
+									</TableCell>
 								</TableRow>
 							)
 						})}
@@ -263,9 +295,9 @@ export function CustomDataTable({ rows, searchQuery, monoFont }: CustomDataTable
 						{sortedRows.length === 0 && searchQuery && (
 							<TableRow>
 								<TableCell
-									colSpan={8}
+									colSpan={10}
 									align="center"
-									sx={{ color: '#8097b0', fontFamily: monoFont, fontSize: 12, py: 5 }}
+									sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 12, py: 5 }}
 								>
 									No symbols match &quot;{searchQuery}&quot;
 								</TableCell>
@@ -288,12 +320,12 @@ export function CustomDataTable({ rows, searchQuery, monoFont }: CustomDataTable
 				rowsPerPageOptions={[10, 25, 50, 100]}
 				sx={{
 					borderRadius: '0 0 1.5rem 1.5rem',
-					borderTop: '1px solid #e2eaf5',
-					bgcolor: '#fafbfd',
+					borderTop: '1px solid var(--wc-divider)',
+					bgcolor: 'var(--wc-paper)',
 					'& .MuiTablePagination-toolbar, & .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows, & .MuiInputBase-root': {
 						fontFamily: monoFont,
 						fontSize: 12,
-						color: '#4a5e78',
+						color: 'var(--wc-text-secondary)',
 					},
 				}}
 			/>

@@ -1,14 +1,22 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
 
 export const hasSupabaseConfig = Boolean(supabaseUrl && supabaseAnonKey)
 
-export const supabase = hasSupabaseConfig
-  ? createClient(supabaseUrl, supabaseAnonKey, {
+let _client: SupabaseClient | null = null
+
+export const supabase: SupabaseClient | null = (() => {
+  if (!hasSupabaseConfig) return null
+  if (!_client) {
+    _client = createClient(supabaseUrl!, supabaseAnonKey!, {
       auth: {
-        persistSession: false,
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,   // catches OAuth redirects automatically
       },
     })
-  : null
+  }
+  return _client
+})()

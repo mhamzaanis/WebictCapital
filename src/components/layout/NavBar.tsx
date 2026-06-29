@@ -1,19 +1,31 @@
 import { useEffect, useState } from 'react'
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded'
 import MenuRoundedIcon from '@mui/icons-material/MenuRounded'
-import { AppBar, Box, Container, Drawer, IconButton, Link, Stack, Toolbar, Typography } from '@mui/material'
+import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded'
+import { AppBar, Avatar, Box, Container, Divider, Drawer, IconButton, Link, Menu, MenuItem, Stack, Toolbar, Typography } from '@mui/material'
 import { motion, useReducedMotion, AnimatePresence } from 'motion/react'
 import { Link as RouterLink, useLocation } from 'react-router-dom'
 import { navItems } from '../../content/siteContent'
+import { useAuth } from '../../context/AuthContext'
 
 export function NavBar() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [openDropdownLabel, setOpenDropdownLabel] = useState<string | null>(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [logoHovered, setLogoHovered] = useState(false)
+  const [userMenuAnchor, setUserMenuAnchor] = useState<HTMLElement | null>(null)
   const { pathname } = useLocation()
   const hasOpenSubmenu = Boolean(openDropdownLabel)
   const reduceMotion = useReducedMotion()
+  const { user, signOut } = useAuth()
+
+  const userMenuOpen = Boolean(userMenuAnchor)
+  const handleUserMenuOpen = (e: React.MouseEvent<HTMLElement>) => setUserMenuAnchor(e.currentTarget)
+  const handleUserMenuClose = () => setUserMenuAnchor(null)
+  const handleSignOut = async () => {
+    handleUserMenuClose()
+    await signOut()
+  }
 
   const isInternalHref = (href: string) => href.startsWith('/')
   const getPathFromHref = (href: string) => href.split('#')[0] || '/'
@@ -100,7 +112,7 @@ export function NavBar() {
                       fontSize: { xs: 22, sm: 26, md: 30 },
                       lineHeight: 1,
                       letterSpacing: '-0.03em',
-                      fontWeight: 800,
+                      fontWeight: 700,
                       color: '#080e1a',
                       transition: 'color 0.22s ease',
                       ...(logoHovered && { color: '#0a2463' }),
@@ -176,6 +188,21 @@ export function NavBar() {
                 spacing={0.3}
                 sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center' }}
               >
+                {user && (
+                  <Avatar
+                    src={user.user_metadata?.avatar_url ?? undefined}
+                    alt={user.user_metadata?.full_name ?? user.email ?? ''}
+                    onClick={handleUserMenuOpen}
+                    sx={{
+                      width: 30,
+                      height: 30,
+                      cursor: 'pointer',
+                      border: '1.5px solid var(--wc-divider)',
+                      transition: 'border-color 0.2s ease',
+                      '&:hover': { borderColor: 'var(--wc-primary)' },
+                    }}
+                  />
+                )}
                 <motion.div
                   whileTap={reduceMotion ? undefined : { scale: 0.88 }}
                   transition={{ duration: 0.16 }}
@@ -344,6 +371,53 @@ export function NavBar() {
                     </Box>
                   )
                 })}
+
+                {/* ── User profile (desktop) ── */}
+                {user && (
+                  <Box
+                    component={motion.div}
+                    initial={reduceMotion ? false : { opacity: 0, x: 8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                    onClick={handleUserMenuOpen}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      ml: 1,
+                      pl: 1,
+                      borderLeft: '1px solid #e2eaf5',
+                      cursor: 'pointer',
+                      transition: 'opacity 0.2s ease',
+                      '&:hover': { opacity: 0.8 },
+                    }}
+                  >
+                    <Avatar
+                      src={user.user_metadata?.avatar_url ?? undefined}
+                      alt={user.user_metadata?.full_name ?? user.email ?? ''}
+                      sx={{
+                        width: 32,
+                        height: 32,
+                        border: '1.5px solid #e2eaf5',
+                        transition: 'border-color 0.2s ease',
+                      }}
+                    />
+                    <Typography
+                      sx={{
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: '#253750',
+                        fontFamily: '"Playfair Display", serif',
+                        maxWidth: 120,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      {user.user_metadata?.full_name ?? user.email?.split('@')[0] ?? 'User'}
+                    </Typography>
+                  </Box>
+                )}
               </Stack>
             </Toolbar>
           </Container>
@@ -368,6 +442,53 @@ export function NavBar() {
         })}
       />
 
+      {/* ── User menu (sign out) ── */}
+      <Menu
+        anchorEl={userMenuAnchor}
+        open={userMenuOpen}
+        onClose={handleUserMenuClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        slotProps={{
+          paper: {
+            sx: {
+              mt: 0.8,
+              minWidth: 180,
+              borderRadius: '10px',
+              border: '1px solid #e2eaf5',
+              boxShadow: '0 12px 28px rgba(10,36,99,0.1)',
+              overflow: 'hidden',
+            },
+          },
+        }}
+      >
+        {user && (
+          <Box sx={{ px: 2, py: 1.5 }}>
+            <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#080e1a', fontFamily: 'var(--wc-font-body)' }}>
+              {user.user_metadata?.full_name ?? 'User'}
+            </Typography>
+            <Typography sx={{ fontSize: 10.5, color: '#4a5e78', fontFamily: 'var(--wc-font-mono)', mt: 0.1 }}>
+              {user.email}
+            </Typography>
+          </Box>
+        )}
+        <Divider sx={{ borderColor: '#e2eaf5' }} />
+        <MenuItem
+          onClick={handleSignOut}
+          sx={{
+            fontSize: 12.5,
+            color: '#b4283a',
+            fontFamily: 'var(--wc-font-body)',
+            py: 1.2,
+            gap: 1,
+            '&:hover': { bgcolor: 'rgba(180,40,58,0.04)' },
+          }}
+        >
+          <LogoutRoundedIcon sx={{ fontSize: 16 }} />
+          Sign out
+        </MenuItem>
+      </Menu>
+
       {/* ── Mobile drawer ── */}
       <Drawer
         anchor="right"
@@ -391,7 +512,7 @@ export function NavBar() {
               <Typography
                 sx={{
                   fontSize: 10,
-                  fontFamily: '"Playfair Display", serif',
+                  fontFamily: 'var(--wc-font-mono)',
                   letterSpacing: '0.18em',
                   textTransform: 'uppercase',
                   color: '#0a2463',
@@ -493,10 +614,34 @@ export function NavBar() {
 
           {/* Drawer footer */}
           <Box sx={{ borderTop: '1px solid #e2eaf5', pt: 2, mt: 2 }}>
+            {user && (
+              <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1.2 }}>
+                <Avatar
+                  src={user.user_metadata?.avatar_url ?? undefined}
+                  alt={user.user_metadata?.full_name ?? user.email ?? ''}
+                  sx={{ width: 32, height: 32, border: '1.5px solid #e2eaf5' }}
+                />
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography sx={{ fontSize: 12.5, fontWeight: 600, color: '#080e1a', fontFamily: 'var(--wc-font-body)' }}>
+                    {user.user_metadata?.full_name ?? 'User'}
+                  </Typography>
+                  <Typography sx={{ fontSize: 10, color: '#4a5e78', fontFamily: 'var(--wc-font-mono)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {user.email}
+                  </Typography>
+                </Box>
+                <IconButton
+                  onClick={handleSignOut}
+                  size="small"
+                  sx={{ color: '#b4283a', '&:hover': { bgcolor: 'rgba(180,40,58,0.06)' } }}
+                >
+                  <LogoutRoundedIcon sx={{ fontSize: 18 }} />
+                </IconButton>
+              </Box>
+            )}
             <Typography
               sx={{
                 fontSize: 10,
-                fontFamily: '"Playfair Display", serif',
+                fontFamily: 'var(--wc-font-mono)',
                 letterSpacing: '0.12em',
                 color: '#8097b0',
                 textTransform: 'uppercase',

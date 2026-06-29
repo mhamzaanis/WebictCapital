@@ -132,6 +132,25 @@ const SEO_BY_PATH: Record<string, PageSeo> = {
       ],
     },
   },
+  '/sip-calculator': {
+    title: 'SIP Calculator | Estimate Your Systematic Investment Plan Returns | Webict Capital',
+    description:
+      'Use Webict Capital\'s free SIP calculator to project how your monthly investments grow over time. Adjust monthly amount, expected return rate, and investment period to estimate your future wealth.',
+    structuredData: {
+      '@context': 'https://schema.org',
+      '@type': 'WebApplication',
+      name: 'SIP Calculator by Webict Capital',
+      url: `${SITE_URL}/sip-calculator`,
+      description:
+        'Free online SIP (Systematic Investment Plan) calculator for Pakistan investors. Estimate portfolio growth with compound returns.',
+      applicationCategory: 'FinanceApplication',
+      provider: {
+        '@type': 'Organization',
+        name: 'Webict Capital',
+        url: `${SITE_URL}/`,
+      },
+    },
+  },
   '/advisory': {
     title: 'Investment Advisory | Webict Capital - Coming Soon',
     description:

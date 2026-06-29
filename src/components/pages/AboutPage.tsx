@@ -188,11 +188,12 @@ export function AboutPage() {
           {/* ── WHO / WHAT / WHY ───────────────────────────────────────── */}
           <Grid container spacing={{ xs: 1.5, md: 2 }}>
             {teamHighlights.map((item, index) => (
-              <Grid key={item.title} size={{ xs: 12, md: 4 }}>
+              <Grid key={item.title} size={{ xs: 12, md: 4 }} sx={{ display: 'flex' }}>
                 <MotionReveal delay={Math.min(index * 0.08, 0.2)}>
                   <Box
                     sx={{
-                      height: '100%',
+                      height: { xs: 240, md: 260 },
+                      flex: 1,
                       border: '1px solid #e2eaf5',
                       borderRadius: 1.5,
                       p: { xs: 2.4, md: 3.2 },
@@ -320,7 +321,7 @@ export function AboutPage() {
                 {/* Sidebar */}
                 <Grid size={{ xs: 12, md: 4 }}>
                   <Stack spacing={5}>
-                    <Box>
+                    {/* <Box>
                       <Typography sx={{ fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#8097b0', mb: 1 }}>
                         Email
                       </Typography>
@@ -339,7 +340,7 @@ export function AboutPage() {
                       >
                         contact@webictcapital.com
                       </Typography>
-                    </Box>
+                    </Box> */}
                     <Box>
                       <Typography sx={{ fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#8097b0', mb: 1 }}>
                         Office

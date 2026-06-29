@@ -25,34 +25,34 @@ export const siteTheme = createTheme({
     },
   },
   typography: {
-    fontFamily: '"Playfair Display", serif',
+    fontFamily: 'var(--wc-font-body)',
     button: {
-      fontFamily: '"Playfair Display", serif',
+      fontFamily: 'var(--wc-font-body)',
       textTransform: 'none',
       fontWeight: 500,
     },
     h1: {
-      fontFamily: '"Playfair Display", serif',
+      fontFamily: 'var(--wc-font-display)',
       fontWeight: 700,
     },
     h2: {
-      fontFamily: '"Playfair Display", serif',
+      fontFamily: 'var(--wc-font-display)',
       fontWeight: 700,
     },
     h3: {
-      fontFamily: '"Playfair Display", serif',
+      fontFamily: 'var(--wc-font-display)',
       fontWeight: 700,
     },
     h4: {
-      fontFamily: '"Playfair Display", serif',
+      fontFamily: 'var(--wc-font-display)',
       fontWeight: 700,
     },
     h5: {
-      fontFamily: '"Playfair Display", serif',
+      fontFamily: 'var(--wc-font-display)',
       fontWeight: 700,
     },
     h6: {
-      fontFamily: '"Playfair Display", serif',
+      fontFamily: 'var(--wc-font-display)',
       fontWeight: 700,
     },
   },
@@ -62,10 +62,46 @@ export const siteTheme = createTheme({
   components: {
     MuiCssBaseline: {
       styleOverrides: {
+        ':root': {
+          '--wc-font-display': '"Playfair Display", serif',
+          '--wc-font-body': '"Inter", sans-serif',
+          '--wc-font-mono': '"JetBrains Mono", monospace',
+          '--wc-text-primary': '#080e1a',
+          '--wc-text-secondary': '#4a5e78',
+          '--wc-primary': '#0a2463',
+          '--wc-primary-light': '#f0f4fb',
+          '--wc-primary-soft': 'rgba(10,36,99,0.08)',
+          '--wc-primary-strong': 'rgba(10,36,99,0.25)',
+          '--wc-divider': '#e2eaf5',
+          '--wc-divider-soft': 'rgba(226,234,245,0.4)',
+          '--wc-success': '#1a6640',
+          '--wc-error': '#b4283a',
+          '--wc-bg': '#ffffff',
+          '--wc-paper': '#fafbfd',
+          '--wc-number-font': '"JetBrains Mono", monospace',
+        },
         body: {
           backgroundColor: '#ffffff',
           color: '#080e1a',
-          fontFamily: '"Playfair Display", serif',
+          fontFamily: 'var(--wc-font-body)',
+          fontVariantNumeric: 'tabular-nums lining-nums',
+          fontFeatureSettings: '"tnum" 1, "lnum" 1',
+        },
+      },
+    },
+    MuiTypography: {
+      styleOverrides: {
+        root: {
+          fontVariantNumeric: 'tabular-nums lining-nums',
+          fontFeatureSettings: '"tnum" 1, "lnum" 1',
+        },
+      },
+    },
+    MuiTableCell: {
+      styleOverrides: {
+        root: {
+          fontVariantNumeric: 'tabular-nums lining-nums',
+          fontFeatureSettings: '"tnum" 1, "lnum" 1',
         },
       },
     },
@@ -73,6 +109,7 @@ export const siteTheme = createTheme({
       styleOverrides: {
         root: {
           borderRadius: 6,
+          fontFamily: 'var(--wc-font-body)',
         },
       },
     },

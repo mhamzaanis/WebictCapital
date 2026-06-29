@@ -1,0 +1,674 @@
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.market_daily_summary (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  trade_date date NOT NULL UNIQUE,
+  kse100_prev numeric,
+  kse100_close numeric,
+  kse100_change numeric,
+  kse30_prev numeric,
+  kse30_close numeric,
+  kse30_change numeric,
+  prev_volume bigint,
+  curr_volume bigint,
+  advances integer,
+  declines integer,
+  unchanged integer,
+  flu_no text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT market_daily_summary_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.datatable (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  trade_date date NOT NULL,
+  symbol text NOT NULL,
+  company text NOT NULL,
+  open numeric,
+  high numeric,
+  low numeric,
+  close numeric,
+  turnover bigint,
+  change numeric,
+  section text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT datatable_pkey PRIMARY KEY (id),
+  CONSTRAINT datatable_date_fk FOREIGN KEY (trade_date) REFERENCES public.market_daily_summary(trade_date)
+);
+CREATE TABLE public.watchlists (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  user_id uuid NOT NULL,
+  symbol text NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT watchlists_pkey PRIMARY KEY (id),
+  CONSTRAINT watchlists_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.user_trades (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  user_id uuid NOT NULL,
+  symbol text NOT NULL,
+  trade_type text NOT NULL CHECK (trade_type = ANY (ARRAY['BUY'::text, 'SELL'::text])),
+  quantity integer NOT NULL CHECK (quantity > 0),
+  price numeric NOT NULL CHECK (price >= 0::numeric),
+  trade_date date NOT NULL DEFAULT CURRENT_DATE,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT user_trades_pkey PRIMARY KEY (id),
+  CONSTRAINT user_trades_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.announcements (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  symbol text NOT NULL,
+  company_name text,
+  announcement_date date NOT NULL,
+  raw_text text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT announcements_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.financial_results (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  announcement_id bigint NOT NULL,
+  result_type text NOT NULL CHECK (result_type = ANY (ARRAY['UNCONSOLIDATED'::text, 'CONSOLIDATED'::text])),
+  result_period text,
+  period_ending date,
+  profit_before_tax_mln numeric,
+  profit_after_tax_mln numeric,
+  eps numeric,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT financial_results_pkey PRIMARY KEY (id),
+  CONSTRAINT financial_results_announcement_id_fkey FOREIGN KEY (announcement_id) REFERENCES public.announcements(id)
+);
+CREATE TABLE public.corporate_actions (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  announcement_id bigint NOT NULL UNIQUE,
+  dividend text,
+  bonus text,
+  book_closure_start date,
+  book_closure_end date,
+  agm_date date,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT corporate_actions_pkey PRIMARY KEY (id),
+  CONSTRAINT corporate_actions_announcement_id_fkey FOREIGN KEY (announcement_id) REFERENCES public.announcements(id)
+);
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- 002_eps_pe.sql
+-- Adds:
+--   1. v_latest_eps   – one row per symbol, latest UNCONSOLIDATED EPS
+--                       (falls back to CONSOLIDATED if no UNCONSOLIDATED exists)
+--   2. get_unique_symbols – updated to include eps + pe_ratio columns
+--   3. get_stock_details  – fixed to return both result types + correct PE
+-- ─────────────────────────────────────────────────────────────────────────────
+
+
+-- ── 1. v_latest_eps ──────────────────────────────────────────────────────────
+-- One row per symbol. Picks the most recent announcement, then within that
+-- picks UNCONSOLIDATED over CONSOLIDATED. PE is computed at query time so it
+-- always reflects the current close price from datatable.
+
+CREATE OR REPLACE VIEW public.v_latest_eps AS
+WITH ranked AS (
+    SELECT
+        a.symbol,
+        fr.result_type,
+        fr.result_period,
+        fr.period_ending,
+        fr.eps,
+        fr.profit_before_tax_mln,
+        fr.profit_after_tax_mln,
+        -- Rank by most recent period_ending, prefer UNCONSOLIDATED within a tie
+        ROW_NUMBER() OVER (
+            PARTITION BY a.symbol
+            ORDER BY
+                fr.period_ending DESC,
+                CASE fr.result_type WHEN 'UNCONSOLIDATED' THEN 0 ELSE 1 END
+        ) AS rn
+    FROM public.announcements a
+    JOIN public.financial_results fr ON fr.announcement_id = a.id
+    WHERE fr.eps IS NOT NULL
+),
+latest_close AS (
+    SELECT DISTINCT ON (symbol)
+        symbol,
+        close
+    FROM public.datatable
+    WHERE close IS NOT NULL
+    ORDER BY symbol, trade_date DESC
+)
+SELECT
+    r.symbol,
+    r.result_type,
+    r.result_period,
+    r.period_ending,
+    r.eps,
+    r.profit_before_tax_mln,
+    r.profit_after_tax_mln,
+    lc.close AS latest_close,
+    CASE
+        WHEN r.eps IS NOT NULL AND r.eps <> 0
+        THEN ROUND((lc.close / r.eps)::numeric, 2)
+        ELSE NULL
+    END AS pe_ratio
+FROM ranked r
+LEFT JOIN latest_close lc ON lc.symbol = r.symbol
+WHERE r.rn = 1;
+
+
+-- ── 2. Update get_unique_symbols RPC ─────────────────────────────────────────
+-- Adds eps and pe_ratio to the existing snapshot so the main table can show
+-- these columns without any additional fetch.
+
+CREATE OR REPLACE FUNCTION public.get_unique_symbols()
+RETURNS TABLE (
+    symbol      text,
+    company     text,
+    section     text,
+    price       numeric,
+    change      numeric,
+    "changePct" numeric,
+    volume      bigint,
+    spark       numeric[],
+    eps         numeric,
+    pe_ratio    numeric
+)
+LANGUAGE sql
+STABLE
+AS $$
+    WITH latest_day AS (
+        -- Most recent trade date that has data
+        SELECT MAX(trade_date) AS max_date FROM public.datatable
+    ),
+    prev_day AS (
+        -- Second most recent trade date (for changePct denominator)
+        SELECT MAX(trade_date) AS prev_date
+        FROM public.datatable
+        WHERE trade_date < (SELECT max_date FROM latest_day)
+    ),
+    current_prices AS (
+        SELECT
+            d.symbol,
+            MAX(d.company)  AS company,
+            MAX(d.section)  AS section,
+            MAX(d.close)    AS price,
+            MAX(d.change)   AS change,
+            MAX(d.turnover) AS volume
+        FROM public.datatable d
+        WHERE d.trade_date = (SELECT max_date FROM latest_day)
+        GROUP BY d.symbol
+    ),
+    prev_prices AS (
+        SELECT symbol, MAX(close) AS prev_close
+        FROM public.datatable
+        WHERE trade_date = (SELECT prev_date FROM prev_day)
+        GROUP BY symbol
+    ),
+    sparks AS (
+        -- Last 12 closing prices per symbol for the sparkline
+        SELECT
+            symbol,
+            ARRAY_AGG(close ORDER BY trade_date) AS spark
+        FROM (
+            SELECT symbol, trade_date, close
+            FROM public.datatable
+            WHERE trade_date >= (SELECT max_date FROM latest_day) - INTERVAL '60 days'
+            ORDER BY symbol, trade_date DESC
+        ) sub
+        GROUP BY symbol
+    )
+    SELECT
+        cp.symbol,
+        cp.company,
+        cp.section,
+        cp.price,
+        cp.change,
+        CASE
+            WHEN pp.prev_close IS -- ── 3. Fix get_stock_details ──────────────────────────────────────────────────
+-- Returns BOTH UNCONSOLIDATED and CONSOLIDATED for the latest period,
+-- plus a correct trailing PE based on UNCONSOLIDATED EPS.
+-- Also returns latest_yearly: the most recent full-year (YEAR) result,
+-- so the frontend can show interim + annual figures side by side.
+
+CREATE OR REPLACE FUNCTION public.get_stock_details(p_symbol text)
+RETURNS jsonb
+LANGUAGE plpgsql
+STABLE
+AS $$
+DECLARE
+    result jsonb;
+BEGIN
+    SELECT jsonb_build_object(
+
+        -- ── Latest Trading Day ───────────────────────────────────────────
+        'overview',
+        (
+            SELECT to_jsonb(t)
+            FROM (
+                SELECT
+                    symbol, company, section,
+                    trade_date, open, high, low, close, turnover, change
+                FROM public.datatable
+                WHERE symbol = UPPER(p_symbol)
+                ORDER BY trade_date DESC
+                LIMIT 1
+            ) t
+        ),
+
+        -- ── Last 252 Trading Days ────────────────────────────────────────
+        'history',
+        (
+            SELECT jsonb_agg(h ORDER BY h.trade_date)
+            FROM (
+                SELECT trade_date, open, high, low, close, turnover
+                FROM public.datatable
+                WHERE symbol = UPPER(p_symbol)
+                ORDER BY trade_date DESC
+                LIMIT 252
+            ) h
+        ),
+
+        -- ── Latest Financial Results (BOTH types for the latest period) ──
+        -- Returns an array so the frontend can pick UNCONSOLIDATED for PE
+        -- and display CONSOLIDATED alongside it.
+        'financials',
+        (
+            SELECT jsonb_agg(f ORDER BY
+                CASE f->>'result_type' WHEN 'UNCONSOLIDATED' THEN 0 ELSE 1 END
+            )
+            FROM (
+                SELECT to_jsonb(fr_row) AS f
+                FROM (
+                    WITH latest_period AS (
+                        SELECT fr.period_ending
+                        FROM public.announcements a
+                        JOIN public.financial_results fr ON fr.announcement_id = a.id
+                        WHERE a.symbol = UPPER(p_symbol)
+                          AND fr.eps IS NOT NULL
+                        ORDER BY fr.period_ending DESC
+                        LIMIT 1
+                    )
+                    SELECT
+                        fr.result_type,
+                        fr.result_period,
+                        fr.period_ending,
+                        fr.eps,
+                        fr.profit_before_tax_mln,
+                        fr.profit_after_tax_mln
+                    FROM public.announcements a
+                    JOIN public.financial_results fr ON fr.announcement_id = a.id
+                    WHERE a.symbol = UPPER(p_symbol)
+                      AND fr.period_ending = (SELECT period_ending FROM latest_period)
+                      AND fr.eps IS NOT NULL
+                ) fr_row
+            ) sub
+        ),
+
+        -- ── Latest Full-Year Result ───────────────────────────────────────
+        -- Always the most recent YEAR result, UNCONSOLIDATED preferred.
+        -- The frontend shows this alongside interim results so users can
+        -- compare the latest quarter/half with the full-year picture.
+        'latest_yearly',
+        (
+            SELECT to_jsonb(y)
+            FROM (
+                SELECT
+                    fr.result_type,
+                    fr.result_period,
+                    fr.period_ending,
+                    fr.eps,
+                    fr.profit_before_tax_mln,
+                    fr.profit_after_tax_mln
+                FROM public.announcements a
+                JOIN public.financial_results fr ON fr.announcement_id = a.id
+                WHERE a.symbol = UPPER(p_symbol)
+                  AND fr.result_period = 'YEAR'
+                  AND fr.eps IS NOT NULL
+                ORDER BY
+                    fr.period_ending DESC,
+                    CASE fr.result_type WHEN 'UNCONSOLIDATED' THEN 0 ELSE 1 END
+                LIMIT 1
+            ) y
+        ),
+
+        -- ── Trailing PE (price ÷ latest UNCONSOLIDATED EPS) ──────────────
+        'pe_ratio',
+        (
+            SELECT ROUND((d.close / fr.eps)::numeric, 2)
+            FROM public.datatable d
+            CROSS JOIN LATERAL (
+                SELECT fr2.eps
+                FROM public.announcements a
+                JOIN public.financial_results fr2 ON fr2.announcement_id = a.id
+                WHERE a.symbol = UPPER(p_symbol)
+                  AND fr2.result_type = 'UNCONSOLIDATED'
+                  AND fr2.eps IS NOT NULL
+                  AND fr2.eps <> 0
+                ORDER BY fr2.period_ending DESC
+                LIMIT 1
+            ) fr
+            WHERE d.symbol = UPPER(p_symbol)
+            ORDER BY d.trade_date DESC
+            LIMIT 1
+        ),
+
+        -- ── Latest Corporate Action ───────────────────────────────────────
+        'corporate_action',
+        (
+            SELECT to_jsonb(c)
+            FROM (
+                SELECT
+                    ca.dividend, ca.bonus,
+                    ca.book_closure_start, ca.book_closure_end, ca.agm_date
+                FROM public.announcements a
+                JOIN public.corporate_actions ca ON ca.announcement_id = a.id
+                WHERE a.symbol = UPPER(p_symbol)
+                ORDER BY a.announcement_date DESC
+                LIMIT 1
+            ) c
+        ),
+
+        -- ── All Announcements (for history panel) ─────────────────────────
+        'announcement_history',
+        (
+            SELECT jsonb_agg(ah ORDER BY ah.announcement_date DESC)
+            FROM (
+                SELECT
+                    a.announcement_date,
+                    fr.result_type,
+                    fr.result_period,
+                    fr.period_ending,
+                    fr.eps,
+                    fr.profit_before_tax_mln,
+                    fr.profit_after_tax_mln,
+                    ca.dividend
+                FROM public.announcements a
+                JOIN public.financial_results fr ON fr.announcement_id = a.id
+                LEFT JOIN public.corporate_actions ca ON ca.announcement_id = a.id
+                WHERE a.symbol = UPPER(p_symbol)
+                ORDER BY a.announcement_date DESC, fr.result_type
+                LIMIT 40   -- last ~5 years of quarterly results
+            ) ah
+        )
+
+    ) INTO result;
+
+    RETURN result;
+END;
+$$;
+─────────────────
+        'announcement_history',
+        (
+            SELECT jsonb_agg(ah ORDER BY ah.announcement_date DESC)
+            FROM (
+                SELECT
+                    a.announcement_date,
+                    fr.result_type,
+                    fr.result_period,
+                    fr.period_ending,
+                    fr.eps,
+                    fr.profit_before_tax_mln,
+                    fr.profit_after_tax_mln,
+                    ca.dividend
+                FROM public.announcements a
+                JOIN public.financial_results fr ON fr.announcement_id = a.id
+                LEFT JOIN public.corporate_actions ca ON ca.announcement_id = a.id
+                WHERE a.symbol = UPPER(p_symbol)
+                ORDER BY a.announcement_date DESC, fr.result_type
+                LIMIT 40   -- last ~5 years of quarterly results
+            ) ah
+        )
+
+    ) INTO result;
+
+    RETURN result;
+END;
+$$;
+ 
+
+
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- 003_period_label.sql
+-- Adds period_label and is_annual to v_latest_eps and get_stock_details.
+-- period_label examples: "Q1 FY26", "H1 FY25", "9M FY25", "FY25"
+-- is_annual = true only when result_period = 'YEAR'
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- helper expression (inline – no separate function needed)
+-- Maps result_period text → short label prefix
+-- FIRST QUARTER→Q1, SECOND QUARTER→Q2, THIRD QUARTER→Q3, HALF YEAR→H1,
+-- NINE MONTHS→9M, YEAR→FY, anything else→raw value
+
+-- ── 1. Updated v_latest_eps ─────────────────────────────────────────────────
+
+CREATE OR REPLACE VIEW public.v_latest_eps AS
+WITH ranked AS (
+    SELECT
+        a.symbol,
+        fr.result_type,
+        fr.result_period,
+        fr.period_ending,
+        fr.eps,
+        fr.profit_before_tax_mln,
+        fr.profit_after_tax_mln,
+        (fr.result_period = 'YEAR') AS is_annual,
+        CASE fr.result_period
+            WHEN 'FIRST QUARTER'  THEN 'Q1'
+            WHEN 'SECOND QUARTER' THEN 'Q2'
+            WHEN 'THIRD QUARTER'  THEN 'Q3'
+            WHEN 'FOURTH QUARTER' THEN 'Q4'
+            WHEN 'HALF YEAR'      THEN 'H1'
+            WHEN 'NINE MONTHS'    THEN '9M'
+            WHEN 'YEAR'           THEN 'FY'
+            ELSE fr.result_period
+        END
+        || ' FY'
+        || CASE
+               WHEN fr.period_ending IS NOT NULL
+               THEN RIGHT(EXTRACT(YEAR FROM fr.period_ending)::text, 2)
+               ELSE '??'
+           END AS period_label,
+        ROW_NUMBER() OVER (
+            PARTITION BY a.symbol
+            ORDER BY
+                fr.period_ending DESC,
+                CASE fr.result_type WHEN 'UNCONSOLIDATED' THEN 0 ELSE 1 END
+        ) AS rn
+    FROM public.announcements a
+    JOIN public.financial_results fr ON fr.announcement_id = a.id
+    WHERE fr.eps IS NOT NULL
+),
+latest_close AS (
+    SELECT DISTINCT ON (symbol)
+        symbol, close
+    FROM public.datatable
+    WHERE close IS NOT NULL
+    ORDER BY symbol, trade_date DESC
+)
+SELECT
+    r.symbol,
+    r.result_type,
+    r.result_period,
+    r.period_label,
+    r.is_annual,
+    r.period_ending,
+    r.eps,
+    r.profit_before_tax_mln,
+    r.profit_after_tax_mln,
+    lc.close AS latest_close,
+    CASE
+        WHEN r.eps IS NOT NULL AND r.eps <> 0
+        THEN ROUND((lc.close / r.eps)::numeric, 2)
+        ELSE NULL
+    END AS pe_ratio
+FROM ranked r
+LEFT JOIN latest_close lc ON lc.symbol = r.symbol
+WHERE r.rn = 1;
+
+
+-- ── 2. Updated get_stock_details ────────────────────────────────────────────
+-- Adds period_label and is_annual to each row in the financials array.
+
+CREATE OR REPLACE FUNCTION public.get_stock_details(p_symbol text)
+RETURNS jsonb
+LANGUAGE plpgsql
+STABLE
+AS $$
+DECLARE
+    result jsonb;
+BEGIN
+    SELECT jsonb_build_object(
+
+        'overview',
+        (
+            SELECT to_jsonb(t)
+            FROM (
+                SELECT symbol, company, section,
+                       trade_date, open, high, low, close, turnover, change
+                FROM public.datatable
+                WHERE symbol = UPPER(p_symbol)
+                ORDER BY trade_date DESC
+                LIMIT 1
+            ) t
+        ),
+
+        'history',
+        (
+            SELECT jsonb_agg(h ORDER BY h.trade_date)
+            FROM (
+                SELECT trade_date, open, high, low, close, turnover
+                FROM public.datatable
+                WHERE symbol = UPPER(p_symbol)
+                ORDER BY trade_date DESC
+                LIMIT 252
+            ) h
+        ),
+
+        -- financials: both UNCONSOLIDATED + CONSOLIDATED for the latest period.
+        -- Each row now includes period_label and is_annual for clean UI display.
+        'financials',
+        (
+            SELECT jsonb_agg(f ORDER BY
+                CASE (f->>'result_type') WHEN 'UNCONSOLIDATED' THEN 0 ELSE 1 END
+            )
+            FROM (
+                SELECT to_jsonb(fr_row) AS f
+                FROM (
+                    WITH latest_period AS (
+                        SELECT fr.period_ending
+                        FROM public.announcements a
+                        JOIN public.financial_results fr ON fr.announcement_id = a.id
+                        WHERE a.symbol = UPPER(p_symbol)
+                          AND fr.eps IS NOT NULL
+                        ORDER BY fr.period_ending DESC
+                        LIMIT 1
+                    )
+                    SELECT
+                        fr.result_type,
+                        fr.result_period,
+                        fr.period_ending,
+                        fr.eps,
+                        fr.profit_before_tax_mln,
+                        fr.profit_after_tax_mln,
+                        (fr.result_period = 'YEAR') AS is_annual,
+                        CASE fr.result_period
+                            WHEN 'FIRST QUARTER'  THEN 'Q1'
+                            WHEN 'SECOND QUARTER' THEN 'Q2'
+                            WHEN 'THIRD QUARTER'  THEN 'Q3'
+                            WHEN 'FOURTH QUARTER' THEN 'Q4'
+                            WHEN 'HALF YEAR'      THEN 'H1'
+                            WHEN 'NINE MONTHS'    THEN '9M'
+                            WHEN 'YEAR'           THEN 'FY'
+                            ELSE fr.result_period
+                        END
+                        || ' FY'
+                        || CASE
+                               WHEN fr.period_ending IS NOT NULL
+                               THEN RIGHT(EXTRACT(YEAR FROM fr.period_ending)::text, 2)
+                               ELSE ''
+                           END AS period_label
+                    FROM public.announcements a
+                    JOIN public.financial_results fr ON fr.announcement_id = a.id
+                    WHERE a.symbol = UPPER(p_symbol)
+                      AND fr.period_ending = (SELECT period_ending FROM latest_period)
+                      AND fr.eps IS NOT NULL
+                ) fr_row
+            ) sub
+        ),
+
+        'pe_ratio',
+        (
+            SELECT ROUND((d.close / fr.eps)::numeric, 2)
+            FROM public.datatable d
+            CROSS JOIN LATERAL (
+                SELECT fr2.eps
+                FROM public.announcements a
+                JOIN public.financial_results fr2 ON fr2.announcement_id = a.id
+                WHERE a.symbol = UPPER(p_symbol)
+                  AND fr2.result_type = 'UNCONSOLIDATED'
+                  AND fr2.eps IS NOT NULL
+                  AND fr2.eps <> 0
+                ORDER BY fr2.period_ending DESC
+                LIMIT 1
+            ) fr
+            WHERE d.symbol = UPPER(p_symbol)
+            ORDER BY d.trade_date DESC
+            LIMIT 1
+        ),
+
+        'corporate_action',
+        (
+            SELECT to_jsonb(c)
+            FROM (
+                SELECT ca.dividend, ca.bonus,
+                       ca.book_closure_start, ca.book_closure_end, ca.agm_date
+                FROM public.announcements a
+                JOIN public.corporate_actions ca ON ca.announcement_id = a.id
+                WHERE a.symbol = UPPER(p_symbol)
+                ORDER BY a.announcement_date DESC
+                LIMIT 1
+            ) c
+        ),
+
+        'announcement_history',
+        (
+            SELECT jsonb_agg(ah ORDER BY ah.announcement_date DESC)
+            FROM (
+                SELECT
+                    a.announcement_date,
+                    fr.result_type,
+                    fr.result_period,
+                    fr.period_ending,
+                    fr.eps,
+                    fr.profit_before_tax_mln,
+                    fr.profit_after_tax_mln,
+                    ca.dividend,
+                    (fr.result_period = 'YEAR') AS is_annual,
+                    CASE fr.result_period
+                        WHEN 'FIRST QUARTER'  THEN 'Q1'
+                        WHEN 'SECOND QUARTER' THEN 'Q2'
+                        WHEN 'THIRD QUARTER'  THEN 'Q3'
+                        WHEN 'FOURTH QUARTER' THEN 'Q4'
+                        WHEN 'HALF YEAR'      THEN 'H1'
+                        WHEN 'NINE MONTHS'    THEN '9M'
+                        WHEN 'YEAR'           THEN 'FY'
+                        ELSE fr.result_period
+                    END
+                    || ' FY'
+                    || CASE
+                           WHEN fr.period_ending IS NOT NULL
+                           THEN RIGHT(EXTRACT(YEAR FROM fr.period_ending)::text, 2)
+                           ELSE ''
+                       END AS period_label
+                FROM public.announcements a
+                JOIN public.financial_results fr ON fr.announcement_id = a.id
+                LEFT JOIN public.corporate_actions ca ON ca.announcement_id = a.id
+                WHERE a.symbol = UPPER(p_symbol)
+                ORDER BY a.announcement_date DESC, fr.result_type
+                LIMIT 40
+            ) ah
+        )
+
+    ) INTO result;
+
+    RETURN result;
+END;
+$$;
