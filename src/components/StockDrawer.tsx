@@ -344,53 +344,53 @@ function RangeBtn({
   )
 }
 
-function KpiCard({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
-  const accent = color ?? C.accentMid
-  return (
-    <Box
-      component={motion.div}
-      whileHover={{ y: -3 }}
-      transition={{ duration: 0.2 }}
-      sx={{
-        p: 1.6,
-        borderRadius: '10px',
-        border: `1px solid ${C.border}`,
-        bgcolor: C.bg,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 0.4,
-        cursor: 'default',
-        position: 'relative',
-        overflow: 'hidden',
-        transition: 'box-shadow 0.2s ease, border-color 0.2s ease',
-        '&::before': {
-          content: '""',
-          position: 'absolute',
-          top: 0, left: 0,
-          width: '100%', height: '2.5px',
-          background: `linear-gradient(90deg, ${accent}, ${accent}40)`,
-          borderRadius: '0 0 2px 0',
-        },
-        '&:hover': {
-          boxShadow: '0 8px 24px rgba(10,36,99,0.1)',
-          borderColor: C.borderStrong,
-        },
-      }}
-    >
-      <Typography sx={{ fontSize: 11, color: C.muted, fontFamily: mono, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-        {label}
-      </Typography>
-      <Typography sx={{ fontFamily: mono, fontSize: 16, fontWeight: 700, color: accent, letterSpacing: '-0.01em', lineHeight: 1.1 }}>
-        {value}
-      </Typography>
-      {sub && (
-        <Typography sx={{ fontSize: 11, color: C.muted, fontFamily: serif }}>
-          {sub}
-        </Typography>
-      )}
-    </Box>
-  )
-}
+// function KpiCard({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
+//   const accent = color ?? C.accentMid
+//   return (
+//     <Box
+//       component={motion.div}
+//       whileHover={{ y: -3 }}
+//       transition={{ duration: 0.2 }}
+//       sx={{
+//         p: 1.6,
+//         borderRadius: '10px',
+//         border: `1px solid ${C.border}`,
+//         bgcolor: C.bg,
+//         display: 'flex',
+//         flexDirection: 'column',
+//         gap: 0.4,
+//         cursor: 'default',
+//         position: 'relative',
+//         overflow: 'hidden',
+//         transition: 'box-shadow 0.2s ease, border-color 0.2s ease',
+//         '&::before': {
+//           content: '""',
+//           position: 'absolute',
+//           top: 0, left: 0,
+//           width: '100%', height: '2.5px',
+//           background: `linear-gradient(90deg, ${accent}, ${accent}40)`,
+//           borderRadius: '0 0 2px 0',
+//         },
+//         '&:hover': {
+//           boxShadow: '0 8px 24px rgba(10,36,99,0.1)',
+//           borderColor: C.borderStrong,
+//         },
+//       }}
+//     >
+//       <Typography sx={{ fontSize: 11, color: C.muted, fontFamily: mono, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+//         {label}
+//       </Typography>
+//       <Typography sx={{ fontFamily: mono, fontSize: 16, fontWeight: 700, color: accent, letterSpacing: '-0.01em', lineHeight: 1.1 }}>
+//         {value}
+//       </Typography>
+//       {sub && (
+//         <Typography sx={{ fontSize: 11, color: C.muted, fontFamily: serif }}>
+//           {sub}
+//         </Typography>
+//       )}
+//     </Box>
+//   )
+// }
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 
