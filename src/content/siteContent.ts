@@ -128,9 +128,10 @@ export const footerColumns: FooterColumn[] = [
   {
     title: 'Social Media',
     links: [
-      { label: 'Twitter', href: 'https://twitter.com/webictcapital' },
-      { label: 'LinkedIn', href: 'https://www.linkedin.com/company/webictcapital' },
-      { label: 'Facebook', href: 'https://www.facebook.com/webictcapital' },
+      {label: 'Instagram', href: 'https://www.instagram.com/webict.capital'},
+      // { label: 'Twitter', href: 'https://twitter.com/webictcapital' },
+      // { label: 'LinkedIn', href: 'https://www.linkedin.com/company/webictcapital' },
+      // { label: 'Facebook', href: 'https://www.facebook.com/webictcapital' },
     ]
   },
   {

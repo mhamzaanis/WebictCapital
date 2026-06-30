@@ -96,6 +96,15 @@ export function SipCalculatorPage() {
     const investedArr: number[] = []
     const fvArr: number[] = []
     const scheduleRows: { year: number; invested: number; gains: number; balance: number }[] = []
+
+    // Year-0 baseline (just the initial lump sum, no growth yet) so the chart
+    // always has 2+ points to draw a line through — a single year would
+    // otherwise produce one lone point, which renders as a dot, not a line.
+    // Excluded from scheduleRows so the schedule table still starts at Year 1.
+    labels.push('Yr 0')
+    investedArr.push(Math.round(initialAmount))
+    fvArr.push(Math.round(initialAmount))
+
     for (let y = 1; y <= years; y++) {
       labels.push(`Yr ${y}`)
       const d = computeSIP(monthly, annualRate, y, initialAmount)
