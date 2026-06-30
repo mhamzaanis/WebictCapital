@@ -92,12 +92,12 @@ function changeVal(change: string | number | null | undefined): number {
 
 // Replace mapDbStockToPsxStock:
 function mapDbStockTableRow(row: DbStockTableRow): PsxStock {
-  const close = row.close != null ? toNum(row.close) : null
+  // const close = row.close != null ? toNum(row.close) : null
   const eps = row.eps != null ? toNum(row.eps) : null
-  const pe =
-    close != null && eps != null && eps > 0
-      ? parseFloat((close / eps).toFixed(2))
-      : null
+  // const pe =
+  //   close != null && eps != null && eps > 0
+  //     ? parseFloat((close / eps).toFixed(2))
+  //     : null
 
   return {
     symbol: row.symbol,
