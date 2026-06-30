@@ -60,6 +60,7 @@ type DbStockTableRow = {
   turnover: number | null
   change: number | null
   eps: number | null
+  pe_ratio: number | null 
   result_period: string | null
   period_ending: string | null
 }
@@ -110,7 +111,7 @@ function mapDbStockTableRow(row: DbStockTableRow): PsxStock {
     last_rate: row.close,
     change: row.change,
     eps: eps != null ? parseFloat(eps.toFixed(2)) : null,
-    pe,
+    pe: row.pe_ratio != null ? toNum(row.pe_ratio) : null, 
     result_period: row.result_period,
     period_ending: row.period_ending,
   }
@@ -126,8 +127,8 @@ async function fetchSupabaseTradeDay(tradeDate: string): Promise<PsxData> {
       .eq('trade_date', tradeDate)
       .single<DbSummaryRow>(),
     supabase
-      .from('v_stock_table')                          // ← single source now
-      .select('symbol,company,section,trade_date,open,high,low,close,turnover,change,eps,result_period,period_ending')
+      .from('v_stock_table')                      
+      .select('symbol,company,section,trade_date,open,high,low,close,turnover,change,eps,pe_ratio,result_period,period_ending')
       .eq('trade_date', tradeDate)
       .neq('section', 'EXCHANGE TRADED FUNDS')
       .neq('section', 'CLOSE - END MUTUAL FUND')
