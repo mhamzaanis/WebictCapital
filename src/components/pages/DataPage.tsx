@@ -1,12 +1,17 @@
 import {
   Box,
   Container,
+  Paper,
   Stack,
   Typography,
 } from '@mui/material'
+import BarChartIcon from '@mui/icons-material/BarChart'
+import ShowChartIcon from '@mui/icons-material/ShowChart'
+import TrendingDownIcon from '@mui/icons-material/TrendingDown'
+import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 import { motion, useReducedMotion } from 'motion/react'
 import { hasSupabaseConfig, supabase } from '../../lib/supabase'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { PriceTableSkeleton, StatCardsSkeleton } from './CustomSkeleton'
 import { CustomDataTable } from './CustomDataTable'
 import { CustomStatsCards } from './CustomStatsCards'
@@ -26,10 +31,10 @@ type PsxStock = {
   low: string | number | null
   last_rate: string | number | null
   change: string | number | null
-  eps: number | null           
-  pe: number | null            
-  result_period: string | null 
-  period_ending: string | null 
+  eps: number | null
+  pe: number | null
+  result_period: string | null
+  period_ending: string | null
 }
 
 type PsxData = {
@@ -75,6 +80,27 @@ type DbSummaryRow = {
   unchanged: number | null
 }
 
+type RankedStock = PsxStock & {
+  numericTurnover: number
+  numericChange: number
+  numericClose: number
+  changePct: number
+  intradayRange: number
+  intradayRangePct: number
+}
+
+type SectorActivity = {
+  industry: string
+  turnover: number
+  count: number
+  gainers: number
+  losers: number
+  unchanged: number
+  avgChangePct: number
+}
+
+type MovementTone = 'positive' | 'negative' | 'neutral'
+
 // -- Helpers ------------------------------------------------------------------
 
 function toNum(val: unknown): number {
@@ -89,7 +115,81 @@ function changeVal(change: string | number | null | undefined): number {
   return toNum(change)
 }
 
-// Replace mapDbStockToPsxStock:
+function formatNumber(value: number, maximumFractionDigits = 2): string {
+  if (!Number.isFinite(value)) return '-'
+  return value.toLocaleString('en-PK', { maximumFractionDigits })
+}
+
+function formatCompactNumber(value: number): string {
+  if (!Number.isFinite(value)) return '-'
+  const abs = Math.abs(value)
+  const sign = value < 0 ? '-' : ''
+  if (abs >= 1_000_000_000) return `${sign}${(abs / 1_000_000_000).toFixed(2)}B`
+  if (abs >= 1_000_000) return `${sign}${(abs / 1_000_000).toFixed(2)}M`
+  if (abs >= 1_000) return `${sign}${(abs / 1_000).toFixed(1)}K`
+  return value.toLocaleString('en-PK')
+}
+
+function formatSignedNumber(value: number, maximumFractionDigits = 2): string {
+  if (!Number.isFinite(value)) return '-'
+  if (value === 0) return '0'
+  const formatted = Math.abs(value).toLocaleString('en-PK', { maximumFractionDigits })
+  return `${value > 0 ? '+' : '-'}${formatted}`
+}
+
+function formatPercent(value: number, signed = true): string {
+  if (!Number.isFinite(value)) return '-'
+  const formatted = Math.abs(value).toLocaleString('en-PK', { maximumFractionDigits: 2 })
+  if (!signed || value === 0) return `${formatted}%`
+  return `${value > 0 ? '+' : '-'}${formatted}%`
+}
+
+function changeColor(change: number): string {
+  if (!Number.isFinite(change) || change === 0) return 'var(--wc-text-secondary)'
+  return change > 0 ? 'var(--wc-success)' : 'var(--wc-error)'
+}
+
+function toneColor(tone: MovementTone): string {
+  if (tone === 'positive') return 'var(--wc-success)'
+  if (tone === 'negative') return 'var(--wc-error)'
+  return 'var(--wc-text-secondary)'
+}
+
+function toneBackground(tone: MovementTone): string {
+  if (tone === 'positive') return 'rgba(26,102,64,0.08)'
+  if (tone === 'negative') return 'rgba(180,40,58,0.08)'
+  return 'var(--wc-primary-light)'
+}
+
+function getChangePct(close: number, change: number): number {
+  const previousClose = close - change
+  if (!Number.isFinite(previousClose) || previousClose === 0) return NaN
+  return (change / previousClose) * 100
+}
+
+function getRankedStock(stock: PsxStock): RankedStock {
+  const high = toNum(stock.high)
+  const low = toNum(stock.low)
+  const numericClose = toNum(stock.last_rate)
+  const numericChange = changeVal(stock.change)
+  const numericTurnover = toNum(stock.turnover)
+  const intradayRange = Number.isFinite(high) && Number.isFinite(low) ? high - low : NaN
+
+  return {
+    ...stock,
+    numericTurnover,
+    numericChange,
+    numericClose,
+    changePct: getChangePct(numericClose, numericChange),
+    intradayRange,
+    intradayRangePct: Number.isFinite(intradayRange) && low > 0 ? (intradayRange / low) * 100 : NaN,
+  }
+}
+
+function changeRankValue(stock: RankedStock): number {
+  return Number.isFinite(stock.changePct) ? stock.changePct : stock.numericChange
+}
+
 function mapDbStockTableRow(row: DbStockTableRow): PsxStock {
   const close = row.close != null ? toNum(row.close) : null
   const eps = row.eps != null ? toNum(row.eps) : null
@@ -126,7 +226,7 @@ async function fetchSupabaseTradeDay(tradeDate: string): Promise<PsxData> {
       .eq('trade_date', tradeDate)
       .single<DbSummaryRow>(),
     supabase
-      .from('v_stock_table')                          // ← single source now
+      .from('v_stock_table')
       .select('symbol,company,section,trade_date,open,high,low,close,turnover,change,eps,result_period,period_ending')
       .eq('trade_date', tradeDate)
       .neq('section', 'EXCHANGE TRADED FUNDS')
@@ -161,6 +261,414 @@ async function fetchSupabaseTradeDay(tradeDate: string): Promise<PsxData> {
 const NUMBER_FONT = 'var(--wc-number-font)'
 const SERIF = '"Playfair Display", serif'
 
+function SectionHeading({
+  eyebrow,
+  title,
+  meta,
+}: {
+  eyebrow: string
+  title: string
+  meta?: string
+}) {
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
+      <Box>
+        <Typography
+          sx={{
+            fontSize: 10,
+            fontFamily: NUMBER_FONT,
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+            color: 'var(--wc-primary)',
+            mb: 0.6,
+            fontWeight: 700,
+          }}
+        >
+          {eyebrow}
+        </Typography>
+        <Typography
+          sx={{
+            color: 'var(--wc-text-primary)',
+            fontFamily: SERIF,
+            fontSize: { xs: 18, md: 22 },
+            fontWeight: 700,
+            lineHeight: 1.18,
+          }}
+        >
+          {title}
+        </Typography>
+      </Box>
+      {meta && (
+        <Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: NUMBER_FONT, fontSize: 11 }}>
+          {meta}
+        </Typography>
+      )}
+    </Box>
+  )
+}
+
+function DailyMetricCard({
+  icon,
+  label,
+  value,
+  detail,
+  tone = 'neutral',
+}: {
+  icon: ReactNode
+  label: string
+  value: string
+  detail: string
+  tone?: MovementTone
+}) {
+  const color = toneColor(tone)
+
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        minHeight: 132,
+        p: 2,
+        bgcolor: 'var(--wc-bg)',
+        border: '1px solid var(--wc-divider)',
+        borderRadius: 1.5,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+      }}
+    >
+      <Stack direction="row" spacing={1.1} sx={{ alignItems: 'center', color }}>
+        <Box
+          sx={{
+            width: 30,
+            height: 30,
+            borderRadius: 1,
+            bgcolor: toneBackground(tone),
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          {icon}
+        </Box>
+        <Typography
+          sx={{
+            color: 'var(--wc-text-secondary)',
+            fontFamily: NUMBER_FONT,
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+          }}
+        >
+          {label}
+        </Typography>
+      </Stack>
+      <Box>
+        <Typography sx={{ color, fontFamily: NUMBER_FONT, fontSize: { xs: 20, md: 24 }, fontWeight: 800 }}>
+          {value}
+        </Typography>
+        <Typography sx={{ mt: 0.5, color: 'var(--wc-text-secondary)', fontSize: 12, lineHeight: 1.45 }}>
+          {detail}
+        </Typography>
+      </Box>
+    </Paper>
+  )
+}
+
+function LeaderList({
+  title,
+  subtitle,
+  rows,
+  kind,
+}: {
+  title: string
+  subtitle: string
+  rows: RankedStock[]
+  kind: 'gain' | 'loss' | 'volume'
+}) {
+  const tone: MovementTone = kind === 'gain' ? 'positive' : kind === 'loss' ? 'negative' : 'neutral'
+  const color = toneColor(tone)
+
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        p: 2,
+        bgcolor: 'var(--wc-bg)',
+        border: '1px solid var(--wc-divider)',
+        borderRadius: 1.5,
+        minHeight: 320,
+      }}
+    >
+      <Stack spacing={0.4} sx={{ mb: 2 }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+          {kind === 'gain' && <TrendingUpIcon sx={{ fontSize: 18, color }} />}
+          {kind === 'loss' && <TrendingDownIcon sx={{ fontSize: 18, color }} />}
+          {kind === 'volume' && <BarChartIcon sx={{ fontSize: 18, color: 'var(--wc-primary)' }} />}
+          <Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: SERIF, fontSize: 17, fontWeight: 700 }}>
+            {title}
+          </Typography>
+        </Stack>
+        <Typography sx={{ color: 'var(--wc-text-secondary)', fontSize: 11, lineHeight: 1.5 }}>
+          {subtitle}
+        </Typography>
+      </Stack>
+
+      <Stack spacing={1}>
+        {rows.length === 0 && (
+          <Typography sx={{ color: 'var(--wc-text-secondary)', fontSize: 12 }}>
+            No qualifying symbols for this session.
+          </Typography>
+        )}
+        {rows.map((stock, index) => {
+          const stockColor = kind === 'volume' ? 'var(--wc-primary)' : changeColor(stock.numericChange)
+          const primaryValue =
+            kind === 'volume'
+              ? formatCompactNumber(stock.numericTurnover)
+              : Number.isFinite(stock.changePct)
+                ? formatPercent(stock.changePct)
+                : formatSignedNumber(stock.numericChange)
+          const secondaryValue =
+            kind === 'volume'
+              ? `Last ${formatNumber(stock.numericClose)}`
+              : `${formatSignedNumber(stock.numericChange)} pts at ${formatNumber(stock.numericClose)}`
+
+          return (
+            <Box
+              key={`${title}-${stock.symbol}`}
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: '32px minmax(0, 1fr) auto',
+                gap: 1,
+                alignItems: 'center',
+                py: 1,
+                borderTop: index === 0 ? '0' : '1px solid var(--wc-divider)',
+              }}
+            >
+              <Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: NUMBER_FONT, fontSize: 11 }}>
+                #{index + 1}
+              </Typography>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography sx={{ color: 'var(--wc-primary)', fontFamily: NUMBER_FONT, fontSize: 13, fontWeight: 800 }}>
+                  {stock.symbol}
+                </Typography>
+                <Typography
+                  title={stock.company}
+                  sx={{
+                    color: 'var(--wc-text-secondary)',
+                    fontSize: 11,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {stock.company}
+                </Typography>
+              </Box>
+              <Box sx={{ textAlign: 'right', minWidth: 86 }}>
+                <Typography sx={{ color: stockColor, fontFamily: NUMBER_FONT, fontSize: 13, fontWeight: 800 }}>
+                  {primaryValue}
+                </Typography>
+                <Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: NUMBER_FONT, fontSize: 10 }}>
+                  {secondaryValue}
+                </Typography>
+              </Box>
+            </Box>
+          )
+        })}
+      </Stack>
+    </Paper>
+  )
+}
+
+function SectorActivityPanel({
+  sectors,
+  totalVolume,
+}: {
+  sectors: SectorActivity[]
+  totalVolume: number
+}) {
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        p: 2,
+        bgcolor: 'var(--wc-bg)',
+        border: '1px solid var(--wc-divider)',
+        borderRadius: 1.5,
+        minHeight: 320,
+      }}
+    >
+      <Stack spacing={0.4} sx={{ mb: 2 }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+          <BarChartIcon sx={{ fontSize: 18, color: 'var(--wc-primary)' }} />
+          <Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: SERIF, fontSize: 17, fontWeight: 700 }}>
+            Active Industries
+          </Typography>
+        </Stack>
+        <Typography sx={{ color: 'var(--wc-text-secondary)', fontSize: 11, lineHeight: 1.5 }}>
+          Sectors ranked by traded volume in the latest closing file.
+        </Typography>
+      </Stack>
+
+      <Stack spacing={1.2}>
+        {sectors.map((sector) => {
+          const share = totalVolume > 0 ? (sector.turnover / totalVolume) * 100 : 0
+          const sectorTone: MovementTone =
+            sector.avgChangePct > 0 ? 'positive' : sector.avgChangePct < 0 ? 'negative' : 'neutral'
+
+          return (
+            <Box key={sector.industry}>
+              <Stack direction="row" spacing={1.5} sx={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <Typography
+                  title={sector.industry}
+                  sx={{
+                    color: 'var(--wc-text-primary)',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    maxWidth: '68%',
+                  }}
+                >
+                  {sector.industry}
+                </Typography>
+                <Typography sx={{ color: 'var(--wc-primary)', fontFamily: NUMBER_FONT, fontSize: 11, fontWeight: 800 }}>
+                  {formatCompactNumber(sector.turnover)}
+                </Typography>
+              </Stack>
+              <Box sx={{ mt: 0.8, height: 6, borderRadius: 999, bgcolor: 'var(--wc-primary-light)', overflow: 'hidden' }}>
+                <Box
+                  sx={{
+                    width: `${Math.min(100, share)}%`,
+                    height: '100%',
+                    bgcolor: 'var(--wc-primary)',
+                  }}
+                />
+              </Box>
+              <Stack direction="row" spacing={1.4} sx={{ mt: 0.65, flexWrap: 'wrap' }}>
+                <Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: NUMBER_FONT, fontSize: 10 }}>
+                  {sector.count} symbols
+                </Typography>
+                <Typography sx={{ color: 'var(--wc-success)', fontFamily: NUMBER_FONT, fontSize: 10 }}>
+                  {sector.gainers} up
+                </Typography>
+                <Typography sx={{ color: 'var(--wc-error)', fontFamily: NUMBER_FONT, fontSize: 10 }}>
+                  {sector.losers} down
+                </Typography>
+                <Typography sx={{ color: toneColor(sectorTone), fontFamily: NUMBER_FONT, fontSize: 10 }}>
+                  avg {formatPercent(sector.avgChangePct)}
+                </Typography>
+              </Stack>
+            </Box>
+          )
+        })}
+        {sectors.length === 0 && (
+          <Typography sx={{ color: 'var(--wc-text-secondary)', fontSize: 12 }}>
+            Industry volume was not available for this session.
+          </Typography>
+        )}
+      </Stack>
+    </Paper>
+  )
+}
+
+function RangeLeadersPanel({
+  rows,
+  avgRangePct,
+}: {
+  rows: RankedStock[]
+  avgRangePct: number
+}) {
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        p: 2,
+        bgcolor: 'var(--wc-bg)',
+        border: '1px solid var(--wc-divider)',
+        borderRadius: 1.5,
+        minHeight: 320,
+      }}
+    >
+      <Stack spacing={0.4} sx={{ mb: 2 }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+          <ShowChartIcon sx={{ fontSize: 18, color: 'var(--wc-primary)' }} />
+          <Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: SERIF, fontSize: 17, fontWeight: 700 }}>
+            Widest Daily Ranges
+          </Typography>
+        </Stack>
+        <Typography sx={{ color: 'var(--wc-text-secondary)', fontSize: 11, lineHeight: 1.5 }}>
+          Symbols with the largest high-low spread during the session.
+        </Typography>
+      </Stack>
+
+      <Box
+        sx={{
+          mb: 1.5,
+          p: 1.4,
+          bgcolor: 'var(--wc-paper)',
+          border: '1px solid var(--wc-divider)',
+          borderRadius: 1,
+        }}
+      >
+        <Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: NUMBER_FONT, fontSize: 10, mb: 0.4 }}>
+          AVERAGE RANGE
+        </Typography>
+        <Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: NUMBER_FONT, fontSize: 20, fontWeight: 800 }}>
+          {formatPercent(avgRangePct, false)}
+        </Typography>
+      </Box>
+
+      <Stack spacing={1}>
+        {rows.map((stock, index) => (
+          <Box
+            key={`range-${stock.symbol}`}
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: '32px minmax(0, 1fr) auto',
+              gap: 1,
+              alignItems: 'center',
+              py: 1,
+              borderTop: index === 0 ? '0' : '1px solid var(--wc-divider)',
+            }}
+          >
+            <Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: NUMBER_FONT, fontSize: 11 }}>
+              #{index + 1}
+            </Typography>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography sx={{ color: 'var(--wc-primary)', fontFamily: NUMBER_FONT, fontSize: 13, fontWeight: 800 }}>
+                {stock.symbol}
+              </Typography>
+              <Typography
+                title={stock.company}
+                sx={{
+                  color: 'var(--wc-text-secondary)',
+                  fontSize: 11,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {stock.company}
+              </Typography>
+            </Box>
+            <Box sx={{ textAlign: 'right', minWidth: 88 }}>
+              <Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: NUMBER_FONT, fontSize: 13, fontWeight: 800 }}>
+                {formatPercent(stock.intradayRangePct, false)}
+              </Typography>
+              <Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: NUMBER_FONT, fontSize: 10 }}>
+                {formatNumber(toNum(stock.low))}-{formatNumber(toNum(stock.high))}
+              </Typography>
+            </Box>
+          </Box>
+        ))}
+      </Stack>
+    </Paper>
+  )
+}
+
 // -- Component ----------------------------------------------------------------
 
 export function DataPage() {
@@ -192,8 +700,6 @@ export function DataPage() {
         .select('trade_date')
         .order('trade_date', { ascending: false })
         .limit(1)
-
-      console.log('market_daily_summary latest trade_date result:', latestDateResult)
 
       if (latestDateResult.error || !latestDateResult.data?.length) {
         if (!cancelled) {
@@ -239,7 +745,7 @@ export function DataPage() {
   }, [])
 
   const activeData = data
-  const stocks = activeData?.stocks ?? []
+  const stocks = useMemo(() => activeData?.stocks ?? [], [activeData])
 
   const industryOptions = useMemo(
     () => Array.from(new Set(stocks.map((s) => s.industry).filter((s): s is string => Boolean(s)))).sort(),
@@ -307,6 +813,112 @@ export function DataPage() {
     }
   }, [stocks, activeData])
 
+  const dayInsights = useMemo(() => {
+    const rankedStocks = stocks.map(getRankedStock)
+    const gainers = rankedStocks
+      .filter((stock) => Number.isFinite(stock.numericChange) && stock.numericChange > 0)
+      .sort((a, b) => changeRankValue(b) - changeRankValue(a))
+      .slice(0, 5)
+    const losers = rankedStocks
+      .filter((stock) => Number.isFinite(stock.numericChange) && stock.numericChange < 0)
+      .sort((a, b) => changeRankValue(a) - changeRankValue(b))
+      .slice(0, 5)
+    const volumeLeaders = rankedStocks
+      .filter((stock) => Number.isFinite(stock.numericTurnover) && stock.numericTurnover > 0)
+      .sort((a, b) => b.numericTurnover - a.numericTurnover)
+      .slice(0, 5)
+    const rangeStocks = rankedStocks
+      .filter((stock) => Number.isFinite(stock.intradayRangePct) && stock.intradayRangePct > 0)
+      .sort((a, b) => b.intradayRangePct - a.intradayRangePct)
+    const rangeLeaders = rangeStocks.slice(0, 5)
+    const tableVolume = rankedStocks.reduce(
+      (sum, stock) => sum + (Number.isFinite(stock.numericTurnover) ? Math.max(0, stock.numericTurnover) : 0),
+      0,
+    )
+    const totalVolume = marketSummary.Volume_Traded > 0 ? marketSummary.Volume_Traded : tableVolume
+    const activeStocks = rankedStocks.filter((stock) => Number.isFinite(stock.numericTurnover) && stock.numericTurnover > 0).length
+    const avgRangePct =
+      rangeStocks.length > 0
+        ? rangeStocks.reduce((sum, stock) => sum + stock.intradayRangePct, 0) / rangeStocks.length
+        : NaN
+    const topVolumeShare =
+      totalVolume > 0
+        ? (volumeLeaders.reduce((sum, stock) => sum + stock.numericTurnover, 0) / totalVolume) * 100
+        : NaN
+    const totalIssues =
+      stats.gainers + stats.losers + stats.unchanged ||
+      rankedStocks.filter((stock) => Number.isFinite(stock.numericChange)).length ||
+      stocks.length
+    const sectorMap = new Map<
+      string,
+      SectorActivity & {
+        changePctCount: number
+        changePctTotal: number
+      }
+    >()
+
+    rankedStocks.forEach((stock) => {
+      const industry = stock.industry || 'Unclassified'
+      const current =
+        sectorMap.get(industry) ??
+        {
+          industry,
+          turnover: 0,
+          count: 0,
+          gainers: 0,
+          losers: 0,
+          unchanged: 0,
+          avgChangePct: NaN,
+          changePctCount: 0,
+          changePctTotal: 0,
+        }
+
+      current.count += 1
+      if (Number.isFinite(stock.numericTurnover)) current.turnover += Math.max(0, stock.numericTurnover)
+      if (Number.isFinite(stock.numericChange)) {
+        if (stock.numericChange > 0) current.gainers += 1
+        else if (stock.numericChange < 0) current.losers += 1
+        else current.unchanged += 1
+      }
+      if (Number.isFinite(stock.changePct)) {
+        current.changePctTotal += stock.changePct
+        current.changePctCount += 1
+      }
+      sectorMap.set(industry, current)
+    })
+
+    const sectors = Array.from(sectorMap.values())
+      .map(({ changePctCount, changePctTotal, ...sector }) => ({
+        ...sector,
+        avgChangePct: changePctCount > 0 ? changePctTotal / changePctCount : NaN,
+      }))
+      .sort((a, b) => b.turnover - a.turnover)
+      .slice(0, 5)
+
+    return {
+      activeStocks,
+      avgRangePct,
+      gainers,
+      losers,
+      rangeLeaders,
+      sectors,
+      tableVolume,
+      topVolumeShare,
+      totalIssues,
+      totalVolume,
+      volumeLeaders,
+    }
+  }, [marketSummary.Volume_Traded, stats.gainers, stats.losers, stats.unchanged, stocks])
+
+  const indexChangePct =
+    marketSummary.KSE100_Open > 0 ? (marketSummary.KSE100_Change / marketSummary.KSE100_Open) * 100 : NaN
+  const indexTone: MovementTone =
+    marketSummary.KSE100_Change > 0 ? 'positive' : marketSummary.KSE100_Change < 0 ? 'negative' : 'neutral'
+  const breadthTone: MovementTone = stats.gainers > stats.losers ? 'positive' : stats.gainers < stats.losers ? 'negative' : 'neutral'
+  const breadthLabel = stats.gainers > stats.losers ? 'Advancers led' : stats.gainers < stats.losers ? 'Decliners led' : 'Balanced tape'
+  const topVolumeStock = dayInsights.volumeLeaders[0]
+  const widestRangeStock = dayInsights.rangeLeaders[0]
+
   return (
     <Box
       component="main"
@@ -358,15 +970,27 @@ export function DataPage() {
                       fontSize: { xs: '1.6rem', sm: '2rem', md: '2.4rem' },
                       fontWeight: 700,
                       color: 'var(--wc-text-primary)',
-                      letterSpacing: '-0.03em',
+                      letterSpacing: 0,
                       lineHeight: 1.08,
                     }}
                   >
-                    PSX Closing{' '}
+                    PSX Daily{' '}
                     <Box component="span" sx={{ color: 'var(--wc-primary)' }}>
-                      Rates
+                      Dashboard
                     </Box>
                     .
+                  </Typography>
+                  <Typography
+                    sx={{
+                      mt: 1.5,
+                      color: 'var(--wc-text-secondary)',
+                      fontSize: 14,
+                      lineHeight: 1.7,
+                      maxWidth: 620,
+                    }}
+                  >
+                    Daily breadth, market movers, volume leaders, active industries, and complete closing
+                    rates from the latest PSX session.
                   </Typography>
                 </Box>
 
@@ -380,7 +1004,7 @@ export function DataPage() {
                       mb: 0.3,
                     }}
                   >
-                    Pakistan Stock Exchange · daily closing data
+                    Pakistan Stock Exchange - daily closing data
                   </Typography>
                   {latestTradeDate && (
                     <Typography sx={{ fontSize: 11, color: 'var(--wc-primary)', fontFamily: NUMBER_FONT, fontWeight: 500 }}>
@@ -450,7 +1074,7 @@ export function DataPage() {
                     color: 'var(--wc-text-primary)',
                     fontFamily: SERIF,
                     mb: 1.5,
-                    letterSpacing: '-0.01em',
+                    letterSpacing: 0,
                   }}
                 >
                   Could not load market data
@@ -481,14 +1105,6 @@ export function DataPage() {
                     py: 1.5,
                   }}
                 >
-                  {/* <Typography sx={{ fontSize: 10, fontFamily: NUMBER_FONT, color: 'var(--wc-text-secondary)', letterSpacing: '0.04em', mb: 0.6 }}>
-                    REQUIRED ENV VARIABLES
-                  </Typography> */}
-                  {/* <Typography sx={{ fontSize: 12, fontFamily: NUMBER_FONT, color: 'var(--wc-text-primary)', lineHeight: 1.8 }}> */}
-                    {/* <code>VITE_SUPABASE_URL</code> */}
-                    {/* <br /> */}
-                    {/* <code>VITE_SUPABASE_ANON_KEY</code> */}
-                  {/* </Typography> */}
                   {fetchError && (
                     <Box sx={{ mt: 1 }}>
                       <Typography sx={{ fontSize: 11, fontFamily: NUMBER_FONT, color: 'var(--wc-error)', letterSpacing: '0.04em', mb: 0.4 }}>
@@ -521,6 +1137,132 @@ export function DataPage() {
                 />
               </MotionReveal>
 
+              <MotionReveal>
+                <Stack spacing={2}>
+                  {/* <SectionHeading
+                    eyebrow="Session Brief"
+                    title={`Market pulse for ${activeData.date}`}
+                    meta={`${dayInsights.totalIssues.toLocaleString('en-PK')} issues tracked`}
+                  /> */}
+                  <Box
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))', lg: 'repeat(3, minmax(0, 1fr))' },
+                      gap: 1.5,
+                    }}
+                  >
+                    <DailyMetricCard
+                      icon={<ShowChartIcon sx={{ fontSize: 17, color: 'inherit' }} />}
+                      label="KSE 100 Move"
+                      value={formatSignedNumber(marketSummary.KSE100_Change)}
+                      detail={`${formatPercent(indexChangePct)} on ${formatNumber(marketSummary.KSE100_Close)} close`}
+                      tone={indexTone}
+                    />
+                    <DailyMetricCard
+                      icon={
+                        breadthTone === 'negative' ? (
+                          <TrendingDownIcon sx={{ fontSize: 17, color: 'inherit' }} />
+                        ) : (
+                          <TrendingUpIcon sx={{ fontSize: 17, color: 'inherit' }} />
+                        )
+                      }
+                      label="Market Breadth"
+                      value={`${stats.gainers.toLocaleString('en-PK')}:${stats.losers.toLocaleString('en-PK')}`}
+                      detail={`${breadthLabel}; ${stats.unchanged.toLocaleString('en-PK')} unchanged`}
+                      tone={breadthTone}
+                    />
+                    <DailyMetricCard
+                      icon={<BarChartIcon sx={{ fontSize: 17, color: 'inherit' }} />}
+                      label="Active Symbols"
+                      value={dayInsights.activeStocks.toLocaleString('en-PK')}
+                      detail={`${stocks.length.toLocaleString('en-PK')} listed rows loaded for the day`}
+                    />
+                    <DailyMetricCard
+                      icon={<BarChartIcon sx={{ fontSize: 17, color: 'inherit' }} />}
+                      label="Total Volume"
+                      value={formatCompactNumber(dayInsights.totalVolume)}
+                      detail={`Top 5 leaders captured ${formatPercent(dayInsights.topVolumeShare, false)} of volume`}
+                    />
+                    <DailyMetricCard
+                      icon={<ShowChartIcon sx={{ fontSize: 17, color: 'inherit' }} />}
+                      label="Average Range"
+                      value={formatPercent(dayInsights.avgRangePct, false)}
+                      detail={
+                        widestRangeStock
+                          ? `${widestRangeStock.symbol} widest at ${formatPercent(widestRangeStock.intradayRangePct, false)}`
+                          : 'High-low spreads were unavailable'
+                      }
+                    />
+                    <DailyMetricCard
+                      icon={<BarChartIcon sx={{ fontSize: 17, color: 'inherit' }} />}
+                      label="Most Active"
+                      value={topVolumeStock?.symbol ?? '-'}
+                      detail={
+                        topVolumeStock
+                          ? `${formatCompactNumber(topVolumeStock.numericTurnover)} volume - last ${formatNumber(topVolumeStock.numericClose)}`
+                          : 'No traded volume was available'
+                      }
+                    />
+                  </Box>
+                </Stack>
+              </MotionReveal>
+
+              <MotionReveal>
+                <Stack spacing={2}>
+                  <SectionHeading
+                    eyebrow="Movers"
+                    title="Top gainers, losers, and volume leaders"
+                    // meta="Ranked by percentage move and traded volume"
+                  />
+                  <Box
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: { xs: '1fr', lg: 'repeat(3, minmax(0, 1fr))' },
+                      gap: 1.5,
+                    }}
+                  >
+                    <LeaderList
+                      title="Top Gainers"
+                      subtitle="Largest positive closes versus the prior close."
+                      rows={dayInsights.gainers}
+                      kind="gain"
+                    />
+                    <LeaderList
+                      title="Top Losers"
+                      subtitle="Largest negative closes versus the prior close."
+                      rows={dayInsights.losers}
+                      kind="loss"
+                    />
+                    <LeaderList
+                      title="Volume Leaders"
+                      subtitle="Highest traded turnover in the closing data."
+                      rows={dayInsights.volumeLeaders}
+                      kind="volume"
+                    />
+                  </Box>
+                </Stack>
+              </MotionReveal>
+
+              <MotionReveal>
+                <Stack spacing={2}>
+                  <SectionHeading
+                    eyebrow="Activity"
+                    title="Where the day concentrated"
+                    // meta={`Table volume ${formatCompactNumber(dayInsights.tableVolume)}`}
+                  />
+                  <Box
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: { xs: '1fr', lg: 'minmax(0, 1.1fr) minmax(0, 0.9fr)' },
+                      gap: 1.5,
+                    }}
+                  >
+                    <SectorActivityPanel sectors={dayInsights.sectors} totalVolume={dayInsights.totalVolume} />
+                    <RangeLeadersPanel rows={dayInsights.rangeLeaders} avgRangePct={dayInsights.avgRangePct} />
+                  </Box>
+                </Stack>
+              </MotionReveal>
+
               {/* Filters + Search */}
               <MotionReveal>
                 <Box
@@ -533,28 +1275,11 @@ export function DataPage() {
                   }}
                 >
                   <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
-                    <Box>
-                      {/* <Typography
-                        sx={{
-                          fontSize: 11,
-                          fontFamily: SERIF,
-                          letterSpacing: '0.18em',
-                          textTransform: 'uppercase',
-                          color: 'var(--wc-primary)',
-                          mb: 0.8,
-                        }}
-                      >
-                        All Listings
-                      </Typography> */}
-                      {/* <Typography sx={{ fontSize: { xs: 14, md: 16 }, fontWeight: 700, color: 'var(--wc-text-primary)', fontFamily: SERIF }}>
-                        {stocks.length.toLocaleString()} symbols on the exchange.
-                      </Typography> */}
-                    </Box>
-                    {/* {search && (
-                      <Typography sx={{ fontSize: 11, color: 'var(--wc-text-secondary)', fontFamily: NUMBER_FONT }}>
-                        Showing {displayedStocks.length} of {stocks.length}
-                      </Typography>
-                    )} */}
+                    <SectionHeading
+                      eyebrow="Listings"
+                      title={`${displayedStocks.length.toLocaleString('en-PK')} of ${stocks.length.toLocaleString('en-PK')} symbols`}
+                      meta={search ? `Search: ${search}` : 'Sortable closing table'}
+                    />
                   </Box>
 
                   <FiltersBar
