@@ -536,8 +536,8 @@ export function HomePage() {
               <Box
                 sx={{
                   position: 'relative',
-                  minHeight: { xs: 360, md: 640 },
-                  borderRadius: '7px',
+                  // minHeight: { xs: 360, md: 640 },
+                  borderRadius: '17px',
                   overflow: 'hidden',
                   border: '1px solid #dce6f4',
                   boxShadow: '0 26px 54px rgba(10,36,99,0.12)',
