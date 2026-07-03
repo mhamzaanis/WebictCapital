@@ -4,22 +4,17 @@ import {
   Stack,
   Typography,
 } from '@mui/material'
-import AccountBalanceIcon from '@mui/icons-material/AccountBalance'
 import AnalyticsIcon from '@mui/icons-material/Analytics'
 import BubbleChartIcon from '@mui/icons-material/BubbleChart'
-import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
 import DonutLargeIcon from '@mui/icons-material/DonutLarge'
-import RemoveIcon from '@mui/icons-material/Remove'
 import StackedBarChartIcon from '@mui/icons-material/StackedBarChart'
 import TimelineIcon from '@mui/icons-material/Timeline'
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
-import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp'
 import { motion, useReducedMotion } from 'motion/react'
 import { hasSupabaseConfig, supabase } from '../../lib/supabase'
 import { useEffect, useMemo, useState } from 'react'
-import { MarketDashboardSkeleton, PriceTableSkeleton, StatCardsSkeleton } from './CustomSkeleton'
+import { MarketDashboardSkeleton, MarketSnapshotSkeleton, PriceTableSkeleton } from './CustomSkeleton'
 import { CustomDataTable } from './CustomDataTable'
-import { CustomStatsCards, StatCard } from './CustomStatsCards'
+import { MarketSnapshot } from './MarketSnapshot'
 import { FiltersBar, type MovementFilter } from './FiltersBar.tsx'
 import { MotionReveal } from '../animations/MotionReveal'
 import {
@@ -62,7 +57,7 @@ type PsxData = {
   date: string
   source: 'Supabase'
   market?: {
-    open_kse100?: number
+    previous_kse100?: number
     close_kse100?: number
     curr_volume?: number
     advances?: number
@@ -328,7 +323,9 @@ async function fetchSupabaseTradeDay(tradeDate: string): Promise<PsxData> {
     source: 'Supabase',
     market: summaryResult.data
       ? {
-          open_kse100: summaryResult.data.kse100_prev ?? undefined,
+          // `kse100_prev` is the DB column for the previous session's close —
+          // it is NOT today's open, so it's mapped to `previous_kse100`.
+          previous_kse100: summaryResult.data.kse100_prev ?? undefined,
           close_kse100: summaryResult.data.kse100_close ?? undefined,
           kse100_change: summaryResult.data.kse100_change ?? undefined,
           curr_volume: summaryResult.data.curr_volume ?? undefined,
@@ -462,10 +459,10 @@ export function DataPage() {
     const market = activeData?.market
     if (market) {
       return {
-        KSE100_Open: market.open_kse100 ?? 0,
+        KSE100_PreviousClose: market.previous_kse100 ?? 0,
         KSE100_Close: market.close_kse100 ?? 0,
         Volume_Traded: market.curr_volume ?? 0,
-        KSE100_Change: market.kse100_change ?? (market.close_kse100 ?? 0) - (market.open_kse100 ?? 0),
+        KSE100_Change: market.kse100_change ?? (market.close_kse100 ?? 0) - (market.previous_kse100 ?? 0),
       }
     }
 
@@ -482,7 +479,7 @@ export function DataPage() {
     })
 
     return {
-      KSE100_Open: totalOpen,
+      KSE100_PreviousClose: totalOpen,
       KSE100_Close: totalClose,
       Volume_Traded: totalVolume,
       KSE100_Change: totalClose - totalOpen,
@@ -617,11 +614,12 @@ export function DataPage() {
     [dayInsights],
   )
 
+  // Change % must be computed off the *previous* close, not the intraday open.
   const indexChangePct =
-    marketSummary.KSE100_Open > 0 ? (marketSummary.KSE100_Change / marketSummary.KSE100_Open) * 100 : NaN
-  const indexTrendDirection = marketSummary.KSE100_Change > 0 ? 'up' : marketSummary.KSE100_Change < 0 ? 'down' : 'flat'
-  const breadthTotal = stats.gainers + stats.losers + stats.unchanged
-  const getBreadthPercentage = (value: number) => (breadthTotal > 0 ? (value / breadthTotal) * 100 : undefined)
+    marketSummary.KSE100_PreviousClose > 0
+      ? (marketSummary.KSE100_Change / marketSummary.KSE100_PreviousClose) * 100
+      : NaN
+
   const tickerTapeItems = useMemo<TickerTapeItem[]>(() => {
     const uniqueStocks = new Map<string, RankedStock>()
 
@@ -660,7 +658,8 @@ export function DataPage() {
       }}
     >
       <Container maxWidth="xl" sx={{ maxWidth: '1400px !important', px: { xs: 2.5, md: 5 } }}>
-        <Stack spacing={{ xs: 6, md: 8 }}>
+        {/* Header-to-content spacing: ~40-48px */}
+        <Stack spacing={{ xs: 5, md: 6 }}>
 
           {/* ── Header ──────────────────────────────────────────────────── */}
           <MotionReveal>
@@ -682,18 +681,7 @@ export function DataPage() {
                 }}
               >
                 <Box sx={{ maxWidth: 620 }}>
-                  <Typography
-                    sx={{
-                      fontSize: 11,
-                      fontFamily: SERIF,
-                      letterSpacing: '0.18em',
-                      textTransform: 'uppercase',
-                      color: 'var(--wc-primary)',
-                      mb: 1.5,
-                    }}
-                  >
-                    Market Data
-                  </Typography>
+                  
                   <Typography
                     variant="h1"
                     sx={{
@@ -725,22 +713,8 @@ export function DataPage() {
                 </Box>
 
                 <Box sx={{ textAlign: { md: 'right' }, pb: { md: 0.5 }, flexShrink: 0 }}>
-                  <Typography
-                    sx={{
-                      fontSize: 11,
-                      color: 'var(--wc-text-secondary)',
-                      letterSpacing: '0.04em',
-                      fontFamily: SERIF,
-                      mb: 0.3,
-                    }}
-                  >
-                    Pakistan Stock Exchange - daily closing data
-                  </Typography>
-                  {latestTradeDate && (
-                    <Typography sx={{ fontSize: 11, color: 'var(--wc-primary)', fontFamily: NUMBER_FONT, fontWeight: 500 }}>
-                      Latest: {latestTradeDate}
-                    </Typography>
-                  )}
+                  
+                  
                 </Box>
               </Box>
             </Box>
@@ -749,9 +723,9 @@ export function DataPage() {
           {/* ── Loading state ───────────────────────────────────────────── */}
           {status === 'loading' && (
             <MotionReveal>
-              <Stack spacing={3}>
+              <Stack spacing={{ xs: 2, md: 2.5 }}>
                 <TickerTapeSkeleton />
-                <StatCardsSkeleton />
+                <MarketSnapshotSkeleton />
                 <MarketDashboardSkeleton />
                 <FiltersBar
                   disabled
@@ -839,7 +813,7 @@ export function DataPage() {
                 >
                   {fetchError && (
                     <Box sx={{ mt: 1 }}>
-                      <Typography sx={{ fontSize: 11, fontFamily: NUMBER_FONT, color: 'var(--wc-error)', letterSpacing: '0.04em', mb: 0.4 }}>
+                      <Typography sx={{ fontSize: 11, fontFamily: SERIF, fontWeight: 600, color: 'var(--wc-error)', letterSpacing: '0.06em', mb: 0.4 }}>
                         ERROR
                       </Typography>
                       <Typography sx={{ fontSize: 11, fontFamily: NUMBER_FONT, color: 'var(--wc-text-secondary)', wordBreak: 'break-all' }}>
@@ -854,221 +828,150 @@ export function DataPage() {
 
           {/* ── Data state ──────────────────────────────────────────────── */}
           {status === 'ok' && activeData && (
-            <>
+            // Regular dashboard section gaps: ~24-32px. This Stack — not the
+            // outer page Stack — now controls spacing between dashboard blocks.
+            <Stack spacing={{ xs: 3, md: 4 }}>
+
+              {/* Ticker-to-snapshot spacing: ~16-20px, tighter than the
+                  section rhythm below since these two read as one unit. */}
+              <Stack spacing={{ xs: 2, md: 2.5 }}>
+                <MotionReveal>
+                  <TickerTape items={tickerTapeItems} date={activeData.date} monoFont={NUMBER_FONT} />
+                </MotionReveal>
+
+                <MotionReveal>
+                  <MarketSnapshot
+                    date={activeData.date}
+                    previousClose={marketSummary.KSE100_PreviousClose}
+                    close={marketSummary.KSE100_Close}
+                    change={marketSummary.KSE100_Change}
+                    changePercent={indexChangePct}
+                    volume={marketSummary.Volume_Traded}
+                    advancing={stats.gainers}
+                    declining={stats.losers}
+                    unchanged={stats.unchanged}
+                    monoFont={NUMBER_FONT}
+                  />
+                </MotionReveal>
+              </Stack>
+
               <MotionReveal>
-                <TickerTape items={tickerTapeItems} date={activeData.date} monoFont={NUMBER_FONT} />
+                <Box
+                  sx={{
+                    display: 'grid',
+                  }}
+                >
+                  <StockHeatmap
+                    heading="Stock Heatmap"
+                    detail="Top active names sized by volume and colored by daily move."
+                    icon={<BubbleChartIcon sx={{ fontSize: 18 }} />}
+                    height={460}
+                    data={marketVisualData.heatmap}
+                    colors={{
+                      positive: MARKET_CHART_COLORS.success,
+                      negative: MARKET_CHART_COLORS.error,
+                      neutral: '#eef2f7',
+                    }}
+                  />
+                </Box>
               </MotionReveal>
 
               <MotionReveal>
-                <CustomStatsCards>
-                  <StatCard
-                    label="Trade Date"
-                    value={activeData.date}
-                    detail="Latest PSX closing file"
-                    variant="neutral"
-                    icon={<CalendarMonthIcon sx={{ fontSize: 17, color: 'inherit' }} />}
-                    monoFont={NUMBER_FONT}
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: { xs: '1fr', lg: '0.85fr 1.05fr 1.1fr' },
+                    gap: 1.5,
+                  }}
+                >
+                  <DonutChart
+                    heading="Breadth Donut"
+                    detail="Advancers, decliners, and unchanged issues."
+                    icon={<DonutLargeIcon sx={{ fontSize: 18 }} />}
+                    height={270}
+                    data={breadthChartItems}
+                    colors={[
+                      MARKET_CHART_COLORS.success,
+                      MARKET_CHART_COLORS.error,
+                      MARKET_CHART_COLORS.neutral,
+                    ]}
+                    centerSubtext="issues"
+                    emptyLabel="Breadth data is unavailable."
                   />
-                  <StatCard
-                    label="KSE 100 Open"
-                    value={formatNumber(marketSummary.KSE100_Open)}
-                    detail="Previous benchmark level"
-                    variant="default"
-                    icon={<AccountBalanceIcon sx={{ fontSize: 17, color: 'inherit' }} />}
-                    monoFont={NUMBER_FONT}
+                  <BarChart
+                    heading="Sector Volume"
+                    detail="Top industries by trading concentration."
+                    icon={<AnalyticsIcon sx={{ fontSize: 18 }} />}
+                    height={360}
+                    data={marketVisualData.sectorVolume}
+                    left={120}
+                    emptyLabel="Sector volume is unavailable."
                   />
-                  <StatCard
-                    label="KSE 100 Close"
-                    value={formatNumber(marketSummary.KSE100_Close)}
-                    detail="End-of-day benchmark close"
-                    variant="default"
-                    emphasized
-                    icon={<TimelineIcon sx={{ fontSize: 17, color: 'inherit' }} />}
-                    monoFont={NUMBER_FONT}
+                  <LineChart
+                    heading="Mover Curve"
+                    detail="Largest losers through largest gainers."
+                    icon={<TimelineIcon sx={{ fontSize: 18 }} />}
+                    height={270}
+                    data={marketVisualData.momentum}
+                    color={MARKET_CHART_COLORS.primary}
+                    emptyLabel="Momentum line needs more mover data."
                   />
-                  <StatCard
-                    label="KSE 100 Change"
-                    value={formatSignedNumber(marketSummary.KSE100_Change)}
-                    detail="Benchmark move from previous close"
-                    variant={marketSummary.KSE100_Change > 0 ? 'positive' : marketSummary.KSE100_Change < 0 ? 'negative' : 'neutral'}
-                    trend={Number.isFinite(indexChangePct) ? formatPercent(indexChangePct) : undefined}
-                    trendDirection={indexTrendDirection}
-                    emphasized
-                    icon={
-                      marketSummary.KSE100_Change > 0 ? (
-                        <ArrowDropUpIcon sx={{ fontSize: 17, color: 'inherit' }} />
-                      ) : marketSummary.KSE100_Change < 0 ? (
-                        <ArrowDropDownIcon sx={{ fontSize: 17, color: 'inherit' }} />
-                      ) : (
-                        <RemoveIcon sx={{ fontSize: 17, color: 'inherit' }} />
-                      )
-                    }
-                    monoFont={NUMBER_FONT}
-                  />
-                  <StatCard
-                    label="Volume Traded"
-                    value={formatCompactNumber(marketSummary.Volume_Traded)}
-                    detail={`${marketSummary.Volume_Traded.toLocaleString('en-PK')} shares`}
-                    variant="default"
-                    icon={<StackedBarChartIcon sx={{ fontSize: 17, color: 'inherit' }} />}
-                    monoFont={NUMBER_FONT}
-                  />
-                  <StatCard
-                    label="Advancing"
-                    value={stats.gainers.toLocaleString('en-PK')}
-                    detail="Symbols closing higher"
-                    variant="positive"
-                    percentage={getBreadthPercentage(stats.gainers)}
-                    icon={<ArrowDropUpIcon sx={{ fontSize: 17, color: 'inherit' }} />}
-                    monoFont={NUMBER_FONT}
-                  />
-                  <StatCard
-                    label="Declining"
-                    value={stats.losers.toLocaleString('en-PK')}
-                    detail="Symbols closing lower"
-                    variant="negative"
-                    percentage={getBreadthPercentage(stats.losers)}
-                    icon={<ArrowDropDownIcon sx={{ fontSize: 17, color: 'inherit' }} />}
-                    monoFont={NUMBER_FONT}
-                  />
-                  <StatCard
-                    label="Unchanged"
-                    value={stats.unchanged.toLocaleString('en-PK')}
-                    detail="Flat daily closes"
-                    variant="neutral"
-                    percentage={getBreadthPercentage(stats.unchanged)}
-                    icon={<DonutLargeIcon sx={{ fontSize: 17, color: 'inherit' }} />}
-                    monoFont={NUMBER_FONT}
-                  />
-                </CustomStatsCards>
-              </MotionReveal>
-                    <MotionReveal>
-              <Box
-                    sx={{
-                      display: 'grid',
-                      // gridTemplateColumns: { xs: '1fr', lg: 'minmax(0, 1.35fr) minmax(0, 0.85fr)' },
-                      // gap: 1.5,
-                    }}
-                  >
-                    <StockHeatmap
-                      heading="Stock Heatmap"
-                      detail="Top active names sized by volume and colored by daily move."
-                      icon={<BubbleChartIcon sx={{ fontSize: 18 }} />}
-                      height={460}
-                      data={marketVisualData.heatmap}
-                      colors={{
-                        positive: MARKET_CHART_COLORS.success,
-                        negative: MARKET_CHART_COLORS.error,
-                        neutral: '#eef2f7',
-                      }}
-                    />
-                    
-                  </Box>
-                  </MotionReveal>
-
-              <MotionReveal>
-                <Stack spacing={2}>
-                  <Box
-                    sx={{
-                      display: 'grid',
-                      gridTemplateColumns: { xs: '1fr', lg: '0.85fr 1.05fr 1.1fr' },
-                      gap: 1.5,
-                    }}
-                  >
-                    <DonutChart
-                      heading="Breadth Donut"
-                      detail="Advancers, decliners, and unchanged issues."
-                      icon={<DonutLargeIcon sx={{ fontSize: 18 }} />}
-                      height={270}
-                      data={breadthChartItems}
-                      colors={[
-                        MARKET_CHART_COLORS.success,
-                        MARKET_CHART_COLORS.error,
-                        MARKET_CHART_COLORS.neutral,
-                      ]}
-                      centerSubtext="issues"
-                      emptyLabel="Breadth data is unavailable."
-                    />
-                    <BarChart
-                      heading="Sector Volume"
-                      detail="Top industries by trading concentration."
-                      icon={<AnalyticsIcon sx={{ fontSize: 18 }} />}
-                      height={360}
-                      data={marketVisualData.sectorVolume}
-                      left={120}
-                      emptyLabel="Sector volume is unavailable."
-                    />
-                    <LineChart
-                      heading="Mover Curve"
-                      detail="Largest losers through largest gainers."
-                      icon={<TimelineIcon sx={{ fontSize: 18 }} />}
-                      height={270}
-                      data={marketVisualData.momentum}
-                      color={MARKET_CHART_COLORS.primary}
-                      emptyLabel="Momentum line needs more mover data."
-                    />
-                  </Box>
-                  
-                </Stack>
+                </Box>
               </MotionReveal>
 
               <MotionReveal>
-                <Stack spacing={2}>
-                  <Box
-                    sx={{
-                      display: 'grid',
-                      gridTemplateColumns: { xs: '1fr', lg: 'repeat(3, minmax(0, 1fr))' },
-                      gap: 1.5,
-                    }}
-                  >
-                    <MarketLeaderList
-                      title="Top Gainers"
-                      subtitle="Largest positive closes versus the prior close."
-                      items={marketVisualData.gainers}
-                      kind="gain"
-                      monoFont={NUMBER_FONT}
-                    />
-                    <MarketLeaderList
-                      title="Top Losers"
-                      subtitle="Largest negative closes versus the prior close."
-                      items={marketVisualData.losers}
-                      kind="loss"
-                      monoFont={NUMBER_FONT}
-                    />
-                    <BarChart
-                      heading="Volume Leaders"
-                      detail="Most active symbols by traded turnover."
-                      icon={<StackedBarChartIcon sx={{ fontSize: 18 }} />}
-                      height={270}
-                      data={marketVisualData.volumeBars}
-                      color={MARKET_CHART_COLORS.primary}
-                      emptyLabel="Volume leaders are unavailable."
-                    />
-                  </Box>
-                </Stack>
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: { xs: '1fr', lg: 'repeat(3, minmax(0, 1fr))' },
+                    gap: 1.5,
+                  }}
+                >
+                  <MarketLeaderList
+                    title="Top Gainers"
+                    subtitle="Largest positive closes versus the prior close."
+                    items={marketVisualData.gainers}
+                    kind="gain"
+                    monoFont={NUMBER_FONT}
+                  />
+                  <MarketLeaderList
+                    title="Top Losers"
+                    subtitle="Largest negative closes versus the prior close."
+                    items={marketVisualData.losers}
+                    kind="loss"
+                    monoFont={NUMBER_FONT}
+                  />
+                  <BarChart
+                    heading="Volume Leaders"
+                    detail="Most active symbols by traded turnover."
+                    icon={<StackedBarChartIcon sx={{ fontSize: 18 }} />}
+                    height={270}
+                    data={marketVisualData.volumeBars}
+                    color={MARKET_CHART_COLORS.primary}
+                    emptyLabel="Volume leaders are unavailable."
+                  />
+                </Box>
               </MotionReveal>
 
               <MotionReveal>
-                <Stack spacing={2}>
-                  <Box
-                    sx={{
-                      display: 'grid',
-                      gridTemplateColumns: { xs: '1fr', lg: 'minmax(0, 1.1fr) minmax(0, 0.9fr)' },
-                      gap: 1.5,
-                    }}
-                  >
-                    <SectorActivityPanel
-                      sectors={marketVisualData.sectors}
-                      totalVolume={dayInsights.totalVolume}
-                      monoFont={NUMBER_FONT}
-                    />
-                    <RangeLeadersPanel
-                      items={marketVisualData.rangeLeaders}
-                      avgRangePct={dayInsights.avgRangePct}
-                      monoFont={NUMBER_FONT}
-                    />
-                  </Box>
-                </Stack>
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: { xs: '1fr', lg: 'minmax(0, 1.1fr) minmax(0, 0.9fr)' },
+                    gap: 1.5,
+                  }}
+                >
+                  <SectorActivityPanel
+                    sectors={marketVisualData.sectors}
+                    totalVolume={dayInsights.totalVolume}
+                    monoFont={NUMBER_FONT}
+                  />
+                  <RangeLeadersPanel
+                    items={marketVisualData.rangeLeaders}
+                    avgRangePct={dayInsights.avgRangePct}
+                    monoFont={NUMBER_FONT}
+                  />
+                </Box>
               </MotionReveal>
 
               {/* Filters + Search */}
@@ -1082,7 +985,6 @@ export function DataPage() {
                     gap: 2,
                   }}
                 >
-
                   <FiltersBar
                     disabled={false}
                     search={search}
@@ -1099,7 +1001,7 @@ export function DataPage() {
               <MotionReveal>
                 <CustomDataTable rows={displayedStocks} searchQuery={search} monoFont={NUMBER_FONT} />
               </MotionReveal>
-            </>
+            </Stack>
           )}
 
         </Stack>

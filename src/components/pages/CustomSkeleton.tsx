@@ -8,6 +8,7 @@ import {
 	TableContainer,
 	TableHead,
 	TableRow,
+	Skeleton
 } from '@mui/material'
 import { PulseSkeleton } from '../PulseSkeleton'
 
@@ -65,6 +66,55 @@ export function StatCardsSkeleton() {
 		</Box>
 	)
 }
+
+export function MarketSnapshotSkeleton() {
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        bgcolor: 'var(--wc-bg)',
+        border: '1px solid var(--wc-divider)',
+        borderRadius: '12px',
+        px: { xs: 2, md: 2.5 },
+        py: { xs: 1.75, md: 2 },
+      }}
+    >
+      <Stack spacing={{ xs: 1.5, md: 1.75 }}>
+        <Stack direction="row" sx={{ justifyContent: 'space-between' }}>
+          <Skeleton variant="text" width={110} height={16} />
+          <Skeleton variant="text" width={90} height={16} />
+        </Stack>
+ 
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' },
+            rowGap: { xs: 1.5, md: 0 },
+            columnGap: 2,
+          }}
+        >
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Box key={i}>
+              <Skeleton variant="text" width={80} height={12} sx={{ mb: 0.5 }} />
+              <Skeleton variant="text" width={100} height={30} />
+            </Box>
+          ))}
+        </Box>
+ 
+        <Stack
+          direction="row"
+          spacing={2.5}
+          sx={{ pt: { xs: 1.25, md: 1.5 }, borderTop: '1px solid var(--wc-divider)' }}
+        >
+          <Skeleton variant="text" width={90} height={18} />
+          <Skeleton variant="text" width={90} height={18} />
+          <Skeleton variant="text" width={90} height={18} />
+        </Stack>
+      </Stack>
+    </Paper>
+  )
+}
+
 
 function SectionTitleSkeleton() {
 	return (

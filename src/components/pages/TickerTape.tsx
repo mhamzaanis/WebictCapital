@@ -111,7 +111,7 @@ export function TickerTape({ items, date, monoFont = 'var(--wc-font-mono)' }: Ti
 			<Box
 				sx={{
 					display: 'grid',
-					gridTemplateColumns: { xs: '1fr', md: '190px minmax(0, 1fr)' },
+					// gridTemplateColumns: { xs: '1fr', md: '190px minmax(0, 1fr)' },
 					minHeight: 48,
 				}}
 			>
@@ -123,13 +123,13 @@ export function TickerTape({ items, date, monoFont = 'var(--wc-font-mono)' }: Ti
 						justifyContent: 'center',
 						gap: { xs: 1.2, md: 0.15 },
 						px: 1.6,
-						py: 1,
+						// py: 1,
 						bgcolor: 'var(--wc-paper)',
 						borderRight: { md: '1px solid var(--wc-divider)' },
 						borderBottom: { xs: '1px solid var(--wc-divider)', md: 0 },
 					}}
 				>
-					<Typography
+					{/* <Typography
 						sx={{
 							color: 'var(--wc-primary)',
 							fontFamily: monoFont,
@@ -146,7 +146,7 @@ export function TickerTape({ items, date, monoFont = 'var(--wc-font-mono)' }: Ti
 						<Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 11, fontWeight: 500, whiteSpace: 'nowrap' }}>
 							{date}
 						</Typography>
-					)}
+					)} */}
 				</Box>
 
 				<Box
