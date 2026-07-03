@@ -1,11 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ElementType } from 'react'
 import AccountBalanceWalletOutlinedIcon from '@mui/icons-material/AccountBalanceWalletOutlined'
-import AddRoundedIcon from '@mui/icons-material/AddRounded'
 import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined'
 import DonutLargeRoundedIcon from '@mui/icons-material/DonutLargeRounded'
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded'
-import RemoveRoundedIcon from '@mui/icons-material/RemoveRounded'
 import RestartAltRoundedIcon from '@mui/icons-material/RestartAltRounded'
 import SavingsOutlinedIcon from '@mui/icons-material/SavingsOutlined'
 import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined'
@@ -16,7 +13,6 @@ import {
   Button,
   Collapse,
   Container,
-  IconButton,
   Slider,
   Stack,
   Switch,
@@ -25,7 +21,6 @@ import {
   TableCell,
   TableHead,
   TableRow,
-  Tooltip,
   Typography,
 } from '@mui/material'
 import * as echarts from 'echarts/core'
@@ -573,9 +568,8 @@ function InputPanel({
               <Typography sx={{ color: 'var(--wc-text-primary)', fontSize: 13, fontWeight: 800 }}>
                 Adjust for inflation
               </Typography>
-              <Tooltip title="Shows estimated returns in today's value using a 9% inflation assumption." arrow>
-                <InfoOutlinedIcon sx={{ color: '#8a9bb0', fontSize: 16, cursor: 'help' }} />
-              </Tooltip>
+              {/* <Tooltip title="Shows estimated returns in today's value using a 9% inflation assumption." arrow>
+              </Tooltip> */}
             </Stack>
             <Typography sx={{ mt: 0.35, color: 'var(--wc-text-secondary)', fontSize: 11.5 }}>
               Show returns in today's value
@@ -632,14 +626,6 @@ function SliderField({
   onChange: (value: number) => void
   marks: SliderMark[]
 }) {
-  const handleDecrement = () => {
-    onChange(roundToStep(Math.max(min, value - step), step))
-  }
-
-  const handleIncrement = () => {
-    onChange(roundToStep(Math.min(max, value + step), step))
-  }
-
   return (
     <Box>
       <Stack direction="row" spacing={1.4} sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 1.4 }}>
@@ -647,7 +633,6 @@ function SliderField({
           <Typography component="label" htmlFor={id} sx={{ color: 'var(--wc-text-primary)', fontSize: 12.5, fontWeight: 800 }}>
             {label}
           </Typography>
-          {/* <InfoOutlinedIcon sx={{ color: '#8a9bb0', fontSize: 15, flexShrink: 0 }} /> */}
         </Stack>
         <Typography sx={{ color: PRIMARY, fontFamily: MONO_FONT, fontSize: 14, fontWeight: 800, whiteSpace: 'nowrap' }}>
           {display}
@@ -655,9 +640,7 @@ function SliderField({
       </Stack>
 
       <Stack direction="row" spacing={2} sx={{ alignItems: 'flex-start' }}>
-        <StepButton disabled={value <= min} label={`Decrease ${label}`} onClick={handleDecrement}>
-          <RemoveRoundedIcon sx={{ fontSize: 17 }} />
-        </StepButton>
+
         <Slider
           id={id}
           value={value}
@@ -693,46 +676,11 @@ function SliderField({
             },
           }}
         />
-        <StepButton disabled={value >= max} label={`Increase ${label}`} onClick={handleIncrement}>
-          <AddRoundedIcon sx={{ fontSize: 17 }} />
-        </StepButton>
       </Stack>
     </Box>
   )
 }
 
-function StepButton({
-  children,
-  disabled,
-  label,
-  onClick,
-}: {
-  children: React.ReactNode
-  disabled: boolean
-  label: string
-  onClick: () => void
-}) {
-  return (
-    <IconButton
-      onClick={onClick}
-      disabled={disabled}
-      size="small"
-      aria-label={label}
-      sx={{
-        width: 31,
-        height: 31,
-        border: '1px solid #c8d6ec',
-        borderRadius: '7px',
-        bgcolor: '#ffffff',
-        color: PRIMARY,
-        '&:hover': { bgcolor: 'var(--wc-primary-light)', borderColor: PRIMARY },
-        '&.Mui-disabled': { borderColor: '#e2eaf5', color: '#c8d6ec' },
-      }}
-    >
-      {children}
-    </IconButton>
-  )
-}
 
 function MetricCard({ label, value, icon: Icon, variant = 'default' }: MetricCardProps) {
   const isDark = variant === 'dark'
