@@ -48,11 +48,6 @@ function formatPercent(value: number): string {
   return `${value > 0 ? '+' : '-'}${formatted}%`
 }
 
-function formatDate(value: string): string {
-  const parsed = new Date(value)
-  if (Number.isNaN(parsed.getTime())) return value
-  return parsed.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
-}
 
 function directionColor(value: number): string {
   if (!Number.isFinite(value) || value === 0) return 'var(--wc-text-secondary)'
@@ -164,7 +159,6 @@ function BreadthEntry({ icon, label, value, color, monoFont }: BreadthEntryProps
 // -- Component ----------------------------------------------------------------
 
 export function MarketSnapshot({
-  date,
   previousClose,
   close,
   change,
