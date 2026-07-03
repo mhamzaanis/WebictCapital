@@ -619,6 +619,9 @@ export function DataPage() {
 
   const indexChangePct =
     marketSummary.KSE100_Open > 0 ? (marketSummary.KSE100_Change / marketSummary.KSE100_Open) * 100 : NaN
+  const indexTrendDirection = marketSummary.KSE100_Change > 0 ? 'up' : marketSummary.KSE100_Change < 0 ? 'down' : 'flat'
+  const breadthTotal = stats.gainers + stats.losers + stats.unchanged
+  const getBreadthPercentage = (value: number) => (breadthTotal > 0 ? (value / breadthTotal) * 100 : undefined)
   const tickerTapeItems = useMemo<TickerTapeItem[]>(() => {
     const uniqueStocks = new Map<string, RankedStock>()
 
@@ -862,7 +865,7 @@ export function DataPage() {
                     label="Trade Date"
                     value={activeData.date}
                     detail="Latest PSX closing file"
-                    color="var(--wc-text-primary)"
+                    variant="neutral"
                     icon={<CalendarMonthIcon sx={{ fontSize: 17, color: 'inherit' }} />}
                     monoFont={NUMBER_FONT}
                   />
@@ -870,7 +873,7 @@ export function DataPage() {
                     label="KSE 100 Open"
                     value={formatNumber(marketSummary.KSE100_Open)}
                     detail="Previous benchmark level"
-                    color="var(--wc-text-primary)"
+                    variant="default"
                     icon={<AccountBalanceIcon sx={{ fontSize: 17, color: 'inherit' }} />}
                     monoFont={NUMBER_FONT}
                   />
@@ -878,15 +881,19 @@ export function DataPage() {
                     label="KSE 100 Close"
                     value={formatNumber(marketSummary.KSE100_Close)}
                     detail="End-of-day benchmark close"
-                    color="var(--wc-text-primary)"
+                    variant="default"
+                    emphasized
                     icon={<TimelineIcon sx={{ fontSize: 17, color: 'inherit' }} />}
                     monoFont={NUMBER_FONT}
                   />
                   <StatCard
                     label="KSE 100 Change"
                     value={formatSignedNumber(marketSummary.KSE100_Change)}
-                    detail={Number.isFinite(indexChangePct) ? `${formatPercent(indexChangePct)} from open` : 'Benchmark move'}
-                    color={changeColor(marketSummary.KSE100_Change)}
+                    detail="Benchmark move from previous close"
+                    variant={marketSummary.KSE100_Change > 0 ? 'positive' : marketSummary.KSE100_Change < 0 ? 'negative' : 'neutral'}
+                    trend={Number.isFinite(indexChangePct) ? formatPercent(indexChangePct) : undefined}
+                    trendDirection={indexTrendDirection}
+                    emphasized
                     icon={
                       marketSummary.KSE100_Change > 0 ? (
                         <ArrowDropUpIcon sx={{ fontSize: 17, color: 'inherit' }} />
@@ -902,7 +909,7 @@ export function DataPage() {
                     label="Volume Traded"
                     value={formatCompactNumber(marketSummary.Volume_Traded)}
                     detail={`${marketSummary.Volume_Traded.toLocaleString('en-PK')} shares`}
-                    color="var(--wc-text-primary)"
+                    variant="default"
                     icon={<StackedBarChartIcon sx={{ fontSize: 17, color: 'inherit' }} />}
                     monoFont={NUMBER_FONT}
                   />
@@ -910,7 +917,8 @@ export function DataPage() {
                     label="Advancing"
                     value={stats.gainers.toLocaleString('en-PK')}
                     detail="Symbols closing higher"
-                    tone="positive"
+                    variant="positive"
+                    percentage={getBreadthPercentage(stats.gainers)}
                     icon={<ArrowDropUpIcon sx={{ fontSize: 17, color: 'inherit' }} />}
                     monoFont={NUMBER_FONT}
                   />
@@ -918,7 +926,8 @@ export function DataPage() {
                     label="Declining"
                     value={stats.losers.toLocaleString('en-PK')}
                     detail="Symbols closing lower"
-                    tone="negative"
+                    variant="negative"
+                    percentage={getBreadthPercentage(stats.losers)}
                     icon={<ArrowDropDownIcon sx={{ fontSize: 17, color: 'inherit' }} />}
                     monoFont={NUMBER_FONT}
                   />
@@ -926,12 +935,36 @@ export function DataPage() {
                     label="Unchanged"
                     value={stats.unchanged.toLocaleString('en-PK')}
                     detail="Flat daily closes"
-                    color="var(--wc-text-primary)"
+                    variant="neutral"
+                    percentage={getBreadthPercentage(stats.unchanged)}
                     icon={<DonutLargeIcon sx={{ fontSize: 17, color: 'inherit' }} />}
                     monoFont={NUMBER_FONT}
                   />
                 </CustomStatsCards>
               </MotionReveal>
+                    <MotionReveal>
+              <Box
+                    sx={{
+                      display: 'grid',
+                      // gridTemplateColumns: { xs: '1fr', lg: 'minmax(0, 1.35fr) minmax(0, 0.85fr)' },
+                      // gap: 1.5,
+                    }}
+                  >
+                    <StockHeatmap
+                      heading="Stock Heatmap"
+                      detail="Top active names sized by volume and colored by daily move."
+                      icon={<BubbleChartIcon sx={{ fontSize: 18 }} />}
+                      height={460}
+                      data={marketVisualData.heatmap}
+                      colors={{
+                        positive: MARKET_CHART_COLORS.success,
+                        negative: MARKET_CHART_COLORS.error,
+                        neutral: '#eef2f7',
+                      }}
+                    />
+                    
+                  </Box>
+                  </MotionReveal>
 
               <MotionReveal>
                 <Stack spacing={2}>
@@ -957,13 +990,13 @@ export function DataPage() {
                       emptyLabel="Breadth data is unavailable."
                     />
                     <BarChart
-                      heading="Volume Leaders"
-                      detail="Most active symbols by traded turnover."
-                      icon={<StackedBarChartIcon sx={{ fontSize: 18 }} />}
-                      height={270}
-                      data={marketVisualData.volumeBars}
-                      color={MARKET_CHART_COLORS.primary}
-                      emptyLabel="Volume leaders are unavailable."
+                      heading="Sector Volume"
+                      detail="Top industries by trading concentration."
+                      icon={<AnalyticsIcon sx={{ fontSize: 18 }} />}
+                      height={360}
+                      data={marketVisualData.sectorVolume}
+                      left={120}
+                      emptyLabel="Sector volume is unavailable."
                     />
                     <LineChart
                       heading="Mover Curve"
@@ -975,35 +1008,7 @@ export function DataPage() {
                       emptyLabel="Momentum line needs more mover data."
                     />
                   </Box>
-                  <Box
-                    sx={{
-                      display: 'grid',
-                      gridTemplateColumns: { xs: '1fr', lg: 'minmax(0, 1.35fr) minmax(0, 0.85fr)' },
-                      gap: 1.5,
-                    }}
-                  >
-                    <StockHeatmap
-                      heading="Stock Heatmap"
-                      detail="Top active names sized by volume and colored by daily move."
-                      icon={<BubbleChartIcon sx={{ fontSize: 18 }} />}
-                      height={360}
-                      data={marketVisualData.heatmap}
-                      colors={{
-                        positive: MARKET_CHART_COLORS.success,
-                        negative: MARKET_CHART_COLORS.error,
-                        neutral: '#eef2f7',
-                      }}
-                    />
-                    <BarChart
-                      heading="Sector Volume"
-                      detail="Top industries by trading concentration."
-                      icon={<AnalyticsIcon sx={{ fontSize: 18 }} />}
-                      height={360}
-                      data={marketVisualData.sectorVolume}
-                      left={120}
-                      emptyLabel="Sector volume is unavailable."
-                    />
-                  </Box>
+                  
                 </Stack>
               </MotionReveal>
 
@@ -1030,12 +1035,14 @@ export function DataPage() {
                       kind="loss"
                       monoFont={NUMBER_FONT}
                     />
-                    <MarketLeaderList
-                      title="Volume Leaders"
-                      subtitle="Highest traded turnover in the closing data."
-                      items={marketVisualData.volumeLeaders}
-                      kind="volume"
-                      monoFont={NUMBER_FONT}
+                    <BarChart
+                      heading="Volume Leaders"
+                      detail="Most active symbols by traded turnover."
+                      icon={<StackedBarChartIcon sx={{ fontSize: 18 }} />}
+                      height={270}
+                      data={marketVisualData.volumeBars}
+                      color={MARKET_CHART_COLORS.primary}
+                      emptyLabel="Volume leaders are unavailable."
                     />
                   </Box>
                 </Stack>
