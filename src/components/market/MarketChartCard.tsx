@@ -19,28 +19,29 @@ export function MarketChartCard({
 			elevation={0}
 			sx={mergeSx(
 				{
-					p: 2,
-					bgcolor: 'var(--wc-bg)',
-					border: '1px solid var(--wc-divider)',
-					borderRadius: 1.5,
-					minHeight: height + 82,
+					p: { xs: 'var(--wc-card-padding-xs)', md: 'var(--wc-card-padding-md)' },
+					bgcolor: 'var(--wc-surface)',
+					border: '1px solid var(--wc-border)',
+					borderRadius: '12px',
+					boxShadow: 'var(--wc-shadow-card)',
+					minHeight: height + 112,
 					display: 'flex',
 					flexDirection: 'column',
 				},
 				sx,
 			)}
 		>
-			<Stack direction="row" spacing={1} sx={{ alignItems: 'flex-start', justifyContent: 'space-between', gap: 2, mb: 1.5 }}>
+			<Stack direction="row" spacing={1.25} sx={{ alignItems: 'flex-start', justifyContent: 'space-between', gap: 3, mb: 2.25 }}>
 				<Box sx={{ minWidth: 0 }}>
-					<Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 0.35 }}>
+					<Stack direction="row" spacing={1.25} sx={{ alignItems: 'center', mb: 0.65 }}>
 						<Box sx={{ color: 'var(--wc-primary)', display: 'flex', alignItems: 'center' }}>
 							{icon}
 						</Box>
-						<Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: FONT_FAMILY.display, fontSize: 17, fontWeight: 700 }}>
+						<Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: FONT_FAMILY.body, fontSize: 16, fontWeight: 700, letterSpacing: '-0.015em' }}>
 							{heading}
 						</Typography>
 					</Stack>
-					<Typography sx={{ color: 'var(--wc-text-secondary)', fontSize: 11, lineHeight: 1.45 }}>
+					<Typography sx={{ color: 'var(--wc-text-secondary)', fontSize: 12, lineHeight: 1.65 }}>
 						{detail}
 					</Typography>
 				</Box>

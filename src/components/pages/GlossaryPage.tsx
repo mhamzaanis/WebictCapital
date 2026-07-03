@@ -134,14 +134,14 @@ export function GlossaryPage() {
     <Box
       component="main"
       sx={{
-        pt: { xs: 'calc(64px + 2.4rem)', md: 'calc(72px + 4.2rem)' },
-        pb: { xs: 6, md: 3 },
+        pt: { xs: 'var(--wc-page-top-xs)', md: 'var(--wc-page-top-md)' },
+        pb: { xs: 'var(--wc-page-bottom-xs)', md: 'var(--wc-page-bottom-md)' },
         bgcolor: '#ffffff',
         minHeight: '100vh',
       }}
     >
-      <Container maxWidth="xl" sx={{ maxWidth: '1720px !important', px: { xs: 2.5, md: 5, xl: 7 } }}>
-        <Stack spacing={{ xs: 4, md: 5 }}>
+      <Container maxWidth="xl" sx={{ maxWidth: '1720px !important', px: { xs: 'var(--wc-page-gutter-xs)', md: 'var(--wc-page-gutter-md)', xl: 'var(--wc-page-gutter-xl)' } }}>
+        <Stack spacing={{ xs: 5.5, md: 7 }}>
           <MotionReveal>
             <Box sx={{ maxWidth: 1180 }}>
               {/* <Box
@@ -153,7 +153,7 @@ export function GlossaryPage() {
                   border: '1px solid #9db6ed',
                   borderRadius: '4px',
                   color: '#0a2463',
-                  fontFamily: 'var(--wc-font-display)',
+                  fontFamily: 'var(--wc-font-body)',
                   fontSize: 12,
                   fontWeight: 700,
                   letterSpacing: 0,
@@ -168,15 +168,15 @@ export function GlossaryPage() {
                 variant="h1"
                 sx={{
                   mt: { xs: 3, md: 4 },
-                  color: '#071329',
-                  fontSize: { xs: '3.4rem', sm: '4.6rem', md: '6.6rem' },
+                  color: 'var(--wc-text-primary)',
+                  fontSize: { xs: '2.3rem', sm: '2.8rem', md: '3.35rem' },
                   fontWeight: 700,
-                  lineHeight: 0.98,
-                  letterSpacing: 0,
+                  lineHeight: 0.95,
+                  letterSpacing: '-0.045em',
                 }}
               >
                 Glossary
-                <Box component="span" sx={{ color: '#143baf' }}>
+                <Box component="span" sx={{ color: 'var(--wc-primary)' }}>
                   .
                 </Box>
               </Typography>
@@ -184,7 +184,7 @@ export function GlossaryPage() {
               <Typography
                 sx={{
                   mt: 3,
-                  color: '#435981',
+                  color: 'var(--wc-text-secondary)',
                   fontSize: { xs: 15, md: 17 },
                   lineHeight: 1.8,
                   maxWidth: 680,
@@ -657,7 +657,7 @@ export function GlossaryPage() {
                     <Typography
                       sx={{
                         color: '#071329',
-                        fontFamily: 'var(--wc-font-display)',
+                        fontFamily: 'var(--wc-font-body)',
                         fontSize: 20,
                         fontWeight: 700,
                       }}
@@ -745,7 +745,7 @@ export function GlossaryPage() {
                     <Typography
                       sx={{
                         color: '#071329',
-                        fontFamily: 'var(--wc-font-display)',
+                        fontFamily: 'var(--wc-font-body)',
                         fontSize: 20,
                         fontWeight: 700,
                       }}

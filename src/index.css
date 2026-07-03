@@ -1,12 +1,54 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;750;800&family=Playfair+Display:wght@700&display=swap');
 
 :root {
-  /* ── Typography tokens ── */
+  --wc-font-brand: "Playfair Display", serif;
   --wc-font-display: "Playfair Display", serif;
   --wc-font-body: "Inter", sans-serif;
-  --wc-font-mono: "JetBrains Mono", monospace;
-  /* Legacy alias — deprecated, use --wc-font-mono instead */
-  --wc-number-font: "JetBrains Mono", monospace;
+  --wc-font-data: "Inter", sans-serif;
+
+  --wc-bg: #f8fafd;
+  --wc-surface: #ffffff;
+  --wc-surface-soft: #fbfdff;
+
+  --wc-text-primary: #071329;
+  --wc-text-secondary: #536783;
+  --wc-text-muted: #7b8da8;
+
+  --wc-primary: #0a2e78;
+  --wc-primary-dark: #071f55;
+  --wc-primary-soft: #eef5ff;
+
+  --wc-success: #147a4d;
+  --wc-success-soft: #eaf7f1;
+
+  --wc-error: #c53346;
+  --wc-error-soft: #fdecef;
+
+  --wc-warning: #b7791f;
+  --wc-warning-soft: #fff7e6;
+
+  --wc-divider: #dbe5f1;
+  --wc-border: #dce6f2;
+  --wc-shadow-card: 0 10px 30px rgba(7, 19, 41, 0.04);
+
+  --wc-paper: var(--wc-surface-soft);
+  --wc-primary-light: var(--wc-primary-soft);
+  --wc-primary-strong: rgba(10, 46, 120, 0.25);
+  --wc-divider-soft: rgba(219, 229, 241, 0.55);
+
+  --wc-page-gutter-xs: 24px;
+  --wc-page-gutter-md: 56px;
+  --wc-page-gutter-xl: 88px;
+  --wc-page-top-xs: calc(64px + 4rem);
+  --wc-page-top-md: calc(72px + 5.5rem);
+  --wc-page-bottom-xs: 6rem;
+  --wc-page-bottom-md: 8rem;
+  --wc-section-gap-xs: 4rem;
+  --wc-section-gap-md: 5.5rem;
+  --wc-panel-gap-xs: 1.5rem;
+  --wc-panel-gap-md: 2rem;
+  --wc-card-padding-xs: 1.5rem;
+  --wc-card-padding-md: 2rem;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -33,6 +75,11 @@ textarea {
   font-family: var(--wc-font-body);
 }
 
+body {
+  background: var(--wc-bg);
+  color: var(--wc-text-primary);
+}
+
 h1,
 h2,
 h3,
@@ -46,7 +93,56 @@ code,
 pre,
 kbd,
 samp {
-  font-family: var(--wc-font-mono);
+  font-family: var(--wc-font-data);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+.wc-heading {
+  font-family: var(--wc-font-display);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  line-height: 0.95;
+  color: var(--wc-text-primary);
+}
+
+.wc-ui-title {
+  font-family: var(--wc-font-body);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--wc-text-primary);
+}
+
+.wc-label {
+  font-family: var(--wc-font-body);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--wc-text-muted);
+}
+
+.wc-number {
+  font-family: var(--wc-font-data);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  letter-spacing: -0.02em;
+}
+
+.wc-ticker {
+  font-family: var(--wc-font-body);
+  font-size: 13px;
+  font-weight: 750;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: var(--wc-primary);
+}
+
+.wc-body {
+  font-family: var(--wc-font-body);
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--wc-text-secondary);
 }
 
 /* Keep scrolling native with a minimal always-visible scrollbar. */

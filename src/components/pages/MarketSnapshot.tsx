@@ -78,10 +78,10 @@ function Metric({ label, value, trend, trendColor, monoFont, showDivider }: Metr
       <Typography
         sx={{
           color: 'var(--wc-text-secondary)',
-          fontFamily: 'var(--wc-font-display)',
+          fontFamily: 'var(--wc-font-body)',
           fontSize: 11,
-          fontWeight: 600,
-          letterSpacing: '0.06em',
+          fontWeight: 700,
+          letterSpacing: '0.08em',
           textTransform: 'uppercase',
           mb: 0.5,
         }}
@@ -97,6 +97,7 @@ function Metric({ label, value, trend, trendColor, monoFont, showDivider }: Metr
             fontFamily: monoFont,
             lineHeight: 1.15,
             fontVariantNumeric: 'tabular-nums',
+            fontFeatureSettings: '"tnum" 1',
           }}
         >
           {value}
@@ -109,6 +110,7 @@ function Metric({ label, value, trend, trendColor, monoFont, showDivider }: Metr
               fontWeight: 500,
               fontFamily: monoFont,
               fontVariantNumeric: 'tabular-nums',
+              fontFeatureSettings: '"tnum" 1',
               color: trendColor ?? 'var(--wc-text-secondary)',
             }}
           >
@@ -147,6 +149,7 @@ function BreadthEntry({ icon, label, value, color, monoFont }: BreadthEntryProps
           fontWeight: 500,
           fontFamily: monoFont,
           fontVariantNumeric: 'tabular-nums',
+          fontFeatureSettings: '"tnum" 1',
           color: 'var(--wc-text-primary)',
         }}
       >
@@ -204,12 +207,12 @@ export function MarketSnapshot({
     <Paper
       elevation={0}
       sx={{
-        bgcolor: 'var(--wc-bg)',
-        border: '1px solid var(--wc-divider)',
+        bgcolor: 'var(--wc-surface)',
+        border: '1px solid var(--wc-border)',
         borderRadius: '12px',
         px: { xs: 2, md: 2.5 },
         py: { xs: 1.75, md: 2 },
-        boxShadow: '0 1px 2px rgba(16,24,40,0.04)',
+        boxShadow: 'var(--wc-shadow-card)',
       }}
     >
       <Stack spacing={{ xs: 1.5, md: 1.75 }}>
@@ -222,7 +225,7 @@ export function MarketSnapshot({
               letterSpacing: '0.06em',
               textTransform: 'uppercase',
               color: 'var(--wc-text-secondary)',
-              fontFamily: 'var(--wc-font-display)',
+              fontFamily: 'var(--wc-font-body)',
             }}
           >
             Market Snapshot

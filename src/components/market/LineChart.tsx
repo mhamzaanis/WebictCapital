@@ -51,7 +51,7 @@ export function LineChart({
 				axisTick: { show: false },
 				axisLabel: {
 					color: palette.textSecondary,
-					fontFamily: FONT_FAMILY.echartsMono,
+					fontFamily: FONT_FAMILY.echartsData,
 					fontSize: 11,
 					interval: 0,
 					rotate: 32,
@@ -64,7 +64,7 @@ export function LineChart({
 				splitLine: { lineStyle: { color: palette.border } },
 				axisLabel: {
 					color: palette.textSecondary,
-					fontFamily: FONT_FAMILY.echartsMono,
+					fontFamily: FONT_FAMILY.echartsData,
 					fontSize: 11,
 					formatter: (value: number) => `${value > 0 ? '+' : ''}${value.toFixed(1)}%`,
 				},

@@ -53,8 +53,8 @@ type HoldingModalProps = {
 
 // ─── Design tokens ─────────────────────────────────────────────────────────────
 
-const mono = 'var(--wc-font-mono)'
-const serif = '"Playfair Display", serif'
+const mono = 'var(--wc-font-data)'
+const serif = 'var(--wc-font-body)'
 
 const C = {
   bg: '#ffffff',

@@ -10,8 +10,8 @@ type AuthModalProps = {
   onClose: () => void
 }
 
-const NUMBER_FONT = 'var(--wc-font-mono)'
-const SERIF = '"Playfair Display", serif'
+const NUMBER_FONT = 'var(--wc-font-data)'
+const SERIF = 'var(--wc-font-body)'
 
 const SlideUp = forwardRef(function Transition(
   props: TransitionProps & { children: ReactElement },

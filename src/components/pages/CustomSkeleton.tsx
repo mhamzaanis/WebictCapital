@@ -12,15 +12,16 @@ import {
 } from '@mui/material'
 import { PulseSkeleton } from '../PulseSkeleton'
 
-const DISPLAY_FONT = 'var(--wc-font-display)'
+const UI_FONT = 'var(--wc-font-body)'
 
 const headCell = {
 	bgcolor: 'var(--wc-paper)',
 	color: 'var(--wc-text-secondary)',
-	fontFamily: DISPLAY_FONT,
-	fontWeight: 600,
+	fontFamily: UI_FONT,
+	fontWeight: 700,
 	fontSize: 11,
-	letterSpacing: '0.06em',
+	letterSpacing: '0.08em',
+	textTransform: 'uppercase',
 	borderBottom: '1px solid var(--wc-divider)',
 	py: 1.2,
 	whiteSpace: 'nowrap' as const,

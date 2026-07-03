@@ -180,7 +180,7 @@ export function AppLayout() {
   const canonicalUrl = pathname === '/' ? SITE_URL : `${SITE_URL}${pathname}`
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'common.white' }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: 'var(--wc-bg)' }}>
       <Helmet>
         {/* Primary */}
         <title>{seo.title}</title>

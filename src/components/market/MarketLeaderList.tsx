@@ -36,9 +36,10 @@ export function MarketLeaderList({
 			elevation={0}
 			sx={{
 				p: 2,
-				bgcolor: 'var(--wc-bg)',
-				border: '1px solid var(--wc-divider)',
-				borderRadius: 1.5,
+				bgcolor: 'var(--wc-surface)',
+				border: '1px solid var(--wc-border)',
+				borderRadius: '12px',
+				boxShadow: 'var(--wc-shadow-card)',
 				minHeight: 320,
 			}}
 		>
@@ -47,7 +48,7 @@ export function MarketLeaderList({
 					{kind === 'gain' && <ArrowDropUpIcon sx={{ fontSize: 18, color }} />}
 					{kind === 'loss' && <ArrowDropDownIcon sx={{ fontSize: 18, color }} />}
 					{kind === 'volume' && <LeaderboardIcon sx={{ fontSize: 18, color: 'var(--wc-primary)' }} />}
-					<Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: FONT_FAMILY.display, fontSize: 17, fontWeight: 700 }}>
+					<Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: FONT_FAMILY.body, fontSize: 16, fontWeight: 700, letterSpacing: '-0.015em' }}>
 						{title}
 					</Typography>
 				</Stack>
@@ -84,14 +85,14 @@ export function MarketLeaderList({
 								gap: 1,
 								alignItems: 'center',
 								py: 1,
-								borderTop: index === 0 ? '0' : '1px solid var(--wc-divider)',
+								borderTop: index === 0 ? '0' : '1px solid #edf2f8',
 							}}
 						>
-							<Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 11 }}>
+							<Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 11, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
 								#{index + 1}
 							</Typography>
 							<Box sx={{ minWidth: 0 }}>
-								<Typography sx={{ color: 'var(--wc-primary)', fontFamily: monoFont, fontSize: 13, fontWeight: 700 }}>
+								<Typography sx={{ color: 'var(--wc-primary)', fontFamily: FONT_FAMILY.body, fontSize: 13, fontWeight: 750, letterSpacing: 0, textTransform: 'uppercase' }}>
 									{item.symbol}
 								</Typography>
 								<Typography
@@ -108,10 +109,10 @@ export function MarketLeaderList({
 								</Typography>
 							</Box>
 							<Box sx={{ textAlign: 'right', minWidth: 86 }}>
-								<Typography sx={{ color: itemColor, fontFamily: monoFont, fontSize: 13, fontWeight: 700 }}>
+								<Typography sx={{ color: itemColor, fontFamily: monoFont, fontSize: 13, fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
 									{primaryValue}
 								</Typography>
-								<Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 11, fontWeight: 500 }}>
+								<Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 11, fontWeight: 500, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
 									{secondaryValue}
 								</Typography>
 							</Box>

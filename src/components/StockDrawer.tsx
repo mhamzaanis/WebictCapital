@@ -85,8 +85,8 @@ type StockDrawerProps = {
 
 // ─── Design tokens ─────────────────────────────────────────────────────────────
 
-const mono = 'var(--wc-font-mono)'
-const serif = '"Playfair Display", serif'
+const mono = 'var(--wc-font-data)'
+const serif = 'var(--wc-font-body)'
 
 const C = {
   // Base
@@ -994,7 +994,7 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
                         show: true,
                         fontSize: isXs ? 10 : 11,
                         color: C.muted,
-                        fontFamily: '"JetBrains Mono", monospace',
+                        fontFamily: 'var(--wc-font-data)',
                         interval: Math.max(0, Math.ceil(chartData.labels.length / (isXs ? 5 : 7)) - 1),
                         rotate: 0,
                       },
@@ -1018,7 +1018,7 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
                         show: true,
                         fontSize: isXs ? 10 : 11,
                         color: C.muted,
-                        fontFamily: '"JetBrains Mono", monospace',
+                        fontFamily: 'var(--wc-font-data)',
                       },
                     },
                     {
@@ -1049,7 +1049,7 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
                       textStyle: {
                         fontSize: 10,
                         color: C.muted,
-                        fontFamily: '"JetBrains Mono", monospace',
+                        fontFamily: 'var(--wc-font-data)',
                       },
                       dataBackground: {
                         lineStyle: { color: 'rgba(10,36,99,0.15)', width: 1 },
@@ -1148,7 +1148,7 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
                       label: {
                         backgroundColor: C.accent,
                         fontSize: 11,
-                        fontFamily: '"JetBrains Mono", monospace',
+                        fontFamily: 'var(--wc-font-data)',
                       },
                     },
                     backgroundColor: 'rgba(255,255,255,0.96)',
@@ -1158,7 +1158,7 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
                     textStyle: {
                       fontSize: 11,
                       color: C.ink,
-                      fontFamily: '"JetBrains Mono", monospace',
+                      fontFamily: 'var(--wc-font-data)',
                     },
                     formatter: (params: { seriesName?: string; value: number | number[]; dataIndex?: number }[]) => {
                       const candleParam = params.find(p => p.seriesName === stock.symbol)

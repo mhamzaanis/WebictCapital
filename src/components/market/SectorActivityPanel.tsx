@@ -25,16 +25,17 @@ export function SectorActivityPanel({
 			elevation={0}
 			sx={{
 				p: 2,
-				bgcolor: 'var(--wc-bg)',
-				border: '1px solid var(--wc-divider)',
-				borderRadius: 1.5,
+				bgcolor: 'var(--wc-surface)',
+				border: '1px solid var(--wc-border)',
+				borderRadius: '12px',
+				boxShadow: 'var(--wc-shadow-card)',
 				minHeight: 320,
 			}}
 		>
 			<Stack spacing={0.4} sx={{ mb: 2 }}>
 				<Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
 					<AnalyticsIcon sx={{ fontSize: 18, color: 'var(--wc-primary)' }} />
-					<Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: FONT_FAMILY.display, fontSize: 17, fontWeight: 700 }}>
+					<Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: FONT_FAMILY.body, fontSize: 16, fontWeight: 700, letterSpacing: '-0.015em' }}>
 						Active Industries
 					</Typography>
 				</Stack>
@@ -66,7 +67,7 @@ export function SectorActivityPanel({
 								>
 									{sector.label}
 								</Typography>
-								<Typography sx={{ color: 'var(--wc-primary)', fontFamily: monoFont, fontSize: 11, fontWeight: 700 }}>
+								<Typography sx={{ color: 'var(--wc-primary)', fontFamily: monoFont, fontSize: 11, fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
 									{formatCompactNumber(sector.turnover)}
 								</Typography>
 							</Stack>
@@ -80,16 +81,16 @@ export function SectorActivityPanel({
 								/>
 							</Box>
 							<Stack direction="row" spacing={1.4} sx={{ mt: 0.65, flexWrap: 'wrap' }}>
-								<Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 11, fontWeight: 500 }}>
+								<Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 11, fontWeight: 500, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
 									{sector.count ?? 0} symbols
 								</Typography>
-								<Typography sx={{ color: 'var(--wc-success)', fontFamily: monoFont, fontSize: 11, fontWeight: 500 }}>
+								<Typography sx={{ color: 'var(--wc-success)', fontFamily: monoFont, fontSize: 11, fontWeight: 500, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
 									{sector.gainers ?? 0} up
 								</Typography>
-								<Typography sx={{ color: 'var(--wc-error)', fontFamily: monoFont, fontSize: 11, fontWeight: 500 }}>
+								<Typography sx={{ color: 'var(--wc-error)', fontFamily: monoFont, fontSize: 11, fontWeight: 500, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
 									{sector.losers ?? 0} down
 								</Typography>
-								<Typography sx={{ color: toneColor(sectorTone, DEFAULT_PALETTE), fontFamily: monoFont, fontSize: 11, fontWeight: 500 }}>
+								<Typography sx={{ color: toneColor(sectorTone, DEFAULT_PALETTE), fontFamily: monoFont, fontSize: 11, fontWeight: 500, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
 									avg {formatPercent(sector.avgChangePct ?? NaN)}
 								</Typography>
 							</Stack>

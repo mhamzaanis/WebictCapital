@@ -49,7 +49,7 @@ export function DonutChart({
 				icon: 'circle',
 				itemWidth: 8,
 				itemHeight: 8,
-				textStyle: { color: palette.textSecondary, fontFamily: FONT_FAMILY.echartsMono, fontSize: 11 },
+				textStyle: { color: palette.textSecondary, fontFamily: FONT_FAMILY.echartsData, fontSize: 11 },
 			},
 			series: [
 				{
@@ -60,7 +60,7 @@ export function DonutChart({
 					itemStyle: { borderColor: '#ffffff', borderWidth: 2 },
 					label: {
 						color: palette.textSecondary,
-						fontFamily: FONT_FAMILY.echartsMono,
+						fontFamily: FONT_FAMILY.echartsData,
 						fontSize: 11,
 						formatter: '{d}%',
 					},
@@ -76,7 +76,7 @@ export function DonutChart({
 					style: {
 						text: centerText ?? total.toLocaleString('en-PK'),
 						fill: palette.text,
-						font: `700 20px ${FONT_FAMILY.echartsMono}`,
+						font: `700 20px ${FONT_FAMILY.echartsData}`,
 						textAlign: 'center',
 					},
 				},
@@ -87,7 +87,7 @@ export function DonutChart({
 					style: {
 						text: centerSubtext,
 						fill: palette.textSecondary,
-						font: `500 11px ${FONT_FAMILY.echartsMono}`,
+						font: `500 11px ${FONT_FAMILY.echartsData}`,
 						textAlign: 'center',
 					},
 				},

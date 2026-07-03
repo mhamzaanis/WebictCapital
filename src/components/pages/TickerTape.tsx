@@ -22,6 +22,14 @@ type TickerTapeProps = {
 	monoFont?: string
 }
 
+const UI_FONT = 'var(--wc-font-body)'
+const DATA_FONT = 'var(--wc-font-data)'
+const numberSx = {
+	fontFamily: DATA_FONT,
+	fontVariantNumeric: 'tabular-nums',
+	fontFeatureSettings: '"tnum" 1',
+}
+
 function toneColor(tone: TickerTapeItem['tone']): string {
 	if (tone === 'positive') return 'var(--wc-success)'
 	if (tone === 'negative') return 'var(--wc-error)'
@@ -34,7 +42,7 @@ function TapeMoveIcon({ tone }: { tone: TickerTapeItem['tone'] }) {
 	return <RemoveIcon sx={{ fontSize: 14, color: 'inherit' }} />
 }
 
-function TapeItem({ item, monoFont }: { item: TickerTapeItem; monoFont: string }) {
+function TapeItem({ item }: { item: TickerTapeItem }) {
 	const color = toneColor(item.tone)
 
 	return (
@@ -53,7 +61,7 @@ function TapeItem({ item, monoFont }: { item: TickerTapeItem; monoFont: string }
 		>
 			<Box sx={{ minWidth: 0 }}>
 				<Stack direction="row" spacing={0.8} sx={{ alignItems: 'baseline' }}>
-					<Typography sx={{ color: 'var(--wc-primary)', fontFamily: monoFont, fontSize: 13, fontWeight: 700 }}>
+					<Typography sx={{ color: 'var(--wc-primary)', fontFamily: UI_FONT, fontSize: 13, fontWeight: 750, letterSpacing: 0, textTransform: 'uppercase' }}>
 						{item.symbol}
 					</Typography>
 					<Typography
@@ -71,28 +79,28 @@ function TapeItem({ item, monoFont }: { item: TickerTapeItem; monoFont: string }
 					</Typography>
 				</Stack>
 				<Stack direction="row" spacing={1} sx={{ alignItems: 'center', mt: 0.5 }}>
-					<Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: monoFont, fontSize: 11, fontWeight: 700 }}>
+					<Typography sx={{ color: 'var(--wc-text-primary)', fontSize: 11.5, fontWeight: 700, ...numberSx }}>
 						{item.price}
 					</Typography>
 					<Stack direction="row" spacing={0.1} sx={{ alignItems: 'center', color }}>
 						<TapeMoveIcon tone={item.tone} />
-						<Typography sx={{ color: 'inherit', fontFamily: monoFont, fontSize: 11, fontWeight: 700 }}>
+						<Typography sx={{ color: 'inherit', fontSize: 11.5, fontWeight: 700, ...numberSx }}>
 							{item.change}
 						</Typography>
-						<Typography sx={{ color: 'inherit', fontFamily: monoFont, fontSize: 11, fontWeight: 600 }}>
+						<Typography sx={{ color: 'inherit', fontSize: 11.5, fontWeight: 600, ...numberSx }}>
 							{item.changePct}
 						</Typography>
 					</Stack>
 				</Stack>
 			</Box>
-			<Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 11, fontWeight: 500, whiteSpace: 'nowrap' }}>
+			<Typography sx={{ color: 'var(--wc-text-secondary)', fontSize: 11, fontWeight: 500, whiteSpace: 'nowrap', ...numberSx }}>
 				Vol {item.volume}
 			</Typography>
 		</Box>
 	)
 }
 
-export function TickerTape({ items, monoFont = 'var(--wc-font-mono)' }: TickerTapeProps) {
+export function TickerTape({ items }: TickerTapeProps) {
 	const reduce = useReducedMotion()
 	const viewportRef = useRef<HTMLDivElement>(null)
 	const resumeTimerRef = useRef<number | null>(null)
@@ -113,9 +121,10 @@ export function TickerTape({ items, monoFont = 'var(--wc-font-mono)' }: TickerTa
 		<Paper
 			elevation={0}
 			sx={{
-				bgcolor: 'var(--wc-bg)',
-				border: '1px solid var(--wc-divider)',
-				borderRadius: '7px',
+				bgcolor: 'var(--wc-surface)',
+				border: '1px solid var(--wc-border)',
+				borderRadius: '12px',
+				boxShadow: 'var(--wc-shadow-card)',
 				overflow: 'hidden',
 			}}
 		>
@@ -143,7 +152,7 @@ export function TickerTape({ items, monoFont = 'var(--wc-font-mono)' }: TickerTa
 					<Typography
 						sx={{
 							color: 'var(--wc-primary)',
-							fontFamily: monoFont,
+							fontFamily: UI_FONT,
 							fontSize: 11,
 							fontWeight: 700,
 							letterSpacing: '0.12em',
@@ -154,7 +163,7 @@ export function TickerTape({ items, monoFont = 'var(--wc-font-mono)' }: TickerTa
 						PSX Tape
 					</Typography>
 					{date && (
-						<Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 11, fontWeight: 500, whiteSpace: 'nowrap' }}>
+						<Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: UI_FONT, fontSize: 11, fontWeight: 500, whiteSpace: 'nowrap' }}>
 							{date}
 						</Typography>
 					)}
@@ -175,11 +184,11 @@ export function TickerTape({ items, monoFont = 'var(--wc-font-mono)' }: TickerTa
 						},
 						'&::before': {
 							left: 0,
-							background: 'linear-gradient(90deg, var(--wc-bg), rgba(255,255,255,0))',
+							background: 'linear-gradient(90deg, var(--wc-surface), rgba(255,255,255,0))',
 						},
 						'&::after': {
 							right: 0,
-							background: 'linear-gradient(270deg, var(--wc-bg), rgba(255,255,255,0))',
+							background: 'linear-gradient(270deg, var(--wc-surface), rgba(255,255,255,0))',
 						},
 					}}
 				>
@@ -211,7 +220,7 @@ export function TickerTape({ items, monoFont = 'var(--wc-font-mono)' }: TickerTa
 							}}
 						>
 							{tapeItems.map((item, index) => (
-								<TapeItem key={`${item.symbol}-${index}`} item={item} monoFont={monoFont} />
+								<TapeItem key={`${item.symbol}-${index}`} item={item} />
 							))}
 						</Box>
 					</Box>
@@ -226,9 +235,9 @@ export function TickerTapeSkeleton() {
 		<Paper
 			elevation={0}
 			sx={{
-				bgcolor: 'var(--wc-bg)',
-				border: '1px solid var(--wc-divider)',
-				borderRadius: 1.5,
+				bgcolor: 'var(--wc-surface)',
+				border: '1px solid var(--wc-border)',
+				borderRadius: '12px',
 				overflow: 'hidden',
 			}}
 		>

@@ -181,7 +181,7 @@ function MarketPreview() {
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontFamily: 'var(--wc-font-mono)',
+                fontFamily: 'var(--wc-font-data)',
                 fontSize: big ? 13 : 9,
                 fontWeight: 900,
               }}
@@ -259,7 +259,7 @@ function SipPreview() {
         {['Rs 12.00 L', 'Rs 18.57 L', 'Rs 27.07 L'].map((value, index) => (
           <Box key={value} sx={{ border: '1px solid #dce6f4', borderRadius: '4px', p: 0.9, bgcolor: index === 1 ? '#f4fbf7' : '#f8fbff' }}>
             <Typography sx={{ color: '#6b7fa3', fontSize: 8 }}>Total {index === 0 ? 'Invested' : index === 1 ? 'Returns' : 'Value'}</Typography>
-            <Typography sx={{ mt: 0.3, color: index === 1 ? 'var(--wc-success)' : '#071329', fontFamily: 'var(--wc-font-mono)', fontSize: 10, fontWeight: 900 }}>
+            <Typography sx={{ mt: 0.3, color: index === 1 ? 'var(--wc-success)' : '#071329', fontFamily: 'var(--wc-font-data)', fontSize: 10, fontWeight: 900 }}>
               {value}
             </Typography>
           </Box>
@@ -406,10 +406,10 @@ function NewsletterBand() {
         />
 
         <Box sx={{ position: 'relative' }}>
-          <Typography sx={{ color: '#90a4c8', fontFamily: 'var(--wc-font-display)', fontSize: 11, fontWeight: 700, letterSpacing: 0, textTransform: 'uppercase', mb: 1.5 }}>
+          <Typography sx={{ color: '#90a4c8', fontFamily: 'var(--wc-font-body)', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', mb: 1.5 }}>
             Stay in touch
           </Typography>
-          <Typography variant="h2" sx={{ color: '#ffffff', fontSize: { xs: '2rem', md: '2.85rem' }, lineHeight: 1.05, fontWeight: 700, letterSpacing: 0, maxWidth: 455 }}>
+          <Typography variant="h2" sx={{ color: '#ffffff', fontSize: { xs: '2rem', md: '2.85rem' }, lineHeight: 1.05, fontWeight: 700, letterSpacing: '-0.035em', maxWidth: 455 }}>
             Insights that help you invest with{' '}
             <Box component="span" sx={{ color: '#a8c5ff', fontStyle: 'italic' }}>
               confidence.
@@ -475,15 +475,15 @@ export function HomePage() {
       <Box
         component="main"
         sx={{
-          pt: { xs: 'calc(64px + 2.8rem)', md: 'calc(72px + 4.2rem)' },
-          pb: { xs: 6, md: 3 },
+          pt: { xs: 'var(--wc-page-top-xs)', md: 'var(--wc-page-top-md)' },
+          pb: { xs: 'var(--wc-page-bottom-xs)', md: 'var(--wc-page-bottom-md)' },
           bgcolor: '#ffffff',
           minHeight: '100vh',
           overflow: 'hidden',
         }}
       >
-        <Container maxWidth="xl" sx={{ maxWidth: '1720px !important', px: { xs: 2.5, md: 5, xl: 7 } }}>
-          <Stack spacing={{ xs: 5, md: 6 }}>
+        <Container maxWidth="xl" sx={{ maxWidth: '1720px !important', px: { xs: 'var(--wc-page-gutter-xs)', md: 'var(--wc-page-gutter-md)', xl: 'var(--wc-page-gutter-xl)' } }}>
+          <Stack spacing={{ xs: 6.5, md: 8 }}>
             <Box
               ref={heroRef}
               component={motion.section}
@@ -505,19 +505,19 @@ export function HomePage() {
                   <Typography
                     variant="h1"
                     sx={{
-                      color: '#071329',
-                      fontSize: { xs: '3.45rem', sm: '4.8rem', md: '6.2rem' },
-                      lineHeight: 0.98,
+                      color: 'var(--wc-text-primary)',
+                      fontSize: { xs: '2.35rem', sm: '2.9rem', md: '3.45rem' },
+                      lineHeight: 0.95,
                       fontWeight: 700,
-                      letterSpacing: 0,
+                      letterSpacing: '-0.045em',
                     }}
                   >
                     Learn. Invest.{' '}
-                    <Box component="span" sx={{ color: '#143baf' }}>
+                    <Box component="span" sx={{ color: 'var(--wc-primary)' }}>
                       Lead.
                     </Box>
                   </Typography>
-                  <Typography sx={{ mt: 3, color: '#435981', fontSize: { xs: 15.5, md: 18 }, lineHeight: 1.75, maxWidth: 690 }}>
+                  <Typography sx={{ mt: 3, color: 'var(--wc-text-secondary)', fontSize: { xs: 15.5, md: 16 }, lineHeight: 1.75, maxWidth: 690 }}>
                     Webict Capital is an investing education platform for serious investors in Pakistan. We combine
                     market intelligence, practical tools, and structured learning to help you build confidence,
                     compound wealth, and lead with insight.

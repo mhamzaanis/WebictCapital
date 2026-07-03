@@ -35,9 +35,9 @@ import { AuthModal } from '../AuthModal'
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
-const NUMBER_FONT = "'JetBrains Mono', monospace"
-const SERIF = '"Playfair Display", serif'
-const BODY = '"Inter", sans-serif'
+const NUMBER_FONT = "var(--wc-font-data)"
+const SERIF = 'var(--wc-font-body)'
+const BODY = 'var(--wc-font-body)'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1148,14 +1148,14 @@ export function PortfolioPage() {
     <Box
       component="main"
       sx={{
-        pt: { xs: 'calc(64px + 2rem)', md: 'calc(72px + 3rem)' },
-        pb: { xs: 8, md: 14 },
+        pt: { xs: 'var(--wc-page-top-xs)', md: 'var(--wc-page-top-md)' },
+        pb: { xs: 'var(--wc-page-bottom-xs)', md: 'var(--wc-page-bottom-md)' },
         bgcolor: 'var(--wc-bg)',
         minHeight: '100vh',
       }}
     >
-      <Container maxWidth="xl" sx={{ maxWidth: '1200px !important', px: { xs: 2.5, md: 5 } }}>
-        <Stack spacing={{ xs: 7, md: 11 }}>
+      <Container maxWidth="xl" sx={{ maxWidth: '1200px !important', px: { xs: 'var(--wc-page-gutter-xs)', md: 'var(--wc-page-gutter-md)' } }}>
+        <Stack spacing={{ xs: 8, md: 12 }}>
 
           {/* ── Page Header ─────────────────────────────────────────────── */}
           <MotionReveal>

@@ -90,13 +90,13 @@ export function AboutPage() {
     <Box
       component="main"
       sx={{
-        pt: { xs: 'calc(64px + 2rem)', md: 'calc(72px + 3rem)' },
-        pb: { xs: 8, md: 14 },
+        pt: { xs: 'var(--wc-page-top-xs)', md: 'var(--wc-page-top-md)' },
+        pb: { xs: 'var(--wc-page-bottom-xs)', md: 'var(--wc-page-bottom-md)' },
         bgcolor: '#ffffff',
       }}
     >
-      <Container maxWidth="xl" sx={{ maxWidth: '1200px !important', px: { xs: 2.5, md: 5 } }}>
-        <Stack spacing={{ xs: 10, md: 16 }}>
+      <Container maxWidth="xl" sx={{ maxWidth: '1200px !important', px: { xs: 'var(--wc-page-gutter-xs)', md: 'var(--wc-page-gutter-md)' } }}>
+        <Stack spacing={{ xs: 11, md: 18 }}>
 
           {/* ── ABOUT HERO ─────────────────────────────────────────────── */}
           <MotionReveal>
@@ -126,15 +126,15 @@ export function AboutPage() {
                   <Typography
                     variant="h1"
                     sx={{
-                      fontSize: { xs: '2.6rem', sm: '3.2rem', md: '3.8rem', lg: '4.4rem' },
-                      lineHeight: 1.04,
-                      letterSpacing: '-0.03em',
-                      color: '#080e1a',
+                      fontSize: { xs: '2.3rem', sm: '2.8rem', md: '3.35rem' },
+                      lineHeight: 0.95,
+                      letterSpacing: '-0.045em',
+                      color: 'var(--wc-text-primary)',
                       fontWeight: 700,
                     }}
                   >
                     Built for serious&nbsp;
-                    <Box component="span" sx={{ color: '#0a2463' }}>
+                    <Box component="span" sx={{ color: 'var(--wc-primary)' }}>
                       investors
                     </Box>
                     .
