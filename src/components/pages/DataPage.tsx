@@ -1,22 +1,43 @@
 import {
   Box,
   Container,
-  Paper,
   Stack,
   Typography,
 } from '@mui/material'
-import BarChartIcon from '@mui/icons-material/BarChart'
-import ShowChartIcon from '@mui/icons-material/ShowChart'
-import TrendingDownIcon from '@mui/icons-material/TrendingDown'
-import TrendingUpIcon from '@mui/icons-material/TrendingUp'
+import AccountBalanceIcon from '@mui/icons-material/AccountBalance'
+import AnalyticsIcon from '@mui/icons-material/Analytics'
+import BubbleChartIcon from '@mui/icons-material/BubbleChart'
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
+import DonutLargeIcon from '@mui/icons-material/DonutLarge'
+import RemoveIcon from '@mui/icons-material/Remove'
+import StackedBarChartIcon from '@mui/icons-material/StackedBarChart'
+import TimelineIcon from '@mui/icons-material/Timeline'
+import ArrowDropDownIcon from '@mui/icons-material/TrendingDown'
+import ArrowDropUpIcon from '@mui/icons-material/TrendingUp'
 import { motion, useReducedMotion } from 'motion/react'
 import { hasSupabaseConfig, supabase } from '../../lib/supabase'
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { PriceTableSkeleton, StatCardsSkeleton } from './CustomSkeleton'
+import { useEffect, useMemo, useState } from 'react'
+import { MarketDashboardSkeleton, PriceTableSkeleton, StatCardsSkeleton } from './CustomSkeleton'
 import { CustomDataTable } from './CustomDataTable'
-import { CustomStatsCards } from './CustomStatsCards'
+import { CustomStatsCards, StatCard } from './CustomStatsCards'
 import { FiltersBar, type MovementFilter } from './FiltersBar.tsx'
 import { MotionReveal } from '../animations/MotionReveal'
+import {
+  BarChart,
+  DonutChart,
+  LineChart,
+  MarketLeaderList,
+  RangeLeadersPanel,
+  SectorActivityPanel,
+  StockHeatmap,
+  type BarChartItem,
+  type DonutChartItem,
+  type HeatmapItem,
+  type LineChartPoint,
+  type MarketLeaderItem,
+  type SectorActivityItem,
+} from '../market/MarketVisuals'
+import { TickerTape, TickerTapeSkeleton, type TickerTapeItem } from './TickerTape'
 
 // -- Types --------------------------------------------------------------------
 
@@ -99,8 +120,6 @@ type SectorActivity = {
   avgChangePct: number
 }
 
-type MovementTone = 'positive' | 'negative' | 'neutral'
-
 // -- Helpers ------------------------------------------------------------------
 
 function toNum(val: unknown): number {
@@ -149,18 +168,6 @@ function changeColor(change: number): string {
   return change > 0 ? 'var(--wc-success)' : 'var(--wc-error)'
 }
 
-function toneColor(tone: MovementTone): string {
-  if (tone === 'positive') return 'var(--wc-success)'
-  if (tone === 'negative') return 'var(--wc-error)'
-  return 'var(--wc-text-secondary)'
-}
-
-function toneBackground(tone: MovementTone): string {
-  if (tone === 'positive') return 'rgba(26,102,64,0.08)'
-  if (tone === 'negative') return 'rgba(180,40,58,0.08)'
-  return 'var(--wc-primary-light)'
-}
-
 function getChangePct(close: number, change: number): number {
   const previousClose = close - change
   if (!Number.isFinite(previousClose) || previousClose === 0) return NaN
@@ -188,6 +195,82 @@ function getRankedStock(stock: PsxStock): RankedStock {
 
 function changeRankValue(stock: RankedStock): number {
   return Number.isFinite(stock.changePct) ? stock.changePct : stock.numericChange
+}
+
+const MARKET_CHART_COLORS = {
+  primary: '#0a2463',
+  success: '#1a6640',
+  error: '#b4283a',
+  neutral: '#8a9bb0',
+}
+
+function mapMarketLeaderItem(stock: RankedStock): MarketLeaderItem {
+  return {
+    id: stock.symbol,
+    symbol: stock.symbol,
+    company: stock.company,
+    price: stock.numericClose,
+    change: stock.numericChange,
+    changePct: stock.changePct,
+    volume: stock.numericTurnover,
+    low: toNum(stock.low),
+    high: toNum(stock.high),
+    rangePct: stock.intradayRangePct,
+  }
+}
+
+function mapVolumeBarItem(stock: RankedStock): BarChartItem {
+  return {
+    id: stock.symbol,
+    label: stock.symbol,
+    value: stock.numericTurnover,
+    tooltipLabel: 'Volume',
+  }
+}
+
+function mapMomentumPoint(stock: RankedStock): LineChartPoint {
+  return {
+    label: stock.symbol,
+    value: Number.isFinite(stock.changePct) ? stock.changePct : 0,
+  }
+}
+
+function mapHeatmapItem(stock: RankedStock): HeatmapItem {
+  return {
+    id: stock.symbol,
+    label: stock.symbol,
+    value: Math.max(1, stock.numericTurnover),
+    company: stock.company,
+    changePct: stock.changePct,
+  }
+}
+
+function mapSectorActivityItem(sector: SectorActivity): SectorActivityItem {
+  return {
+    id: sector.industry,
+    label: sector.industry,
+    turnover: sector.turnover,
+    count: sector.count,
+    gainers: sector.gainers,
+    losers: sector.losers,
+    unchanged: sector.unchanged,
+    avgChangePct: sector.avgChangePct,
+  }
+}
+
+function mapSectorVolumeItem(sector: SectorActivity): BarChartItem {
+  return {
+    id: sector.industry,
+    label: sector.industry,
+    value: sector.turnover,
+    tooltipLabel: 'Volume',
+    color:
+      sector.avgChangePct > 0
+        ? MARKET_CHART_COLORS.success
+        : sector.avgChangePct < 0
+          ? MARKET_CHART_COLORS.error
+          : MARKET_CHART_COLORS.primary,
+  }
 }
 
 function mapDbStockTableRow(row: DbStockTableRow): PsxStock {
@@ -231,6 +314,7 @@ async function fetchSupabaseTradeDay(tradeDate: string): Promise<PsxData> {
       .eq('trade_date', tradeDate)
       .neq('section', 'EXCHANGE TRADED FUNDS')
       .neq('section', 'CLOSE - END MUTUAL FUND')
+      .neq('section', 'INV. BANKS / INV. COS. / SECURITIES COS.')
       .order('symbol', { ascending: true }),
   ])
 
@@ -260,414 +344,6 @@ async function fetchSupabaseTradeDay(tradeDate: string): Promise<PsxData> {
 
 const NUMBER_FONT = 'var(--wc-number-font)'
 const SERIF = '"Playfair Display", serif'
-
-function SectionHeading({
-  eyebrow,
-  title,
-  meta,
-}: {
-  eyebrow: string
-  title: string
-  meta?: string
-}) {
-  return (
-    <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
-      <Box>
-        <Typography
-          sx={{
-            fontSize: 10,
-            fontFamily: NUMBER_FONT,
-            letterSpacing: '0.12em',
-            textTransform: 'uppercase',
-            color: 'var(--wc-primary)',
-            mb: 0.6,
-            fontWeight: 700,
-          }}
-        >
-          {eyebrow}
-        </Typography>
-        <Typography
-          sx={{
-            color: 'var(--wc-text-primary)',
-            fontFamily: SERIF,
-            fontSize: { xs: 18, md: 22 },
-            fontWeight: 700,
-            lineHeight: 1.18,
-          }}
-        >
-          {title}
-        </Typography>
-      </Box>
-      {meta && (
-        <Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: NUMBER_FONT, fontSize: 11 }}>
-          {meta}
-        </Typography>
-      )}
-    </Box>
-  )
-}
-
-function DailyMetricCard({
-  icon,
-  label,
-  value,
-  detail,
-  tone = 'neutral',
-}: {
-  icon: ReactNode
-  label: string
-  value: string
-  detail: string
-  tone?: MovementTone
-}) {
-  const color = toneColor(tone)
-
-  return (
-    <Paper
-      elevation={0}
-      sx={{
-        minHeight: 132,
-        p: 2,
-        bgcolor: 'var(--wc-bg)',
-        border: '1px solid var(--wc-divider)',
-        borderRadius: 1.5,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-      }}
-    >
-      <Stack direction="row" spacing={1.1} sx={{ alignItems: 'center', color }}>
-        <Box
-          sx={{
-            width: 30,
-            height: 30,
-            borderRadius: 1,
-            bgcolor: toneBackground(tone),
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          {icon}
-        </Box>
-        <Typography
-          sx={{
-            color: 'var(--wc-text-secondary)',
-            fontFamily: NUMBER_FONT,
-            fontSize: 10,
-            fontWeight: 700,
-            letterSpacing: '0.1em',
-            textTransform: 'uppercase',
-          }}
-        >
-          {label}
-        </Typography>
-      </Stack>
-      <Box>
-        <Typography sx={{ color, fontFamily: NUMBER_FONT, fontSize: { xs: 20, md: 24 }, fontWeight: 800 }}>
-          {value}
-        </Typography>
-        <Typography sx={{ mt: 0.5, color: 'var(--wc-text-secondary)', fontSize: 12, lineHeight: 1.45 }}>
-          {detail}
-        </Typography>
-      </Box>
-    </Paper>
-  )
-}
-
-function LeaderList({
-  title,
-  subtitle,
-  rows,
-  kind,
-}: {
-  title: string
-  subtitle: string
-  rows: RankedStock[]
-  kind: 'gain' | 'loss' | 'volume'
-}) {
-  const tone: MovementTone = kind === 'gain' ? 'positive' : kind === 'loss' ? 'negative' : 'neutral'
-  const color = toneColor(tone)
-
-  return (
-    <Paper
-      elevation={0}
-      sx={{
-        p: 2,
-        bgcolor: 'var(--wc-bg)',
-        border: '1px solid var(--wc-divider)',
-        borderRadius: 1.5,
-        minHeight: 320,
-      }}
-    >
-      <Stack spacing={0.4} sx={{ mb: 2 }}>
-        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-          {kind === 'gain' && <TrendingUpIcon sx={{ fontSize: 18, color }} />}
-          {kind === 'loss' && <TrendingDownIcon sx={{ fontSize: 18, color }} />}
-          {kind === 'volume' && <BarChartIcon sx={{ fontSize: 18, color: 'var(--wc-primary)' }} />}
-          <Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: SERIF, fontSize: 17, fontWeight: 700 }}>
-            {title}
-          </Typography>
-        </Stack>
-        <Typography sx={{ color: 'var(--wc-text-secondary)', fontSize: 11, lineHeight: 1.5 }}>
-          {subtitle}
-        </Typography>
-      </Stack>
-
-      <Stack spacing={1}>
-        {rows.length === 0 && (
-          <Typography sx={{ color: 'var(--wc-text-secondary)', fontSize: 12 }}>
-            No qualifying symbols for this session.
-          </Typography>
-        )}
-        {rows.map((stock, index) => {
-          const stockColor = kind === 'volume' ? 'var(--wc-primary)' : changeColor(stock.numericChange)
-          const primaryValue =
-            kind === 'volume'
-              ? formatCompactNumber(stock.numericTurnover)
-              : Number.isFinite(stock.changePct)
-                ? formatPercent(stock.changePct)
-                : formatSignedNumber(stock.numericChange)
-          const secondaryValue =
-            kind === 'volume'
-              ? `Last ${formatNumber(stock.numericClose)}`
-              : `${formatSignedNumber(stock.numericChange)} pts at ${formatNumber(stock.numericClose)}`
-
-          return (
-            <Box
-              key={`${title}-${stock.symbol}`}
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: '32px minmax(0, 1fr) auto',
-                gap: 1,
-                alignItems: 'center',
-                py: 1,
-                borderTop: index === 0 ? '0' : '1px solid var(--wc-divider)',
-              }}
-            >
-              <Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: NUMBER_FONT, fontSize: 11 }}>
-                #{index + 1}
-              </Typography>
-              <Box sx={{ minWidth: 0 }}>
-                <Typography sx={{ color: 'var(--wc-primary)', fontFamily: NUMBER_FONT, fontSize: 13, fontWeight: 800 }}>
-                  {stock.symbol}
-                </Typography>
-                <Typography
-                  title={stock.company}
-                  sx={{
-                    color: 'var(--wc-text-secondary)',
-                    fontSize: 11,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {stock.company}
-                </Typography>
-              </Box>
-              <Box sx={{ textAlign: 'right', minWidth: 86 }}>
-                <Typography sx={{ color: stockColor, fontFamily: NUMBER_FONT, fontSize: 13, fontWeight: 800 }}>
-                  {primaryValue}
-                </Typography>
-                <Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: NUMBER_FONT, fontSize: 10 }}>
-                  {secondaryValue}
-                </Typography>
-              </Box>
-            </Box>
-          )
-        })}
-      </Stack>
-    </Paper>
-  )
-}
-
-function SectorActivityPanel({
-  sectors,
-  totalVolume,
-}: {
-  sectors: SectorActivity[]
-  totalVolume: number
-}) {
-  return (
-    <Paper
-      elevation={0}
-      sx={{
-        p: 2,
-        bgcolor: 'var(--wc-bg)',
-        border: '1px solid var(--wc-divider)',
-        borderRadius: 1.5,
-        minHeight: 320,
-      }}
-    >
-      <Stack spacing={0.4} sx={{ mb: 2 }}>
-        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-          <BarChartIcon sx={{ fontSize: 18, color: 'var(--wc-primary)' }} />
-          <Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: SERIF, fontSize: 17, fontWeight: 700 }}>
-            Active Industries
-          </Typography>
-        </Stack>
-        <Typography sx={{ color: 'var(--wc-text-secondary)', fontSize: 11, lineHeight: 1.5 }}>
-          Sectors ranked by traded volume in the latest closing file.
-        </Typography>
-      </Stack>
-
-      <Stack spacing={1.2}>
-        {sectors.map((sector) => {
-          const share = totalVolume > 0 ? (sector.turnover / totalVolume) * 100 : 0
-          const sectorTone: MovementTone =
-            sector.avgChangePct > 0 ? 'positive' : sector.avgChangePct < 0 ? 'negative' : 'neutral'
-
-          return (
-            <Box key={sector.industry}>
-              <Stack direction="row" spacing={1.5} sx={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
-                <Typography
-                  title={sector.industry}
-                  sx={{
-                    color: 'var(--wc-text-primary)',
-                    fontSize: 12,
-                    fontWeight: 700,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    maxWidth: '68%',
-                  }}
-                >
-                  {sector.industry}
-                </Typography>
-                <Typography sx={{ color: 'var(--wc-primary)', fontFamily: NUMBER_FONT, fontSize: 11, fontWeight: 800 }}>
-                  {formatCompactNumber(sector.turnover)}
-                </Typography>
-              </Stack>
-              <Box sx={{ mt: 0.8, height: 6, borderRadius: 999, bgcolor: 'var(--wc-primary-light)', overflow: 'hidden' }}>
-                <Box
-                  sx={{
-                    width: `${Math.min(100, share)}%`,
-                    height: '100%',
-                    bgcolor: 'var(--wc-primary)',
-                  }}
-                />
-              </Box>
-              <Stack direction="row" spacing={1.4} sx={{ mt: 0.65, flexWrap: 'wrap' }}>
-                <Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: NUMBER_FONT, fontSize: 10 }}>
-                  {sector.count} symbols
-                </Typography>
-                <Typography sx={{ color: 'var(--wc-success)', fontFamily: NUMBER_FONT, fontSize: 10 }}>
-                  {sector.gainers} up
-                </Typography>
-                <Typography sx={{ color: 'var(--wc-error)', fontFamily: NUMBER_FONT, fontSize: 10 }}>
-                  {sector.losers} down
-                </Typography>
-                <Typography sx={{ color: toneColor(sectorTone), fontFamily: NUMBER_FONT, fontSize: 10 }}>
-                  avg {formatPercent(sector.avgChangePct)}
-                </Typography>
-              </Stack>
-            </Box>
-          )
-        })}
-        {sectors.length === 0 && (
-          <Typography sx={{ color: 'var(--wc-text-secondary)', fontSize: 12 }}>
-            Industry volume was not available for this session.
-          </Typography>
-        )}
-      </Stack>
-    </Paper>
-  )
-}
-
-function RangeLeadersPanel({
-  rows,
-  avgRangePct,
-}: {
-  rows: RankedStock[]
-  avgRangePct: number
-}) {
-  return (
-    <Paper
-      elevation={0}
-      sx={{
-        p: 2,
-        bgcolor: 'var(--wc-bg)',
-        border: '1px solid var(--wc-divider)',
-        borderRadius: 1.5,
-        minHeight: 320,
-      }}
-    >
-      <Stack spacing={0.4} sx={{ mb: 2 }}>
-        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-          <ShowChartIcon sx={{ fontSize: 18, color: 'var(--wc-primary)' }} />
-          <Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: SERIF, fontSize: 17, fontWeight: 700 }}>
-            Widest Daily Ranges
-          </Typography>
-        </Stack>
-        <Typography sx={{ color: 'var(--wc-text-secondary)', fontSize: 11, lineHeight: 1.5 }}>
-          Symbols with the largest high-low spread during the session.
-        </Typography>
-      </Stack>
-
-      <Box
-        sx={{
-          mb: 1.5,
-          p: 1.4,
-          bgcolor: 'var(--wc-paper)',
-          border: '1px solid var(--wc-divider)',
-          borderRadius: 1,
-        }}
-      >
-        <Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: NUMBER_FONT, fontSize: 10, mb: 0.4 }}>
-          AVERAGE RANGE
-        </Typography>
-        <Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: NUMBER_FONT, fontSize: 20, fontWeight: 800 }}>
-          {formatPercent(avgRangePct, false)}
-        </Typography>
-      </Box>
-
-      <Stack spacing={1}>
-        {rows.map((stock, index) => (
-          <Box
-            key={`range-${stock.symbol}`}
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: '32px minmax(0, 1fr) auto',
-              gap: 1,
-              alignItems: 'center',
-              py: 1,
-              borderTop: index === 0 ? '0' : '1px solid var(--wc-divider)',
-            }}
-          >
-            <Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: NUMBER_FONT, fontSize: 11 }}>
-              #{index + 1}
-            </Typography>
-            <Box sx={{ minWidth: 0 }}>
-              <Typography sx={{ color: 'var(--wc-primary)', fontFamily: NUMBER_FONT, fontSize: 13, fontWeight: 800 }}>
-                {stock.symbol}
-              </Typography>
-              <Typography
-                title={stock.company}
-                sx={{
-                  color: 'var(--wc-text-secondary)',
-                  fontSize: 11,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {stock.company}
-              </Typography>
-            </Box>
-            <Box sx={{ textAlign: 'right', minWidth: 88 }}>
-              <Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: NUMBER_FONT, fontSize: 13, fontWeight: 800 }}>
-                {formatPercent(stock.intradayRangePct, false)}
-              </Typography>
-              <Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: NUMBER_FONT, fontSize: 10 }}>
-                {formatNumber(toNum(stock.low))}-{formatNumber(toNum(stock.high))}
-              </Typography>
-            </Box>
-          </Box>
-        ))}
-      </Stack>
-    </Paper>
-  )
-}
 
 // -- Component ----------------------------------------------------------------
 
@@ -827,6 +503,10 @@ export function DataPage() {
       .filter((stock) => Number.isFinite(stock.numericTurnover) && stock.numericTurnover > 0)
       .sort((a, b) => b.numericTurnover - a.numericTurnover)
       .slice(0, 5)
+    const heatmapStocks = rankedStocks
+      .filter((stock) => Number.isFinite(stock.numericTurnover) && stock.numericTurnover > 0)
+      .sort((a, b) => b.numericTurnover - a.numericTurnover)
+      .slice(0, 54)
     const rangeStocks = rankedStocks
       .filter((stock) => Number.isFinite(stock.intradayRangePct) && stock.intradayRangePct > 0)
       .sort((a, b) => b.intradayRangePct - a.intradayRangePct)
@@ -894,12 +574,15 @@ export function DataPage() {
       }))
       .sort((a, b) => b.turnover - a.turnover)
       .slice(0, 5)
+    const momentumStocks = [...losers].reverse().concat(gainers)
 
     return {
       activeStocks,
       avgRangePct,
       gainers,
+      heatmapStocks,
       losers,
+      momentumStocks,
       rangeLeaders,
       sectors,
       tableVolume,
@@ -910,15 +593,59 @@ export function DataPage() {
     }
   }, [marketSummary.Volume_Traded, stats.gainers, stats.losers, stats.unchanged, stocks])
 
+  const breadthChartItems = useMemo<DonutChartItem[]>(
+    () => [
+      { name: 'Advancers', value: stats.gainers, color: MARKET_CHART_COLORS.success },
+      { name: 'Decliners', value: stats.losers, color: MARKET_CHART_COLORS.error },
+      { name: 'Unchanged', value: stats.unchanged, color: MARKET_CHART_COLORS.neutral },
+    ],
+    [stats.gainers, stats.losers, stats.unchanged],
+  )
+
+  const marketVisualData = useMemo(
+    () => ({
+      gainers: dayInsights.gainers.map(mapMarketLeaderItem),
+      losers: dayInsights.losers.map(mapMarketLeaderItem),
+      volumeLeaders: dayInsights.volumeLeaders.map(mapMarketLeaderItem),
+      rangeLeaders: dayInsights.rangeLeaders.map(mapMarketLeaderItem),
+      momentum: dayInsights.momentumStocks.map(mapMomentumPoint),
+      heatmap: dayInsights.heatmapStocks.map(mapHeatmapItem),
+      sectors: dayInsights.sectors.map(mapSectorActivityItem),
+      sectorVolume: dayInsights.sectors.map(mapSectorVolumeItem),
+      volumeBars: dayInsights.volumeLeaders.map(mapVolumeBarItem),
+    }),
+    [dayInsights],
+  )
+
   const indexChangePct =
     marketSummary.KSE100_Open > 0 ? (marketSummary.KSE100_Change / marketSummary.KSE100_Open) * 100 : NaN
-  const indexTone: MovementTone =
-    marketSummary.KSE100_Change > 0 ? 'positive' : marketSummary.KSE100_Change < 0 ? 'negative' : 'neutral'
-  const breadthTone: MovementTone = stats.gainers > stats.losers ? 'positive' : stats.gainers < stats.losers ? 'negative' : 'neutral'
-  const breadthLabel = stats.gainers > stats.losers ? 'Advancers led' : stats.gainers < stats.losers ? 'Decliners led' : 'Balanced tape'
-  const topVolumeStock = dayInsights.volumeLeaders[0]
-  const widestRangeStock = dayInsights.rangeLeaders[0]
+  const tickerTapeItems = useMemo<TickerTapeItem[]>(() => {
+    const uniqueStocks = new Map<string, RankedStock>()
 
+    ;[
+      ...dayInsights.volumeLeaders,
+      ...dayInsights.gainers,
+      ...dayInsights.losers,
+      ...dayInsights.heatmapStocks.slice(0, 14),
+    ].forEach((stock) => {
+      if (!uniqueStocks.has(stock.symbol)) uniqueStocks.set(stock.symbol, stock)
+    })
+
+    return Array.from(uniqueStocks.values()).slice(0, 26).map((stock) => {
+      const tone: TickerTapeItem['tone'] =
+        stock.numericChange > 0 ? 'positive' : stock.numericChange < 0 ? 'negative' : 'neutral'
+
+      return {
+        symbol: stock.symbol,
+        company: stock.company,
+        price: formatNumber(stock.numericClose),
+        change: formatSignedNumber(stock.numericChange),
+        changePct: Number.isFinite(stock.changePct) ? `(${formatPercent(stock.changePct)})` : '',
+        volume: formatCompactNumber(stock.numericTurnover),
+        tone,
+      }
+    })
+  }, [dayInsights.gainers, dayInsights.heatmapStocks, dayInsights.losers, dayInsights.volumeLeaders])
   return (
     <Box
       component="main"
@@ -1020,7 +747,9 @@ export function DataPage() {
           {status === 'loading' && (
             <MotionReveal>
               <Stack spacing={3}>
+                <TickerTapeSkeleton />
                 <StatCardsSkeleton />
+                <MarketDashboardSkeleton />
                 <FiltersBar
                   disabled
                   search={search}
@@ -1124,84 +853,155 @@ export function DataPage() {
           {status === 'ok' && activeData && (
             <>
               <MotionReveal>
-                <CustomStatsCards
-                  date={activeData.date}
-                  kse100Open={marketSummary.KSE100_Open}
-                  kse100Close={marketSummary.KSE100_Close}
-                  kse100Change={marketSummary.KSE100_Change}
-                  volumeTraded={marketSummary.Volume_Traded}
-                  advances={stats.gainers}
-                  declines={stats.losers}
-                  unchanged={stats.unchanged}
-                  monoFont={NUMBER_FONT}
-                />
+                <TickerTape items={tickerTapeItems} date={activeData.date} monoFont={NUMBER_FONT} />
+              </MotionReveal>
+
+              <MotionReveal>
+                <CustomStatsCards>
+                  <StatCard
+                    label="Trade Date"
+                    value={activeData.date}
+                    detail="Latest PSX closing file"
+                    color="var(--wc-text-primary)"
+                    icon={<CalendarMonthIcon sx={{ fontSize: 17, color: 'inherit' }} />}
+                    monoFont={NUMBER_FONT}
+                  />
+                  <StatCard
+                    label="KSE 100 Open"
+                    value={formatNumber(marketSummary.KSE100_Open)}
+                    detail="Previous benchmark level"
+                    color="var(--wc-text-primary)"
+                    icon={<AccountBalanceIcon sx={{ fontSize: 17, color: 'inherit' }} />}
+                    monoFont={NUMBER_FONT}
+                  />
+                  <StatCard
+                    label="KSE 100 Close"
+                    value={formatNumber(marketSummary.KSE100_Close)}
+                    detail="End-of-day benchmark close"
+                    color="var(--wc-text-primary)"
+                    icon={<TimelineIcon sx={{ fontSize: 17, color: 'inherit' }} />}
+                    monoFont={NUMBER_FONT}
+                  />
+                  <StatCard
+                    label="KSE 100 Change"
+                    value={formatSignedNumber(marketSummary.KSE100_Change)}
+                    detail={Number.isFinite(indexChangePct) ? `${formatPercent(indexChangePct)} from open` : 'Benchmark move'}
+                    color={changeColor(marketSummary.KSE100_Change)}
+                    icon={
+                      marketSummary.KSE100_Change > 0 ? (
+                        <ArrowDropUpIcon sx={{ fontSize: 17, color: 'inherit' }} />
+                      ) : marketSummary.KSE100_Change < 0 ? (
+                        <ArrowDropDownIcon sx={{ fontSize: 17, color: 'inherit' }} />
+                      ) : (
+                        <RemoveIcon sx={{ fontSize: 17, color: 'inherit' }} />
+                      )
+                    }
+                    monoFont={NUMBER_FONT}
+                  />
+                  <StatCard
+                    label="Volume Traded"
+                    value={formatCompactNumber(marketSummary.Volume_Traded)}
+                    detail={`${marketSummary.Volume_Traded.toLocaleString('en-PK')} shares`}
+                    color="var(--wc-text-primary)"
+                    icon={<StackedBarChartIcon sx={{ fontSize: 17, color: 'inherit' }} />}
+                    monoFont={NUMBER_FONT}
+                  />
+                  <StatCard
+                    label="Advancing"
+                    value={stats.gainers.toLocaleString('en-PK')}
+                    detail="Symbols closing higher"
+                    tone="positive"
+                    icon={<ArrowDropUpIcon sx={{ fontSize: 17, color: 'inherit' }} />}
+                    monoFont={NUMBER_FONT}
+                  />
+                  <StatCard
+                    label="Declining"
+                    value={stats.losers.toLocaleString('en-PK')}
+                    detail="Symbols closing lower"
+                    tone="negative"
+                    icon={<ArrowDropDownIcon sx={{ fontSize: 17, color: 'inherit' }} />}
+                    monoFont={NUMBER_FONT}
+                  />
+                  <StatCard
+                    label="Unchanged"
+                    value={stats.unchanged.toLocaleString('en-PK')}
+                    detail="Flat daily closes"
+                    color="var(--wc-text-primary)"
+                    icon={<DonutLargeIcon sx={{ fontSize: 17, color: 'inherit' }} />}
+                    monoFont={NUMBER_FONT}
+                  />
+                </CustomStatsCards>
               </MotionReveal>
 
               <MotionReveal>
                 <Stack spacing={2}>
-                  {/* <SectionHeading
-                    eyebrow="Session Brief"
-                    title={`Market pulse for ${activeData.date}`}
-                    meta={`${dayInsights.totalIssues.toLocaleString('en-PK')} issues tracked`}
-                  /> */}
                   <Box
                     sx={{
                       display: 'grid',
-                      gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))', lg: 'repeat(3, minmax(0, 1fr))' },
+                      gridTemplateColumns: { xs: '1fr', lg: '0.85fr 1.05fr 1.1fr' },
                       gap: 1.5,
                     }}
                   >
-                    <DailyMetricCard
-                      icon={<ShowChartIcon sx={{ fontSize: 17, color: 'inherit' }} />}
-                      label="KSE 100 Move"
-                      value={formatSignedNumber(marketSummary.KSE100_Change)}
-                      detail={`${formatPercent(indexChangePct)} on ${formatNumber(marketSummary.KSE100_Close)} close`}
-                      tone={indexTone}
+                    <DonutChart
+                      heading="Breadth Donut"
+                      detail="Advancers, decliners, and unchanged issues."
+                      icon={<DonutLargeIcon sx={{ fontSize: 18 }} />}
+                      height={270}
+                      data={breadthChartItems}
+                      colors={[
+                        MARKET_CHART_COLORS.success,
+                        MARKET_CHART_COLORS.error,
+                        MARKET_CHART_COLORS.neutral,
+                      ]}
+                      centerSubtext="issues"
+                      emptyLabel="Breadth data is unavailable."
                     />
-                    <DailyMetricCard
-                      icon={
-                        breadthTone === 'negative' ? (
-                          <TrendingDownIcon sx={{ fontSize: 17, color: 'inherit' }} />
-                        ) : (
-                          <TrendingUpIcon sx={{ fontSize: 17, color: 'inherit' }} />
-                        )
-                      }
-                      label="Market Breadth"
-                      value={`${stats.gainers.toLocaleString('en-PK')}:${stats.losers.toLocaleString('en-PK')}`}
-                      detail={`${breadthLabel}; ${stats.unchanged.toLocaleString('en-PK')} unchanged`}
-                      tone={breadthTone}
+                    <BarChart
+                      heading="Volume Leaders"
+                      detail="Most active symbols by traded turnover."
+                      icon={<StackedBarChartIcon sx={{ fontSize: 18 }} />}
+                      height={270}
+                      data={marketVisualData.volumeBars}
+                      color={MARKET_CHART_COLORS.primary}
+                      emptyLabel="Volume leaders are unavailable."
                     />
-                    <DailyMetricCard
-                      icon={<BarChartIcon sx={{ fontSize: 17, color: 'inherit' }} />}
-                      label="Active Symbols"
-                      value={dayInsights.activeStocks.toLocaleString('en-PK')}
-                      detail={`${stocks.length.toLocaleString('en-PK')} listed rows loaded for the day`}
+                    <LineChart
+                      heading="Mover Curve"
+                      detail="Largest losers through largest gainers."
+                      icon={<TimelineIcon sx={{ fontSize: 18 }} />}
+                      height={270}
+                      data={marketVisualData.momentum}
+                      color={MARKET_CHART_COLORS.primary}
+                      emptyLabel="Momentum line needs more mover data."
                     />
-                    <DailyMetricCard
-                      icon={<BarChartIcon sx={{ fontSize: 17, color: 'inherit' }} />}
-                      label="Total Volume"
-                      value={formatCompactNumber(dayInsights.totalVolume)}
-                      detail={`Top 5 leaders captured ${formatPercent(dayInsights.topVolumeShare, false)} of volume`}
+                  </Box>
+                  <Box
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: { xs: '1fr', lg: 'minmax(0, 1.35fr) minmax(0, 0.85fr)' },
+                      gap: 1.5,
+                    }}
+                  >
+                    <StockHeatmap
+                      heading="Stock Heatmap"
+                      detail="Top active names sized by volume and colored by daily move."
+                      icon={<BubbleChartIcon sx={{ fontSize: 18 }} />}
+                      height={360}
+                      data={marketVisualData.heatmap}
+                      colors={{
+                        positive: MARKET_CHART_COLORS.success,
+                        negative: MARKET_CHART_COLORS.error,
+                        neutral: '#eef2f7',
+                      }}
                     />
-                    <DailyMetricCard
-                      icon={<ShowChartIcon sx={{ fontSize: 17, color: 'inherit' }} />}
-                      label="Average Range"
-                      value={formatPercent(dayInsights.avgRangePct, false)}
-                      detail={
-                        widestRangeStock
-                          ? `${widestRangeStock.symbol} widest at ${formatPercent(widestRangeStock.intradayRangePct, false)}`
-                          : 'High-low spreads were unavailable'
-                      }
-                    />
-                    <DailyMetricCard
-                      icon={<BarChartIcon sx={{ fontSize: 17, color: 'inherit' }} />}
-                      label="Most Active"
-                      value={topVolumeStock?.symbol ?? '-'}
-                      detail={
-                        topVolumeStock
-                          ? `${formatCompactNumber(topVolumeStock.numericTurnover)} volume - last ${formatNumber(topVolumeStock.numericClose)}`
-                          : 'No traded volume was available'
-                      }
+                    <BarChart
+                      heading="Sector Volume"
+                      detail="Top industries by trading concentration."
+                      icon={<AnalyticsIcon sx={{ fontSize: 18 }} />}
+                      height={360}
+                      data={marketVisualData.sectorVolume}
+                      left={120}
+                      emptyLabel="Sector volume is unavailable."
                     />
                   </Box>
                 </Stack>
@@ -1209,11 +1009,6 @@ export function DataPage() {
 
               <MotionReveal>
                 <Stack spacing={2}>
-                  <SectionHeading
-                    eyebrow="Movers"
-                    title="Top gainers, losers, and volume leaders"
-                    // meta="Ranked by percentage move and traded volume"
-                  />
                   <Box
                     sx={{
                       display: 'grid',
@@ -1221,23 +1016,26 @@ export function DataPage() {
                       gap: 1.5,
                     }}
                   >
-                    <LeaderList
+                    <MarketLeaderList
                       title="Top Gainers"
                       subtitle="Largest positive closes versus the prior close."
-                      rows={dayInsights.gainers}
+                      items={marketVisualData.gainers}
                       kind="gain"
+                      monoFont={NUMBER_FONT}
                     />
-                    <LeaderList
+                    <MarketLeaderList
                       title="Top Losers"
                       subtitle="Largest negative closes versus the prior close."
-                      rows={dayInsights.losers}
+                      items={marketVisualData.losers}
                       kind="loss"
+                      monoFont={NUMBER_FONT}
                     />
-                    <LeaderList
+                    <MarketLeaderList
                       title="Volume Leaders"
                       subtitle="Highest traded turnover in the closing data."
-                      rows={dayInsights.volumeLeaders}
+                      items={marketVisualData.volumeLeaders}
                       kind="volume"
+                      monoFont={NUMBER_FONT}
                     />
                   </Box>
                 </Stack>
@@ -1245,11 +1043,6 @@ export function DataPage() {
 
               <MotionReveal>
                 <Stack spacing={2}>
-                  <SectionHeading
-                    eyebrow="Activity"
-                    title="Where the day concentrated"
-                    // meta={`Table volume ${formatCompactNumber(dayInsights.tableVolume)}`}
-                  />
                   <Box
                     sx={{
                       display: 'grid',
@@ -1257,8 +1050,16 @@ export function DataPage() {
                       gap: 1.5,
                     }}
                   >
-                    <SectorActivityPanel sectors={dayInsights.sectors} totalVolume={dayInsights.totalVolume} />
-                    <RangeLeadersPanel rows={dayInsights.rangeLeaders} avgRangePct={dayInsights.avgRangePct} />
+                    <SectorActivityPanel
+                      sectors={marketVisualData.sectors}
+                      totalVolume={dayInsights.totalVolume}
+                      monoFont={NUMBER_FONT}
+                    />
+                    <RangeLeadersPanel
+                      items={marketVisualData.rangeLeaders}
+                      avgRangePct={dayInsights.avgRangePct}
+                      monoFont={NUMBER_FONT}
+                    />
                   </Box>
                 </Stack>
               </MotionReveal>
@@ -1274,13 +1075,6 @@ export function DataPage() {
                     gap: 2,
                   }}
                 >
-                  <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
-                    <SectionHeading
-                      eyebrow="Listings"
-                      title={`${displayedStocks.length.toLocaleString('en-PK')} of ${stocks.length.toLocaleString('en-PK')} symbols`}
-                      meta={search ? `Search: ${search}` : 'Sortable closing table'}
-                    />
-                  </Box>
 
                   <FiltersBar
                     disabled={false}

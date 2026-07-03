@@ -1,5 +1,5 @@
-import TrendingDownIcon from '@mui/icons-material/TrendingDown'
-import TrendingUpIcon from '@mui/icons-material/TrendingUp'
+import ArrowDropDownIcon from '@mui/icons-material/TrendingDown'
+import ArrowDropUpIcon from '@mui/icons-material/TrendingUp'
 import RemoveIcon from '@mui/icons-material/Remove'
 import {
 	Paper,
@@ -255,7 +255,7 @@ export function CustomDataTable({ rows, searchQuery, monoFont }: CustomDataTable
 										}}
 									>
 										<Stack direction="row" spacing={0.4} sx={{ justifyContent: 'flex-end', alignItems: 'center' }}>
-											{!isNaN(chgN) && chgN !== 0 && (chgN > 0 ? <TrendingUpIcon sx={{ fontSize: 12 }} /> : <TrendingDownIcon sx={{ fontSize: 12 }} />)}
+											{!isNaN(chgN) && chgN !== 0 && (chgN > 0 ? <ArrowDropUpIcon sx={{ fontSize: 12 }} /> : <ArrowDropDownIcon sx={{ fontSize: 12 }} />)}
 											{!isNaN(chgN) && chgN === 0 && <RemoveIcon sx={{ fontSize: 12 }} />}
 											<span>
 												{stock.change === null || stock.change === undefined || stock.change === ''

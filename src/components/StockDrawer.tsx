@@ -1,6 +1,6 @@
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded'
-import TrendingUpIcon from '@mui/icons-material/TrendingUp'
-import TrendingDownIcon from '@mui/icons-material/TrendingDown'
+import ArrowDropUpIcon from '@mui/icons-material/TrendingUp'
+import ArrowDropDownIcon from '@mui/icons-material/TrendingDown'
 import {
   Box,
   Dialog,
@@ -822,8 +822,8 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
                 }}
               >
                 {pos
-                  ? <TrendingUpIcon sx={{ fontSize: 14, color: changeColor }} />
-                  : <TrendingDownIcon sx={{ fontSize: 14, color: changeColor }} />
+                  ? <ArrowDropUpIcon sx={{ fontSize: 14, color: changeColor }} />
+                  : <ArrowDropDownIcon sx={{ fontSize: 14, color: changeColor }} />
                 }
                 <Typography sx={{ fontFamily: mono, fontSize: 13, fontWeight: 700, color: changeColor, letterSpacing: '0.01em' }}>
                   {pos ? '+' : ''}{stock.change.toFixed(2)} ({pos ? '+' : ''}{stock.changePct.toFixed(2)}%)
@@ -889,9 +889,9 @@ export function StockDrawer({ open, onClose, stock, loading = false, error = nul
                     }}
                   >
                     {pos ? (
-                      <TrendingUpIcon sx={{ fontSize: 13, color: changeColor }} />
+                      <ArrowDropUpIcon sx={{ fontSize: 13, color: changeColor }} />
                     ) : (
-                      <TrendingDownIcon sx={{ fontSize: 13, color: changeColor }} />
+                      <ArrowDropDownIcon sx={{ fontSize: 13, color: changeColor }} />
                     )}
                     <Typography
                       sx={{

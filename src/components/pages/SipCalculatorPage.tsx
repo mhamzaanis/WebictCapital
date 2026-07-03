@@ -4,8 +4,8 @@ import {
   Switch, Table, TableBody, TableCell, TableHead, TableRow, Tooltip, Typography,
 } from '@mui/material'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
-import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded'
-import KeyboardArrowUpRoundedIcon from '@mui/icons-material/KeyboardArrowUpRounded'
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
+import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp'
 import AddRoundedIcon from '@mui/icons-material/AddRounded'
 import RemoveRoundedIcon from '@mui/icons-material/RemoveRounded'
 import * as echarts from 'echarts/core'
@@ -524,8 +524,8 @@ export function SipCalculatorPage() {
                           View Detailed Schedule
                         </Typography>
                         {showSchedule
-                          ? <KeyboardArrowUpRoundedIcon sx={{ fontSize: 18, color: PRIMARY }} />
-                          : <KeyboardArrowDownRoundedIcon sx={{ fontSize: 18, color: '#8097b0' }} />}
+                          ? <ArrowDropUpIcon sx={{ fontSize: 18, color: PRIMARY }} />
+                          : <ArrowDropDownIcon sx={{ fontSize: 18, color: '#8097b0' }} />}
                       </Box>
 
                       <Collapse in={showSchedule} timeout="auto">

@@ -1,7 +1,7 @@
 import AddRoundedIcon from '@mui/icons-material/AddRounded'
 import SettingsIcon from '@mui/icons-material/Settings';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp'
-import TrendingDownIcon from '@mui/icons-material/TrendingDown'
+import ArrowDropUpIcon from '@mui/icons-material/TrendingUp'
+import ArrowDropDownIcon from '@mui/icons-material/TrendingDown'
 import StarBorderIcon from '@mui/icons-material/StarBorder'
 import ShowChartIcon from '@mui/icons-material/ShowChart'
 import InboxOutlinedIcon from '@mui/icons-material/InboxOutlined'
@@ -324,7 +324,7 @@ function StatTile({
 // FIXED: icon was 10px, pct was 10px — now 12px each
 function PLBadge({ value, pct }: { value: number; pct: number }) {
   const positive = value >= 0
-  const Icon = positive ? TrendingUpIcon : TrendingDownIcon
+  const Icon = positive ? ArrowDropUpIcon : ArrowDropDownIcon
   return (
     <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.4 }}>
       <Icon sx={{ fontSize: 13, color: positive ? 'var(--wc-success)' : 'var(--wc-error)' }} />
@@ -613,9 +613,9 @@ function WatchRow({ item, index, onClick }: { item: WatchItem; index: number; on
 // ─── HistRow ──────────────────────────────────────────────────────────────────
 
 const HIST_CFG: Record<HistoryEvent['type'], { color: string; label: string; icon: React.ReactNode }> = {
-  profit: { color: 'var(--wc-success)', label: 'PROFIT', icon: <TrendingUpIcon sx={{ fontSize: 16 }} /> },
+  profit: { color: 'var(--wc-success)', label: 'PROFIT', icon: <ArrowDropUpIcon sx={{ fontSize: 16 }} /> },
   dividend: { color: '#b77a12', label: 'DIVIDEND', icon: <StarBorderIcon sx={{ fontSize: 16 }} /> },
-  loss: { color: 'var(--wc-error)', label: 'LOSS', icon: <TrendingDownIcon sx={{ fontSize: 16 }} /> },
+  loss: { color: 'var(--wc-error)', label: 'LOSS', icon: <ArrowDropDownIcon sx={{ fontSize: 16 }} /> },
 }
 
 function HistRow({ event, index }: { event: HistoryEvent; index: number }) {
@@ -1210,8 +1210,8 @@ export function PortfolioPage() {
                       </Typography>
                       <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.4, mt: 0.6 }}>
                         {marketSummary.kse100_change >= 0
-                          ? <TrendingUpIcon sx={{ fontSize: 35, color: 'var(--wc-success)' }} />
-                          : <TrendingDownIcon sx={{ fontSize: 35, color: 'var(--wc-error)' }} />}
+                          ? <ArrowDropUpIcon sx={{ fontSize: 35, color: 'var(--wc-success)' }} />
+                          : <ArrowDropDownIcon sx={{ fontSize: 35, color: 'var(--wc-error)' }} />}
                         <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 25, fontWeight: 600, color: marketSummary.kse100_change >= 0 ? 'var(--wc-success)' : 'var(--wc-error)' }}>
                           {marketSummary.kse100_change >= 0 ? '+' : ''}{marketSummary.kse100_change.toFixed(2)}
                         </Typography>
@@ -1225,8 +1225,8 @@ export function PortfolioPage() {
                       </Typography>
                       <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.4, mt: 0.6 }}>
                         {marketSummary.kse30_change >= 0
-                          ? <TrendingUpIcon sx={{ fontSize: 35, color: 'var(--wc-success)' }} />
-                          : <TrendingDownIcon sx={{ fontSize: 35, color: 'var(--wc-error)' }} />}
+                          ? <ArrowDropUpIcon sx={{ fontSize: 35, color: 'var(--wc-success)' }} />
+                          : <ArrowDropDownIcon sx={{ fontSize: 35, color: 'var(--wc-error)' }} />}
                         <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 25, fontWeight: 600, color: marketSummary.kse30_change >= 0 ? 'var(--wc-success)' : 'var(--wc-error)' }}>
                           {marketSummary.kse30_change >= 0 ? '+' : ''}{marketSummary.kse30_change.toFixed(2)}
                         </Typography>
