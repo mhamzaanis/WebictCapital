@@ -13,7 +13,7 @@ import {
 } from '@mui/material'
 import type { TransitionProps } from '@mui/material/transitions'
 import { motion, useReducedMotion } from 'motion/react'
-import { forwardRef, useEffect, useMemo, useState } from 'react'
+import { forwardRef, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactElement, Ref } from 'react'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -44,8 +44,8 @@ type HoldingModalProps = {
   open: boolean
   onClose: () => void
   holdings: Holding[]
-  onSave: (holding: Holding) => void
-  onDelete?: (symbol: string) => void
+  onSave: (holding: Holding, sellQty?: number, sellPrice?: number) => void
+  onDelete?: (symbol: string, isSell?: boolean, sellPrice?: number) => void
   initialMode?: 'new' | 'manage'
   initialHolding?: Holding | null
   availableStocks?: { symbol: string; company: string; sector: string; price: number }[]
@@ -216,10 +216,15 @@ export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initia
 
   const isManage = initialMode === 'manage'
   const managedHolding = isManage ? (initialHolding ?? null) : null
+  const lastSellPriceRef = useRef<number>(0)
 
   // New mode: selected stock
   const [selectedStock, setSelectedStock] = useState('')
   const [stockQuery, setStockQuery] = useState('')
+
+  // Sell tracking for save sync
+  const [accumulatedSoldQty, setAccumulatedSoldQty] = useState(0)
+  const [accumulatedSoldValue, setAccumulatedSoldValue] = useState(0)
 
   // Buy lots (shared across modes)
   const [lots, setLots] = useState<BuyLot[]>([])
@@ -233,6 +238,7 @@ export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initia
   // Sell inline form (manage mode only)
   const [showSellForm, setShowSellForm] = useState(false)
   const [sellShares, setSellShares] = useState('')
+  const [sellPrice, setSellPrice] = useState('')
 
   // Edit lot inline state
   const [editingLotId, setEditingLotId] = useState<string | null>(null)
@@ -292,9 +298,12 @@ export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initia
     setBuyPrice('')
     setBuyDate(todayIso())
     setSellShares('')
+    setSellPrice('')
     setEditingLotId(null)
     setEditShares('')
     setEditPrice('')
+    setAccumulatedSoldQty(0)
+    setAccumulatedSoldValue(0)
   }
 
   // Initialize on open
@@ -307,6 +316,10 @@ export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initia
           : [{ id: 'lot-1', shares: managedHolding.shares, price: managedHolding.avgCost, date: todayIso() }]
       )
       setSelectedStock('')
+      // Always reset sell-tracking when the modal (re)opens so a fresh
+      // manage session never inherits totals from a previous one.
+      setAccumulatedSoldQty(0)
+      setAccumulatedSoldValue(0)
     } else {
       resetForm()
     }
@@ -316,6 +329,7 @@ export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initia
     setBuyPrice('')
     setBuyDate(todayIso())
     setSellShares('')
+    setSellPrice('')
     setEditingLotId(null)
     setEditShares('')
     setEditPrice('')
@@ -359,7 +373,24 @@ export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initia
 
   const handleSell = () => {
     const sellQty = Number(sellShares)
-    if (!sellQty || sellQty <= 0 || sellQty >= totalShares) return
+    if (!sellQty || sellQty <= 0 || sellQty > totalShares) return
+    const priceVal = Number(sellPrice) || currentPrice
+    lastSellPriceRef.current = priceVal
+    const isFull = sellQty === totalShares
+    if (isFull) {
+      // Full exit — delete the holding entirely.
+      // If there were earlier partial sells in this session that haven't been
+      // saved yet, merge them to pass a correct weighted-average price.
+      const totalSoldQty = accumulatedSoldQty + sellQty
+      const totalSoldValue = accumulatedSoldValue + sellQty * priceVal
+      const weightedAvgPrice = totalSoldQty > 0 ? totalSoldValue / totalSoldQty : priceVal
+      if (managedHolding && onDelete) {
+        onDelete(managedHolding.symbol, true, weightedAvgPrice)
+      }
+      resetForm()
+      onClose()
+      return
+    }
     let remaining = sellQty
     const updated = lots
       .map(lot => {
@@ -370,7 +401,10 @@ export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initia
       })
       .filter(l => l.shares > 0)
     setLots(updated)
+    setAccumulatedSoldQty(prev => prev + sellQty)
+    setAccumulatedSoldValue(prev => prev + sellQty * priceVal)
     setSellShares('')
+    setSellPrice('')
     setShowSellForm(false)
   }
 
@@ -381,13 +415,15 @@ export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initia
 
   const handleDelete = () => {
     if (!managedHolding || !onDelete) return
-    onDelete(managedHolding.symbol)
+    onDelete(managedHolding.symbol, false)
     resetForm()
     onClose()
   }
 
   const handleSave = () => {
     if (totalShares <= 0) return
+
+    const avgSellPrice = accumulatedSoldQty > 0 ? accumulatedSoldValue / accumulatedSoldQty : undefined
 
     if (isManage && managedHolding) {
       onSave({
@@ -399,7 +435,7 @@ export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initia
         totalPL,
         totalPLPct,
         buyLots: lots,
-      })
+      }, accumulatedSoldQty, avgSellPrice)
     } else if (existingHolding) {
       onSave({
         ...existingHolding,
@@ -410,7 +446,7 @@ export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initia
         totalPL,
         totalPLPct,
         buyLots: lots,
-      })
+      }, accumulatedSoldQty, avgSellPrice)
     } else if (stockDetail) {
       onSave({
         symbol: stockDetail.symbol,
@@ -425,7 +461,7 @@ export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initia
         totalPL: 0,
         totalPLPct: 0,
         buyLots: lots,
-      })
+      }, accumulatedSoldQty, avgSellPrice)
     }
 
     resetForm()
@@ -795,7 +831,13 @@ export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initia
           )}
           {isManage && lots.length > 0 && (
             <ActionBtn
-              onClick={() => { setShowSellForm(v => !v); setShowBuyForm(false) }}
+              onClick={() => {
+                setShowSellForm(v => {
+                  if (!v) setSellPrice(currentPrice > 0 ? currentPrice.toFixed(2) : '')
+                  return !v
+                })
+                setShowBuyForm(false)
+              }}
               icon={<DeleteOutlineRoundedIcon sx={{ fontSize: 16 }} />}
               label="Sell"
               color={C.neg}
@@ -914,41 +956,90 @@ export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initia
             <Typography sx={{ fontSize: 11, color: C.neg, fontFamily: mono, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
               Sell Shares
             </Typography>
-            <TextField
-              label="Shares to Sell"
-              type="number"
-              value={sellShares}
-              onChange={(e) => setSellShares(e.target.value)}
-              fullWidth
-              sx={inputSx}
-              slotProps={{ htmlInput: { min: 1, max: totalShares - 1 } }}
-            />
-            {sellShares && Number(sellShares) > 0 && (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.5, px: 1.2, bgcolor: C.bg, borderRadius: '8px' }}>
-                <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.ink2 }}>
-                  Remaining:
-                </Typography>
-                <Typography sx={{ fontFamily: mono, fontSize: 13, fontWeight: 700, color: C.ink }}>
-                  {fmt(totalShares - Number(sellShares))} shares
-                </Typography>
-              </Box>
-            )}
-            {sellShares && Number(sellShares) >= totalShares && (
+
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
+              <TextField
+                label="Shares to Sell"
+                type="number"
+                value={sellShares}
+                onChange={(e) => setSellShares(e.target.value)}
+                fullWidth
+                sx={inputSx}
+                slotProps={{ htmlInput: { min: 1, max: totalShares } }}
+              />
+              <TextField
+                label="Sell Price (Rs.)"
+                type="number"
+                value={sellPrice}
+                onChange={(e) => setSellPrice(e.target.value)}
+                fullWidth
+                sx={inputSx}
+                slotProps={{ htmlInput: { min: 0, step: '0.01' } }}
+              />
+            </Box>
+
+            {/* Live P&L preview */}
+            {sellShares && Number(sellShares) > 0 && sellPrice && Number(sellPrice) > 0 && (() => {
+              const qty = Number(sellShares)
+              const sp = Number(sellPrice)
+              const proceeds = qty * sp
+              const costOfSold = avgCost > 0 ? qty * avgCost : 0
+              const realised = proceeds - costOfSold
+              const realisedPct = costOfSold > 0 ? (realised / costOfSold) * 100 : 0
+              const remainingShares = totalShares - qty
+              return (
+                <Box sx={{ bgcolor: C.bg, borderRadius: '8px', px: 1.5, py: 1, display: 'flex', flexDirection: 'column', gap: 0.6 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.ink2 }}>Proceeds</Typography>
+                    <Typography sx={{ fontFamily: mono, fontSize: 13, fontWeight: 700, color: C.ink }}>
+                      Rs. {qty * sp > 0 ? (qty * sp).toLocaleString('en-PK', { maximumFractionDigits: 0 }) : '0'}
+                    </Typography>
+                  </Box>
+                  {avgCost > 0 && (
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.ink2 }}>Realised P&L</Typography>
+                      <Typography sx={{ fontFamily: mono, fontSize: 13, fontWeight: 700, color: realised >= 0 ? C.pos : C.neg }}>
+                        {realised >= 0 ? '+' : ''}Rs. {Math.round(Math.abs(realised)).toLocaleString('en-PK')}
+                        {' '}
+                        <Typography component="span" sx={{ fontSize: 11, fontWeight: 600 }}>
+                          ({realisedPct >= 0 ? '+' : ''}{realisedPct.toFixed(2)}%)
+                        </Typography>
+                      </Typography>
+                    </Box>
+                  )}
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.ink2 }}>
+                      {remainingShares > 0 ? 'Remaining shares' : 'Position closed'}
+                    </Typography>
+                    <Typography sx={{ fontFamily: mono, fontSize: 13, fontWeight: 700, color: remainingShares > 0 ? C.ink : C.neg }}>
+                      {remainingShares > 0 ? remainingShares.toLocaleString('en-PK') : 'Full exit'}
+                    </Typography>
+                  </Box>
+                </Box>
+              )
+            })()}
+
+            {sellShares && Number(sellShares) > totalShares && (
               <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.neg }}>
-                Cannot sell all shares. Use delete from the portfolio page instead.
+                Cannot sell more than {totalShares.toLocaleString('en-PK')} shares.
               </Typography>
             )}
+
             <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
               <ActionBtn
-                onClick={() => { setShowSellForm(false); setSellShares('') }}
+                onClick={() => { setShowSellForm(false); setSellShares(''); setSellPrice('') }}
                 icon={<CloseRoundedIcon sx={{ fontSize: 16 }} />}
                 label="Cancel"
                 color={C.muted}
               />
               <SaveBtn
                 onClick={handleSell}
-                disabled={!sellShares || Number(sellShares) <= 0 || Number(sellShares) >= totalShares}
-                label="Confirm Sell"
+                disabled={
+                  !sellShares || !sellPrice ||
+                  Number(sellShares) <= 0 || Number(sellShares) > totalShares ||
+                  Number(sellPrice) <= 0
+                }
+                label={Number(sellShares) === totalShares ? 'Confirm Full Exit' : 'Confirm Sell'}
                 icon={<DeleteOutlineRoundedIcon sx={{ fontSize: 16 }} />}
               />
             </Box>

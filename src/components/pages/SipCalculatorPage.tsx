@@ -50,6 +50,14 @@ function computeSIP(monthly: number, annualRate: number, years: number, initialA
   return { invested, returns, futureValue }
 }
 
+// Rounds to the decimal precision implied by `step`, so repeated +/- clicks
+// (or drag) don't drift into binary float artifacts like 40.800000000000004
+function roundToStep(value: number, step: number) {
+  const decimals = (step.toString().split('.')[1] || '').length
+  const factor = Math.pow(10, decimals)
+  return Math.round(value * factor) / factor
+}
+
 // ── constants ─────────────────────────────────────────────────────────────────
 
 const PRIMARY = '#0a2463'
@@ -92,6 +100,15 @@ export function SipCalculatorPage() {
     const investedArr: number[] = []
     const fvArr: number[] = []
     const scheduleRows: { year: number; invested: number; gains: number; balance: number }[] = []
+
+    // Year-0 baseline (just the initial lump sum, no growth yet) so the chart
+    // always has 2+ points to draw a line through — a single year would
+    // otherwise produce one lone point, which renders as a dot, not a line.
+    // Excluded from scheduleRows so the schedule table still starts at Year 1.
+    labels.push('Yr 0')
+    investedArr.push(Math.round(initialAmount))
+    fvArr.push(Math.round(initialAmount))
+
     for (let y = 1; y <= years; y++) {
       labels.push(`Yr ${y}`)
       const d = computeSIP(monthly, annualRate, y, initialAmount)
@@ -804,11 +821,11 @@ function SliderField({
   marks?: { value: number; label: string }[]
 }) {
   const handleDecrement = () => {
-    onChange(Math.max(min, value - step))
+    onChange(roundToStep(Math.max(min, value - step), step))
   }
 
   const handleIncrement = () => {
-    onChange(Math.min(max, value + step))
+    onChange(roundToStep(Math.min(max, value + step), step))
   }
 
   return (
@@ -867,7 +884,7 @@ function SliderField({
           max={max}
           step={step}
           marks={marks}
-          onChange={(_, v) => onChange(v as number)}
+          onChange={(_, v) => onChange(roundToStep(v as number, step))}
           aria-label={label}
           sx={{
             flex: 1,
