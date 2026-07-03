@@ -4,6 +4,7 @@ import {
 	DEFAULT_PALETTE,
 	FONT_FAMILY,
 	chartTooltipStyle,
+	colorWithOpacity,
 	formatCompactNumber,
 	formatPercent,
 	heatmapColor,
@@ -16,6 +17,18 @@ type HeatmapColors = {
 	positive?: string
 	negative?: string
 	neutral?: string
+}
+
+const VIBRANT_POSITIVE = '#15c46d'
+const VIBRANT_NEGATIVE = '#ff4d5e'
+const VIBRANT_NEUTRAL = '#dde7f2'
+
+function vibrantHeatmapColor(changePct: number, neutralColor = VIBRANT_NEUTRAL): string {
+	if (!Number.isFinite(changePct) || changePct === 0) return neutralColor
+	const clamped = Math.min(6, Math.abs(changePct))
+	const opacity = 0.46 + (clamped / 6) * 0.42
+	const base = changePct > 0 ? VIBRANT_POSITIVE : VIBRANT_NEGATIVE
+	return colorWithOpacity(base, opacity)
 }
 
 type StockHeatmapProps = MarketChartFrameProps & {
@@ -67,7 +80,7 @@ export function StockHeatmap({
 					itemStyle: {
 						borderColor: '#ffffff',
 						borderWidth: 2,
-						gapWidth: 2,
+						gapWidth: 3,
 					},
 					label: {
 						show: true,
@@ -82,9 +95,14 @@ export function StockHeatmap({
 						value: Math.max(1, item.value),
 						company: item.company,
 						changePct: item.changePct,
-						itemStyle: { color: item.color ?? heatmapColor(item.changePct ?? NaN, heatmapPalette, colors?.neutral) },
+						itemStyle: {
+							color:
+								item.color ??
+									(vibrantHeatmapColor(item.changePct ?? NaN, colors?.neutral ?? VIBRANT_NEUTRAL) ||
+									heatmapColor(item.changePct ?? NaN, heatmapPalette, colors?.neutral)),
+						},
 						label: {
-							color: Number.isFinite(item.changePct) && Math.abs(item.changePct ?? 0) > 2 ? '#ffffff' : palette.text,
+							color: Number.isFinite(item.changePct) && Math.abs(item.changePct ?? 0) > 1.5 ? '#ffffff' : palette.text,
 						},
 					})),
 				},
