@@ -2,6 +2,7 @@ import ReactECharts from 'echarts-for-react'
 import { useMemo } from 'react'
 import {
 	DEFAULT_PALETTE,
+	FONT_FAMILY,
 	chartTooltipStyle,
 	formatCompactNumber,
 	formatPercent,
@@ -71,9 +72,9 @@ export function StockHeatmap({
 					label: {
 						show: true,
 						formatter: '{b}',
-						fontFamily: 'JetBrains Mono, monospace',
+						fontFamily: FONT_FAMILY.echartsMono,
 						fontSize: 11,
-						fontWeight: 800,
+						fontWeight: 700,
 					},
 					upperLabel: { show: false },
 					data: data.map((item) => ({

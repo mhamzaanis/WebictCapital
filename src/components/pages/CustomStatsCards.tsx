@@ -46,7 +46,7 @@ export function StatCard({
 	value,
 	detail,
 	icon,
-	monoFont = 'var(--wc-number-font)',
+	monoFont = 'var(--wc-font-mono)',
 	tone = 'neutral',
 	color,
 	sx,
@@ -96,9 +96,9 @@ export function StatCard({
 					sx={mergeSx(
 						{
 							color: 'var(--wc-text-secondary)',
-							fontFamily: monoFont,
-							fontSize: 10,
-							fontWeight: 700,
+							fontFamily: 'var(--wc-font-display)',
+							fontSize: 11,
+							fontWeight: 600,
 							letterSpacing: '0.1em',
 							textTransform: 'uppercase',
 						},
@@ -114,7 +114,7 @@ export function StatCard({
 						{
 							color: resolvedColor,
 							fontSize: { xs: 20, md: 24 },
-							fontWeight: 800,
+							fontWeight: 700,
 							fontFamily: monoFont,
 							lineHeight: 1.2,
 							overflowWrap: 'anywhere',
@@ -126,7 +126,7 @@ export function StatCard({
 				</Typography>
 				<Typography
 					sx={mergeSx(
-						{ mt: 0.5, color: 'var(--wc-text-secondary)', fontSize: 12, lineHeight: 1.45 },
+						{ mt: 0.5, color: 'var(--wc-text-secondary)', fontSize: 13, lineHeight: 1.55 },
 						detailSx,
 					)}
 				>

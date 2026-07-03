@@ -54,6 +54,10 @@ function computeSIP(monthly: number, annualRate: number, years: number, initialA
 
 const PRIMARY = '#0a2463'
 const SECONDARY_LINE = '#1a6640'
+const DISPLAY_FONT = 'var(--wc-font-display)'
+const MONO_FONT = 'var(--wc-font-mono)'
+const ECHART_BODY_FONT = 'Inter, sans-serif'
+const ECHART_MONO_FONT = 'JetBrains Mono, monospace'
 
 // ── component ─────────────────────────────────────────────────────────────────
 
@@ -116,7 +120,7 @@ export function SipCalculatorPage() {
         borderWidth: 1,
         padding: [10, 14],
         textStyle: {
-          fontFamily: '"Playfair Display", serif',
+          fontFamily: ECHART_BODY_FONT,
           fontSize: 12,
           color: '#253750',
         },
@@ -133,7 +137,7 @@ export function SipCalculatorPage() {
       legend: {
         bottom: 0,
         textStyle: {
-          fontFamily: '"Playfair Display", serif',
+          fontFamily: ECHART_BODY_FONT,
           fontSize: 11,
           color: '#4a5e78',
         },
@@ -148,7 +152,7 @@ export function SipCalculatorPage() {
         axisLine: { lineStyle: { color: '#e2eaf5' } },
         axisTick: { show: false },
         axisLabel: {
-          fontFamily: '"Playfair Display", serif',
+          fontFamily: ECHART_MONO_FONT,
           fontSize: 11,
           color: '#8097b0',
         },
@@ -159,7 +163,7 @@ export function SipCalculatorPage() {
         splitLine: { lineStyle: { color: '#f0f4fb' } },
         axisTick: { show: false },
         axisLabel: {
-          fontFamily: '"JetBrains Mono", monospace',
+          fontFamily: ECHART_MONO_FONT,
           fontSize: 11,
           color: '#8097b0',
           formatter: (v: number) => formatK(v),
@@ -245,7 +249,7 @@ export function SipCalculatorPage() {
                 sx={{
                   display: 'block',
                   fontSize: 11,
-                  fontFamily: '"Playfair Display", serif',
+                  fontFamily: DISPLAY_FONT,
                   letterSpacing: '0.18em',
                   textTransform: 'uppercase',
                   color: PRIMARY,
@@ -259,7 +263,7 @@ export function SipCalculatorPage() {
                 sx={{
                   fontSize: { xs: '2.6rem', sm: '3.2rem', md: '3.8rem' },
                   lineHeight: 1.04,
-                  letterSpacing: '-0.03em',
+                  letterSpacing: 0,
                   color: '#080e1a',
                   fontWeight: 700,
                   mb: 1.5,
@@ -403,7 +407,7 @@ export function SipCalculatorPage() {
                       <Box>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.7, mb: 0.3 }}>
                           <Typography sx={{
-                            fontSize: 12, fontFamily: '"Playfair Display", serif',
+                            fontSize: 12, fontFamily: DISPLAY_FONT,
                             letterSpacing: '0.1em', textTransform: 'uppercase',
                             color: adjustInflation ? PRIMARY : '#4a5e78', fontWeight: 600,
                           }}>
@@ -493,7 +497,7 @@ export function SipCalculatorPage() {
                       <Typography
                         sx={{
                           fontSize: 11,
-                          fontFamily: '"Playfair Display", serif',
+                          fontFamily: DISPLAY_FONT,
                           letterSpacing: '0.14em',
                           textTransform: 'uppercase',
                           color: PRIMARY,
@@ -516,7 +520,7 @@ export function SipCalculatorPage() {
                         <Typography
                           className="schedule-label"
                           sx={{
-                            fontSize: 11, fontFamily: '"Playfair Display", serif',
+                            fontSize: 11, fontFamily: DISPLAY_FONT,
                             letterSpacing: '0.14em', textTransform: 'uppercase',
                             color: '#8097b0', transition: 'color 0.2s',
                           }}
@@ -535,7 +539,7 @@ export function SipCalculatorPage() {
                               <TableRow>
                                 {['Year', 'Amount Invested', 'Wealth Gained', 'Year-End Balance'].map(h => (
                                   <TableCell key={h} sx={{
-                                    fontSize: 11, fontFamily: '"Playfair Display", serif',
+                                    fontSize: 11, fontFamily: DISPLAY_FONT,
                                     letterSpacing: '0.1em', textTransform: 'uppercase',
                                     color: '#8097b0', borderBottom: '1px solid #e2eaf5', pb: 1,
                                   }}>{h}</TableCell>
@@ -545,10 +549,10 @@ export function SipCalculatorPage() {
                             <TableBody>
                               {yearlyData.scheduleRows.map((row) => (
                                 <TableRow key={row.year} sx={{ '&:last-child td': { borderBottom: 0 } }}>
-                                      <TableCell sx={{ fontSize: 12, fontFamily: '"JetBrains Mono", monospace', color: '#4a5e78', py: 0.8 }}>Yr {row.year}</TableCell>
-                                      <TableCell sx={{ fontSize: 12, fontFamily: '"JetBrains Mono", monospace', color: '#4a5e78', py: 0.8 }}>{formatPKR(row.invested)}</TableCell>
-                                      <TableCell sx={{ fontSize: 12, fontFamily: '"JetBrains Mono", monospace', color: SECONDARY_LINE, py: 0.8 }}>{formatPKR(row.gains)}</TableCell>
-                                      <TableCell sx={{ fontSize: 12, fontFamily: '"JetBrains Mono", monospace', fontWeight: 700, color: PRIMARY, py: 0.8 }}>{formatPKR(row.balance)}</TableCell>
+                                      <TableCell sx={{ fontSize: 12, fontFamily: MONO_FONT, color: '#4a5e78', py: 0.8 }}>Yr {row.year}</TableCell>
+                                      <TableCell sx={{ fontSize: 12, fontFamily: MONO_FONT, color: '#4a5e78', py: 0.8 }}>{formatPKR(row.invested)}</TableCell>
+                                      <TableCell sx={{ fontSize: 12, fontFamily: MONO_FONT, color: SECONDARY_LINE, py: 0.8 }}>{formatPKR(row.gains)}</TableCell>
+                                      <TableCell sx={{ fontSize: 12, fontFamily: MONO_FONT, fontWeight: 700, color: PRIMARY, py: 0.8 }}>{formatPKR(row.balance)}</TableCell>
                                 </TableRow>
                               ))}
                             </TableBody>
@@ -574,7 +578,7 @@ export function SipCalculatorPage() {
               <Typography
                 sx={{
                   fontSize: 11,
-                  fontFamily: '"Playfair Display", serif',
+                  fontFamily: DISPLAY_FONT,
                   letterSpacing: '0.18em',
                   textTransform: 'uppercase',
                   color: PRIMARY,
@@ -588,7 +592,7 @@ export function SipCalculatorPage() {
                   fontSize: { xs: 20, md: 24 },
                   fontWeight: 700,
                   color: '#080e1a',
-                  letterSpacing: '-0.02em',
+                  letterSpacing: 0,
                   mb: 4,
                 }}
               >
@@ -641,11 +645,11 @@ export function SipCalculatorPage() {
                       </Typography>
                       <Typography
                         sx={{
-                          fontFamily: '"JetBrains Mono", monospace',
+                          fontFamily: MONO_FONT,
                           fontSize: { xs: 22, md: 26 },
                           fontWeight: 700,
                           color: item.color,
-                          letterSpacing: '-0.02em',
+                          letterSpacing: 0,
                           mb: 0.6,
                         }}
                       >
@@ -657,7 +661,7 @@ export function SipCalculatorPage() {
                             fontSize: 11,
                             color: '#8097b0',
                             mb: 0.6,
-                            fontFamily: '"JetBrains Mono", monospace',
+                            fontFamily: MONO_FONT,
                           }}
                         >
                           {item.pct}% of total portfolio
@@ -678,7 +682,7 @@ export function SipCalculatorPage() {
             <Box sx={{ borderTop: '1px solid #e2eaf5', pt: 5 }}>
               <Typography
                 sx={{
-                  fontSize: 11, fontFamily: '"Playfair Display", serif',
+                  fontSize: 11, fontFamily: DISPLAY_FONT,
                   letterSpacing: '0.18em', textTransform: 'uppercase',
                   color: PRIMARY, mb: 1.5,
                 }}
@@ -688,7 +692,7 @@ export function SipCalculatorPage() {
               <Typography
                 sx={{
                   fontSize: { xs: 20, md: 24 }, fontWeight: 700, color: '#080e1a',
-                  letterSpacing: '-0.02em', mb: 4,
+                  letterSpacing: 0, mb: 4,
                 }}
               >
                 The principles behind compounding wealth.
@@ -722,7 +726,7 @@ export function SipCalculatorPage() {
                       <Typography
                         className="sip-title"
                         sx={{
-                          fontSize: 14, fontFamily: '"Playfair Display", serif',
+                          fontSize: 14, fontFamily: DISPLAY_FONT,
                           fontWeight: 700, color: '#080e1a', mb: 1, transition: 'color 0.2s',
                         }}
                       >
@@ -751,7 +755,7 @@ export function SipCalculatorPage() {
               <Typography
                 sx={{
                   fontSize: 11,
-                  fontFamily: '"Playfair Display", serif',
+                  fontFamily: DISPLAY_FONT,
                   letterSpacing: '0.18em',
                   textTransform: 'uppercase',
                   color: PRIMARY,
@@ -815,7 +819,7 @@ function SliderField({
           htmlFor={id}
           sx={{
             fontSize: 12,
-            fontFamily: '"Playfair Display", serif',
+            fontFamily: DISPLAY_FONT,
             letterSpacing: '0.1em',
             textTransform: 'uppercase',
             color: '#4a5e78',
@@ -826,11 +830,11 @@ function SliderField({
         </Typography>
         <Typography
           sx={{
-            fontFamily: '"JetBrains Mono", monospace',
+            fontFamily: MONO_FONT,
             fontSize: 15,
             fontWeight: 700,
             color: PRIMARY,
-            letterSpacing: '-0.01em',
+            letterSpacing: 0,
           }}
         >
           {display}
@@ -883,7 +887,7 @@ function SliderField({
             '& .MuiSlider-mark': { bgcolor: '#c8d6ec', width: 3, height: 3, borderRadius: '50%' },
             '& .MuiSlider-markLabel': {
               fontSize: 10,
-              fontFamily: '"JetBrains Mono", monospace',
+              fontFamily: MONO_FONT,
               color: '#a0b4cc',
               top: 28,
             },
@@ -948,7 +952,7 @@ function SummaryCard({
       <Typography
         sx={{
           fontSize: 11,
-          fontFamily: '"Playfair Display", serif',
+          fontFamily: DISPLAY_FONT,
           letterSpacing: '0.14em',
           textTransform: 'uppercase',
           color: labelColor,
@@ -959,11 +963,11 @@ function SummaryCard({
       </Typography>
       <Typography
         sx={{
-          fontFamily: '"JetBrains Mono", monospace',
+          fontFamily: MONO_FONT,
           fontSize: { xs: 14, sm: 15, md: 16 },
           fontWeight: 700,
           color: textColor,
-          letterSpacing: '-0.01em',
+          letterSpacing: 0,
           lineHeight: 1.2,
         }}
       >

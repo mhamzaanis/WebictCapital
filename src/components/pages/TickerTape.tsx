@@ -52,14 +52,14 @@ function TapeItem({ item, monoFont }: { item: TickerTapeItem; monoFont: string }
 		>
 			<Box sx={{ minWidth: 0 }}>
 				<Stack direction="row" spacing={0.8} sx={{ alignItems: 'baseline' }}>
-					<Typography sx={{ color: 'var(--wc-primary)', fontFamily: monoFont, fontSize: 13, fontWeight: 800 }}>
+					<Typography sx={{ color: 'var(--wc-primary)', fontFamily: monoFont, fontSize: 13, fontWeight: 700 }}>
 						{item.symbol}
 					</Typography>
 					<Typography
 						title={item.company}
 						sx={{
 							color: 'var(--wc-text-secondary)',
-							fontSize: 10,
+							fontSize: 11,
 							maxWidth: 150,
 							overflow: 'hidden',
 							textOverflow: 'ellipsis',
@@ -75,23 +75,23 @@ function TapeItem({ item, monoFont }: { item: TickerTapeItem; monoFont: string }
 					</Typography>
 					<Stack direction="row" spacing={0.1} sx={{ alignItems: 'center', color }}>
 						<TapeMoveIcon tone={item.tone} />
-						<Typography sx={{ color: 'inherit', fontFamily: monoFont, fontSize: 11, fontWeight: 800 }}>
+						<Typography sx={{ color: 'inherit', fontFamily: monoFont, fontSize: 11, fontWeight: 700 }}>
 							{item.change}
 						</Typography>
-						<Typography sx={{ color: 'inherit', fontFamily: monoFont, fontSize: 10, fontWeight: 700 }}>
+						<Typography sx={{ color: 'inherit', fontFamily: monoFont, fontSize: 11, fontWeight: 600 }}>
 							{item.changePct}
 						</Typography>
 					</Stack>
 				</Stack>
 			</Box>
-			<Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 10, whiteSpace: 'nowrap' }}>
+			<Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 11, fontWeight: 500, whiteSpace: 'nowrap' }}>
 				Vol {item.volume}
 			</Typography>
 		</Box>
 	)
 }
 
-export function TickerTape({ items, date, monoFont = 'var(--wc-number-font)' }: TickerTapeProps) {
+export function TickerTape({ items, date, monoFont = 'var(--wc-font-mono)' }: TickerTapeProps) {
 	const reduce = useReducedMotion()
 	const shouldScroll = !reduce && items.length > 5
 	const tapeItems = shouldScroll ? [...items, ...items] : items
@@ -133,8 +133,8 @@ export function TickerTape({ items, date, monoFont = 'var(--wc-number-font)' }: 
 						sx={{
 							color: 'var(--wc-primary)',
 							fontFamily: monoFont,
-							fontSize: 10,
-							fontWeight: 800,
+							fontSize: 11,
+							fontWeight: 700,
 							letterSpacing: '0.12em',
 							textTransform: 'uppercase',
 							whiteSpace: 'nowrap',
@@ -143,7 +143,7 @@ export function TickerTape({ items, date, monoFont = 'var(--wc-number-font)' }: 
 						PSX Tape
 					</Typography>
 					{date && (
-						<Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 10, whiteSpace: 'nowrap' }}>
+						<Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 11, fontWeight: 500, whiteSpace: 'nowrap' }}>
 							{date}
 						</Typography>
 					)}

@@ -2,6 +2,7 @@ import ReactECharts from 'echarts-for-react'
 import { useMemo } from 'react'
 import {
 	DEFAULT_PALETTE,
+	FONT_FAMILY,
 	chartTooltipStyle,
 } from './chartUtils'
 import { EmptyChart } from './EmptyChart'
@@ -48,7 +49,7 @@ export function DonutChart({
 				icon: 'circle',
 				itemWidth: 8,
 				itemHeight: 8,
-				textStyle: { color: palette.textSecondary, fontFamily: 'JetBrains Mono, monospace', fontSize: 10 },
+				textStyle: { color: palette.textSecondary, fontFamily: FONT_FAMILY.echartsMono, fontSize: 11 },
 			},
 			series: [
 				{
@@ -59,8 +60,8 @@ export function DonutChart({
 					itemStyle: { borderColor: '#ffffff', borderWidth: 2 },
 					label: {
 						color: palette.textSecondary,
-						fontFamily: 'JetBrains Mono, monospace',
-						fontSize: 10,
+						fontFamily: FONT_FAMILY.echartsMono,
+						fontSize: 11,
 						formatter: '{d}%',
 					},
 					labelLine: { length: 8, length2: 6 },
@@ -75,7 +76,7 @@ export function DonutChart({
 					style: {
 						text: centerText ?? total.toLocaleString('en-PK'),
 						fill: palette.text,
-						font: '700 20px JetBrains Mono',
+						font: `700 20px ${FONT_FAMILY.echartsMono}`,
 						textAlign: 'center',
 					},
 				},
@@ -86,7 +87,7 @@ export function DonutChart({
 					style: {
 						text: centerSubtext,
 						fill: palette.textSecondary,
-						font: '500 10px JetBrains Mono',
+						font: `500 11px ${FONT_FAMILY.echartsMono}`,
 						textAlign: 'center',
 					},
 				},

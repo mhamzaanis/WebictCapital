@@ -11,13 +11,13 @@ import {
 } from '@mui/material'
 import { PulseSkeleton } from '../PulseSkeleton'
 
-const MONO = '"Playfair Display", serif'
+const DISPLAY_FONT = 'var(--wc-font-display)'
 
 const headCell = {
 	bgcolor: 'var(--wc-paper)',
 	color: 'var(--wc-text-secondary)',
-	fontFamily: MONO,
-	fontWeight: 700,
+	fontFamily: DISPLAY_FONT,
+	fontWeight: 600,
 	fontSize: 11,
 	letterSpacing: '0.06em',
 	borderBottom: '1px solid var(--wc-divider)',

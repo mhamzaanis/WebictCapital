@@ -1,6 +1,6 @@
 import SpeedIcon from '@mui/icons-material/Speed'
 import { Box, Paper, Stack, Typography } from '@mui/material'
-import { formatNumber, formatPercent } from './chartUtils'
+import { FONT_FAMILY, formatNumber, formatPercent } from './chartUtils'
 import type { MarketLeaderItem } from './types'
 
 type RangeLeadersPanelProps = {
@@ -12,7 +12,7 @@ type RangeLeadersPanelProps = {
 export function RangeLeadersPanel({
 	items,
 	avgRangePct,
-	monoFont = 'var(--wc-number-font)',
+	monoFont = FONT_FAMILY.mono,
 }: RangeLeadersPanelProps) {
 	return (
 		<Paper
@@ -28,7 +28,7 @@ export function RangeLeadersPanel({
 			<Stack spacing={0.4} sx={{ mb: 2 }}>
 				<Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
 					<SpeedIcon sx={{ fontSize: 18, color: 'var(--wc-primary)' }} />
-					<Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: 'var(--wc-font-display)', fontSize: 17, fontWeight: 700 }}>
+					<Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: FONT_FAMILY.display, fontSize: 17, fontWeight: 700 }}>
 						Widest Daily Ranges
 					</Typography>
 				</Stack>
@@ -46,10 +46,10 @@ export function RangeLeadersPanel({
 					borderRadius: 1,
 				}}
 			>
-				<Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 10, mb: 0.4 }}>
+				<Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 11, fontWeight: 600, mb: 0.4 }}>
 					AVERAGE RANGE
 				</Typography>
-				<Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: monoFont, fontSize: 20, fontWeight: 800 }}>
+				<Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: monoFont, fontSize: 20, fontWeight: 700 }}>
 					{formatPercent(avgRangePct, false)}
 				</Typography>
 			</Box>
@@ -71,7 +71,7 @@ export function RangeLeadersPanel({
 							#{index + 1}
 						</Typography>
 						<Box sx={{ minWidth: 0 }}>
-							<Typography sx={{ color: 'var(--wc-primary)', fontFamily: monoFont, fontSize: 13, fontWeight: 800 }}>
+							<Typography sx={{ color: 'var(--wc-primary)', fontFamily: monoFont, fontSize: 13, fontWeight: 700 }}>
 								{item.symbol}
 							</Typography>
 							<Typography
@@ -88,10 +88,10 @@ export function RangeLeadersPanel({
 							</Typography>
 						</Box>
 						<Box sx={{ textAlign: 'right', minWidth: 88 }}>
-							<Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: monoFont, fontSize: 13, fontWeight: 800 }}>
+							<Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: monoFont, fontSize: 13, fontWeight: 700 }}>
 								{formatPercent(item.rangePct ?? NaN, false)}
 							</Typography>
-							<Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 10 }}>
+							<Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 11, fontWeight: 500 }}>
 								{formatNumber(item.low ?? NaN)}-{formatNumber(item.high ?? NaN)}
 							</Typography>
 						</Box>

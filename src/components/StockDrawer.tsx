@@ -1,6 +1,6 @@
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded'
-import ArrowDropUpIcon from '@mui/icons-material/TrendingUp'
-import ArrowDropDownIcon from '@mui/icons-material/TrendingDown'
+import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp'
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
 import {
   Box,
   Dialog,

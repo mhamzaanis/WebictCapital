@@ -2,6 +2,7 @@ import ReactECharts from 'echarts-for-react'
 import { useMemo } from 'react'
 import {
 	DEFAULT_PALETTE,
+	FONT_FAMILY,
 	chartTooltipStyle,
 	formatCompactNumber,
 	getTooltipPoint,
@@ -53,8 +54,8 @@ export function BarChart({
 				splitLine: { lineStyle: { color: palette.border } },
 				axisLabel: {
 					color: palette.textSecondary,
-					fontFamily: 'JetBrains Mono, monospace',
-					fontSize: 10,
+					fontFamily: FONT_FAMILY.echartsMono,
+					fontSize: 11,
 					formatter: (value: number) => formatCompactNumber(value),
 				},
 			},
@@ -66,9 +67,9 @@ export function BarChart({
 				axisTick: { show: false },
 				axisLabel: {
 					color: palette.text,
-					fontFamily: 'JetBrains Mono, monospace',
-					fontSize: 10,
-					fontWeight: 700,
+					fontFamily: FONT_FAMILY.echartsMono,
+					fontSize: 11,
+					fontWeight: 600,
 					width: Math.max(52, left - 14),
 					overflow: 'truncate',
 				},

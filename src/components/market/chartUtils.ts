@@ -1,6 +1,14 @@
 import type { SxProps, Theme } from '@mui/material/styles'
 import type { MarketChartPalette, MarketTone, TooltipParam } from './types'
 
+export const FONT_FAMILY = {
+	display: 'var(--wc-font-display)',
+	body: 'var(--wc-font-body)',
+	mono: 'var(--wc-font-mono)',
+	echartsBody: 'Inter, sans-serif',
+	echartsMono: 'JetBrains Mono, monospace',
+}
+
 export const DEFAULT_PALETTE: MarketChartPalette = {
 	primary: '#0a2463',
 	success: '#1a6640',
@@ -26,7 +34,7 @@ export function chartTooltipStyle(palette: MarketChartPalette) {
 		backgroundColor: palette.tooltipBg,
 		borderColor: palette.border,
 		borderWidth: 1,
-		textStyle: { color: palette.text, fontFamily: 'Inter, sans-serif', fontSize: 11 },
+		textStyle: { color: palette.text, fontFamily: FONT_FAMILY.echartsBody, fontSize: 11 },
 		extraCssText: 'box-shadow:0 8px 24px rgba(8,14,26,0.10);border-radius:6px;',
 	}
 }

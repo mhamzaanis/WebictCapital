@@ -2,6 +2,7 @@ import AnalyticsIcon from '@mui/icons-material/Analytics'
 import { Box, Paper, Stack, Typography } from '@mui/material'
 import {
 	DEFAULT_PALETTE,
+	FONT_FAMILY,
 	formatCompactNumber,
 	formatPercent,
 	toneColor,
@@ -17,7 +18,7 @@ type SectorActivityPanelProps = {
 export function SectorActivityPanel({
 	sectors,
 	totalVolume,
-	monoFont = 'var(--wc-number-font)',
+	monoFont = FONT_FAMILY.mono,
 }: SectorActivityPanelProps) {
 	return (
 		<Paper
@@ -33,7 +34,7 @@ export function SectorActivityPanel({
 			<Stack spacing={0.4} sx={{ mb: 2 }}>
 				<Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
 					<AnalyticsIcon sx={{ fontSize: 18, color: 'var(--wc-primary)' }} />
-					<Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: 'var(--wc-font-display)', fontSize: 17, fontWeight: 700 }}>
+					<Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: FONT_FAMILY.display, fontSize: 17, fontWeight: 700 }}>
 						Active Industries
 					</Typography>
 				</Stack>
@@ -65,7 +66,7 @@ export function SectorActivityPanel({
 								>
 									{sector.label}
 								</Typography>
-								<Typography sx={{ color: 'var(--wc-primary)', fontFamily: monoFont, fontSize: 11, fontWeight: 800 }}>
+								<Typography sx={{ color: 'var(--wc-primary)', fontFamily: monoFont, fontSize: 11, fontWeight: 700 }}>
 									{formatCompactNumber(sector.turnover)}
 								</Typography>
 							</Stack>
@@ -79,16 +80,16 @@ export function SectorActivityPanel({
 								/>
 							</Box>
 							<Stack direction="row" spacing={1.4} sx={{ mt: 0.65, flexWrap: 'wrap' }}>
-								<Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 10 }}>
+								<Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 11, fontWeight: 500 }}>
 									{sector.count ?? 0} symbols
 								</Typography>
-								<Typography sx={{ color: 'var(--wc-success)', fontFamily: monoFont, fontSize: 10 }}>
+								<Typography sx={{ color: 'var(--wc-success)', fontFamily: monoFont, fontSize: 11, fontWeight: 500 }}>
 									{sector.gainers ?? 0} up
 								</Typography>
-								<Typography sx={{ color: 'var(--wc-error)', fontFamily: monoFont, fontSize: 10 }}>
+								<Typography sx={{ color: 'var(--wc-error)', fontFamily: monoFont, fontSize: 11, fontWeight: 500 }}>
 									{sector.losers ?? 0} down
 								</Typography>
-								<Typography sx={{ color: toneColor(sectorTone, DEFAULT_PALETTE), fontFamily: monoFont, fontSize: 10 }}>
+								<Typography sx={{ color: toneColor(sectorTone, DEFAULT_PALETTE), fontFamily: monoFont, fontSize: 11, fontWeight: 500 }}>
 									avg {formatPercent(sector.avgChangePct ?? NaN)}
 								</Typography>
 							</Stack>

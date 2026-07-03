@@ -1,6 +1,6 @@
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded'
-import ArrowDropDownIcon from '@mui/icons-material/TrendingDown'
-import ArrowDropUpIcon from '@mui/icons-material/TrendingUp'
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
+import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp'
 import { Box, Dialog, IconButton, Slide, Typography, useMediaQuery, useTheme } from '@mui/material'
 import type { TransitionProps } from '@mui/material/transitions'
 import ReactECharts from 'echarts-for-react'

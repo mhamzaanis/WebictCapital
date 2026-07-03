@@ -1,6 +1,6 @@
 import { Box, Paper, Stack, Typography } from '@mui/material'
 import type { ReactNode } from 'react'
-import { mergeSx } from './chartUtils'
+import { FONT_FAMILY, mergeSx } from './chartUtils'
 import type { MarketChartFrameProps } from './types'
 
 export function MarketChartCard({
@@ -36,7 +36,7 @@ export function MarketChartCard({
 						<Box sx={{ color: 'var(--wc-primary)', display: 'flex', alignItems: 'center' }}>
 							{icon}
 						</Box>
-						<Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: 'var(--wc-font-display)', fontSize: 17, fontWeight: 700 }}>
+						<Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: FONT_FAMILY.display, fontSize: 17, fontWeight: 700 }}>
 							{heading}
 						</Typography>
 					</Stack>

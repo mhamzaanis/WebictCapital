@@ -1,5 +1,5 @@
-import ArrowDropDownIcon from '@mui/icons-material/TrendingDown'
-import ArrowDropUpIcon from '@mui/icons-material/TrendingUp'
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
+import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp'
 import RemoveIcon from '@mui/icons-material/Remove'
 import {
 	Paper,
@@ -13,7 +13,8 @@ import {
 	TableRow,
 	TableSortLabel,
 } from '@mui/material'
-import { useEffect, useMemo, useState } from 'react'
+import type { SxProps, Theme } from '@mui/material/styles'
+import { useCallback, useMemo, useState } from 'react'
 
 export type DataTableRow = {
 	symbol: string
@@ -34,7 +35,7 @@ type SortDir = 'asc' | 'desc'
 type CustomDataTableProps = {
 	rows: DataTableRow[]
 	searchQuery: string
-	monoFont: string
+	monoFont?: string
 }
 
 function toNum(val: unknown): number {
@@ -82,7 +83,44 @@ function compareCells(a: DataTableRow, b: DataTableRow, key: SortKey): number {
 	return (a[key] ?? '').toString().localeCompare((b[key] ?? '').toString())
 }
 
-export function CustomDataTable({ rows, searchQuery, monoFont }: CustomDataTableProps) {
+type SortCellProps = {
+	id: SortKey
+	label: string
+	align?: 'left' | 'right'
+	headCell: SxProps<Theme>
+	sortKey: SortKey
+	sortDir: SortDir
+	onSort: (id: SortKey) => void
+}
+
+function SortCell({
+	id,
+	label,
+	align = 'right',
+	headCell,
+	sortKey,
+	sortDir,
+	onSort,
+}: SortCellProps) {
+	return (
+		<TableCell align={align} sx={headCell}>
+			<TableSortLabel
+				active={sortKey === id}
+				direction={sortKey === id ? sortDir : 'asc'}
+				onClick={() => onSort(id)}
+				sx={{
+					color: `${sortKey === id ? 'var(--wc-primary)' : 'var(--wc-text-secondary)'} !important`,
+					'& .MuiTableSortLabel-icon': { color: 'var(--wc-primary) !important' },
+					'&.Mui-active': { color: 'var(--wc-primary) !important' },
+				}}
+			>
+				{label}
+			</TableSortLabel>
+		</TableCell>
+	)
+}
+
+export function CustomDataTable({ rows, searchQuery, monoFont = 'var(--wc-font-mono)' }: CustomDataTableProps) {
 	const [sortKey, setSortKey] = useState<SortKey>('symbol')
 	const [sortDir, setSortDir] = useState<SortDir>('asc')
 	const [page, setPage] = useState(0)
@@ -95,14 +133,23 @@ export function CustomDataTable({ rows, searchQuery, monoFont }: CustomDataTable
 		})
 	}, [rows, sortKey, sortDir])
 
-	const pagedRows = useMemo(() => {
-		const start = page * rowsPerPage
-		return sortedRows.slice(start, start + rowsPerPage)
-	}, [sortedRows, page, rowsPerPage])
+	const maxPage = Math.max(0, Math.ceil(sortedRows.length / rowsPerPage) - 1)
+	const currentPage = Math.min(page, maxPage)
 
-	useEffect(() => {
+	const pagedRows = useMemo(() => {
+		const start = currentPage * rowsPerPage
+		return sortedRows.slice(start, start + rowsPerPage)
+	}, [sortedRows, currentPage, rowsPerPage])
+
+	const handleSort = useCallback((id: SortKey) => {
+		if (id === sortKey) {
+			setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+		} else {
+			setSortKey(id)
+			setSortDir('asc')
+		}
 		setPage(0)
-	}, [rows, searchQuery, rowsPerPage])
+	}, [sortKey])
 
 	const headCell = {
 		bgcolor: 'var(--wc-paper)',
@@ -116,37 +163,7 @@ export function CustomDataTable({ rows, searchQuery, monoFont }: CustomDataTable
 		whiteSpace: 'nowrap' as const,
 	}
 
-	const SortCell = ({
-		id,
-		label,
-		align = 'right',
-	}: {
-		id: SortKey
-		label: string
-		align?: 'left' | 'right'
-	}) => (
-		<TableCell align={align} sx={headCell}>
-			<TableSortLabel
-				active={sortKey === id}
-				direction={sortKey === id ? sortDir : 'asc'}
-				onClick={() => {
-					if (id === sortKey) {
-						setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
-					} else {
-						setSortKey(id)
-						setSortDir('asc')
-					}
-				}}
-				sx={{
-					color: `${sortKey === id ? 'var(--wc-primary)' : 'var(--wc-text-secondary)'} !important`,
-					'& .MuiTableSortLabel-icon': { color: 'var(--wc-primary) !important' },
-					'&.Mui-active': { color: 'var(--wc-primary) !important' },
-				}}
-			>
-				{label}
-			</TableSortLabel>
-		</TableCell>
-	)
+	const sortCellProps = { headCell, sortKey, sortDir, onSort: handleSort }
 
 	return (
 		<>
@@ -162,16 +179,16 @@ export function CustomDataTable({ rows, searchQuery, monoFont }: CustomDataTable
 				<Table stickyHeader size="small" aria-label="PSX stocks table">
 					<TableHead>
 						<TableRow>
-							<SortCell id="symbol" label="SYMBOL" align="left" />
-							<SortCell id="company" label="COMPANY" align="left" />
-							<SortCell id="turnover" label="TURNOVER" />
-							<SortCell id="open" label="OPEN" />
-							<SortCell id="high" label="HIGH" />
-							<SortCell id="low" label="LOW" />
-							<SortCell id="last_rate" label="LAST" />
-							<SortCell id="change" label="CHG" />
-							<SortCell id="eps" label="EPS" />
-							<SortCell id="pe" label="P/E" />
+							<SortCell id="symbol" label="SYMBOL" align="left" {...sortCellProps} />
+							<SortCell id="company" label="COMPANY" align="left" {...sortCellProps} />
+							<SortCell id="turnover" label="TURNOVER" {...sortCellProps} />
+							<SortCell id="open" label="OPEN" {...sortCellProps} />
+							<SortCell id="high" label="HIGH" {...sortCellProps} />
+							<SortCell id="low" label="LOW" {...sortCellProps} />
+							<SortCell id="last_rate" label="LAST" {...sortCellProps} />
+							<SortCell id="change" label="CHG" {...sortCellProps} />
+							<SortCell id="eps" label="EPS" {...sortCellProps} />
+							<SortCell id="pe" label="P/E" {...sortCellProps} />
 						</TableRow>
 					</TableHead>
 
@@ -310,7 +327,7 @@ export function CustomDataTable({ rows, searchQuery, monoFont }: CustomDataTable
 			<TablePagination
 				component="div"
 				count={sortedRows.length}
-				page={page}
+				page={currentPage}
 				onPageChange={(_, newPage) => setPage(newPage)}
 				rowsPerPage={rowsPerPage}
 				onRowsPerPageChange={(e) => {

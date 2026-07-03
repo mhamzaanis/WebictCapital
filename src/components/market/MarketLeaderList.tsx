@@ -1,9 +1,10 @@
 import LeaderboardIcon from '@mui/icons-material/Leaderboard'
-import ArrowDropDownIcon from '@mui/icons-material/TrendingDown'
-import ArrowDropUpIcon from '@mui/icons-material/TrendingUp'
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
+import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp'
 import { Box, Paper, Stack, Typography } from '@mui/material'
 import {
 	DEFAULT_PALETTE,
+	FONT_FAMILY,
 	formatCompactNumber,
 	formatNumber,
 	formatPercent,
@@ -25,7 +26,7 @@ export function MarketLeaderList({
 	subtitle,
 	items,
 	kind,
-	monoFont = 'var(--wc-number-font)',
+	monoFont = FONT_FAMILY.mono,
 }: MarketLeaderListProps) {
 	const tone: MarketTone = kind === 'gain' ? 'positive' : kind === 'loss' ? 'negative' : 'neutral'
 	const color = toneColor(tone, DEFAULT_PALETTE)
@@ -46,7 +47,7 @@ export function MarketLeaderList({
 					{kind === 'gain' && <ArrowDropUpIcon sx={{ fontSize: 18, color }} />}
 					{kind === 'loss' && <ArrowDropDownIcon sx={{ fontSize: 18, color }} />}
 					{kind === 'volume' && <LeaderboardIcon sx={{ fontSize: 18, color: 'var(--wc-primary)' }} />}
-					<Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: 'var(--wc-font-display)', fontSize: 17, fontWeight: 700 }}>
+					<Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: FONT_FAMILY.display, fontSize: 17, fontWeight: 700 }}>
 						{title}
 					</Typography>
 				</Stack>
@@ -90,7 +91,7 @@ export function MarketLeaderList({
 								#{index + 1}
 							</Typography>
 							<Box sx={{ minWidth: 0 }}>
-								<Typography sx={{ color: 'var(--wc-primary)', fontFamily: monoFont, fontSize: 13, fontWeight: 800 }}>
+								<Typography sx={{ color: 'var(--wc-primary)', fontFamily: monoFont, fontSize: 13, fontWeight: 700 }}>
 									{item.symbol}
 								</Typography>
 								<Typography
@@ -107,10 +108,10 @@ export function MarketLeaderList({
 								</Typography>
 							</Box>
 							<Box sx={{ textAlign: 'right', minWidth: 86 }}>
-								<Typography sx={{ color: itemColor, fontFamily: monoFont, fontSize: 13, fontWeight: 800 }}>
+								<Typography sx={{ color: itemColor, fontFamily: monoFont, fontSize: 13, fontWeight: 700 }}>
 									{primaryValue}
 								</Typography>
-								<Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 10 }}>
+								<Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 11, fontWeight: 500 }}>
 									{secondaryValue}
 								</Typography>
 							</Box>

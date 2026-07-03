@@ -12,8 +12,8 @@ import DonutLargeIcon from '@mui/icons-material/DonutLarge'
 import RemoveIcon from '@mui/icons-material/Remove'
 import StackedBarChartIcon from '@mui/icons-material/StackedBarChart'
 import TimelineIcon from '@mui/icons-material/Timeline'
-import ArrowDropDownIcon from '@mui/icons-material/TrendingDown'
-import ArrowDropUpIcon from '@mui/icons-material/TrendingUp'
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
+import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp'
 import { motion, useReducedMotion } from 'motion/react'
 import { hasSupabaseConfig, supabase } from '../../lib/supabase'
 import { useEffect, useMemo, useState } from 'react'
@@ -342,8 +342,8 @@ async function fetchSupabaseTradeDay(tradeDate: string): Promise<PsxData> {
   }
 }
 
-const NUMBER_FONT = 'var(--wc-number-font)'
-const SERIF = '"Playfair Display", serif'
+const NUMBER_FONT = 'var(--wc-font-mono)'
+const SERIF = 'var(--wc-font-display)'
 
 // -- Component ----------------------------------------------------------------
 

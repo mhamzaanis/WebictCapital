@@ -2,6 +2,7 @@ import ReactECharts from 'echarts-for-react'
 import { useMemo } from 'react'
 import {
 	DEFAULT_PALETTE,
+	FONT_FAMILY,
 	chartTooltipStyle,
 	colorWithOpacity,
 	formatPercent,
@@ -50,8 +51,8 @@ export function LineChart({
 				axisTick: { show: false },
 				axisLabel: {
 					color: palette.textSecondary,
-					fontFamily: 'JetBrains Mono, monospace',
-					fontSize: 9,
+					fontFamily: FONT_FAMILY.echartsMono,
+					fontSize: 11,
 					interval: 0,
 					rotate: 32,
 				},
@@ -63,8 +64,8 @@ export function LineChart({
 				splitLine: { lineStyle: { color: palette.border } },
 				axisLabel: {
 					color: palette.textSecondary,
-					fontFamily: 'JetBrains Mono, monospace',
-					fontSize: 10,
+					fontFamily: FONT_FAMILY.echartsMono,
+					fontSize: 11,
 					formatter: (value: number) => `${value > 0 ? '+' : ''}${value.toFixed(1)}%`,
 				},
 			},
