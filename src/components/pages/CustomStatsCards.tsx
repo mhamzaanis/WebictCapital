@@ -1,118 +1,155 @@
-import TrendingDownIcon from '@mui/icons-material/TrendingDown'
-import TrendingUpIcon from '@mui/icons-material/TrendingUp'
-import RemoveIcon from '@mui/icons-material/Remove'
 import { Box, Paper, Stack, Typography } from '@mui/material'
+import type { SxProps, Theme } from '@mui/material/styles'
+import type { ReactNode } from 'react'
 
-type CustomStatsCardsProps = {
-	date: string
-	kse100Open: number
-	kse100Close: number
-	kse100Change: number
-	volumeTraded: number
-	advances: number
-	declines: number
-	unchanged: number
-	monoFont: string
+export type StatCardTone = 'positive' | 'negative' | 'neutral'
+
+export type StatCardProps = {
+	label: string
+	value: string
+	detail: string
+	icon: ReactNode
+	monoFont?: string
+	tone?: StatCardTone
+	color?: string
+	sx?: SxProps<Theme>
+	iconBoxSx?: SxProps<Theme>
+	labelSx?: SxProps<Theme>
+	valueSx?: SxProps<Theme>
+	detailSx?: SxProps<Theme>
 }
 
-function changeColor(change: number): string {
-	if (!Number.isFinite(change) || change === 0) return 'var(--wc-text-secondary)'
-	return change > 0 ? 'var(--wc-success)' : 'var(--wc-error)'
+function toneColor(tone: StatCardTone): string {
+	if (tone === 'positive') return 'var(--wc-success)'
+	if (tone === 'negative') return 'var(--wc-error)'
+	return 'var(--wc-text-primary)'
 }
 
-function changeSign(change: number): string {
-	if (!Number.isFinite(change) || change === 0) return ''
-	return change > 0 ? '+' : ''
+function toneBackground(color: string): string {
+	if (color === 'var(--wc-success)') return 'rgba(26,102,64,0.08)'
+	if (color === 'var(--wc-error)') return 'rgba(180,40,58,0.08)'
+	return 'var(--wc-primary-light)'
 }
 
-export function CustomStatsCards({
-	date,
-	kse100Open,
-	kse100Close,
-	kse100Change,
-	volumeTraded,
-	advances,
-	declines,
-	unchanged,
-	monoFont,
-}: CustomStatsCardsProps) {
-	const statValueColor = 'var(--wc-text-primary)'
-	const kseChangeColor = changeColor(kse100Change)
+export type CustomStatsCardsProps = {
+	children: ReactNode
+	sx?: SxProps<Theme>
+}
+
+function mergeSx(base: SxProps<Theme>, sx?: SxProps<Theme>): SxProps<Theme> {
+	if (!sx) return base
+	return [base, ...(Array.isArray(sx) ? sx : [sx])] as SxProps<Theme>
+}
+
+export function StatCard({
+	label,
+	value,
+	detail,
+	icon,
+	monoFont = 'var(--wc-font-mono)',
+	tone = 'neutral',
+	color,
+	sx,
+	iconBoxSx,
+	labelSx,
+	valueSx,
+	detailSx,
+}: StatCardProps) {
+	const resolvedColor = color ?? toneColor(tone)
 
 	return (
-		<Box
-			sx={{
-				display: 'grid',
-				gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)', md: 'repeat(6, 1fr)' },
-				gap: 1.5,
-			}}
+		<Paper
+			elevation={0}
+			sx={mergeSx(
+				{
+					minHeight: 132,
+					p: 2,
+					bgcolor: 'var(--wc-bg)',
+					border: '1px solid var(--wc-divider)',
+					borderRadius: 1.5,
+					display: 'flex',
+					flexDirection: 'column',
+					justifyContent: 'space-between',
+				},
+				sx,
+			)}
 		>
-			{[
-				{ label: 'Date', value: date, color: statValueColor },
-				{
-					label: 'KSE 100 Open Points',
-					value: kse100Open.toLocaleString(undefined, { maximumFractionDigits: 2 }),
-					color: statValueColor,
-				},
-				{
-					label: 'KSE 100 Close Points',
-					value: kse100Close.toLocaleString(undefined, { maximumFractionDigits: 2 }),
-					color: statValueColor,
-				},
-				{
-					label: 'KSE 100 Change',
-					value: `${changeSign(kse100Change)}${kse100Change.toLocaleString(undefined, { maximumFractionDigits: 2 })}`,
-					color: kseChangeColor,
-					icon:
-						kse100Change > 0 ? (
-							<TrendingUpIcon sx={{ fontSize: 18, color: kseChangeColor }} />
-						) : kse100Change < 0 ? (
-							<TrendingDownIcon sx={{ fontSize: 18, color: kseChangeColor }} />
-						) : (
-							<RemoveIcon sx={{ fontSize: 18, color: kseChangeColor }} />
-						),
-				},
-				{ label: 'Volume Traded', value: volumeTraded.toLocaleString(), color: statValueColor },
-				{ label: 'Advancing', value: advances.toLocaleString(), color: statValueColor },
-				{ label: 'Declining', value: declines.toLocaleString(), color: statValueColor },
-				{ label: 'Unchanged', value: unchanged.toLocaleString(), color: statValueColor },
-			].map(({ label, value, color, icon }) => (
-				<Paper
-					key={label}
-					sx={{
-						p: 1.5,
-						bgcolor: 'var(--wc-bg)',
-						border: '1px solid var(--wc-divider)',
-						borderRadius: 1.2,
-					}}
+			<Stack direction="row" spacing={1.1} sx={{ alignItems: 'center', color: resolvedColor }}>
+				<Box
+					sx={mergeSx(
+						{
+							width: 30,
+							height: 30,
+							borderRadius: 1,
+							bgcolor: toneBackground(resolvedColor),
+							display: 'flex',
+							alignItems: 'center',
+							justifyContent: 'center',
+							flexShrink: 0,
+						},
+						iconBoxSx,
+					)}
 				>
-					<Typography
-						sx={{
+					{icon}
+				</Box>
+				<Typography
+					sx={mergeSx(
+						{
 							color: 'var(--wc-text-secondary)',
-							fontSize: 10,
-							textTransform: 'uppercase',
+							fontFamily: 'var(--wc-font-display)',
+							fontSize: 11,
+							fontWeight: 600,
 							letterSpacing: '0.1em',
-							mb: 0.4,
-							fontFamily: 'var(--wc-number-font)',
-						}}
-					>
-						{label}
-					</Typography>
-					<Stack direction="row" spacing={0.7} sx={{ alignItems: 'center' }}>
-						{icon}
-						<Typography
-							sx={{
-								color,
-								fontSize: { xs: 16, md: 20 },
-								fontWeight: 700,
-								fontFamily: monoFont,
-							}}
-						>
-							{value}
-						</Typography>
-					</Stack>
-				</Paper>
-			))}
+							textTransform: 'uppercase',
+						},
+						labelSx,
+					)}
+				>
+					{label}
+				</Typography>
+			</Stack>
+			<Box>
+				<Typography
+					sx={mergeSx(
+						{
+							color: resolvedColor,
+							fontSize: { xs: 20, md: 24 },
+							fontWeight: 700,
+							fontFamily: monoFont,
+							lineHeight: 1.2,
+							overflowWrap: 'anywhere',
+						},
+						valueSx,
+					)}
+				>
+					{value}
+				</Typography>
+				<Typography
+					sx={mergeSx(
+						{ mt: 0.5, color: 'var(--wc-text-secondary)', fontSize: 13, lineHeight: 1.55 },
+						detailSx,
+					)}
+				>
+					{detail}
+				</Typography>
+			</Box>
+		</Paper>
+	)
+}
+
+export function CustomStatsCards({ children, sx }: CustomStatsCardsProps) {
+	return (
+		<Box
+			sx={mergeSx(
+				{
+					display: 'grid',
+					gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))', lg: 'repeat(4, minmax(0, 1fr))' },
+					gap: 1.5,
+				},
+				sx,
+			)}
+		>
+			{children}
 		</Box>
 	)
 }

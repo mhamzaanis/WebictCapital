@@ -1,6 +1,6 @@
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded'
-import TrendingDownIcon from '@mui/icons-material/TrendingDown'
-import TrendingUpIcon from '@mui/icons-material/TrendingUp'
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
+import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp'
 import { Box, Dialog, IconButton, Slide, Typography, useMediaQuery, useTheme } from '@mui/material'
 import type { TransitionProps } from '@mui/material/transitions'
 import ReactECharts from 'echarts-for-react'
@@ -467,7 +467,7 @@ export function MarketSummaryModal({ open, onClose, summary, loading = false }: 
               KSE 100 Change
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6, mt: 0.6 }}>
-              {pos ? <TrendingUpIcon sx={{ fontSize: 16, color: changeColor }} /> : <TrendingDownIcon sx={{ fontSize: 16, color: changeColor }} />}
+              {pos ? <ArrowDropUpIcon sx={{ fontSize: 16, color: changeColor }} /> : <ArrowDropDownIcon sx={{ fontSize: 16, color: changeColor }} />}
               <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 20, fontWeight: 700, color: changeColor, letterSpacing: '-0.02em' }}>
                 {pos ? '+' : ''}{summary.kse100_change.toFixed(2)}
               </Typography>
@@ -501,7 +501,7 @@ export function MarketSummaryModal({ open, onClose, summary, loading = false }: 
               KSE 30 Change
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6, mt: 0.6 }}>
-              {pos30 ? <TrendingUpIcon sx={{ fontSize: 16, color: change30Color }} /> : <TrendingDownIcon sx={{ fontSize: 16, color: change30Color }} />}
+              {pos30 ? <ArrowDropUpIcon sx={{ fontSize: 16, color: change30Color }} /> : <ArrowDropDownIcon sx={{ fontSize: 16, color: change30Color }} />}
               <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 20, fontWeight: 700, color: change30Color, letterSpacing: '-0.02em' }}>
                 {pos30 ? '+' : ''}{summary.kse30_change.toFixed(2)}
               </Typography>
