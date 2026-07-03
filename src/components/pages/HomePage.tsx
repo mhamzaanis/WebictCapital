@@ -534,38 +534,28 @@ export function HomePage() {
               </Stack>
 
               <Box
-                component={motion.div}
-                variants={fadeUp}
-                initial={{ opacity: 0, x: 24, scale: 0.98 }}
-                animate={{ opacity: 1, x: 0, scale: 1 }}
-                transition={{ duration: 0.7, delay: 0.18, ease: [0.22, 1, 0.36, 1] }}
                 sx={{
                   position: 'relative',
                   minHeight: { xs: 360, md: 640 },
                   borderRadius: '7px',
                   overflow: 'hidden',
                   border: '1px solid #dce6f4',
-                  backgroundImage:
-                    'linear-gradient(180deg, rgba(7,19,41,0.02) 0%, rgba(7,19,41,0.05) 45%, rgba(7,19,41,0.84) 100%), url(/herosection.webp)',
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center 42%',
                   boxShadow: '0 26px 54px rgba(10,36,99,0.12)',
                 }}
               >
                 <Box
+                  component="img"
+                  src="/herosection.webp"
+                  alt=""
+                  aria-hidden
                   sx={{
-                    position: 'absolute',
-                    left: { xs: 2.5, md: 3.5 },
-                    right: { xs: 2.5, md: 3.5 },
-                    bottom: { xs: 2.5, md: 3.5 },
-                    display: 'flex',
-                    alignItems: 'flex-end',
-                    justifyContent: 'space-between',
-                    gap: 2,
+                    display: 'block',
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    objectPosition: 'center 42%',
                   }}
-                >
-                  
-                </Box>
+                />
               </Box>
             </Box>
 

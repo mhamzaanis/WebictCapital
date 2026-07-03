@@ -29,7 +29,6 @@ import {
   type HeatmapItem,
   type LineChartPoint,
   type MarketLeaderItem,
-  type SectorActivityItem,
 } from '../market/MarketVisuals'
 
 // -- Types --------------------------------------------------------------------
@@ -79,7 +78,6 @@ type DbStockTableRow = {
   turnover: number | null
   change: number | null
   eps: number | null
-  pe_ratio: number | null 
   result_period: string | null
   period_ending: string | null
 }
@@ -113,6 +111,8 @@ type SectorActivity = {
   unchanged: number
   avgChangePct: number
 }
+
+
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -239,19 +239,6 @@ function mapHeatmapItem(stock: RankedStock): HeatmapItem {
   }
 }
 
-function mapSectorActivityItem(sector: SectorActivity): SectorActivityItem {
-  return {
-    id: sector.industry,
-    label: sector.industry,
-    turnover: sector.turnover,
-    count: sector.count,
-    gainers: sector.gainers,
-    losers: sector.losers,
-    unchanged: sector.unchanged,
-    avgChangePct: sector.avgChangePct,
-  }
-}
-
 function mapSectorVolumeItem(sector: SectorActivity): BarChartItem {
   return {
     id: sector.industry,
@@ -268,12 +255,12 @@ function mapSectorVolumeItem(sector: SectorActivity): BarChartItem {
 }
 
 function mapDbStockTableRow(row: DbStockTableRow): PsxStock {
-  // const close = row.close != null ? toNum(row.close) : null
+  const close = row.close != null ? toNum(row.close) : null
   const eps = row.eps != null ? toNum(row.eps) : null
-  // const pe =
-  //   close != null && eps != null && eps > 0
-  //     ? parseFloat((close / eps).toFixed(2))
-  //     : null
+  const pe =
+    close != null && eps != null && eps > 0
+      ? parseFloat((close / eps).toFixed(2))
+      : null
 
   return {
     symbol: row.symbol,
@@ -287,7 +274,7 @@ function mapDbStockTableRow(row: DbStockTableRow): PsxStock {
     last_rate: row.close,
     change: row.change,
     eps: eps != null ? parseFloat(eps.toFixed(2)) : null,
-    pe: row.pe_ratio != null ? toNum(row.pe_ratio) : null, 
+    pe,
     result_period: row.result_period,
     period_ending: row.period_ending,
   }
@@ -303,8 +290,8 @@ async function fetchSupabaseTradeDay(tradeDate: string): Promise<PsxData> {
       .eq('trade_date', tradeDate)
       .single<DbSummaryRow>(),
     supabase
-      .from('v_stock_table')                      
-      .select('symbol,company,section,trade_date,open,high,low,close,turnover,change,eps,pe_ratio,result_period,period_ending')
+      .from('v_stock_table')
+      .select('symbol,company,section,trade_date,open,high,low,close,turnover,change,eps,result_period,period_ending')
       .eq('trade_date', tradeDate)
       .neq('section', 'EXCHANGE TRADED FUNDS')
       .neq('section', 'CLOSE - END MUTUAL FUND')
@@ -361,29 +348,6 @@ function formatShortDate(value: string | null | undefined): string {
   return parsed.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-function InfoDot() {
-  return (
-    <Box
-      component="span"
-      sx={{
-        width: 14,
-        height: 14,
-        borderRadius: '50%',
-        border: '1px solid #9db6ed',
-        color: '#143baf',
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontFamily: NUMBER_FONT,
-        fontSize: 8,
-        fontWeight: 800,
-        lineHeight: 1,
-      }}
-    >
-      i
-    </Box>
-  )
-}
 
 function SectionTitle({
   icon,
@@ -401,7 +365,7 @@ function SectionTitle({
         <Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: SERIF, fontSize: 18, fontWeight: 700 }}>
           {title}
         </Typography>
-        <InfoDot />
+        {/* <InfoDot /> */}
       </Stack>
       <Typography sx={{ color: 'var(--wc-text-secondary)', fontSize: 11.5, lineHeight: 1.45 }}>
         {subtitle}
@@ -721,192 +685,6 @@ function VolumeLeaderTable({
   )
 }
 
-function ActiveIndustriesTable({
-  sectors,
-  monoFont,
-}: {
-  sectors: SectorActivityItem[]
-  monoFont: string
-}) {
-  const maxTurnover = Math.max(...sectors.map((sector) => sector.turnover), 1)
-
-  return (
-    <Box sx={{ ...CARD_SX, p: 2.2, minHeight: 340 }}>
-      <SectionTitle
-        icon={<AnalyticsIcon sx={{ fontSize: 18 }} />}
-        title="Active Industries"
-        subtitle="Sectors ranked by traded value in the latest closing file."
-      />
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0,1fr) 120px 84px',
-          gap: 1.5,
-          pb: 1.2,
-          borderBottom: '1px solid var(--wc-divider)',
-        }}
-      >
-        {['Sector', 'Turnover', '% Change'].map((label) => (
-          <Typography
-            key={label}
-            sx={{
-              color: 'var(--wc-text-secondary)',
-              fontFamily: monoFont,
-              fontSize: 9.5,
-              fontWeight: 800,
-              textTransform: 'uppercase',
-              textAlign: label === 'Sector' ? 'left' : 'right',
-            }}
-          >
-            {label}
-          </Typography>
-        ))}
-      </Box>
-      <Stack spacing={1.4} sx={{ mt: 1.4 }}>
-        {sectors.map((sector) => {
-          const tone = changeColor(sector.avgChangePct ?? NaN)
-          const width = `${Math.max(8, (sector.turnover / maxTurnover) * 100)}%`
-          return (
-            <Box
-              key={sector.id ?? sector.label}
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: 'minmax(0,1fr) 120px 84px',
-                gap: 1.5,
-                alignItems: 'center',
-              }}
-            >
-              <Box sx={{ minWidth: 0 }}>
-                <Typography
-                  title={sector.label}
-                  sx={{
-                    color: 'var(--wc-text-primary)',
-                    fontSize: 11.5,
-                    fontWeight: 600,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {sector.label}
-                </Typography>
-                <Box sx={{ mt: 0.8, height: 6, bgcolor: 'var(--wc-primary-light)', borderRadius: 999, overflow: 'hidden' }}>
-                  <Box sx={{ width, height: '100%', bgcolor: 'var(--wc-primary)', borderRadius: 999 }} />
-                </Box>
-              </Box>
-              <Typography sx={{ color: 'var(--wc-primary)', fontFamily: monoFont, fontSize: 11.5, textAlign: 'right' }}>
-                {formatCompactNumber(sector.turnover)}
-              </Typography>
-              <Typography sx={{ color: tone, fontFamily: monoFont, fontSize: 11.5, fontWeight: 800, textAlign: 'right' }}>
-                {formatPercent(sector.avgChangePct ?? NaN)}
-              </Typography>
-            </Box>
-          )
-        })}
-      </Stack>
-    </Box>
-  )
-}
-
-function RangeTable({
-  items,
-  avgRangePct,
-  monoFont,
-}: {
-  items: MarketLeaderItem[]
-  avgRangePct: number
-  monoFont: string
-}) {
-  return (
-    <Box sx={{ ...CARD_SX, p: 2.2, minHeight: 340 }}>
-      <SectionTitle
-        icon={<TimelineIcon sx={{ fontSize: 18 }} />}
-        title="Widest Daily Ranges"
-        subtitle="Symbols with the largest high-low spread during the session."
-      />
-      <Box sx={{ mb: 1.7, px: 1.6, py: 1.3, border: '1px solid var(--wc-divider)', borderRadius: '5px', bgcolor: 'var(--wc-paper)' }}>
-        <Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 10, fontWeight: 800, textTransform: 'uppercase' }}>
-          Average Range
-        </Typography>
-        <Typography sx={{ mt: 0.3, color: 'var(--wc-text-primary)', fontFamily: monoFont, fontSize: 20, fontWeight: 800 }}>
-          {formatPercent(avgRangePct, false)}
-        </Typography>
-      </Box>
-
-      <Box sx={{ overflowX: 'auto' }}>
-        <Box sx={{ minWidth: 520 }}>
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: '34px 82px minmax(0,1fr) 70px 70px 76px',
-              columnGap: 1.3,
-              pb: 1.1,
-              borderBottom: '1px solid var(--wc-divider)',
-            }}
-          >
-            {['#', 'Symbol', 'Company', 'Low', 'High', 'Range'].map((label) => (
-              <Typography
-                key={label}
-                sx={{
-                  color: 'var(--wc-text-secondary)',
-                  fontFamily: monoFont,
-                  fontSize: 9.5,
-                  fontWeight: 800,
-                  textTransform: 'uppercase',
-                  textAlign: ['Low', 'High', 'Range'].includes(label) ? 'right' : 'left',
-                }}
-              >
-                {label}
-              </Typography>
-            ))}
-          </Box>
-          {items.map((item, index) => (
-            <Box
-              key={item.id ?? item.symbol}
-              sx={{
-                display: 'grid',
-                gridTemplateColumns: '34px 82px minmax(0,1fr) 70px 70px 76px',
-                columnGap: 1.3,
-                alignItems: 'center',
-                minHeight: 34,
-                borderBottom: index === items.length - 1 ? 'none' : '1px solid var(--wc-divider)',
-              }}
-            >
-              <Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 11 }}>
-                {index + 1}
-              </Typography>
-              <Typography sx={{ color: 'var(--wc-primary)', fontFamily: monoFont, fontSize: 12, fontWeight: 800 }}>
-                {item.symbol}
-              </Typography>
-              <Typography
-                title={item.company}
-                sx={{ color: 'var(--wc-text-secondary)', fontSize: 11.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-              >
-                {item.company}
-              </Typography>
-              <Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 11.5, textAlign: 'right' }}>
-                {formatNumber(item.low ?? NaN)}
-              </Typography>
-              <Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 11.5, textAlign: 'right' }}>
-                {formatNumber(item.high ?? NaN)}
-              </Typography>
-              <Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: monoFont, fontSize: 11.5, fontWeight: 800, textAlign: 'right' }}>
-                {formatPercent(item.rangePct ?? NaN, false)}
-              </Typography>
-            </Box>
-          ))}
-        </Box>
-      </Box>
-      <Button
-        endIcon={<Box component="span" sx={{ fontSize: 16 }}>→</Box>}
-        sx={{ mt: 2, p: 0, color: 'var(--wc-primary)', fontSize: 12.5, fontWeight: 800, '&:hover': { bgcolor: 'transparent', textDecoration: 'underline' } }}
-      >
-        View all ranges
-      </Button>
-    </Box>
-  )
-}
-
 // -- Component ----------------------------------------------------------------
 
 export function DataPage() {
@@ -1172,12 +950,12 @@ export function DataPage() {
       rangeLeaders: dayInsights.rangeLeaders.map(mapMarketLeaderItem),
       momentum: dayInsights.momentumStocks.map(mapMomentumPoint),
       heatmap: dayInsights.heatmapStocks.map(mapHeatmapItem),
-      sectors: dayInsights.sectors.map(mapSectorActivityItem),
       sectorVolume: dayInsights.sectors.map(mapSectorVolumeItem),
       volumeBars: dayInsights.volumeLeaders.map(mapVolumeBarItem),
     }),
     [dayInsights],
   )
+
 
   const tickerTapeItems = useMemo<TickerTapeItem[]>(
     () =>
@@ -1525,26 +1303,6 @@ export function DataPage() {
                     monoFont={NUMBER_FONT}
                   />
                   <VolumeLeaderTable items={dayInsights.volumeLeaders} monoFont={NUMBER_FONT} />
-                </Box>
-              </MotionReveal>
-
-              <MotionReveal>
-                <Box
-                  sx={{
-                    display: 'grid',
-                    gridTemplateColumns: { xs: '1fr', lg: 'minmax(0, 1.1fr) minmax(0, 0.9fr)' },
-                    gap: 1.5,
-                  }}
-                >
-                  <ActiveIndustriesTable
-                    sectors={marketVisualData.sectors}
-                    monoFont={NUMBER_FONT}
-                  />
-                  <RangeTable
-                    items={marketVisualData.rangeLeaders}
-                    avgRangePct={dayInsights.avgRangePct}
-                    monoFont={NUMBER_FONT}
-                  />
                 </Box>
               </MotionReveal>
 

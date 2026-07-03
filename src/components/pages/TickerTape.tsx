@@ -1,11 +1,9 @@
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
 import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp'
-import KeyboardArrowLeftRoundedIcon from '@mui/icons-material/KeyboardArrowLeftRounded'
-import KeyboardArrowRightRoundedIcon from '@mui/icons-material/KeyboardArrowRightRounded'
 import RemoveIcon from '@mui/icons-material/Remove'
-import { Box, IconButton, Paper, Stack, Typography } from '@mui/material'
+import { Box, Paper, Stack, Typography } from '@mui/material'
 import { useReducedMotion } from 'motion/react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { PulseSkeleton } from '../PulseSkeleton'
 
 export type TickerTapeItem = {
@@ -72,7 +70,7 @@ function TapeItem({ item, monoFont }: { item: TickerTapeItem; monoFont: string }
 						{item.company}
 					</Typography>
 				</Stack>
-				<Stack direction="row" spacing={1} sx={{ alignItems: 'center', mt: 0.15 }}>
+				<Stack direction="row" spacing={1} sx={{ alignItems: 'center', mt: 0.5 }}>
 					<Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: monoFont, fontSize: 11, fontWeight: 700 }}>
 						{item.price}
 					</Typography>
@@ -94,11 +92,11 @@ function TapeItem({ item, monoFont }: { item: TickerTapeItem; monoFont: string }
 	)
 }
 
-export function TickerTape({ items, date, monoFont = 'var(--wc-font-mono)' }: TickerTapeProps) {
+export function TickerTape({ items, monoFont = 'var(--wc-font-mono)' }: TickerTapeProps) {
 	const reduce = useReducedMotion()
 	const viewportRef = useRef<HTMLDivElement>(null)
 	const resumeTimerRef = useRef<number | null>(null)
-	const [isPausedByControl, setIsPausedByControl] = useState(false)
+	const isPausedByControl = false
 	const shouldScroll = !reduce && items.length > 5
 	const tapeItems = shouldScroll ? [...items, ...items] : items
 
@@ -110,13 +108,6 @@ export function TickerTape({ items, date, monoFont = 'var(--wc-font-mono)' }: Ti
 	)
 
 	if (items.length === 0) return null
-
-	const nudgeTape = (direction: -1 | 1) => {
-		setIsPausedByControl(true)
-		if (resumeTimerRef.current !== null) window.clearTimeout(resumeTimerRef.current)
-		viewportRef.current?.scrollBy({ left: direction * 260, behavior: reduce ? 'auto' : 'smooth' })
-		resumeTimerRef.current = window.setTimeout(() => setIsPausedByControl(false), 3200)
-	}
 
 	return (
 		<Paper
@@ -130,12 +121,12 @@ export function TickerTape({ items, date, monoFont = 'var(--wc-font-mono)' }: Ti
 		>
 			<Box
 				sx={{
-					display: 'grid',
+					// display: 'grid',
 					gridTemplateColumns: { xs: '1fr', md: '178px minmax(0, 1fr)' },
 					minHeight: 58,
 				}}
 			>
-				<Box
+				{/* <Box
 					sx={{
 						display: 'flex',
 						flexDirection: { xs: 'row', md: 'column' },
@@ -167,7 +158,7 @@ export function TickerTape({ items, date, monoFont = 'var(--wc-font-mono)' }: Ti
 							{date}
 						</Typography>
 					)}
-				</Box>
+				</Box> */}
 
 				<Box
 					sx={{
@@ -192,48 +183,6 @@ export function TickerTape({ items, date, monoFont = 'var(--wc-font-mono)' }: Ti
 						},
 					}}
 				>
-					<IconButton
-						size="small"
-						aria-label="Scroll ticker tape left"
-						onClick={() => nudgeTape(-1)}
-						sx={{
-							position: 'absolute',
-							left: 9,
-							top: '50%',
-							transform: 'translateY(-50%)',
-							zIndex: 3,
-							width: 32,
-							height: 32,
-							border: '1px solid var(--wc-divider)',
-							borderRadius: '5px',
-							bgcolor: '#ffffff',
-							color: 'var(--wc-primary)',
-							'&:hover': { bgcolor: 'var(--wc-primary-light)', borderColor: '#b9c9e4' },
-						}}
-					>
-						<KeyboardArrowLeftRoundedIcon sx={{ fontSize: 20 }} />
-					</IconButton>
-					<IconButton
-						size="small"
-						aria-label="Scroll ticker tape right"
-						onClick={() => nudgeTape(1)}
-						sx={{
-							position: 'absolute',
-							right: 9,
-							top: '50%',
-							transform: 'translateY(-50%)',
-							zIndex: 3,
-							width: 32,
-							height: 32,
-							border: '1px solid var(--wc-divider)',
-							borderRadius: '5px',
-							bgcolor: '#ffffff',
-							color: 'var(--wc-primary)',
-							'&:hover': { bgcolor: 'var(--wc-primary-light)', borderColor: '#b9c9e4' },
-						}}
-					>
-						<KeyboardArrowRightRoundedIcon sx={{ fontSize: 20 }} />
-					</IconButton>
 					<Box
 						ref={viewportRef}
 						sx={{
@@ -252,7 +201,7 @@ export function TickerTape({ items, date, monoFont = 'var(--wc-font-mono)' }: Ti
 								p: 0,
 								display: 'flex',
 								width: 'max-content',
-								animation: shouldScroll ? 'wc-ticker-scroll 46s linear infinite' : 'none',
+								animation: shouldScroll ? 'wc-ticker-scroll 100s linear infinite' : 'none',
 								animationPlayState: isPausedByControl ? 'paused' : 'running',
 								'&:hover': { animationPlayState: 'paused' },
 								'@keyframes wc-ticker-scroll': {
