@@ -1,4 +1,4 @@
-import { type FormEvent, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded'
 import AutoStoriesRoundedIcon from '@mui/icons-material/AutoStoriesRounded'
 import FormatListBulletedRoundedIcon from '@mui/icons-material/FormatListBulletedRounded'
@@ -128,10 +128,6 @@ export function GlossaryPage() {
     setActiveLetter('all')
     setCurrentPage(1)
     setOpenTerm(glossaryEntries[0]?.term ?? null)
-  }
-
-  const handleNewsletterSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
   }
 
   return (

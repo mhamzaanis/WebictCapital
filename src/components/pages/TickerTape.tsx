@@ -1,8 +1,11 @@
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
 import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp'
+import KeyboardArrowLeftRoundedIcon from '@mui/icons-material/KeyboardArrowLeftRounded'
+import KeyboardArrowRightRoundedIcon from '@mui/icons-material/KeyboardArrowRightRounded'
 import RemoveIcon from '@mui/icons-material/Remove'
-import { Box, Paper, Stack, Typography } from '@mui/material'
+import { Box, IconButton, Paper, Stack, Typography } from '@mui/material'
 import { useReducedMotion } from 'motion/react'
+import { useEffect, useRef, useState } from 'react'
 import { PulseSkeleton } from '../PulseSkeleton'
 
 export type TickerTapeItem = {
@@ -93,10 +96,27 @@ function TapeItem({ item, monoFont }: { item: TickerTapeItem; monoFont: string }
 
 export function TickerTape({ items, date, monoFont = 'var(--wc-font-mono)' }: TickerTapeProps) {
 	const reduce = useReducedMotion()
+	const viewportRef = useRef<HTMLDivElement>(null)
+	const resumeTimerRef = useRef<number | null>(null)
+	const [isPausedByControl, setIsPausedByControl] = useState(false)
 	const shouldScroll = !reduce && items.length > 5
 	const tapeItems = shouldScroll ? [...items, ...items] : items
 
+	useEffect(
+		() => () => {
+			if (resumeTimerRef.current !== null) window.clearTimeout(resumeTimerRef.current)
+		},
+		[],
+	)
+
 	if (items.length === 0) return null
+
+	const nudgeTape = (direction: -1 | 1) => {
+		setIsPausedByControl(true)
+		if (resumeTimerRef.current !== null) window.clearTimeout(resumeTimerRef.current)
+		viewportRef.current?.scrollBy({ left: direction * 260, behavior: reduce ? 'auto' : 'smooth' })
+		resumeTimerRef.current = window.setTimeout(() => setIsPausedByControl(false), 3200)
+	}
 
 	return (
 		<Paper
@@ -104,15 +124,15 @@ export function TickerTape({ items, date, monoFont = 'var(--wc-font-mono)' }: Ti
 			sx={{
 				bgcolor: 'var(--wc-bg)',
 				border: '1px solid var(--wc-divider)',
-				borderRadius: 1.5,
+				borderRadius: '7px',
 				overflow: 'hidden',
 			}}
 		>
 			<Box
 				sx={{
 					display: 'grid',
-					// gridTemplateColumns: { xs: '1fr', md: '190px minmax(0, 1fr)' },
-					minHeight: 48,
+					gridTemplateColumns: { xs: '1fr', md: '178px minmax(0, 1fr)' },
+					minHeight: 58,
 				}}
 			>
 				<Box
@@ -123,13 +143,13 @@ export function TickerTape({ items, date, monoFont = 'var(--wc-font-mono)' }: Ti
 						justifyContent: 'center',
 						gap: { xs: 1.2, md: 0.15 },
 						px: 1.6,
-						// py: 1,
+						py: { xs: 1, md: 0 },
 						bgcolor: 'var(--wc-paper)',
 						borderRight: { md: '1px solid var(--wc-divider)' },
 						borderBottom: { xs: '1px solid var(--wc-divider)', md: 0 },
 					}}
 				>
-					{/* <Typography
+					<Typography
 						sx={{
 							color: 'var(--wc-primary)',
 							fontFamily: monoFont,
@@ -146,7 +166,7 @@ export function TickerTape({ items, date, monoFont = 'var(--wc-font-mono)' }: Ti
 						<Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 11, fontWeight: 500, whiteSpace: 'nowrap' }}>
 							{date}
 						</Typography>
-					)} */}
+					)}
 				</Box>
 
 				<Box
@@ -172,24 +192,79 @@ export function TickerTape({ items, date, monoFont = 'var(--wc-font-mono)' }: Ti
 						},
 					}}
 				>
-					<Box
-						component="ul"
+					<IconButton
+						size="small"
+						aria-label="Scroll ticker tape left"
+						onClick={() => nudgeTape(-1)}
 						sx={{
-							m: 0,
-							p: 0,
-							display: 'flex',
-							width: 'max-content',
-							animation: shouldScroll ? 'wc-ticker-scroll 46s linear infinite' : 'none',
-							'&:hover': { animationPlayState: 'paused' },
-							'@keyframes wc-ticker-scroll': {
-								'0%': { transform: 'translateX(0)' },
-								'100%': { transform: 'translateX(-50%)' },
-							},
+							position: 'absolute',
+							left: 9,
+							top: '50%',
+							transform: 'translateY(-50%)',
+							zIndex: 3,
+							width: 32,
+							height: 32,
+							border: '1px solid var(--wc-divider)',
+							borderRadius: '5px',
+							bgcolor: '#ffffff',
+							color: 'var(--wc-primary)',
+							'&:hover': { bgcolor: 'var(--wc-primary-light)', borderColor: '#b9c9e4' },
 						}}
 					>
-						{tapeItems.map((item, index) => (
-							<TapeItem key={`${item.symbol}-${index}`} item={item} monoFont={monoFont} />
-						))}
+						<KeyboardArrowLeftRoundedIcon sx={{ fontSize: 20 }} />
+					</IconButton>
+					<IconButton
+						size="small"
+						aria-label="Scroll ticker tape right"
+						onClick={() => nudgeTape(1)}
+						sx={{
+							position: 'absolute',
+							right: 9,
+							top: '50%',
+							transform: 'translateY(-50%)',
+							zIndex: 3,
+							width: 32,
+							height: 32,
+							border: '1px solid var(--wc-divider)',
+							borderRadius: '5px',
+							bgcolor: '#ffffff',
+							color: 'var(--wc-primary)',
+							'&:hover': { bgcolor: 'var(--wc-primary-light)', borderColor: '#b9c9e4' },
+						}}
+					>
+						<KeyboardArrowRightRoundedIcon sx={{ fontSize: 20 }} />
+					</IconButton>
+					<Box
+						ref={viewportRef}
+						sx={{
+							overflowX: 'auto',
+							overflowY: 'hidden',
+							scrollBehavior: reduce ? 'auto' : 'smooth',
+							scrollbarWidth: 'none',
+							px: { xs: 5.2, md: 5.6 },
+							'&::-webkit-scrollbar': { display: 'none' },
+						}}
+					>
+						<Box
+							component="ul"
+							sx={{
+								m: 0,
+								p: 0,
+								display: 'flex',
+								width: 'max-content',
+								animation: shouldScroll ? 'wc-ticker-scroll 46s linear infinite' : 'none',
+								animationPlayState: isPausedByControl ? 'paused' : 'running',
+								'&:hover': { animationPlayState: 'paused' },
+								'@keyframes wc-ticker-scroll': {
+									'0%': { transform: 'translateX(0)' },
+									'100%': { transform: 'translateX(-50%)' },
+								},
+							}}
+						>
+							{tapeItems.map((item, index) => (
+								<TapeItem key={`${item.symbol}-${index}`} item={item} monoFont={monoFont} />
+							))}
+						</Box>
 					</Box>
 				</Box>
 			</Box>

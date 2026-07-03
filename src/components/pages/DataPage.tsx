@@ -17,6 +17,7 @@ import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import { MarketDashboardSkeleton, PriceTableSkeleton } from './CustomSkeleton'
 import { CustomDataTable } from './CustomDataTable'
 import { FiltersBar, type MovementFilter } from './FiltersBar.tsx'
+import { TickerTape, TickerTapeSkeleton, type TickerTapeItem } from './TickerTape'
 import { MotionReveal } from '../animations/MotionReveal'
 import {
   BarChart,
@@ -1177,6 +1178,29 @@ export function DataPage() {
     [dayInsights],
   )
 
+  const tickerTapeItems = useMemo<TickerTapeItem[]>(
+    () =>
+      stocks
+        .map(getRankedStock)
+        .filter((stock) => Number.isFinite(stock.numericClose) && Number.isFinite(stock.numericChange))
+        .sort((a, b) => {
+          const aTurnover = Number.isFinite(a.numericTurnover) ? a.numericTurnover : 0
+          const bTurnover = Number.isFinite(b.numericTurnover) ? b.numericTurnover : 0
+          return bTurnover - aTurnover
+        })
+        .slice(0, 24)
+        .map((stock) => ({
+          symbol: stock.symbol,
+          company: stock.company,
+          price: formatNumber(stock.numericClose),
+          change: formatSignedNumber(stock.numericChange),
+          changePct: formatPercent(stock.changePct),
+          volume: formatCompactNumber(stock.numericTurnover),
+          tone: stock.numericChange > 0 ? 'positive' : stock.numericChange < 0 ? 'negative' : 'neutral',
+        })),
+    [stocks],
+  )
+
   // Change % must be computed off the *previous* close, not the intraday open.
   const indexChangePct =
     marketSummary.KSE100_PreviousClose > 0
@@ -1199,6 +1223,7 @@ export function DataPage() {
             <MotionReveal>
               <Stack spacing={{ xs: 2.5, md: 3 }}>
                 <MarketDashboardSkeleton />
+                <TickerTapeSkeleton />
                 <FiltersBar
                   disabled
                   search={search}
@@ -1313,7 +1338,7 @@ export function DataPage() {
                   }}
                 >
                   <Box>
-                    <Stack direction="row" spacing={1.2} sx={{ alignItems: 'center', mb: 2.2 }}>
+                    {/* <Stack direction="row" spacing={1.2} sx={{ alignItems: 'center', mb: 2.2 }}>
                       <Typography sx={{ color: '#31518a', fontSize: 12, fontWeight: 700 }}>
                         Markets
                       </Typography>
@@ -1321,7 +1346,7 @@ export function DataPage() {
                       <Typography sx={{ color: 'var(--wc-text-primary)', fontSize: 12, fontWeight: 800 }}>
                         PSX Market Overview
                       </Typography>
-                    </Stack>
+                    </Stack> */}
 
                     <Typography
                       variant="h1"
@@ -1335,18 +1360,7 @@ export function DataPage() {
                     >
                       PSX Market Overview
                     </Typography>
-                    <Typography
-                      sx={{
-                        mt: 1.8,
-                        color: 'var(--wc-text-secondary)',
-                        fontSize: { xs: 14, md: 15 },
-                        lineHeight: 1.7,
-                        maxWidth: 630,
-                      }}
-                    >
-                      Real-time overview of Pakistan Stock Exchange with key market statistics, sector
-                      performance, and closing rates.
-                    </Typography>
+                    
                     <Typography sx={{ mt: 1.7, color: 'var(--wc-text-secondary)', fontSize: 12.5, fontWeight: 600 }}>
                       Last updated:{' '}
                       <Box component="span" sx={{ color: 'var(--wc-primary)', fontWeight: 800 }}>
@@ -1384,6 +1398,14 @@ export function DataPage() {
                     <BreadthMetric advancing={stats.gainers} declining={stats.losers} unchanged={stats.unchanged} />
                   </Box>
                 </Box>
+              </MotionReveal>
+
+              <MotionReveal>
+                <TickerTape
+                  items={tickerTapeItems}
+                  date={formatShortDate(latestTradeDate ?? activeData.date)}
+                  monoFont={NUMBER_FONT}
+                />
               </MotionReveal>
 
               <MotionReveal>
@@ -1489,7 +1511,6 @@ export function DataPage() {
                     title="Top Gainers"
                     subtitle="Largest positive closes vs prior close."
                     items={marketVisualData.gainers}
-                    kind="gain"
                     icon={<Box component="span" sx={{ color: 'var(--wc-success)', fontFamily: NUMBER_FONT, fontSize: 16, fontWeight: 900 }}>↑</Box>}
                     footer="View all gainers"
                     monoFont={NUMBER_FONT}
@@ -1498,7 +1519,6 @@ export function DataPage() {
                     title="Top Losers"
                     subtitle="Largest negative closes vs prior close."
                     items={marketVisualData.losers}
-                    kind="loss"
                     icon={<Box component="span" sx={{ color: 'var(--wc-error)', fontFamily: NUMBER_FONT, fontSize: 16, fontWeight: 900 }}>↓</Box>}
                     footer="View all losers"
                     monoFont={NUMBER_FONT}
