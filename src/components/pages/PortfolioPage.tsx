@@ -614,9 +614,8 @@ function WatchRow({ item, index, onClick }: { item: WatchItem; index: number; on
 // ─── HistRow ──────────────────────────────────────────────────────────────────
 
 const HIST_CFG: Record<HistoryEvent['type'], { color: string; label: string; icon: React.ReactNode }> = {
-  profit: { color: 'var(--wc-success)', label: 'PROFIT', icon: <ArrowDropUpIcon sx={{ fontSize: 16 }} /> },
-  dividend: { color: '#b77a12', label: 'DIVIDEND', icon: <StarBorderIcon sx={{ fontSize: 16 }} /> },
-  loss: { color: 'var(--wc-error)', label: 'LOSS', icon: <ArrowDropDownIcon sx={{ fontSize: 16 }} /> },
+  BUY: { color: 'var(--wc-success)', label: 'BUY', icon: <ArrowDropUpIcon sx={{ fontSize: 16 }} /> },
+  SELL: { color: 'var(--wc-error)', label: 'SELL', icon: <ArrowDropDownIcon sx={{ fontSize: 16 }} /> },
 }
 
 function HistRow({ event, index }: { event: HistoryEvent; index: number }) {
