@@ -10,13 +10,15 @@ import {
   useSpring,
   useTransform,
 } from 'motion/react'
-import { useEffect, useRef, useState, type ComponentType } from 'react'
+import { type FormEvent, useEffect, useRef, useState, type ComponentType } from 'react'
 import { Link as RouterLink } from 'react-router-dom'
 import { MotionReveal, MotionStagger } from '../animations/MotionReveal'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const TYPING_WORDS = ['Learn.', 'Invest.', 'Lead.']
+
+const WEB3FORMS_ACCESS_KEY = '6f47bd12-e704-4f13-a5ae-63255ad5bfcd'
 
 const STATS = [
   { value: '500+', label: 'Investors trained' },
@@ -501,6 +503,8 @@ function SneakPeekWindow({
 export function HomePage() {
   const reduce  = useReducedMotion()
   const heroRef = useRef<HTMLDivElement>(null)
+  const [newsletterResult, setNewsletterResult] = useState('')
+  const [isSubmittingNewsletter, setIsSubmittingNewsletter] = useState(false)
 
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] })
   const parallaxY = useTransform(scrollYProgress, [0, 1], ['0%', '12%'])
@@ -515,6 +519,34 @@ export function HomePage() {
 
   const newsRef    = useRef<HTMLDivElement>(null)
   const newsInView = useInView(newsRef, { once: true, margin: '-60px' })
+
+  const handleNewsletterSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setNewsletterResult('Sending…')
+    setIsSubmittingNewsletter(true)
+
+    const form = event.currentTarget
+    const formData = new FormData(form)
+    formData.append('access_key', WEB3FORMS_ACCESS_KEY)
+
+    try {
+      const response = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        body: formData,
+      })
+      const data = (await response.json()) as { success?: boolean }
+      if (data.success) {
+        setNewsletterResult('Thanks for subscribing.')
+        form.reset()
+      } else {
+        setNewsletterResult('Something went wrong. Please try again.')
+      }
+    } catch {
+      setNewsletterResult('Something went wrong. Please try again.')
+    } finally {
+      setIsSubmittingNewsletter(false)
+    }
+  }
 
   return (
     <>
@@ -902,17 +934,25 @@ export function HomePage() {
                   Sign up for our newsletter to stay up to date on news from Webict Capital, and our portfolio companies.
                 </Typography>
 
-                <Box sx={{
-                  display: 'flex',
-                  flexDirection: { xs: 'column', sm: 'row' },
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: 1,
-                  overflow: 'hidden',
-                  bgcolor: 'rgba(255,255,255,0.04)',
-                  transition: 'border-color 0.22s ease',
-                  '&:focus-within': { borderColor: '#0a2463' },
-                }}>
+                <Box
+                  component="form"
+                  onSubmit={handleNewsletterSubmit}
+                  noValidate
+                  sx={{
+                    display: 'flex',
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: 1,
+                    overflow: 'hidden',
+                    bgcolor: 'rgba(255,255,255,0.04)',
+                    transition: 'border-color 0.22s ease',
+                    '&:focus-within': { borderColor: '#0a2463' },
+                  }}
+                >
                   <InputBase
+                    name="email"
+                    type="email"
+                    required
                     fullWidth
                     placeholder="Enter your email address"
                     inputProps={{ 'aria-label': 'Email address' }}
@@ -927,17 +967,20 @@ export function HomePage() {
                     whileTap={reduce ? undefined : { scale: 0.93 }}
                     style={{ display: 'flex' }}
                   >
-                    <Button sx={{
-                      minWidth: { xs: '100%', sm: 52 },
-                      width: { xs: '100%', sm: 'auto' },
-                      height: { xs: 48, sm: 'auto' },
-                      borderRadius: 0,
-                      bgcolor: '#0a2463',
-                      color: '#fff',
-                      flexShrink: 0,
-                      '&:hover': { bgcolor: '#0d2d78' },
-                      transition: 'background-color 0.2s ease',
-                    }}>
+                    <Button
+                      type="submit"
+                      disabled={isSubmittingNewsletter}
+                      sx={{
+                        minWidth: { xs: '100%', sm: 52 },
+                        width: { xs: '100%', sm: 'auto' },
+                        height: { xs: 48, sm: 'auto' },
+                        borderRadius: 0,
+                        color: '#fff',
+                        flexShrink: 0,
+                        '&:hover': { bgcolor: '#0d2d78' },
+                        transition: 'background-color 0.2s ease',
+                      }}
+                    >
                       <motion.div
                         whileHover={reduce ? undefined : { x: 3 }}
                         transition={{ duration: 0.18 }}
@@ -948,6 +991,12 @@ export function HomePage() {
                     </Button>
                   </Box>
                 </Box>
+
+                {newsletterResult && (
+                  <Typography sx={{ mt: 1.6, color: 'rgba(255,255,255,0.7)', fontSize: 12.5, lineHeight: 1.6 }}>
+                    {newsletterResult}
+                  </Typography>
+                )}
 
                 <Typography sx={{ mt: 2, color: 'rgba(255,255,255,0.18)', fontSize: 11, lineHeight: 1.65, fontFamily: '"Playfair Display", serif' }}>
                   You may unsubscribe at any time. We respect your privacy.
