@@ -114,10 +114,10 @@ export function AboutPage() {
                     sx={{
                       display: 'block',
                       fontSize: 11,
-                      fontFamily: '"Playfair Display", serif',
-                      letterSpacing: '0.18em',
+                      fontFamily: 'var(--wc-font-body)',
+                      letterSpacing: '0.08em',
                       textTransform: 'uppercase',
-                      color: '#0a2463',
+                      color: 'var(--wc-primary)',
                       mb: 2.5,
                     }}
                   >
@@ -208,10 +208,10 @@ export function AboutPage() {
                     <Typography
                       sx={{
                         fontSize: 11,
-                        fontFamily: '"Playfair Display", serif',
-                        letterSpacing: '0.14em',
+                        fontFamily: 'var(--wc-font-body)',
+                        letterSpacing: '0.08em',
                         textTransform: 'uppercase',
-                        color: '#0a2463',
+                        color: 'var(--wc-primary)',
                         mb: 1.5,
                       }}
                     >
@@ -240,10 +240,10 @@ export function AboutPage() {
               <Typography
                 sx={{
                   fontSize: 11,
-                  fontFamily: '"Playfair Display", serif',
-                  letterSpacing: '0.18em',
+                  fontFamily: 'var(--wc-font-body)',
+                  letterSpacing: '0.08em',
                   textTransform: 'uppercase',
-                  color: '#0a2463',
+                  color: 'var(--wc-primary)',
                   mb: 1.5,
                 }}
               >
@@ -280,10 +280,10 @@ export function AboutPage() {
                 <Typography
                   sx={{
                     fontSize: 11,
-                    fontFamily: '"Playfair Display", serif',
-                    letterSpacing: '0.18em',
+                    fontFamily: 'var(--wc-font-body)',
+                    letterSpacing: '0.08em',
                     textTransform: 'uppercase',
-                    color: '#0a2463',
+                    color: 'var(--wc-primary)',
                     mb: 1.5,
                   }}
                 >

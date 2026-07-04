@@ -12,13 +12,13 @@ import type { MarketTone, SectorActivityItem } from './types'
 type SectorActivityPanelProps = {
 	sectors: SectorActivityItem[]
 	totalVolume: number
-	monoFont?: string
+	dataFont?: string
 }
 
 export function SectorActivityPanel({
 	sectors,
 	totalVolume,
-	monoFont = FONT_FAMILY.mono,
+	dataFont = FONT_FAMILY.data,
 }: SectorActivityPanelProps) {
 	return (
 		<Paper
@@ -67,7 +67,7 @@ export function SectorActivityPanel({
 								>
 									{sector.label}
 								</Typography>
-								<Typography sx={{ color: 'var(--wc-primary)', fontFamily: monoFont, fontSize: 11, fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
+								<Typography sx={{ color: 'var(--wc-primary)', fontFamily: dataFont, fontSize: 11, fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
 									{formatCompactNumber(sector.turnover)}
 								</Typography>
 							</Stack>
@@ -81,16 +81,16 @@ export function SectorActivityPanel({
 								/>
 							</Box>
 							<Stack direction="row" spacing={1.4} sx={{ mt: 0.65, flexWrap: 'wrap' }}>
-								<Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 11, fontWeight: 500, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
+								<Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: dataFont, fontSize: 11, fontWeight: 500, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
 									{sector.count ?? 0} symbols
 								</Typography>
-								<Typography sx={{ color: 'var(--wc-success)', fontFamily: monoFont, fontSize: 11, fontWeight: 500, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
+								<Typography sx={{ color: 'var(--wc-success)', fontFamily: dataFont, fontSize: 11, fontWeight: 500, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
 									{sector.gainers ?? 0} up
 								</Typography>
-								<Typography sx={{ color: 'var(--wc-error)', fontFamily: monoFont, fontSize: 11, fontWeight: 500, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
+								<Typography sx={{ color: 'var(--wc-error)', fontFamily: dataFont, fontSize: 11, fontWeight: 500, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
 									{sector.losers ?? 0} down
 								</Typography>
-								<Typography sx={{ color: toneColor(sectorTone, DEFAULT_PALETTE), fontFamily: monoFont, fontSize: 11, fontWeight: 500, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
+								<Typography sx={{ color: toneColor(sectorTone, DEFAULT_PALETTE), fontFamily: dataFont, fontSize: 11, fontWeight: 500, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
 									avg {formatPercent(sector.avgChangePct ?? NaN)}
 								</Typography>
 							</Stack>

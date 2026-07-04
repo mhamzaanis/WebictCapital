@@ -407,7 +407,7 @@ export function NavBar() {
                         fontSize: 13,
                         fontWeight: 600,
                         color: '#253750',
-                        fontFamily: '"Playfair Display", serif',
+                        fontFamily: 'var(--wc-font-body)',
                         maxWidth: 120,
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',

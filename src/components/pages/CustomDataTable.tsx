@@ -35,7 +35,7 @@ type SortDir = 'asc' | 'desc'
 type CustomDataTableProps = {
 	rows: DataTableRow[]
 	searchQuery: string
-	monoFont?: string
+	dataFont?: string
 }
 
 const UI_FONT = 'var(--wc-font-body)'

@@ -5,10 +5,9 @@ export const FONT_FAMILY = {
 	display: 'var(--wc-font-display)',
 	body: 'var(--wc-font-body)',
 	data: 'var(--wc-font-data)',
-	mono: 'var(--wc-font-data)',
+	data: 'var(--wc-font-data)',
 	echartsBody: 'Inter, sans-serif',
 	echartsData: 'Inter, sans-serif',
-	echartsMono: 'Inter, sans-serif',
 }
 
 export const DEFAULT_PALETTE: MarketChartPalette = {

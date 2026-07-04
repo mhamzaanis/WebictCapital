@@ -6,13 +6,13 @@ import type { MarketLeaderItem } from './types'
 type RangeLeadersPanelProps = {
 	items: MarketLeaderItem[]
 	avgRangePct: number
-	monoFont?: string
+	dataFont?: string
 }
 
 export function RangeLeadersPanel({
 	items,
 	avgRangePct,
-	monoFont = FONT_FAMILY.mono,
+	dataFont = FONT_FAMILY.data,
 }: RangeLeadersPanelProps) {
 	return (
 		<Paper
@@ -50,7 +50,7 @@ export function RangeLeadersPanel({
 				<Typography sx={{ color: 'var(--wc-text-muted)', fontFamily: FONT_FAMILY.body, fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', mb: 0.4 }}>
 					AVERAGE RANGE
 				</Typography>
-				<Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: monoFont, fontSize: 20, fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
+				<Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: dataFont, fontSize: 20, fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
 					{formatPercent(avgRangePct, false)}
 				</Typography>
 			</Box>
@@ -68,7 +68,7 @@ export function RangeLeadersPanel({
 							borderTop: index === 0 ? '0' : '1px solid #edf2f8',
 						}}
 					>
-						<Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 11, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
+						<Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: dataFont, fontSize: 11, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
 							#{index + 1}
 						</Typography>
 						<Box sx={{ minWidth: 0 }}>
@@ -89,10 +89,10 @@ export function RangeLeadersPanel({
 							</Typography>
 						</Box>
 						<Box sx={{ textAlign: 'right', minWidth: 88 }}>
-							<Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: monoFont, fontSize: 13, fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
+							<Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: dataFont, fontSize: 13, fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
 								{formatPercent(item.rangePct ?? NaN, false)}
 							</Typography>
-							<Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 11, fontWeight: 500, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
+							<Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: dataFont, fontSize: 11, fontWeight: 500, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
 								{formatNumber(item.low ?? NaN)}-{formatNumber(item.high ?? NaN)}
 							</Typography>
 						</Box>

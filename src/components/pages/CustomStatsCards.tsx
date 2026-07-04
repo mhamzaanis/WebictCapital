@@ -9,7 +9,7 @@ export type StatCardProps = {
 	value: string
 	detail: string
 	icon: ReactNode
-	monoFont?: string
+	dataFont?: string
 	tone?: StatCardTone
 	color?: string
 	sx?: SxProps<Theme>
@@ -46,7 +46,7 @@ export function StatCard({
 	value,
 	detail,
 	icon,
-	monoFont = 'var(--wc-font-data)',
+	dataFont = 'var(--wc-font-data)',
 	tone = 'neutral',
 	color,
 	sx,
@@ -116,7 +116,7 @@ export function StatCard({
 							color: resolvedColor,
 							fontSize: { xs: 20, md: 24 },
 							fontWeight: 700,
-							fontFamily: monoFont,
+							fontFamily: dataFont,
 							lineHeight: 1.2,
 							fontVariantNumeric: 'tabular-nums',
 							fontFeatureSettings: '"tnum" 1',

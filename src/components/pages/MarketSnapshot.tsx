@@ -13,7 +13,7 @@ export type MarketSnapshotProps = {
   advancing: number
   declining: number
   unchanged: number
-  monoFont: string
+  dataFont: string
 }
 
 // -- Local formatting helpers (kept private to this component so it has no
@@ -61,11 +61,11 @@ type MetricProps = {
   value: string
   trend?: string
   trendColor?: string
-  monoFont: string
+  dataFont: string
   showDivider: boolean
 }
 
-function Metric({ label, value, trend, trendColor, monoFont, showDivider }: MetricProps) {
+function Metric({ label, value, trend, trendColor, dataFont, showDivider }: MetricProps) {
   return (
     <Box
       sx={{
@@ -94,7 +94,7 @@ function Metric({ label, value, trend, trendColor, monoFont, showDivider }: Metr
             color: 'var(--wc-text-primary)',
             fontSize: { xs: 21, md: 24 },
             fontWeight: 700,
-            fontFamily: monoFont,
+            fontFamily: dataFont,
             lineHeight: 1.15,
             fontVariantNumeric: 'tabular-nums',
             fontFeatureSettings: '"tnum" 1',
@@ -108,7 +108,7 @@ function Metric({ label, value, trend, trendColor, monoFont, showDivider }: Metr
             sx={{
               fontSize: 12,
               fontWeight: 500,
-              fontFamily: monoFont,
+              fontFamily: dataFont,
               fontVariantNumeric: 'tabular-nums',
               fontFeatureSettings: '"tnum" 1',
               color: trendColor ?? 'var(--wc-text-secondary)',
@@ -127,10 +127,10 @@ type BreadthEntryProps = {
   label: string
   value: number
   color: string
-  monoFont: string
+  dataFont: string
 }
 
-function BreadthEntry({ icon, label, value, color, monoFont }: BreadthEntryProps) {
+function BreadthEntry({ icon, label, value, color, dataFont }: BreadthEntryProps) {
   return (
     <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', color, '& svg': { fontSize: 16 } }}>{icon}</Box>
@@ -147,7 +147,7 @@ function BreadthEntry({ icon, label, value, color, monoFont }: BreadthEntryProps
         sx={{
           fontSize: 12.5,
           fontWeight: 500,
-          fontFamily: monoFont,
+          fontFamily: dataFont,
           fontVariantNumeric: 'tabular-nums',
           fontFeatureSettings: '"tnum" 1',
           color: 'var(--wc-text-primary)',
@@ -170,7 +170,7 @@ export function MarketSnapshot({
   advancing,
   declining,
   unchanged,
-  monoFont,
+  dataFont,
 }: MarketSnapshotProps) {
   const changeTrendColor = directionColor(change)
 
@@ -178,13 +178,13 @@ export function MarketSnapshot({
     {
       label: 'Previous Close',
       value: formatNumber(previousClose),
-      monoFont,
+      dataFont,
       showDivider: true,
     },
     {
       label: 'KSE 100 Close',
       value: formatNumber(close),
-      monoFont,
+      dataFont,
       showDivider: true,
     },
     {
@@ -192,13 +192,13 @@ export function MarketSnapshot({
       value: formatSignedNumber(change),
       trend: Number.isFinite(changePercent) ? formatPercent(changePercent) : undefined,
       trendColor: changeTrendColor,
-      monoFont,
+      dataFont,
       showDivider: true,
     },
     {
       label: 'Volume Traded',
       value: formatCompactNumber(volume),
-      monoFont,
+      dataFont,
       showDivider: false,
     },
   ]
@@ -234,7 +234,7 @@ export function MarketSnapshot({
             sx={{
               fontSize: 11.5,
               color: 'var(--wc-text-secondary)',
-              fontFamily: monoFont,
+              fontFamily: dataFont,
             }}
           >
             {formatDate(date)}
@@ -271,21 +271,21 @@ export function MarketSnapshot({
             label="Advancing"
             value={advancing}
             color="var(--wc-success)"
-            monoFont={monoFont}
+            dataFont={dataFont}
           />
           <BreadthEntry
             icon={<ArrowDropDownIcon />}
             label="Declining"
             value={declining}
             color="var(--wc-error)"
-            monoFont={monoFont}
+            dataFont={dataFont}
           />
           <BreadthEntry
             icon={<FiberManualRecordIcon sx={{ fontSize: '8px !important' }} />}
             label="Unchanged"
             value={unchanged}
             color="var(--wc-text-secondary)"
-            monoFont={monoFont}
+            dataFont={dataFont}
           />
         </Stack>
       </Stack>

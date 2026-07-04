@@ -18,7 +18,7 @@ type MarketLeaderListProps = {
 	subtitle: string
 	items: MarketLeaderItem[]
 	kind: 'gain' | 'loss' | 'volume'
-	monoFont?: string
+	dataFont?: string
 }
 
 export function MarketLeaderList({
@@ -26,7 +26,7 @@ export function MarketLeaderList({
 	subtitle,
 	items,
 	kind,
-	monoFont = FONT_FAMILY.mono,
+	dataFont = FONT_FAMILY.data,
 }: MarketLeaderListProps) {
 	const tone: MarketTone = kind === 'gain' ? 'positive' : kind === 'loss' ? 'negative' : 'neutral'
 	const color = toneColor(tone, DEFAULT_PALETTE)
@@ -88,7 +88,7 @@ export function MarketLeaderList({
 								borderTop: index === 0 ? '0' : '1px solid #edf2f8',
 							}}
 						>
-							<Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 11, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
+							<Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: dataFont, fontSize: 11, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
 								#{index + 1}
 							</Typography>
 							<Box sx={{ minWidth: 0 }}>
@@ -109,10 +109,10 @@ export function MarketLeaderList({
 								</Typography>
 							</Box>
 							<Box sx={{ textAlign: 'right', minWidth: 86 }}>
-								<Typography sx={{ color: itemColor, fontFamily: monoFont, fontSize: 13, fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
+								<Typography sx={{ color: itemColor, fontFamily: dataFont, fontSize: 13, fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
 									{primaryValue}
 								</Typography>
-								<Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 11, fontWeight: 500, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
+								<Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: dataFont, fontSize: 11, fontWeight: 500, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
 									{secondaryValue}
 								</Typography>
 							</Box>

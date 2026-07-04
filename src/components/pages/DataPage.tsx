@@ -423,69 +423,6 @@ function HeaderMetric({
   )
 }
 
-function BreadthMetric({
-  advancing,
-  declining,
-  unchanged,
-}: {
-  advancing: number
-  declining: number
-  unchanged: number
-}) {
-  return (
-    <Box
-      sx={{
-        minWidth: { xs: '100%', sm: 260 },
-        border: '1px solid var(--wc-border)',
-        borderRadius: '12px',
-        display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
-        overflow: 'hidden',
-        bgcolor: '#ffffff',
-      }}
-    >
-      {[
-        { label: 'Advancers', value: advancing, color: 'var(--wc-success)' },
-        { label: 'Decliners', value: declining, color: 'var(--wc-error)' },
-        { label: 'Unchanged', value: unchanged, color: 'var(--wc-text-primary)' },
-      ].map((item, index) => (
-        <Box
-          key={item.label}
-          sx={{
-            px: 2,
-            py: 1.8,
-            borderLeft: index === 0 ? 'none' : '1px solid var(--wc-divider)',
-            textAlign: 'center',
-          }}
-        >
-          {index === 0 && (
-            <Typography
-              sx={{
-                color: 'var(--wc-text-muted)',
-                fontFamily: UI_FONT,
-                fontSize: 11,
-                fontWeight: 700,
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                mb: 0.8,
-                textAlign: 'left',
-              }}
-            >
-              Breadth
-            </Typography>
-          )}
-          {index !== 0 && <Box sx={{ height: 19 }} />}
-          <Typography sx={{ color: item.color, fontFamily: NUMBER_FONT, fontSize: 18, fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
-            {item.value.toLocaleString('en-PK')}
-          </Typography>
-          <Typography sx={{ mt: 0.5, color: 'var(--wc-text-secondary)', fontSize: 10.5 }}>
-            {item.label}
-          </Typography>
-        </Box>
-      ))}
-    </Box>
-  )
-}
 
 function LeaderTable({
   title,
@@ -493,14 +430,14 @@ function LeaderTable({
   icon,
   items,
   footer,
-  monoFont,
+  dataFont,
 }: {
   title: string
   subtitle: string
   icon: ReactNode
   items: MarketLeaderItem[]
   footer: string
-  monoFont: string
+  dataFont: string
 }) {
   return (
     <Box sx={{ ...CARD_SX, p: 2.2, minHeight: 330 }}>
@@ -548,7 +485,7 @@ function LeaderTable({
                   borderBottom: index === items.length - 1 ? 'none' : '1px solid var(--wc-divider)',
                 }}
               >
-                <Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 12, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
+                <Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: dataFont, fontSize: 12, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
                   {index + 1}
                 </Typography>
                 <Typography sx={{ color: 'var(--wc-primary)', fontFamily: UI_FONT, fontSize: 13, fontWeight: 750, letterSpacing: 0, textTransform: 'uppercase' }}>
@@ -566,13 +503,13 @@ function LeaderTable({
                 >
                   {item.company}
                 </Typography>
-                <Typography sx={{ color: toneValue, fontFamily: monoFont, fontSize: 12, fontWeight: 700, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
+                <Typography sx={{ color: toneValue, fontFamily: dataFont, fontSize: 12, fontWeight: 700, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
                   {formatSignedNumber(item.change)}
                 </Typography>
                 <Typography
                   sx={{
                     color: tone === 'positive' ? 'var(--wc-success)' : tone === 'negative' ? 'var(--wc-error)' : 'var(--wc-text-secondary)',
-                    fontFamily: monoFont,
+                    fontFamily: dataFont,
                     fontSize: 12,
                     fontWeight: 700,
                     textAlign: 'right',
@@ -599,10 +536,10 @@ function LeaderTable({
 
 function VolumeLeaderTable({
   items,
-  monoFont,
+  dataFont,
 }: {
   items: RankedStock[]
-  monoFont: string
+  dataFont: string
 }) {
   return (
     <Box sx={{ ...CARD_SX, p: 2.2, minHeight: 330 }}>
@@ -656,7 +593,7 @@ function VolumeLeaderTable({
                   borderBottom: index === items.length - 1 ? 'none' : '1px solid var(--wc-divider)',
                 }}
               >
-                <Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 12, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
+                <Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: dataFont, fontSize: 12, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
                   {index + 1}
                 </Typography>
                 <Typography sx={{ color: 'var(--wc-primary)', fontFamily: UI_FONT, fontSize: 13, fontWeight: 750, letterSpacing: 0, textTransform: 'uppercase' }}>
@@ -668,10 +605,10 @@ function VolumeLeaderTable({
                 >
                   {item.company}
                 </Typography>
-                <Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: monoFont, fontSize: 12, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
+                <Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: dataFont, fontSize: 12, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
                   {formatCompactNumber(item.numericTurnover)}
                 </Typography>
-                <Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 12, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
+                <Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: dataFont, fontSize: 12, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
                   {formatCompactNumber(turnoverValue)}
                 </Typography>
               </Box>
@@ -1179,7 +1116,7 @@ export function DataPage() {
                       value={formatCompactNumber(marketSummary.Volume_Traded)}
                       detail="Turnover (PKR)"
                     />
-                    <BreadthMetric advancing={stats.gainers} declining={stats.losers} unchanged={stats.unchanged} />
+                    {/* <BreadthMetric advancing={stats.gainers} declining={stats.losers} unchanged={stats.unchanged} /> */}
                   </Box>
                 </Box>
               </MotionReveal>
@@ -1188,7 +1125,7 @@ export function DataPage() {
                 <TickerTape
                   items={tickerTapeItems}
                   date={formatShortDate(latestTradeDate ?? activeData.date)}
-                  monoFont={NUMBER_FONT}
+                  dataFont={NUMBER_FONT}
                 />
               </MotionReveal>
 
@@ -1297,7 +1234,7 @@ export function DataPage() {
                     items={marketVisualData.gainers}
                     icon={<Box component="span" sx={{ color: 'var(--wc-success)', fontFamily: NUMBER_FONT, fontSize: 16, fontWeight: 900 }}>↑</Box>}
                     footer="View all gainers"
-                    monoFont={NUMBER_FONT}
+                    dataFont={NUMBER_FONT}
                   />
                   <LeaderTable
                     title="Top Losers"
@@ -1305,9 +1242,9 @@ export function DataPage() {
                     items={marketVisualData.losers}
                     icon={<Box component="span" sx={{ color: 'var(--wc-error)', fontFamily: NUMBER_FONT, fontSize: 16, fontWeight: 900 }}>↓</Box>}
                     footer="View all losers"
-                    monoFont={NUMBER_FONT}
+                    dataFont={NUMBER_FONT}
                   />
-                  <VolumeLeaderTable items={dayInsights.volumeLeaders} monoFont={NUMBER_FONT} />
+                  <VolumeLeaderTable items={dayInsights.volumeLeaders} dataFont={NUMBER_FONT} />
                 </Box>
               </MotionReveal>
 
@@ -1365,7 +1302,7 @@ export function DataPage() {
                     </Button>
                   </Box>
 
-                  <CustomDataTable rows={displayedStocks} searchQuery={search} monoFont={NUMBER_FONT} />
+                  <CustomDataTable rows={displayedStocks} searchQuery={search} dataFont={NUMBER_FONT} />
                 </Box>
               </MotionReveal>
             </Stack>

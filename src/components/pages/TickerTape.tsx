@@ -19,7 +19,7 @@ export type TickerTapeItem = {
 type TickerTapeProps = {
 	items: TickerTapeItem[]
 	date?: string
-	monoFont?: string
+	dataFont?: string
 }
 
 const UI_FONT = 'var(--wc-font-body)'
