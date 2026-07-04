@@ -311,16 +311,16 @@ async function fetchSupabaseTradeDay(tradeDate: string): Promise<PsxData> {
     source: 'Supabase',
     market: summaryResult.data
       ? {
-          // `kse100_prev` is the DB column for the previous session's close —
-          // it is NOT today's open, so it's mapped to `previous_kse100`.
-          previous_kse100: summaryResult.data.kse100_prev ?? undefined,
-          close_kse100: summaryResult.data.kse100_close ?? undefined,
-          kse100_change: summaryResult.data.kse100_change ?? undefined,
-          curr_volume: summaryResult.data.curr_volume ?? undefined,
-          advances: summaryResult.data.advances ?? undefined,
-          declines: summaryResult.data.declines ?? undefined,
-          unchanged: summaryResult.data.unchanged ?? undefined,
-        }
+        // `kse100_prev` is the DB column for the previous session's close —
+        // it is NOT today's open, so it's mapped to `previous_kse100`.
+        previous_kse100: summaryResult.data.kse100_prev ?? undefined,
+        close_kse100: summaryResult.data.kse100_close ?? undefined,
+        kse100_change: summaryResult.data.kse100_change ?? undefined,
+        curr_volume: summaryResult.data.curr_volume ?? undefined,
+        advances: summaryResult.data.advances ?? undefined,
+        declines: summaryResult.data.declines ?? undefined,
+        unchanged: summaryResult.data.unchanged ?? undefined,
+      }
       : undefined,
     total_stocks: rows.length,
     stocks: rows,
@@ -394,10 +394,13 @@ function HeaderMetric({
   return (
     <Box
       sx={{
-        minWidth: { xs: 150, lg: 140 },
+        minWidth: { xs: 0, lg: 160 },
+        flex: { xs: '1 1 auto', sm: '0 0 auto' },
+        maxWidth: { xs: 'calc(50% - 6px)', sm: 'none' },
         px: { xs: 0, lg: 2.8 },
-        py: { xs: 1.2, lg: 0.8 },
+        py: { xs: 1, lg: 0.8 },
         borderLeft: { lg: '1px solid var(--wc-divider)' },
+        borderBottom: { xs: '1px solid var(--wc-divider-soft)', sm: 'none' },
       }}
     >
       <Typography
@@ -413,11 +416,11 @@ function HeaderMetric({
       >
         {label}
       </Typography>
-      <Typography sx={{ color, fontFamily: NUMBER_FONT, fontSize: 18, fontWeight: 700, lineHeight: 1.15, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
+      <Typography sx={{ color, fontFamily: NUMBER_FONT, fontSize: { xs: 16, sm: 17, md: 18 }, fontWeight: 700, lineHeight: 1.15, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
         {value}
       </Typography>
       {detail && (
-        <Typography sx={{ mt: 0.6, color, fontFamily: NUMBER_FONT, fontSize: 11, fontWeight: 600, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
+        <Typography sx={{ mt: 0.6, color, fontFamily: NUMBER_FONT, fontSize: { xs: 10.5, md: 11 }, fontWeight: 600, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
           {detail}
         </Typography>
       )}
@@ -442,9 +445,9 @@ function LeaderTable({
   dataFont: string
 }) {
   return (
-    <Box sx={{ ...CARD_SX, p: { xs: 2.2, md: 2.8 }, minHeight: 330 }}>
+    <Box sx={{ ...CARD_SX, p: { xs: 2.2, md: 2.8 }, minHeight: 330, minWidth: 0, maxWidth: '100%' }}>
       <SectionTitle icon={icon} title={title} subtitle={subtitle} />
-      <Box sx={{ overflowX: 'auto' }}>
+      <Box sx={{ maxWidth: '100%', overflowX: 'auto', overflowY: 'hidden' }}>
         <Box sx={{ minWidth: 470 }}>
           <Box
             sx={{
@@ -544,13 +547,13 @@ function VolumeLeaderTable({
   dataFont: string
 }) {
   return (
-    <Box sx={{ ...CARD_SX, p: { xs: 2.2, md: 2.8 }, minHeight: 330 }}>
+    <Box sx={{ ...CARD_SX, p: { xs: 2.2, md: 2.8 }, minHeight: 330, minWidth: 0, maxWidth: '100%' }}>
       <SectionTitle
         icon={<StackedBarChartIcon sx={{ fontSize: 18 }} />}
         title="Volume Leaders"
         subtitle="Most active symbols by traded turnover."
       />
-      <Box sx={{ overflowX: 'auto' }}>
+      <Box sx={{ maxWidth: '100%', overflowX: 'auto', overflowY: 'hidden' }}>
         <Box sx={{ minWidth: 480 }}>
           <Box
             sx={{
@@ -1085,28 +1088,24 @@ export function DataPage() {
                   transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                   sx={{
                     display: 'grid',
-                    gridTemplateColumns: { xs: '1fr', xl: 'minmax(0, 0.9fr) minmax(700px, 1.1fr)' },
-                    gap: { xs: 4, xl: 6 },
-                    alignItems: 'end',
+                    gridTemplateColumns: {
+                      xs: '1fr',
+                      md: 'minmax(260px, 0.9fr) minmax(0, 1.1fr)',
+                      xl: 'minmax(0, 0.9fr) minmax(700px, 1.1fr)',
+                    },
+                    gap: { xs: 3.5, md: 4, xl: 6 },
+                    alignItems: { xs: 'start', md: 'end' },
+                    minWidth: 0,
+                    '& > *': { minWidth: 0 },
                   }}
                 >
                   <Box>
-                    {/* <Stack direction="row" spacing={1.2} sx={{ alignItems: 'center', mb: 2.2 }}>
-                      <Typography sx={{ color: '#31518a', fontSize: 12, fontWeight: 700 }}>
-                        Markets
-                      </Typography>
-                      <Typography sx={{ color: '#a5b5cb', fontSize: 12, fontWeight: 800 }}>›</Typography>
-                      <Typography sx={{ color: 'var(--wc-text-primary)', fontSize: 12, fontWeight: 800 }}>
-                        PSX Market Overview
-                      </Typography>
-                    </Stack> */}
-
                     <Typography
                       variant="h1"
                       sx={{
                         color: 'var(--wc-text-primary)',
                         fontFamily: DISPLAY_FONT,
-                        fontSize: { xs: '2.25rem', sm: '2.55rem', md: '3.3rem' },
+                        fontSize: { xs: '2rem', sm: '2.4rem', md: '3.3rem' },
                         fontWeight: 700,
                         lineHeight: 0.95,
                         letterSpacing: '-0.045em',
@@ -1114,65 +1113,28 @@ export function DataPage() {
                     >
                       PSX Market Overview
                     </Typography>
-                    
+
                     <Typography sx={{ mt: 1.7, color: 'var(--wc-text-secondary)', fontSize: 12.5, fontWeight: 600 }}>
                       Last updated:{' '}
                       <Box component="span" sx={{ color: 'var(--wc-primary)', fontWeight: 800 }}>
                         {formatMarketDate(latestTradeDate ?? activeData.date)}
                       </Box>
                     </Typography>
-
-                    <Box
-                      sx={{
-                        mt: 2.2,
-                        border: '1px solid var(--wc-border)',
-                        borderRadius: '8px',
-                        bgcolor: 'var(--wc-surface-soft)',
-                        px: 2.2,
-                        py: 1.6,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 2,
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          width: 6,
-                          height: 6,
-                          borderRadius: '50%',
-                          bgcolor: 'var(--wc-primary)',
-                          flexShrink: 0,
-                        }}
-                      />
-                      <Box>
-                        <Typography
-                          sx={{
-                            color: 'var(--wc-primary)',
-                            fontFamily: 'var(--wc-font-body)',
-                            fontSize: 12,
-                            fontWeight: 700,
-                            letterSpacing: '0.06em',
-                            textTransform: 'uppercase',
-                            mb: 0.3,
-                          }}
-                        >
-                          Beyond Daily Prices
-                        </Typography>
-                        <Typography sx={{ color: 'var(--wc-text-secondary)', fontSize: 12.5, lineHeight: 1.5 }}>
-                          Every number tells a story. We look past the surface — connecting market movements,
-                          sector rotations, and company fundamentals to reveal the deeper narrative behind the data.
-                        </Typography>
-                      </Box>
-                    </Box>
                   </Box>
 
                   <Box
                     sx={{
                       display: 'flex',
-                      flexWrap: 'wrap',
-                      justifyContent: { xs: 'flex-start', xl: 'flex-end' },
+                      flexWrap: { xs: 'wrap', sm: 'nowrap' },
+                      justifyContent: { xs: 'flex-start', sm: 'flex-end' },
                       alignItems: 'stretch',
-                      gap: { xs: 2, lg: 0 },
+                      gap: { xs: 1.5, lg: 0 },
+                      overflowX: { sm: 'auto' },
+                      minWidth: 0,
+                      scrollbarWidth: 'none',
+                      '&::-webkit-scrollbar': {
+                        display: 'none',
+                      },
                     }}
                   >
                     <HeaderMetric
@@ -1180,19 +1142,21 @@ export function DataPage() {
                       value={formatNumber(marketSummary.KSE100_PreviousClose)}
                       detail={formatShortDate(latestTradeDate ?? activeData.date)}
                     />
+
                     <HeaderMetric label="KSE-100 Close" value={formatNumber(marketSummary.KSE100_Close)} />
+
                     <HeaderMetric
                       label="Daily Change"
                       value={formatSignedNumber(marketSummary.KSE100_Change)}
                       detail={formatPercent(indexChangePct)}
                       tone={marketSummary.KSE100_Change > 0 ? 'positive' : marketSummary.KSE100_Change < 0 ? 'negative' : 'neutral'}
                     />
+
                     <HeaderMetric
                       label="Volume Traded"
                       value={formatCompactNumber(marketSummary.Volume_Traded)}
                       detail="Turnover (PKR)"
                     />
-                    {/* <BreadthMetric advancing={stats.gainers} declining={stats.losers} unchanged={stats.unchanged} /> */}
                   </Box>
                 </Box>
               </MotionReveal>
@@ -1206,7 +1170,7 @@ export function DataPage() {
               </MotionReveal>
 
               <MotionReveal>
-                <Box sx={{ position: 'relative' }}>
+                <Box sx={{ position: 'relative', minWidth: 0, maxWidth: '100%' }}>
                   <StockHeatmap
                     heading="Market Heatmap"
                     detail="Top active stocks sized by traded value and colored by daily change."
@@ -1255,6 +1219,8 @@ export function DataPage() {
                     display: 'grid',
                     gridTemplateColumns: { xs: '1fr', lg: '0.85fr 1.05fr 1.1fr' },
                     gap: { xs: 2, md: 2.5 },
+                    minWidth: 0,
+                    '& > *': { minWidth: 0 },
                   }}
                 >
                   <DonutChart
@@ -1302,6 +1268,8 @@ export function DataPage() {
                     display: 'grid',
                     gridTemplateColumns: { xs: '1fr', lg: 'repeat(3, minmax(0, 1fr))' },
                     gap: { xs: 2, md: 2.5 },
+                    minWidth: 0,
+                    '& > *': { minWidth: 0 },
                   }}
                 >
                   <LeaderTable
@@ -1328,6 +1296,8 @@ export function DataPage() {
                 <Box
                   sx={{
                     ...CARD_SX,
+                    minWidth: 0,
+                    maxWidth: '100%',
                     overflow: 'hidden',
                     '& .MuiTableContainer-root': {
                       border: 'none',

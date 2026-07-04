@@ -185,10 +185,12 @@ export function CustomDataTable({ rows, searchQuery }: CustomDataTableProps) {
 					maxHeight: { xs: 560, md: 700 },
 					border: '1px solid var(--wc-border)',
 					boxShadow: 'none',
-					overflow: 'hidden',
+					maxWidth: '100%',
+					overflowX: 'auto',
+					overflowY: 'auto',
 				}}
 			>
-				<Table stickyHeader size="small" aria-label="PSX stocks table">
+				<Table stickyHeader size="small" aria-label="PSX stocks table" sx={{ minWidth: 980 }}>
 					<TableHead>
 						<TableRow>
 							<SortCell id="symbol" label="SYMBOL" align="left" {...sortCellProps} />
@@ -355,6 +357,17 @@ export function CustomDataTable({ rows, searchQuery }: CustomDataTableProps) {
 					borderRadius: '0 0 12px 12px',
 					borderTop: '1px solid var(--wc-border)',
 					bgcolor: 'var(--wc-surface-soft)',
+					overflowX: 'auto',
+					'& .MuiTablePagination-spacer': {
+						display: { xs: 'none', sm: 'block' },
+					},
+					'& .MuiTablePagination-toolbar': {
+						minHeight: 48,
+						px: { xs: 1, sm: 2 },
+						gap: { xs: 0.75, sm: 1 },
+						flexWrap: { xs: 'wrap', sm: 'nowrap' },
+						justifyContent: { xs: 'center', sm: 'flex-end' },
+					},
 					'& .MuiTablePagination-toolbar, & .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows, & .MuiInputBase-root': {
 						fontFamily: UI_FONT,
 						fontSize: 12,

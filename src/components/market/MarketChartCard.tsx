@@ -25,6 +25,8 @@ export function MarketChartCard({
 					borderRadius: '12px',
 					boxShadow: 'var(--wc-shadow-card)',
 					minHeight: height + 112,
+					minWidth: 0,
+					maxWidth: '100%',
 					display: 'flex',
 					flexDirection: 'column',
 				},
@@ -46,7 +48,7 @@ export function MarketChartCard({
 					</Typography>
 				</Box>
 			</Stack>
-			<Box sx={mergeSx({ height, minHeight: height, width: '100%' }, contentSx)}>
+			<Box sx={mergeSx({ height, minHeight: height, width: '100%', minWidth: 0 }, contentSx)}>
 				{children}
 			</Box>
 		</Paper>
