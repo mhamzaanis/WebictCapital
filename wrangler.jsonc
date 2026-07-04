@@ -6,6 +6,12 @@
     "directory": "./dist",
     "not_found_handling": "single-page-application"
   },
+  "routes": [
+    {
+      "pattern": "preview.webictcapital.com",
+      "custom_domain": true
+    }
+  ],
   "observability": {
     "enabled": true
   }
