@@ -16,21 +16,23 @@ export type FiltersBarProps = {
   industryOptions: string[]
 }
 
-const MONO = '"JetBrains Mono", "Fira Code", "Cascadia Code", monospace'
+const UI_FONT = 'var(--wc-font-body)'
 
 const filterFieldSx = {
   '& .MuiOutlinedInput-root': {
-    bgcolor: '#ffffff',
-    color: '#0d1c30',
-    fontFamily: MONO,
-    fontSize: 12,
-    borderRadius: 1,
-    '& fieldset': { borderColor: '#dde7f4' },
-    '&:hover fieldset': { borderColor: '#0a2463' },
-    '&.Mui-focused fieldset': { borderColor: '#0a2463', borderWidth: '1.5px' },
+    bgcolor: 'var(--wc-surface)',
+    color: 'var(--wc-text-primary)',
+    fontFamily: UI_FONT,
+    fontSize: 13,
+    borderRadius: '10px',
+    '& fieldset': { borderColor: 'var(--wc-border)' },
+    '&:hover fieldset': { borderColor: 'rgba(10,46,120,0.35)' },
+    '&.Mui-focused fieldset': { borderColor: 'var(--wc-primary)', borderWidth: '1.5px' },
   },
-  '& .MuiInputLabel-root.Mui-focused': { color: '#0a2463' },
-  '& input::placeholder': { color: '#8097b0', opacity: 1 },
+  '& .MuiInputLabel-root': { color: 'var(--wc-text-muted)', fontFamily: UI_FONT, fontSize: 13 },
+  '& .MuiInputLabel-root.Mui-focused': { color: 'var(--wc-primary)' },
+  '& input::placeholder': { color: 'var(--wc-text-muted)', opacity: 1 },
+  '& select': { fontFamily: UI_FONT },
 }
 
 export function FiltersBar({

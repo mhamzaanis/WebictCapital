@@ -36,7 +36,7 @@ export function BarChart({
 			animation: true,
 			animationDuration: 800,
 			animationEasing: 'quarticOut',
-			grid: { left, right: 18, top: 12, bottom: 28 },
+			grid: { left, right: 28, top: 24, bottom: 38 },
 			tooltip: {
 				trigger: 'axis',
 				axisPointer: { type: 'shadow' },
@@ -54,7 +54,7 @@ export function BarChart({
 				splitLine: { lineStyle: { color: palette.border } },
 				axisLabel: {
 					color: palette.textSecondary,
-					fontFamily: FONT_FAMILY.echartsMono,
+					fontFamily: FONT_FAMILY.echartsData,
 					fontSize: 11,
 					formatter: (value: number) => formatCompactNumber(value),
 				},
@@ -67,7 +67,7 @@ export function BarChart({
 				axisTick: { show: false },
 				axisLabel: {
 					color: palette.text,
-					fontFamily: FONT_FAMILY.echartsMono,
+					fontFamily: FONT_FAMILY.echartsData,
 					fontSize: 11,
 					fontWeight: 600,
 					width: Math.max(52, left - 14),

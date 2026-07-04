@@ -19,15 +19,15 @@ type HeatmapColors = {
 	neutral?: string
 }
 
-const VIBRANT_POSITIVE = '#15c46d'
-const VIBRANT_NEGATIVE = '#ff4d5e'
-const VIBRANT_NEUTRAL = '#dde7f2'
+const HEATMAP_POSITIVE = '#147a4d'
+const HEATMAP_NEGATIVE = '#c53346'
+const HEATMAP_NEUTRAL = '#eef2f7'
 
-function vibrantHeatmapColor(changePct: number, neutralColor = VIBRANT_NEUTRAL): string {
+function restrainedHeatmapColor(changePct: number, neutralColor = HEATMAP_NEUTRAL): string {
 	if (!Number.isFinite(changePct) || changePct === 0) return neutralColor
 	const clamped = Math.min(6, Math.abs(changePct))
-	const opacity = 0.46 + (clamped / 6) * 0.42
-	const base = changePct > 0 ? VIBRANT_POSITIVE : VIBRANT_NEGATIVE
+	const opacity = 0.2 + (clamped / 6) * 0.54
+	const base = changePct > 0 ? HEATMAP_POSITIVE : HEATMAP_NEGATIVE
 	return colorWithOpacity(base, opacity)
 }
 
@@ -85,8 +85,8 @@ export function StockHeatmap({
 					label: {
 						show: true,
 						formatter: '{b}',
-						fontFamily: FONT_FAMILY.echartsMono,
-						fontSize: 11,
+						fontFamily: FONT_FAMILY.echartsData,
+						fontSize: 12,
 						fontWeight: 700,
 					},
 					upperLabel: { show: false },
@@ -98,7 +98,7 @@ export function StockHeatmap({
 						itemStyle: {
 							color:
 								item.color ??
-									(vibrantHeatmapColor(item.changePct ?? NaN, colors?.neutral ?? VIBRANT_NEUTRAL) ||
+									(restrainedHeatmapColor(item.changePct ?? NaN, colors?.neutral ?? HEATMAP_NEUTRAL) ||
 									heatmapColor(item.changePct ?? NaN, heatmapPalette, colors?.neutral)),
 						},
 						label: {

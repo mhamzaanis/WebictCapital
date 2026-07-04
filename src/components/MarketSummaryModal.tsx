@@ -34,8 +34,8 @@ type MarketSummaryModalProps = {
   loading?: boolean
 }
 
-const NUMBER_FONT = 'var(--wc-number-font)'
-const SERIF = '"Playfair Display", serif'
+const NUMBER_FONT = 'var(--wc-font-data)'
+const SERIF = 'var(--wc-font-body)'
 
 const COLORS = {
   bg: 'var(--wc-paper)',
@@ -659,7 +659,7 @@ export function MarketSummaryModal({ open, onClose, summary, loading = false }: 
                   axisLabel: {
                     fontSize: isXs ? 8 : 9,
                     color: CHART.textSecondary,
-                    fontFamily: '"JetBrains Mono", monospace',
+                    fontFamily: 'var(--wc-font-data)',
                     interval: Math.max(0, Math.ceil(chartData.labels.length / (isXs ? 6 : 8)) - 1),
                   },
                 },
@@ -677,7 +677,7 @@ export function MarketSummaryModal({ open, onClose, summary, loading = false }: 
                       show: true,
                       fontSize: isXs ? 8 : 9,
                       color: CHART.textSecondary,
-                      fontFamily: '"JetBrains Mono", monospace',
+                      fontFamily: 'var(--wc-font-data)',
                       formatter: (v: number) => v >= 1000 ? `${(v / 1000).toFixed(1)}K` : v.toString(),
                     },
                   },
@@ -752,7 +752,7 @@ export function MarketSummaryModal({ open, onClose, summary, loading = false }: 
                   textStyle: {
                     fontSize: 11,
                     color: CHART.text,
-                    fontFamily: '"JetBrains Mono", monospace',
+                    fontFamily: 'var(--wc-font-data)',
                   },
                   formatter: (params: { seriesName?: string; value: number | number[] }[]) => {
                     const kse100 = params.find((p) => p.seriesName === 'KSE 100')?.value as number | undefined

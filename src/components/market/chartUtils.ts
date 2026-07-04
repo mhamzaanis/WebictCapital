@@ -4,19 +4,19 @@ import type { MarketChartPalette, MarketTone, TooltipParam } from './types'
 export const FONT_FAMILY = {
 	display: 'var(--wc-font-display)',
 	body: 'var(--wc-font-body)',
-	mono: 'var(--wc-font-mono)',
+	data: 'var(--wc-font-data)',
 	echartsBody: 'Inter, sans-serif',
-	echartsMono: 'JetBrains Mono, monospace',
+	echartsData: 'Inter, sans-serif',
 }
 
 export const DEFAULT_PALETTE: MarketChartPalette = {
-	primary: '#0a2463',
-	success: '#1a6640',
-	error: '#b4283a',
-	neutral: '#8a9bb0',
-	border: '#e2eaf5',
-	text: '#080e1a',
-	textSecondary: '#4a5e78',
+	primary: '#0a2e78',
+	success: '#147a4d',
+	error: '#c53346',
+	neutral: '#7b8da8',
+	border: '#dce6f2',
+	text: '#071329',
+	textSecondary: '#536783',
 	tooltipBg: 'rgba(255,255,255,0.98)',
 }
 
@@ -35,7 +35,7 @@ export function chartTooltipStyle(palette: MarketChartPalette) {
 		borderColor: palette.border,
 		borderWidth: 1,
 		textStyle: { color: palette.text, fontFamily: FONT_FAMILY.echartsBody, fontSize: 11 },
-		extraCssText: 'box-shadow:0 8px 24px rgba(8,14,26,0.10);border-radius:6px;',
+		extraCssText: 'box-shadow:0 10px 30px rgba(7,19,41,0.08);border-radius:8px;',
 	}
 }
 

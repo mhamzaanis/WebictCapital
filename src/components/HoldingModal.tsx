@@ -53,8 +53,8 @@ type HoldingModalProps = {
 
 // ─── Design tokens ─────────────────────────────────────────────────────────────
 
-const mono = 'var(--wc-font-mono)'
-const serif = '"Playfair Display", serif'
+const data = 'var(--wc-font-data)'
+const body = 'var(--wc-font-body)'
 
 const C = {
   bg: '#ffffff',
@@ -106,7 +106,7 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
         letterSpacing: '0.1em',
         textTransform: 'uppercase',
         color: C.ink2,
-        fontFamily: mono,
+        fontFamily: data,
         mb: 0.5,
       }}
     >
@@ -117,7 +117,7 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
 
 const inputSx = {
   '& .MuiOutlinedInput-root': {
-    fontFamily: mono,
+    fontFamily: data,
     fontSize: 13,
     color: C.ink,
     borderRadius: '8px',
@@ -126,16 +126,16 @@ const inputSx = {
     '&:hover fieldset': { borderColor: C.borderStrong },
     '&.Mui-focused fieldset': { borderColor: C.accentMid, borderWidth: '1px' },
   },
-  '& .MuiInputLabel-root': { fontFamily: serif, fontSize: 12, color: C.muted },
+  '& .MuiInputLabel-root': { fontFamily: body, fontSize: 12, color: C.muted },
 }
 
 const searchInputSx = {
   ...inputSx,
   '& .MuiOutlinedInput-root': {
     ...inputSx['& .MuiOutlinedInput-root'],
-    fontFamily: serif,
+    fontFamily: body,
   },
-  '& input': { fontFamily: serif },
+  '& input': { fontFamily: body },
 }
 
 function ActionBtn({
@@ -164,7 +164,7 @@ function ActionBtn({
       }}
     >
       <Box sx={{ color: disabled ? C.muted : color, display: 'flex' }}>{icon}</Box>
-      <Typography sx={{ fontSize: 11, fontWeight: 600, fontFamily: mono, letterSpacing: '0.04em', color: disabled ? C.muted : color }}>
+      <Typography sx={{ fontSize: 11, fontWeight: 600, fontFamily: data, letterSpacing: '0.04em', color: disabled ? C.muted : color }}>
         {label}
       </Typography>
     </Box>
@@ -192,7 +192,7 @@ function SaveBtn({
         cursor: disabled ? 'not-allowed' : 'pointer',
         bgcolor: disabled ? C.border : C.accentMid,
         color: disabled ? C.muted : '#fff',
-        fontFamily: mono,
+        fontFamily: data,
         fontSize: 12,
         fontWeight: 700,
         letterSpacing: '0.04em',
@@ -540,13 +540,13 @@ export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initia
         <Box>
           <Typography
             sx={{
-              fontSize: 11, fontFamily: serif, letterSpacing: '0.18em',
+              fontSize: 11, fontFamily: body, letterSpacing: '0.18em',
               textTransform: 'uppercase', color: C.accentMid, mb: 0.6,
             }}
           >
             Holdings
           </Typography>
-          <Typography sx={{ fontFamily: serif, fontSize: 16, fontWeight: 700, color: C.ink }}>
+          <Typography sx={{ fontFamily: body, fontSize: 16, fontWeight: 700, color: C.ink }}>
             {isManage ? `${managedHolding?.symbol} — ${managedHolding?.company}` : 'Add New Holding'}
           </Typography>
         </Box>
@@ -612,7 +612,7 @@ export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initia
                     py: 1.2,
                     fontSize: 12,
                     color: C.muted,
-                    fontFamily: serif,
+                    fontFamily: body,
                   }}
                 >
                   No matches found.
@@ -650,19 +650,19 @@ export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initia
                       }}
                     >
                       <Box sx={{ minWidth: 0 }}>
-                        <Typography sx={{ fontFamily: mono, fontSize: 12, fontWeight: 700, color: C.ink }}>
+                        <Typography sx={{ fontFamily: data, fontSize: 12, fontWeight: 700, color: C.ink }}>
                           {s.symbol}
                         </Typography>
-                        <Typography sx={{ fontFamily: serif, fontSize: 11, color: C.ink2 }}>
+                        <Typography sx={{ fontFamily: body, fontSize: 11, color: C.ink2 }}>
                           {s.company}
                         </Typography>
                       </Box>
                       <Box sx={{ textAlign: 'right', flexShrink: 0 }}>
-                        <Typography sx={{ fontFamily: mono, fontSize: 11.5, color: C.ink }}>
+                        <Typography sx={{ fontFamily: data, fontSize: 11.5, color: C.ink }}>
                           Rs. {fmt(s.price)}
                         </Typography>
                         {alreadyHeld && (
-                          <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.muted }}>
+                          <Typography sx={{ fontFamily: data, fontSize: 11, color: C.muted }}>
                             already held
                           </Typography>
                         )}
@@ -689,28 +689,28 @@ export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initia
               p: 2,
             }}
           >
-            <Typography sx={{ fontSize: 11, color: C.muted, fontFamily: mono, textTransform: 'uppercase', letterSpacing: '0.08em', mb: 1.2 }}>
+            <Typography sx={{ fontSize: 11, color: C.muted, fontFamily: data, textTransform: 'uppercase', letterSpacing: '0.08em', mb: 1.2 }}>
               Current Position
             </Typography>
             <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1 }}>
               <Box>
-                <Typography sx={{ fontSize: 11, color: C.muted, fontFamily: mono }}>Shares</Typography>
-                <Typography sx={{ fontFamily: mono, fontSize: 15, fontWeight: 700, color: C.ink }}>{fmt(totalShares)}</Typography>
+                <Typography sx={{ fontSize: 11, color: C.muted, fontFamily: data }}>Shares</Typography>
+                <Typography sx={{ fontFamily: data, fontSize: 15, fontWeight: 700, color: C.ink }}>{fmt(totalShares)}</Typography>
               </Box>
               <Box>
-                <Typography sx={{ fontSize: 11, color: C.muted, fontFamily: mono }}>Avg Cost</Typography>
-                <Typography sx={{ fontFamily: mono, fontSize: 15, fontWeight: 700, color: C.accentMid }}>Rs. {avgCost.toFixed(2)}</Typography>
+                <Typography sx={{ fontSize: 11, color: C.muted, fontFamily: data }}>Avg Cost</Typography>
+                <Typography sx={{ fontFamily: data, fontSize: 15, fontWeight: 700, color: C.accentMid }}>Rs. {avgCost.toFixed(2)}</Typography>
               </Box>
               <Box>
-                <Typography sx={{ fontSize: 11, color: C.muted, fontFamily: mono }}>Market Value</Typography>
-                <Typography sx={{ fontFamily: mono, fontSize: 15, fontWeight: 700, color: C.ink }}>{fmtPkr(totalShares * currentPrice)}</Typography>
+                <Typography sx={{ fontSize: 11, color: C.muted, fontFamily: data }}>Market Value</Typography>
+                <Typography sx={{ fontFamily: data, fontSize: 15, fontWeight: 700, color: C.ink }}>{fmtPkr(totalShares * currentPrice)}</Typography>
               </Box>
             </Box>
             <Box sx={{ mt: 1, pt: 1, borderTop: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.ink2 }}>
+              <Typography sx={{ fontFamily: data, fontSize: 11, color: C.ink2 }}>
                 Market price: Rs. {currentPrice.toFixed(2)}
               </Typography>
-              <Typography sx={{ fontFamily: mono, fontSize: 11, fontWeight: 700, color: totalPL >= 0 ? C.pos : C.neg }}>
+              <Typography sx={{ fontFamily: data, fontSize: 11, fontWeight: 700, color: totalPL >= 0 ? C.pos : C.neg }}>
                 · {totalPL >= 0 ? '+' : ''}{totalPLPct.toFixed(2)}%
               </Typography>
             </Box>
@@ -735,10 +735,10 @@ export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initia
                 bgcolor: C.surface,
               }}
             >
-              <Typography sx={{ fontFamily: serif, fontSize: 13, color: C.muted }}>
+              <Typography sx={{ fontFamily: body, fontSize: 13, color: C.muted }}>
                 No purchases added yet
               </Typography>
-              <Typography sx={{ fontFamily: serif, fontSize: 11, color: C.muted, mt: 0.5 }}>
+              <Typography sx={{ fontFamily: body, fontSize: 11, color: C.muted, mt: 0.5 }}>
                 Tap "Add Buying" below to add your first entry
               </Typography>
             </Box>
@@ -782,7 +782,7 @@ export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initia
                         slotProps={{ htmlInput: { min: 0, step: '0.01' } }}
                       />
                       <IconButton size="small" onClick={confirmEdit} sx={{ color: C.pos }}>
-                        <Typography sx={{ fontSize: 11, fontWeight: 700, fontFamily: mono }}>OK</Typography>
+                        <Typography sx={{ fontSize: 11, fontWeight: 700, fontFamily: data }}>OK</Typography>
                       </IconButton>
                       <IconButton size="small" onClick={cancelEdit} sx={{ color: C.muted }}>
                         <CloseRoundedIcon sx={{ fontSize: 14 }} />
@@ -791,18 +791,18 @@ export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initia
                   ) : (
                     <>
                       <Box sx={{ flex: 1 }}>
-                        <Typography sx={{ fontFamily: mono, fontSize: 12, fontWeight: 600, color: C.ink }}>
+                        <Typography sx={{ fontFamily: data, fontSize: 12, fontWeight: 600, color: C.ink }}>
                           {fmt(lot.shares)} shares
                         </Typography>
-                        <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.ink2 }}>
+                        <Typography sx={{ fontFamily: data, fontSize: 11, color: C.ink2 }}>
                           @ Rs. {lot.price.toFixed(2)}
                         </Typography>
-                        <Typography sx={{ fontFamily: serif, fontSize: 10.5, color: C.muted, mt: 0.2 }}>
+                        <Typography sx={{ fontFamily: body, fontSize: 10.5, color: C.muted, mt: 0.2 }}>
                           {fmtTradeDate(lot.date)}
                         </Typography>
                       </Box>
                       <Box sx={{ textAlign: 'right', mr: 1 }}>
-                        <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.muted }}>
+                        <Typography sx={{ fontFamily: data, fontSize: 11, color: C.muted }}>
                           Rs. {fmt(Math.round(lot.shares * lot.price))}
                         </Typography>
                       </Box>
@@ -861,7 +861,7 @@ export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initia
               gap: 1.5,
             }}
           >
-            <Typography sx={{ fontSize: 11, color: C.accentMid, fontFamily: mono, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            <Typography sx={{ fontSize: 11, color: C.accentMid, fontFamily: data, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
               New Purchase
             </Typography>
             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
@@ -896,16 +896,16 @@ export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initia
 
             {projectedAvg !== null && (
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 0.8, px: 1.2, bgcolor: C.bg, borderRadius: '8px' }}>
-                <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.ink2 }}>
+                <Typography sx={{ fontFamily: data, fontSize: 11, color: C.ink2 }}>
                   Updated avg cost:
                 </Typography>
-                <Typography sx={{ fontFamily: mono, fontSize: 13, fontWeight: 700, color: C.accentMid }}>
+                <Typography sx={{ fontFamily: data, fontSize: 13, fontWeight: 700, color: C.accentMid }}>
                   Rs. {projectedAvg.toFixed(2)}
                 </Typography>
                 {avgCost > 0 && projectedAvg !== avgCost && (
                   <Typography
                     sx={{
-                      fontFamily: mono, fontSize: 11, fontWeight: 600,
+                      fontFamily: data, fontSize: 11, fontWeight: 600,
                       color: projectedAvg < avgCost ? C.pos : C.neg,
                     }}
                   >
@@ -913,7 +913,7 @@ export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initia
                   </Typography>
                 )}
                 {avgCost > 0 && projectedAvg === avgCost && (
-                  <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.muted }}>
+                  <Typography sx={{ fontFamily: data, fontSize: 11, color: C.muted }}>
                     — unchanged
                   </Typography>
                 )}
@@ -953,7 +953,7 @@ export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initia
               gap: 1.5,
             }}
           >
-            <Typography sx={{ fontSize: 11, color: C.neg, fontFamily: mono, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            <Typography sx={{ fontSize: 11, color: C.neg, fontFamily: data, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
               Sell Shares
             </Typography>
 
@@ -990,15 +990,15 @@ export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initia
               return (
                 <Box sx={{ bgcolor: C.bg, borderRadius: '8px', px: 1.5, py: 1, display: 'flex', flexDirection: 'column', gap: 0.6 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.ink2 }}>Proceeds</Typography>
-                    <Typography sx={{ fontFamily: mono, fontSize: 13, fontWeight: 700, color: C.ink }}>
+                    <Typography sx={{ fontFamily: data, fontSize: 11, color: C.ink2 }}>Proceeds</Typography>
+                    <Typography sx={{ fontFamily: data, fontSize: 13, fontWeight: 700, color: C.ink }}>
                       Rs. {qty * sp > 0 ? (qty * sp).toLocaleString('en-PK', { maximumFractionDigits: 0 }) : '0'}
                     </Typography>
                   </Box>
                   {avgCost > 0 && (
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.ink2 }}>Realised P&L</Typography>
-                      <Typography sx={{ fontFamily: mono, fontSize: 13, fontWeight: 700, color: realised >= 0 ? C.pos : C.neg }}>
+                      <Typography sx={{ fontFamily: data, fontSize: 11, color: C.ink2 }}>Realised P&L</Typography>
+                      <Typography sx={{ fontFamily: data, fontSize: 13, fontWeight: 700, color: realised >= 0 ? C.pos : C.neg }}>
                         {realised >= 0 ? '+' : ''}Rs. {Math.round(Math.abs(realised)).toLocaleString('en-PK')}
                         {' '}
                         <Typography component="span" sx={{ fontSize: 11, fontWeight: 600 }}>
@@ -1008,10 +1008,10 @@ export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initia
                     </Box>
                   )}
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.ink2 }}>
+                    <Typography sx={{ fontFamily: data, fontSize: 11, color: C.ink2 }}>
                       {remainingShares > 0 ? 'Remaining shares' : 'Position closed'}
                     </Typography>
-                    <Typography sx={{ fontFamily: mono, fontSize: 13, fontWeight: 700, color: remainingShares > 0 ? C.ink : C.neg }}>
+                    <Typography sx={{ fontFamily: data, fontSize: 13, fontWeight: 700, color: remainingShares > 0 ? C.ink : C.neg }}>
                       {remainingShares > 0 ? remainingShares.toLocaleString('en-PK') : 'Full exit'}
                     </Typography>
                   </Box>
@@ -1020,7 +1020,7 @@ export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initia
             })()}
 
             {sellShares && Number(sellShares) > totalShares && (
-              <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.neg }}>
+              <Typography sx={{ fontFamily: data, fontSize: 11, color: C.neg }}>
                 Cannot sell more than {totalShares.toLocaleString('en-PK')} shares.
               </Typography>
             )}

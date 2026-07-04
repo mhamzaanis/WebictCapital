@@ -52,12 +52,12 @@ type Principle = {
   icon: ElementType
 }
 
-const PRIMARY = '#0a2463'
-const SUCCESS = '#0f8a55'
+const PRIMARY = 'var(--wc-primary)'
+const SUCCESS = 'var(--wc-success)'
 const DISPLAY_FONT = 'var(--wc-font-display)'
-const MONO_FONT = 'var(--wc-font-mono)'
+const DATA_FONT = 'var(--wc-font-data)'
 const ECHART_BODY_FONT = 'Inter, sans-serif'
-const ECHART_MONO_FONT = 'JetBrains Mono, monospace'
+const ECHART_DATA_FONT = 'Inter, sans-serif'
 const INFLATION_RATE = 0.09
 const START_DATE = new Date(2025, 4, 1)
 
@@ -216,7 +216,7 @@ export function SipCalculatorPage() {
         axisLine: { lineStyle: { color: '#e2eaf5' } },
         axisTick: { show: false },
         axisLabel: {
-          fontFamily: ECHART_MONO_FONT,
+          fontFamily: ECHART_DATA_FONT,
           fontSize: 11,
           color: '#4a5e78',
         },
@@ -227,7 +227,7 @@ export function SipCalculatorPage() {
         splitLine: { lineStyle: { color: '#e2eaf5' } },
         axisTick: { show: false },
         axisLabel: {
-          fontFamily: ECHART_MONO_FONT,
+          fontFamily: ECHART_DATA_FONT,
           fontSize: 11,
           color: '#4a5e78',
           formatter: (value: number) => formatAxisValue(value),
@@ -241,8 +241,8 @@ export function SipCalculatorPage() {
           smooth: true,
           symbol: 'circle',
           symbolSize: 6,
-          lineStyle: { color: SUCCESS, width: 3 },
-          itemStyle: { color: SUCCESS, borderColor: '#ffffff', borderWidth: 2 },
+          lineStyle: { color: '#147a4d', width: 3 },
+          itemStyle: { color: '#147a4d', borderColor: '#ffffff', borderWidth: 2 },
           areaStyle: {
             color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
               { offset: 0, color: 'rgba(15,138,85,0.18)' },
@@ -256,7 +256,7 @@ export function SipCalculatorPage() {
           data: yearlyData.investedArr,
           smooth: true,
           symbol: 'none',
-          lineStyle: { color: PRIMARY, width: 2, type: 'dashed' },
+          lineStyle: { color: '#0a2e78', width: 2, type: 'dashed' },
         },
       ],
     }
@@ -286,14 +286,14 @@ export function SipCalculatorPage() {
     <Box
       component="main"
       sx={{
-        pt: { xs: 'calc(64px + 2.6rem)', md: 'calc(72px + 3.8rem)' },
-        pb: { xs: 7, md: 10 },
+        pt: { xs: 'var(--wc-page-top-xs)', md: 'var(--wc-page-top-md)' },
+        pb: { xs: 'var(--wc-page-bottom-xs)', md: 'var(--wc-page-bottom-md)' },
         bgcolor: 'var(--wc-bg)',
         minHeight: '100vh',
       }}
     >
-      <Container maxWidth="xl" sx={{ maxWidth: '1200px !important', px: { xs: 2.5, md: 5 } }}>
-        <Stack spacing={{ xs: 4.8, md: 5.6 }}>
+      <Container maxWidth="xl" sx={{ maxWidth: '1280px !important', px: { xs: 'var(--wc-page-gutter-xs)', md: 'var(--wc-page-gutter-md)' } }}>
+        <Stack spacing={{ xs: 7, md: 9 }}>
           <MotionReveal>
             <Box sx={{ maxWidth: 560 }}>
 
@@ -302,10 +302,10 @@ export function SipCalculatorPage() {
                 sx={{
                   color: 'var(--wc-text-primary)',
                   fontFamily: DISPLAY_FONT,
-                  fontSize: { xs: '3rem', sm: '4rem', md: '4.8rem' },
+                  fontSize: { xs: '2.3rem', sm: '2.75rem', md: '3.35rem' },
                   fontWeight: 700,
-                  lineHeight: 0.98,
-                  letterSpacing: 0,
+                  lineHeight: 0.95,
+                  letterSpacing: '-0.045em',
                 }}
               >
                 SIP{' '}
@@ -634,7 +634,7 @@ function SliderField({
             {label}
           </Typography>
         </Stack>
-        <Typography sx={{ color: PRIMARY, fontFamily: MONO_FONT, fontSize: 14, fontWeight: 800, whiteSpace: 'nowrap' }}>
+        <Typography sx={{ color: PRIMARY, fontFamily: DATA_FONT, fontSize: 14, fontWeight: 800, whiteSpace: 'nowrap' }}>
           {display}
         </Typography>
       </Stack>
@@ -669,7 +669,7 @@ function SliderField({
             '& .MuiSlider-mark': { bgcolor: '#c8d6ec', width: 3, height: 3, borderRadius: '50%' },
             '& .MuiSlider-markLabel': {
               color: '#6f819b',
-              fontFamily: MONO_FONT,
+              fontFamily: DATA_FONT,
               fontSize: 10,
               top: 25,
               whiteSpace: 'nowrap',
@@ -710,7 +710,7 @@ function MetricCard({ label, value, icon: Icon, variant = 'default' }: MetricCar
           sx={{
             mt: 0.65,
             color: 'inherit',
-            fontFamily: MONO_FONT,
+            fontFamily: DATA_FONT,
             fontSize: { xs: 16, md: 17 },
             fontWeight: 800,
             lineHeight: 1.18,
@@ -803,10 +803,10 @@ function ScheduleTable({
         <TableBody>
           {rows.map((row) => (
             <TableRow key={row.year} sx={{ '&:last-child td': { borderBottom: 0 } }}>
-              <TableCell sx={{ color: 'var(--wc-text-secondary)', fontFamily: MONO_FONT, fontSize: 12 }}>Yr {row.year}</TableCell>
-              <TableCell sx={{ color: 'var(--wc-text-secondary)', fontFamily: MONO_FONT, fontSize: 12 }}>{formatPKR(row.invested)}</TableCell>
-              <TableCell sx={{ color: SUCCESS, fontFamily: MONO_FONT, fontSize: 12 }}>{formatPKR(row.gains)}</TableCell>
-              <TableCell sx={{ color: PRIMARY, fontFamily: MONO_FONT, fontSize: 12, fontWeight: 800 }}>{formatPKR(row.balance)}</TableCell>
+              <TableCell sx={{ color: 'var(--wc-text-secondary)', fontFamily: DATA_FONT, fontSize: 12 }}>Yr {row.year}</TableCell>
+              <TableCell sx={{ color: 'var(--wc-text-secondary)', fontFamily: DATA_FONT, fontSize: 12 }}>{formatPKR(row.invested)}</TableCell>
+              <TableCell sx={{ color: SUCCESS, fontFamily: DATA_FONT, fontSize: 12 }}>{formatPKR(row.gains)}</TableCell>
+              <TableCell sx={{ color: PRIMARY, fontFamily: DATA_FONT, fontSize: 12, fontWeight: 800 }}>{formatPKR(row.balance)}</TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -887,11 +887,11 @@ function ReturnBreakdown({
               }}
             >
               <Typography sx={{ color: 'var(--wc-text-secondary)', fontSize: 12 }}>{item.label}</Typography>
-              <Typography sx={{ mt: 0.7, color: item.color, fontFamily: MONO_FONT, fontSize: { xs: 23, md: 26 }, fontWeight: 800, lineHeight: 1.15 }}>
+              <Typography sx={{ mt: 0.7, color: item.color, fontFamily: DATA_FONT, fontSize: { xs: 23, md: 26 }, fontWeight: 800, lineHeight: 1.15 }}>
                 {item.value}
               </Typography>
               {item.sub && (
-                <Typography sx={{ mt: 0.75, color: 'var(--wc-text-secondary)', fontFamily: MONO_FONT, fontSize: 11 }}>
+                <Typography sx={{ mt: 0.75, color: 'var(--wc-text-secondary)', fontFamily: DATA_FONT, fontSize: 11 }}>
                   {item.sub}
                 </Typography>
               )}

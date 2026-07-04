@@ -192,10 +192,10 @@ function changeRankValue(stock: RankedStock): number {
 }
 
 const MARKET_CHART_COLORS = {
-  primary: '#0a2463',
-  success: '#1a6640',
-  error: '#b4283a',
-  neutral: '#8a9bb0',
+  primary: '#0a2e78',
+  success: '#147a4d',
+  error: '#c53346',
+  neutral: '#7b8da8',
 }
 
 function mapMarketLeaderItem(stock: RankedStock): MarketLeaderItem {
@@ -325,13 +325,14 @@ async function fetchSupabaseTradeDay(tradeDate: string): Promise<PsxData> {
   }
 }
 
-const NUMBER_FONT = 'var(--wc-font-mono)'
-const SERIF = 'var(--wc-font-display)'
+const NUMBER_FONT = 'var(--wc-font-data)'
+const DISPLAY_FONT = 'var(--wc-font-display)'
+const UI_FONT = 'var(--wc-font-body)'
 const CARD_SX = {
-  bgcolor: '#ffffff',
-  border: '1px solid var(--wc-divider)',
-  borderRadius: '7px',
-  boxShadow: '0 18px 42px rgba(10, 36, 99, 0.025)',
+  bgcolor: 'var(--wc-surface)',
+  border: '1px solid var(--wc-border)',
+  borderRadius: '12px',
+  boxShadow: 'var(--wc-shadow-card)',
 }
 
 function formatMarketDate(value: string | null | undefined): string {
@@ -362,7 +363,7 @@ function SectionTitle({
     <Stack spacing={0.4} sx={{ mb: 1.8 }}>
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
         <Box sx={{ color: 'var(--wc-primary)', display: 'flex', alignItems: 'center' }}>{icon}</Box>
-        <Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: SERIF, fontSize: 18, fontWeight: 700 }}>
+        <Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: UI_FONT, fontSize: 16, fontWeight: 700, letterSpacing: '-0.015em' }}>
           {title}
         </Typography>
         {/* <InfoDot /> */}
@@ -391,30 +392,30 @@ function HeaderMetric({
   return (
     <Box
       sx={{
-        minWidth: { xs: 150, lg: 132 },
-        px: { xs: 0, lg: 2.3 },
-        py: { xs: 1.2, lg: 0 },
+        minWidth: { xs: 150, lg: 140 },
+        px: { xs: 0, lg: 2.8 },
+        py: { xs: 1.2, lg: 0.8 },
         borderLeft: { lg: '1px solid var(--wc-divider)' },
       }}
     >
       <Typography
         sx={{
-          color: '#31518a',
-          fontFamily: SERIF,
-          fontSize: 10,
+          color: 'var(--wc-text-muted)',
+          fontFamily: UI_FONT,
+          fontSize: 11,
           fontWeight: 700,
-          letterSpacing: 0,
+          letterSpacing: '0.08em',
           textTransform: 'uppercase',
           mb: 0.8,
         }}
       >
         {label}
       </Typography>
-      <Typography sx={{ color, fontFamily: NUMBER_FONT, fontSize: 18, fontWeight: 800, lineHeight: 1.15 }}>
+      <Typography sx={{ color, fontFamily: NUMBER_FONT, fontSize: 18, fontWeight: 700, lineHeight: 1.15, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
         {value}
       </Typography>
       {detail && (
-        <Typography sx={{ mt: 0.6, color, fontFamily: NUMBER_FONT, fontSize: 10.5, fontWeight: 700 }}>
+        <Typography sx={{ mt: 0.6, color, fontFamily: NUMBER_FONT, fontSize: 11, fontWeight: 600, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
           {detail}
         </Typography>
       )}
@@ -422,69 +423,6 @@ function HeaderMetric({
   )
 }
 
-function BreadthMetric({
-  advancing,
-  declining,
-  unchanged,
-}: {
-  advancing: number
-  declining: number
-  unchanged: number
-}) {
-  return (
-    <Box
-      sx={{
-        minWidth: { xs: '100%', sm: 260 },
-        border: '1px solid var(--wc-divider)',
-        borderRadius: '7px',
-        display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
-        overflow: 'hidden',
-        bgcolor: '#ffffff',
-      }}
-    >
-      {[
-        { label: 'Advancers', value: advancing, color: 'var(--wc-success)' },
-        { label: 'Decliners', value: declining, color: 'var(--wc-error)' },
-        { label: 'Unchanged', value: unchanged, color: 'var(--wc-text-primary)' },
-      ].map((item, index) => (
-        <Box
-          key={item.label}
-          sx={{
-            px: 2,
-            py: 1.8,
-            borderLeft: index === 0 ? 'none' : '1px solid var(--wc-divider)',
-            textAlign: 'center',
-          }}
-        >
-          {index === 0 && (
-            <Typography
-              sx={{
-                color: '#31518a',
-                fontFamily: SERIF,
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: 0,
-                textTransform: 'uppercase',
-                mb: 0.8,
-                textAlign: 'left',
-              }}
-            >
-              Breadth
-            </Typography>
-          )}
-          {index !== 0 && <Box sx={{ height: 19 }} />}
-          <Typography sx={{ color: item.color, fontFamily: NUMBER_FONT, fontSize: 18, fontWeight: 800 }}>
-            {item.value.toLocaleString('en-PK')}
-          </Typography>
-          <Typography sx={{ mt: 0.5, color: 'var(--wc-text-secondary)', fontSize: 10.5 }}>
-            {item.label}
-          </Typography>
-        </Box>
-      ))}
-    </Box>
-  )
-}
 
 function LeaderTable({
   title,
@@ -492,17 +430,17 @@ function LeaderTable({
   icon,
   items,
   footer,
-  monoFont,
+  dataFont,
 }: {
   title: string
   subtitle: string
   icon: ReactNode
   items: MarketLeaderItem[]
   footer: string
-  monoFont: string
+  dataFont: string
 }) {
   return (
-    <Box sx={{ ...CARD_SX, p: 2.2, minHeight: 330 }}>
+    <Box sx={{ ...CARD_SX, p: { xs: 2.2, md: 2.8 }, minHeight: 330 }}>
       <SectionTitle icon={icon} title={title} subtitle={subtitle} />
       <Box sx={{ overflowX: 'auto' }}>
         <Box sx={{ minWidth: 470 }}>
@@ -519,11 +457,11 @@ function LeaderTable({
               <Typography
                 key={label}
                 sx={{
-                  color: 'var(--wc-text-secondary)',
-                  fontFamily: monoFont,
-                  fontSize: 9.5,
-                  fontWeight: 800,
-                  letterSpacing: 0,
+                  color: 'var(--wc-text-muted)',
+                  fontFamily: UI_FONT,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: '0.08em',
                   textTransform: 'uppercase',
                   textAlign: label === 'Company' || label === 'Symbol' || label === '#' ? 'left' : 'right',
                 }}
@@ -543,14 +481,14 @@ function LeaderTable({
                   gridTemplateColumns: '34px 82px minmax(0,1fr) 78px 86px',
                   columnGap: 1.5,
                   alignItems: 'center',
-                  minHeight: 36,
+                  minHeight: 42,
                   borderBottom: index === items.length - 1 ? 'none' : '1px solid var(--wc-divider)',
                 }}
               >
-                <Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 11 }}>
+                <Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: dataFont, fontSize: 12, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
                   {index + 1}
                 </Typography>
-                <Typography sx={{ color: 'var(--wc-primary)', fontFamily: monoFont, fontSize: 12, fontWeight: 800 }}>
+                <Typography sx={{ color: 'var(--wc-primary)', fontFamily: UI_FONT, fontSize: 13, fontWeight: 750, letterSpacing: 0, textTransform: 'uppercase' }}>
                   {item.symbol}
                 </Typography>
                 <Typography
@@ -565,16 +503,18 @@ function LeaderTable({
                 >
                   {item.company}
                 </Typography>
-                <Typography sx={{ color: toneValue, fontFamily: monoFont, fontSize: 11.5, fontWeight: 700, textAlign: 'right' }}>
+                <Typography sx={{ color: toneValue, fontFamily: dataFont, fontSize: 12, fontWeight: 700, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
                   {formatSignedNumber(item.change)}
                 </Typography>
                 <Typography
                   sx={{
                     color: tone === 'positive' ? 'var(--wc-success)' : tone === 'negative' ? 'var(--wc-error)' : 'var(--wc-text-secondary)',
-                    fontFamily: monoFont,
-                    fontSize: 11.5,
-                    fontWeight: 800,
+                    fontFamily: dataFont,
+                    fontSize: 12,
+                    fontWeight: 700,
                     textAlign: 'right',
+                    fontVariantNumeric: 'tabular-nums',
+                    fontFeatureSettings: '"tnum" 1',
                   }}
                 >
                   {formatPercent(item.changePct ?? NaN)}
@@ -596,13 +536,13 @@ function LeaderTable({
 
 function VolumeLeaderTable({
   items,
-  monoFont,
+  dataFont,
 }: {
   items: RankedStock[]
-  monoFont: string
+  dataFont: string
 }) {
   return (
-    <Box sx={{ ...CARD_SX, p: 2.2, minHeight: 330 }}>
+    <Box sx={{ ...CARD_SX, p: { xs: 2.2, md: 2.8 }, minHeight: 330 }}>
       <SectionTitle
         icon={<StackedBarChartIcon sx={{ fontSize: 18 }} />}
         title="Volume Leaders"
@@ -623,10 +563,11 @@ function VolumeLeaderTable({
               <Typography
                 key={label}
                 sx={{
-                  color: 'var(--wc-text-secondary)',
-                  fontFamily: monoFont,
-                  fontSize: 9.5,
-                  fontWeight: 800,
+                  color: 'var(--wc-text-muted)',
+                  fontFamily: UI_FONT,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: '0.08em',
                   textTransform: 'uppercase',
                   textAlign: ['Volume', 'Turnover'].includes(label) ? 'right' : 'left',
                 }}
@@ -648,14 +589,14 @@ function VolumeLeaderTable({
                   gridTemplateColumns: '34px 82px minmax(0,1fr) 88px 88px',
                   columnGap: 1.5,
                   alignItems: 'center',
-                  minHeight: 36,
+                  minHeight: 42,
                   borderBottom: index === items.length - 1 ? 'none' : '1px solid var(--wc-divider)',
                 }}
               >
-                <Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 11 }}>
+                <Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: dataFont, fontSize: 12, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
                   {index + 1}
                 </Typography>
-                <Typography sx={{ color: 'var(--wc-primary)', fontFamily: monoFont, fontSize: 12, fontWeight: 800 }}>
+                <Typography sx={{ color: 'var(--wc-primary)', fontFamily: UI_FONT, fontSize: 13, fontWeight: 750, letterSpacing: 0, textTransform: 'uppercase' }}>
                   {item.symbol}
                 </Typography>
                 <Typography
@@ -664,10 +605,10 @@ function VolumeLeaderTable({
                 >
                   {item.company}
                 </Typography>
-                <Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: monoFont, fontSize: 11.5, textAlign: 'right' }}>
+                <Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: dataFont, fontSize: 12, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
                   {formatCompactNumber(item.numericTurnover)}
                 </Typography>
-                <Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 11.5, textAlign: 'right' }}>
+                <Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: dataFont, fontSize: 12, textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
                   {formatCompactNumber(turnoverValue)}
                 </Typography>
               </Box>
@@ -990,17 +931,17 @@ export function DataPage() {
     <Box
       component="main"
       sx={{
-        pt: { xs: 'calc(64px + 2.4rem)', md: 'calc(72px + 3.6rem)' },
-        pb: { xs: 6, md: 8 },
+        pt: { xs: 'var(--wc-page-top-xs)', md: 'var(--wc-page-top-md)' },
+        pb: { xs: 'var(--wc-page-bottom-xs)', md: 'var(--wc-page-bottom-md)' },
         bgcolor: 'var(--wc-bg)',
         minHeight: '100vh',
       }}
     >
-      <Container maxWidth="xl" sx={{ maxWidth: '1720px !important', px: { xs: 2.5, md: 5, xl: 7 } }}>
-        <Stack spacing={{ xs: 3, md: 3.5 }}>
+      <Container maxWidth="xl" sx={{ maxWidth: '1880px !important', px: { xs: 'var(--wc-page-gutter-xs)', md: 'var(--wc-page-gutter-md)', xl: 'var(--wc-page-gutter-xl)' } }}>
+        <Stack spacing={{ xs: 6, md: 7.5 }}>
           {status === 'loading' && (
             <MotionReveal>
-              <Stack spacing={{ xs: 2.5, md: 3 }}>
+              <Stack spacing={{ xs: 3.5, md: 4.5 }}>
                 <MarketDashboardSkeleton />
                 <TickerTapeSkeleton />
                 <FiltersBar
@@ -1022,9 +963,9 @@ export function DataPage() {
             <MotionReveal>
               <Box
                 sx={{
-                  border: '1px solid #e2eaf5',
-                  borderRadius: 1.5,
-                  bgcolor: '#fafbfd',
+                  border: '1px solid var(--wc-border)',
+                  borderRadius: '12px',
+                  bgcolor: 'var(--wc-surface)',
                   p: { xs: 3, md: 5 },
                   textAlign: 'center',
                 }}
@@ -1034,8 +975,8 @@ export function DataPage() {
                     width: 48,
                     height: 48,
                     borderRadius: '12px',
-                    bgcolor: 'rgba(180,40,58,0.08)',
-                    border: '1px solid rgba(180,40,58,0.15)',
+                    bgcolor: 'var(--wc-error-soft)',
+                    border: '1px solid rgba(197,51,70,0.18)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -1053,7 +994,7 @@ export function DataPage() {
                     fontSize: 18,
                     fontWeight: 700,
                     color: 'var(--wc-text-primary)',
-                    fontFamily: SERIF,
+                    fontFamily: UI_FONT,
                     mb: 1.5,
                     letterSpacing: 0,
                   }}
@@ -1079,8 +1020,8 @@ export function DataPage() {
                     mt: 2,
                     display: 'inline-block',
                     textAlign: 'left',
-                    bgcolor: 'rgba(10,36,99,0.04)',
-                    border: '1px solid rgba(10,36,99,0.12)',
+                    bgcolor: 'var(--wc-primary-soft)',
+                    border: '1px solid rgba(10,46,120,0.12)',
                     borderRadius: 1,
                     px: 2.5,
                     py: 1.5,
@@ -1088,7 +1029,7 @@ export function DataPage() {
                 >
                   {fetchError && (
                     <Box sx={{ mt: 1 }}>
-                      <Typography sx={{ fontSize: 11, fontFamily: SERIF, fontWeight: 600, color: 'var(--wc-error)', letterSpacing: '0.06em', mb: 0.4 }}>
+                      <Typography sx={{ fontSize: 11, fontFamily: UI_FONT, fontWeight: 700, color: 'var(--wc-error)', letterSpacing: '0.08em', mb: 0.4 }}>
                         ERROR
                       </Typography>
                       <Typography sx={{ fontSize: 11, fontFamily: NUMBER_FONT, color: 'var(--wc-text-secondary)', wordBreak: 'break-all' }}>
@@ -1102,7 +1043,7 @@ export function DataPage() {
           )}
 
           {status === 'ok' && activeData && (
-            <Stack spacing={{ xs: 2.5, md: 3 }}>
+            <Stack spacing={{ xs: 5, md: 6.5 }}>
               <MotionReveal>
                 <Box
                   component={motion.section}
@@ -1112,7 +1053,7 @@ export function DataPage() {
                   sx={{
                     display: 'grid',
                     gridTemplateColumns: { xs: '1fr', xl: 'minmax(0, 0.9fr) minmax(700px, 1.1fr)' },
-                    gap: { xs: 3, xl: 5 },
+                    gap: { xs: 4, xl: 6 },
                     alignItems: 'end',
                   }}
                 >
@@ -1131,10 +1072,11 @@ export function DataPage() {
                       variant="h1"
                       sx={{
                         color: 'var(--wc-text-primary)',
-                        fontSize: { xs: '2.7rem', sm: '3.4rem', md: '4.55rem' },
+                        fontFamily: DISPLAY_FONT,
+                        fontSize: { xs: '2.25rem', sm: '2.55rem', md: '3.3rem' },
                         fontWeight: 700,
-                        lineHeight: 0.98,
-                        letterSpacing: 0,
+                        lineHeight: 0.95,
+                        letterSpacing: '-0.045em',
                       }}
                     >
                       PSX Market Overview
@@ -1146,6 +1088,49 @@ export function DataPage() {
                         {formatMarketDate(latestTradeDate ?? activeData.date)}
                       </Box>
                     </Typography>
+
+                    <Box
+                      sx={{
+                        mt: 2.2,
+                        border: '1px solid var(--wc-border)',
+                        borderRadius: '8px',
+                        bgcolor: 'var(--wc-surface-soft)',
+                        px: 2.2,
+                        py: 1.6,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 2,
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          width: 6,
+                          height: 6,
+                          borderRadius: '50%',
+                          bgcolor: 'var(--wc-primary)',
+                          flexShrink: 0,
+                        }}
+                      />
+                      <Box>
+                        <Typography
+                          sx={{
+                            color: 'var(--wc-primary)',
+                            fontFamily: 'var(--wc-font-body)',
+                            fontSize: 12,
+                            fontWeight: 700,
+                            letterSpacing: '0.06em',
+                            textTransform: 'uppercase',
+                            mb: 0.3,
+                          }}
+                        >
+                          Beyond Daily Prices
+                        </Typography>
+                        <Typography sx={{ color: 'var(--wc-text-secondary)', fontSize: 12.5, lineHeight: 1.5 }}>
+                          Every number tells a story. We look past the surface — connecting market movements,
+                          sector rotations, and company fundamentals to reveal the deeper narrative behind the data.
+                        </Typography>
+                      </Box>
+                    </Box>
                   </Box>
 
                   <Box
@@ -1174,7 +1159,7 @@ export function DataPage() {
                       value={formatCompactNumber(marketSummary.Volume_Traded)}
                       detail="Turnover (PKR)"
                     />
-                    <BreadthMetric advancing={stats.gainers} declining={stats.losers} unchanged={stats.unchanged} />
+                    {/* <BreadthMetric advancing={stats.gainers} declining={stats.losers} unchanged={stats.unchanged} /> */}
                   </Box>
                 </Box>
               </MotionReveal>
@@ -1183,7 +1168,7 @@ export function DataPage() {
                 <TickerTape
                   items={tickerTapeItems}
                   date={formatShortDate(latestTradeDate ?? activeData.date)}
-                  monoFont={NUMBER_FONT}
+                  dataFont={NUMBER_FONT}
                 />
               </MotionReveal>
 
@@ -1195,7 +1180,7 @@ export function DataPage() {
                     icon={<BubbleChartIcon sx={{ fontSize: 18 }} />}
                     height={390}
                     data={marketVisualData.heatmap}
-                    sx={{ ...CARD_SX, p: 2.2, borderRadius: '7px', minHeight: { xs: 420, md: 500 } }}
+                    sx={{ ...CARD_SX, p: { xs: 2.2, md: 2.8 }, minHeight: { xs: 420, md: 500 } }}
                     colors={{
                       positive: MARKET_CHART_COLORS.success,
                       negative: MARKET_CHART_COLORS.error,
@@ -1213,7 +1198,7 @@ export function DataPage() {
                       display: { xs: 'none', sm: 'flex' },
                     }}
                   >
-                    <Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: NUMBER_FONT, fontSize: 10, fontWeight: 800 }}>
+                    <Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: NUMBER_FONT, fontSize: 11, fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
                       -5%
                     </Typography>
                     <Box
@@ -1221,10 +1206,10 @@ export function DataPage() {
                         width: 220,
                         height: 8,
                         borderRadius: 999,
-                        background: 'linear-gradient(90deg, #c72f43 0%, #eef2f7 50%, #1f8b55 100%)',
+                        background: 'linear-gradient(90deg, var(--wc-error) 0%, #eef2f7 50%, var(--wc-success) 100%)',
                       }}
                     />
-                    <Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: NUMBER_FONT, fontSize: 10, fontWeight: 800 }}>
+                    <Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: NUMBER_FONT, fontSize: 11, fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
                       +5%
                     </Typography>
                   </Stack>
@@ -1236,7 +1221,7 @@ export function DataPage() {
                   sx={{
                     display: 'grid',
                     gridTemplateColumns: { xs: '1fr', lg: '0.85fr 1.05fr 1.1fr' },
-                    gap: 1.5,
+                    gap: { xs: 2, md: 2.5 },
                   }}
                 >
                   <DonutChart
@@ -1253,7 +1238,7 @@ export function DataPage() {
                     ]}
                     centerSubtext="Total Stocks"
                     emptyLabel="Breadth data is unavailable."
-                    sx={{ ...CARD_SX, borderRadius: '7px', minHeight: 350 }}
+                    sx={{ ...CARD_SX, minHeight: 350 }}
                   />
                   <BarChart
                     heading="Sector Volume"
@@ -1263,7 +1248,7 @@ export function DataPage() {
                     data={marketVisualData.sectorVolume}
                     left={135}
                     emptyLabel="Sector volume is unavailable."
-                    sx={{ ...CARD_SX, borderRadius: '7px', minHeight: 350 }}
+                    sx={{ ...CARD_SX, minHeight: 350 }}
                   />
                   <LineChart
                     heading="Mover Curve"
@@ -1273,7 +1258,7 @@ export function DataPage() {
                     data={marketVisualData.momentum}
                     color={MARKET_CHART_COLORS.primary}
                     emptyLabel="Momentum line needs more mover data."
-                    sx={{ ...CARD_SX, borderRadius: '7px', minHeight: 350 }}
+                    sx={{ ...CARD_SX, minHeight: 350 }}
                   />
                 </Box>
               </MotionReveal>
@@ -1283,7 +1268,7 @@ export function DataPage() {
                   sx={{
                     display: 'grid',
                     gridTemplateColumns: { xs: '1fr', lg: 'repeat(3, minmax(0, 1fr))' },
-                    gap: 1.5,
+                    gap: { xs: 2, md: 2.5 },
                   }}
                 >
                   <LeaderTable
@@ -1292,7 +1277,7 @@ export function DataPage() {
                     items={marketVisualData.gainers}
                     icon={<Box component="span" sx={{ color: 'var(--wc-success)', fontFamily: NUMBER_FONT, fontSize: 16, fontWeight: 900 }}>↑</Box>}
                     footer="View all gainers"
-                    monoFont={NUMBER_FONT}
+                    dataFont={NUMBER_FONT}
                   />
                   <LeaderTable
                     title="Top Losers"
@@ -1300,9 +1285,9 @@ export function DataPage() {
                     items={marketVisualData.losers}
                     icon={<Box component="span" sx={{ color: 'var(--wc-error)', fontFamily: NUMBER_FONT, fontSize: 16, fontWeight: 900 }}>↓</Box>}
                     footer="View all losers"
-                    monoFont={NUMBER_FONT}
+                    dataFont={NUMBER_FONT}
                   />
-                  <VolumeLeaderTable items={dayInsights.volumeLeaders} monoFont={NUMBER_FONT} />
+                  <VolumeLeaderTable items={dayInsights.volumeLeaders} dataFont={NUMBER_FONT} />
                 </Box>
               </MotionReveal>
 
@@ -1324,10 +1309,10 @@ export function DataPage() {
                 >
                   <Box
                     sx={{
-                      p: 2,
+                      p: { xs: 2, md: 2.5 },
                       display: 'grid',
                       gridTemplateColumns: { xs: '1fr', lg: '1fr auto' },
-                      gap: 1.5,
+                      gap: 2,
                       alignItems: 'center',
                       borderBottom: '1px solid var(--wc-divider)',
                     }}
@@ -1347,20 +1332,20 @@ export function DataPage() {
                       sx={{
                         height: 40,
                         px: 2,
-                        border: '1px solid var(--wc-divider)',
-                        borderRadius: '5px',
+                        border: '1px solid var(--wc-border)',
+                        borderRadius: '8px',
                         color: 'var(--wc-text-primary)',
                         fontSize: 12,
-                        fontWeight: 800,
+                        fontWeight: 700,
                         justifySelf: { xs: 'stretch', lg: 'end' },
-                        '&:hover': { bgcolor: 'var(--wc-primary-light)', borderColor: '#b9c9e4' },
+                        '&:hover': { bgcolor: 'var(--wc-surface-soft)', borderColor: 'rgba(10,46,120,0.35)' },
                       }}
                     >
                       Export
                     </Button>
                   </Box>
 
-                  <CustomDataTable rows={displayedStocks} searchQuery={search} monoFont={NUMBER_FONT} />
+                  <CustomDataTable rows={displayedStocks} searchQuery={search} dataFont={NUMBER_FONT} />
                 </Box>
               </MotionReveal>
             </Stack>

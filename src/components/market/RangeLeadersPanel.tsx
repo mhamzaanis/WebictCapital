@@ -6,29 +6,30 @@ import type { MarketLeaderItem } from './types'
 type RangeLeadersPanelProps = {
 	items: MarketLeaderItem[]
 	avgRangePct: number
-	monoFont?: string
+	dataFont?: string
 }
 
 export function RangeLeadersPanel({
 	items,
 	avgRangePct,
-	monoFont = FONT_FAMILY.mono,
+	dataFont = FONT_FAMILY.data,
 }: RangeLeadersPanelProps) {
 	return (
 		<Paper
 			elevation={0}
 			sx={{
 				p: 2,
-				bgcolor: 'var(--wc-bg)',
-				border: '1px solid var(--wc-divider)',
-				borderRadius: 1.5,
+				bgcolor: 'var(--wc-surface)',
+				border: '1px solid var(--wc-border)',
+				borderRadius: '12px',
+				boxShadow: 'var(--wc-shadow-card)',
 				minHeight: 320,
 			}}
 		>
 			<Stack spacing={0.4} sx={{ mb: 2 }}>
 				<Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
 					<SpeedIcon sx={{ fontSize: 18, color: 'var(--wc-primary)' }} />
-					<Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: FONT_FAMILY.display, fontSize: 17, fontWeight: 700 }}>
+					<Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: FONT_FAMILY.body, fontSize: 16, fontWeight: 700, letterSpacing: '-0.015em' }}>
 						Widest Daily Ranges
 					</Typography>
 				</Stack>
@@ -41,15 +42,15 @@ export function RangeLeadersPanel({
 				sx={{
 					mb: 1.5,
 					p: 1.4,
-					bgcolor: 'var(--wc-paper)',
-					border: '1px solid var(--wc-divider)',
-					borderRadius: 1,
+					bgcolor: 'var(--wc-surface-soft)',
+					border: '1px solid var(--wc-border)',
+					borderRadius: '10px',
 				}}
 			>
-				<Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 11, fontWeight: 600, mb: 0.4 }}>
+				<Typography sx={{ color: 'var(--wc-text-muted)', fontFamily: FONT_FAMILY.body, fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', mb: 0.4 }}>
 					AVERAGE RANGE
 				</Typography>
-				<Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: monoFont, fontSize: 20, fontWeight: 700 }}>
+				<Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: dataFont, fontSize: 20, fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
 					{formatPercent(avgRangePct, false)}
 				</Typography>
 			</Box>
@@ -64,14 +65,14 @@ export function RangeLeadersPanel({
 							gap: 1,
 							alignItems: 'center',
 							py: 1,
-							borderTop: index === 0 ? '0' : '1px solid var(--wc-divider)',
+							borderTop: index === 0 ? '0' : '1px solid #edf2f8',
 						}}
 					>
-						<Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 11 }}>
+						<Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: dataFont, fontSize: 11, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
 							#{index + 1}
 						</Typography>
 						<Box sx={{ minWidth: 0 }}>
-							<Typography sx={{ color: 'var(--wc-primary)', fontFamily: monoFont, fontSize: 13, fontWeight: 700 }}>
+							<Typography sx={{ color: 'var(--wc-primary)', fontFamily: FONT_FAMILY.body, fontSize: 13, fontWeight: 750, letterSpacing: 0, textTransform: 'uppercase' }}>
 								{item.symbol}
 							</Typography>
 							<Typography
@@ -88,10 +89,10 @@ export function RangeLeadersPanel({
 							</Typography>
 						</Box>
 						<Box sx={{ textAlign: 'right', minWidth: 88 }}>
-							<Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: monoFont, fontSize: 13, fontWeight: 700 }}>
+							<Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: dataFont, fontSize: 13, fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
 								{formatPercent(item.rangePct ?? NaN, false)}
 							</Typography>
-							<Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 11, fontWeight: 500 }}>
+							<Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: dataFont, fontSize: 11, fontWeight: 500, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
 								{formatNumber(item.low ?? NaN)}-{formatNumber(item.high ?? NaN)}
 							</Typography>
 						</Box>

@@ -42,8 +42,8 @@ type WatchlistModalProps = {
 
 // ─── Design tokens ─────────────────────────────────────────────────────────────
 
-const mono = 'var(--wc-font-mono)'
-const serif = '"Playfair Display", serif'
+const data = 'var(--wc-font-data)'
+const body = 'var(--wc-font-body)'
 
 const C = {
   bg: '#ffffff',
@@ -113,10 +113,10 @@ function StockRow({
     >
       {/* Symbol + Company */}
       <Box sx={{ minWidth: 0, flex: 1 }}>
-        <Typography sx={{ fontFamily: mono, fontSize: 12, fontWeight: 700, color: C.ink }}>
+        <Typography sx={{ fontFamily: data, fontSize: 12, fontWeight: 700, color: C.ink }}>
           {stock.symbol}
         </Typography>
-        <Typography sx={{ fontSize: 11, color: C.ink2, fontFamily: serif, mt: 0.1 }}>
+        <Typography sx={{ fontSize: 11, color: C.ink2, fontFamily: body, mt: 0.1 }}>
           {stock.company}
         </Typography>
       </Box>
@@ -125,12 +125,12 @@ function StockRow({
       <Box sx={{ textAlign: 'right', minWidth: 80, flexShrink: 0 }}>
         {stock.price > 0 ? (
           <>
-            <Typography sx={{ fontFamily: mono, fontSize: 12, fontWeight: 600, color: C.ink }}>
+            <Typography sx={{ fontFamily: data, fontSize: 12, fontWeight: 600, color: C.ink }}>
               Rs. {fmt(stock.price)}
             </Typography>
             <Typography
               sx={{
-                fontFamily: mono,
+                fontFamily: data,
                 fontSize: 11,
                 fontWeight: 600,
                 color: pos ? C.pos : C.neg,
@@ -140,7 +140,7 @@ function StockRow({
             </Typography>
           </>
         ) : (
-          <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.muted }}>
+          <Typography sx={{ fontFamily: data, fontSize: 11, color: C.muted }}>
             -- --
           </Typography>
         )}
@@ -148,7 +148,7 @@ function StockRow({
 
       {/* Volume */}
       <Box sx={{ textAlign: 'right', minWidth: 44, flexShrink: 0, display: { xs: 'none', sm: 'block' } }}>
-        <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.muted }}>
+        <Typography sx={{ fontFamily: data, fontSize: 11, color: C.muted }}>
           {stock.volume !== '--' ? stock.volume : '--'}
         </Typography>
       </Box>
@@ -170,7 +170,7 @@ function StockRow({
               cursor: 'pointer',
               bgcolor: C.negBg,
               border: `1px solid ${C.neg}30`,
-              fontFamily: mono,
+              fontFamily: data,
               fontSize: 11,
               fontWeight: 600,
               color: C.neg,
@@ -196,7 +196,7 @@ function StockRow({
               borderRadius: '6px',
               cursor: 'pointer',
               bgcolor: 'transparent',
-              fontFamily: mono,
+              fontFamily: data,
               fontSize: 11,
               fontWeight: 600,
               color: C.accentMid,
@@ -307,7 +307,7 @@ export function WatchlistModal({ open, onClose, watchlist, onAdd, onRemove, avai
             <Typography
               sx={{
                 fontSize: 11,
-                fontFamily: serif,
+                fontFamily: body,
                 letterSpacing: '0.18em',
                 textTransform: 'uppercase',
                 color: C.accentMid,
@@ -316,7 +316,7 @@ export function WatchlistModal({ open, onClose, watchlist, onAdd, onRemove, avai
             >
               Watchlist
             </Typography>
-            <Typography sx={{ fontFamily: serif, fontSize: 16, fontWeight: 700, color: C.ink }}>
+            <Typography sx={{ fontFamily: body, fontSize: 16, fontWeight: 700, color: C.ink }}>
               Add Stocks
             </Typography>
           </Box>
@@ -358,7 +358,7 @@ export function WatchlistModal({ open, onClose, watchlist, onAdd, onRemove, avai
           }}
           sx={{
             '& .MuiOutlinedInput-root': {
-              fontFamily: mono,
+              fontFamily: data,
               fontSize: 13,
               color: C.ink,
               borderRadius: '10px',
@@ -375,10 +375,10 @@ export function WatchlistModal({ open, onClose, watchlist, onAdd, onRemove, avai
       {/* ── BODY ────────────────────────────────────────────────────────────── */}
       <Box sx={{ overflowY: 'auto', px: { xs: 2.5, md: 3.5 }, py: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-          <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.muted, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+          <Typography sx={{ fontFamily: data, fontSize: 11, color: C.muted, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
             {watchedFiltered.length + availableFiltered.length} stock{watchedFiltered.length + availableFiltered.length !== 1 ? 's' : ''} found
           </Typography>
-          <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.muted }}>
+          <Typography sx={{ fontFamily: data, fontSize: 11, color: C.muted }}>
             {watchlist.length} in watchlist
           </Typography>
         </Box>
@@ -393,7 +393,7 @@ export function WatchlistModal({ open, onClose, watchlist, onAdd, onRemove, avai
               animate={{ opacity: 1 }}
               sx={{ textAlign: 'center', py: 6 }}
             >
-              <Typography sx={{ fontFamily: serif, fontSize: 14, color: C.muted }}>
+              <Typography sx={{ fontFamily: body, fontSize: 14, color: C.muted }}>
                 Loading symbols…
               </Typography>
             </Box>
@@ -404,7 +404,7 @@ export function WatchlistModal({ open, onClose, watchlist, onAdd, onRemove, avai
               animate={{ opacity: 1 }}
               sx={{ textAlign: 'center', py: 6 }}
             >
-              <Typography sx={{ fontFamily: serif, fontSize: 14, color: C.muted }}>
+              <Typography sx={{ fontFamily: body, fontSize: 14, color: C.muted }}>
                 {query ? `No stocks match "${query}"` : 'No stocks available'}
               </Typography>
             </Box>
@@ -412,7 +412,7 @@ export function WatchlistModal({ open, onClose, watchlist, onAdd, onRemove, avai
             <Box key={query} sx={{ pb: 2 }}>
               {watchedFiltered.length > 0 && (
                 <Box sx={{ mb: 2 }}>
-                  <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.muted, letterSpacing: '0.08em', textTransform: 'uppercase', mb: 1 }}>
+                  <Typography sx={{ fontFamily: data, fontSize: 11, color: C.muted, letterSpacing: '0.08em', textTransform: 'uppercase', mb: 1 }}>
                     Your watchlist
                   </Typography>
                   {watchedFiltered.map((stock, i) => (
@@ -434,7 +434,7 @@ export function WatchlistModal({ open, onClose, watchlist, onAdd, onRemove, avai
 
               {availableFiltered.length > 0 && (
                 <Box>
-                  <Typography sx={{ fontFamily: mono, fontSize: 11, color: C.muted, letterSpacing: '0.08em', textTransform: 'uppercase', mb: 1 }}>
+                  <Typography sx={{ fontFamily: data, fontSize: 11, color: C.muted, letterSpacing: '0.08em', textTransform: 'uppercase', mb: 1 }}>
                     Add more stocks
                   </Typography>
                   {availableFiltered.map((stock, i) => (

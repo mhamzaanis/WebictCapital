@@ -9,7 +9,7 @@ export type StatCardProps = {
 	value: string
 	detail: string
 	icon: ReactNode
-	monoFont?: string
+	dataFont?: string
 	tone?: StatCardTone
 	color?: string
 	sx?: SxProps<Theme>
@@ -26,8 +26,8 @@ function toneColor(tone: StatCardTone): string {
 }
 
 function toneBackground(color: string): string {
-	if (color === 'var(--wc-success)') return 'rgba(26,102,64,0.08)'
-	if (color === 'var(--wc-error)') return 'rgba(180,40,58,0.08)'
+	if (color === 'var(--wc-success)') return 'var(--wc-success-soft)'
+	if (color === 'var(--wc-error)') return 'var(--wc-error-soft)'
 	return 'var(--wc-primary-light)'
 }
 
@@ -46,7 +46,7 @@ export function StatCard({
 	value,
 	detail,
 	icon,
-	monoFont = 'var(--wc-font-mono)',
+	dataFont = 'var(--wc-font-data)',
 	tone = 'neutral',
 	color,
 	sx,
@@ -64,9 +64,10 @@ export function StatCard({
 				{
 					minHeight: 132,
 					p: 2,
-					bgcolor: 'var(--wc-bg)',
-					border: '1px solid var(--wc-divider)',
-					borderRadius: 1.5,
+					bgcolor: 'var(--wc-surface)',
+					border: '1px solid var(--wc-border)',
+					borderRadius: '12px',
+					boxShadow: 'var(--wc-shadow-card)',
 					display: 'flex',
 					flexDirection: 'column',
 					justifyContent: 'space-between',
@@ -94,12 +95,12 @@ export function StatCard({
 				</Box>
 				<Typography
 					sx={mergeSx(
-						{
-							color: 'var(--wc-text-secondary)',
-							fontFamily: 'var(--wc-font-display)',
+							{
+							color: 'var(--wc-text-muted)',
+							fontFamily: 'var(--wc-font-body)',
 							fontSize: 11,
-							fontWeight: 600,
-							letterSpacing: '0.1em',
+							fontWeight: 700,
+							letterSpacing: '0.08em',
 							textTransform: 'uppercase',
 						},
 						labelSx,
@@ -115,8 +116,10 @@ export function StatCard({
 							color: resolvedColor,
 							fontSize: { xs: 20, md: 24 },
 							fontWeight: 700,
-							fontFamily: monoFont,
+							fontFamily: dataFont,
 							lineHeight: 1.2,
+							fontVariantNumeric: 'tabular-nums',
+							fontFeatureSettings: '"tnum" 1',
 							overflowWrap: 'anywhere',
 						},
 						valueSx,

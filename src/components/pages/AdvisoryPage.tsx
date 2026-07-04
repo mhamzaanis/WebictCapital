@@ -128,14 +128,14 @@ export function AdvisoryPage() {
     <Box
       component="main"
       sx={{
-        pt: { xs: 'calc(64px + 2.8rem)', md: 'calc(72px + 5rem)' },
-        pb: { xs: 6, md: 3 },
+        pt: { xs: 'var(--wc-page-top-xs)', md: 'var(--wc-page-top-md)' },
+        pb: { xs: 'var(--wc-page-bottom-xs)', md: 'var(--wc-page-bottom-md)' },
         bgcolor: '#ffffff',
         minHeight: '100vh',
       }}
     >
-      <Container maxWidth="xl" sx={{ maxWidth: '1720px !important', px: { xs: 2.5, md: 5, xl: 7 } }}>
-        <Stack spacing={{ xs: 4, md: 5 }}>
+      <Container maxWidth="xl" sx={{ maxWidth: '1880px !important', px: { xs: 'var(--wc-page-gutter-xs)', md: 'var(--wc-page-gutter-md)', xl: 'var(--wc-page-gutter-xl)' } }}>
+        <Stack spacing={{ xs: 6, md: 8 }}>
           <MotionReveal>
             <Box
               component={motion.section}
@@ -157,16 +157,16 @@ export function AdvisoryPage() {
                   variant="h1"
                   sx={{
                     mt: { xs: 3.2, md: 4 },
-                    color: '#071329',
-                    fontSize: { xs: '3.35rem', sm: '4.6rem', md: '6.1rem' },
+                    color: 'var(--wc-text-primary)',
+                    fontSize: { xs: '2.35rem', sm: '2.9rem', md: '3.45rem' },
                     fontWeight: 700,
-                    lineHeight: 0.98,
-                    letterSpacing: 0,
+                    lineHeight: 0.95,
+                    letterSpacing: '-0.045em',
                   }}
                 >
                   Advisory is
                   <br />
-                  <Box component="span" sx={{ color: '#143baf' }}>
+                  <Box component="span" sx={{ color: 'var(--wc-primary)' }}>
                     coming.
                   </Box>
                 </Typography>
@@ -309,7 +309,7 @@ export function AdvisoryPage() {
         <Typography
           sx={{
             color: '#071329',
-            fontFamily: 'var(--wc-font-display)',
+            fontFamily: 'var(--wc-font-body)',
             fontSize: 21,
             fontWeight: 700,
           }}
@@ -506,7 +506,7 @@ export function AdvisoryPage() {
                   <Typography
                     sx={{
                       color: '#071329',
-                      fontFamily: 'var(--wc-font-display)',
+                      fontFamily: 'var(--wc-font-body)',
                       fontSize: 24,
                       fontWeight: 700,
                     }}
@@ -661,7 +661,7 @@ export function AdvisoryPage() {
                 <Typography
                   sx={{
                     color: '#90a4c8',
-                    fontFamily: 'var(--wc-font-display)',
+                    fontFamily: 'var(--wc-font-body)',
                     fontSize: 11,
                     fontWeight: 700,
                     letterSpacing: 0,

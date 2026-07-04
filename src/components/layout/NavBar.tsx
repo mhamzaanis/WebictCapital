@@ -81,13 +81,13 @@ export function NavBar() {
               'background-color 260ms ease, border-color 260ms ease, box-shadow 260ms ease, backdrop-filter 260ms ease',
           }}
         >
-          <Container maxWidth="xl" sx={{ px: { xs: 2, md: 4 } }}>
+          <Container maxWidth="xl" sx={{ px: { xs: 'var(--wc-page-gutter-xs)', md: 'var(--wc-page-gutter-md)', xl: 'var(--wc-page-gutter-xl)' } }}>
             <Toolbar
               disableGutters
               sx={{
                 minHeight: { xs: 64, md: 72 },
                 justifyContent: 'space-between',
-                gap: 2,
+                gap: { xs: 2.5, md: 4 },
               }}
             >
               {/* ── Logo ── */}
@@ -224,7 +224,7 @@ export function NavBar() {
               {/* ── Desktop nav links ── */}
               <Stack
                 direction="row"
-                spacing={{ xs: 2, md: 4 }}
+                spacing={{ xs: 2.5, md: 5 }}
                 sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}
               >
                 {navItems.map((item, index) => {
@@ -407,7 +407,7 @@ export function NavBar() {
                         fontSize: 13,
                         fontWeight: 600,
                         color: '#253750',
-                        fontFamily: '"Playfair Display", serif',
+                        fontFamily: 'var(--wc-font-body)',
                         maxWidth: 120,
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
@@ -467,7 +467,7 @@ export function NavBar() {
             <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#080e1a', fontFamily: 'var(--wc-font-body)' }}>
               {user.user_metadata?.full_name ?? 'User'}
             </Typography>
-            <Typography sx={{ fontSize: 10.5, color: '#4a5e78', fontFamily: 'var(--wc-font-mono)', mt: 0.1 }}>
+            <Typography sx={{ fontSize: 10.5, color: '#4a5e78', fontFamily: 'var(--wc-font-data)', mt: 0.1 }}>
               {user.email}
             </Typography>
           </Box>
@@ -512,7 +512,7 @@ export function NavBar() {
               <Typography
                 sx={{
                   fontSize: 10,
-                  fontFamily: 'var(--wc-font-mono)',
+                  fontFamily: 'var(--wc-font-data)',
                   letterSpacing: '0.18em',
                   textTransform: 'uppercase',
                   color: '#0a2463',
@@ -625,7 +625,7 @@ export function NavBar() {
                   <Typography sx={{ fontSize: 12.5, fontWeight: 600, color: '#080e1a', fontFamily: 'var(--wc-font-body)' }}>
                     {user.user_metadata?.full_name ?? 'User'}
                   </Typography>
-                  <Typography sx={{ fontSize: 10, color: '#4a5e78', fontFamily: 'var(--wc-font-mono)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <Typography sx={{ fontSize: 10, color: '#4a5e78', fontFamily: 'var(--wc-font-data)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {user.email}
                   </Typography>
                 </Box>
@@ -641,7 +641,7 @@ export function NavBar() {
             <Typography
               sx={{
                 fontSize: 10,
-                fontFamily: 'var(--wc-font-mono)',
+                fontFamily: 'var(--wc-font-data)',
                 letterSpacing: '0.12em',
                 color: '#8097b0',
                 textTransform: 'uppercase',

@@ -35,7 +35,16 @@ type SortDir = 'asc' | 'desc'
 type CustomDataTableProps = {
 	rows: DataTableRow[]
 	searchQuery: string
-	monoFont?: string
+	dataFont?: string
+}
+
+const UI_FONT = 'var(--wc-font-body)'
+const DATA_FONT = 'var(--wc-font-data)'
+
+const numericSx = {
+	fontFamily: DATA_FONT,
+	fontVariantNumeric: 'tabular-nums',
+	fontFeatureSettings: '"tnum" 1',
 }
 
 function toNum(val: unknown): number {
@@ -120,7 +129,7 @@ function SortCell({
 	)
 }
 
-export function CustomDataTable({ rows, searchQuery, monoFont = 'var(--wc-font-mono)' }: CustomDataTableProps) {
+export function CustomDataTable({ rows, searchQuery }: CustomDataTableProps) {
 	const [sortKey, setSortKey] = useState<SortKey>('symbol')
 	const [sortDir, setSortDir] = useState<SortDir>('asc')
 	const [page, setPage] = useState(0)
@@ -152,14 +161,15 @@ export function CustomDataTable({ rows, searchQuery, monoFont = 'var(--wc-font-m
 	}, [sortKey])
 
 	const headCell = {
-		bgcolor: 'var(--wc-paper)',
-		color: 'var(--wc-text-secondary)',
-		fontFamily: monoFont,
+		bgcolor: 'var(--wc-surface-soft)',
+		color: 'var(--wc-text-muted)',
+		fontFamily: UI_FONT,
 		fontWeight: 700,
 		fontSize: 11,
-		letterSpacing: '0.06em',
-		borderBottom: '1px solid var(--wc-divider)',
-		py: 1.2,
+		letterSpacing: '0.08em',
+		textTransform: 'uppercase',
+		borderBottom: '1px solid var(--wc-border)',
+		py: 1.35,
 		whiteSpace: 'nowrap' as const,
 	}
 
@@ -170,10 +180,12 @@ export function CustomDataTable({ rows, searchQuery, monoFont = 'var(--wc-font-m
 			<TableContainer
 				component={Paper}
 				sx={{
-					bgcolor: 'var(--wc-bg)',
-					borderRadius: 1.5,
+					bgcolor: 'var(--wc-surface)',
+					borderRadius: '12px',
 					maxHeight: { xs: 560, md: 700 },
-					border: '1px solid var(--wc-divider)',
+					border: '1px solid var(--wc-border)',
+					boxShadow: 'none',
+					overflow: 'hidden',
 				}}
 			>
 				<Table stickyHeader size="small" aria-label="PSX stocks table">
@@ -201,18 +213,20 @@ export function CustomDataTable({ rows, searchQuery, monoFont = 'var(--wc-font-m
 									key={`${stock.symbol}-${page}-${i}`}
 									hover
 									sx={{
-										'&:hover': { bgcolor: 'var(--wc-primary-light)' },
-										'& td': { borderBottom: '1px solid var(--wc-divider)' },
+										'&:hover': { bgcolor: 'var(--wc-surface-soft)' },
+										'& td': { borderBottom: '1px solid #edf2f8' },
 									}}
 								>
 									<TableCell
 										sx={{
 											color: 'var(--wc-primary)',
-											fontFamily: monoFont,
-											fontWeight: 700,
-											fontSize: 12,
+											fontFamily: UI_FONT,
+											fontWeight: 750,
+											fontSize: 13,
+											letterSpacing: 0,
+											textTransform: 'uppercase',
 											whiteSpace: 'nowrap',
-											py: 0.8,
+											py: 1.1,
 										}}
 									>
 										{stock.symbol}
@@ -221,7 +235,9 @@ export function CustomDataTable({ rows, searchQuery, monoFont = 'var(--wc-font-m
 									<TableCell
 										sx={{
 											color: 'var(--wc-text-secondary)',
-											fontSize: 12,
+											fontFamily: UI_FONT,
+											fontSize: 13,
+											fontWeight: 500,
 											maxWidth: { xs: 140, md: 260 },
 											overflow: 'hidden',
 											textOverflow: 'ellipsis',
@@ -232,19 +248,19 @@ export function CustomDataTable({ rows, searchQuery, monoFont = 'var(--wc-font-m
 										{stock.company}
 									</TableCell>
 
-									<TableCell align="right" sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 11 }}>
+									<TableCell align="right" sx={{ color: 'var(--wc-text-secondary)', fontSize: 13, ...numericSx }}>
 										{fmtNum(stock.turnover)}
 									</TableCell>
 
-									<TableCell align="right" sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 12 }}>
+									<TableCell align="right" sx={{ color: 'var(--wc-text-secondary)', fontSize: 13, ...numericSx }}>
 										{stock.open || '—'}
 									</TableCell>
 
-									<TableCell align="right" sx={{ color: 'var(--wc-success)', fontFamily: monoFont, fontSize: 12 }}>
+									<TableCell align="right" sx={{ color: 'var(--wc-success)', fontSize: 13, ...numericSx }}>
 										{stock.high || '—'}
 									</TableCell>
 
-									<TableCell align="right" sx={{ color: 'var(--wc-error)', fontFamily: monoFont, fontSize: 12 }}>
+									<TableCell align="right" sx={{ color: 'var(--wc-error)', fontSize: 13, ...numericSx }}>
 										{stock.low || '—'}
 									</TableCell>
 
@@ -252,10 +268,10 @@ export function CustomDataTable({ rows, searchQuery, monoFont = 'var(--wc-font-m
 										align="right"
 										sx={{
 											color: 'var(--wc-text-primary)',
-											fontFamily: monoFont,
 											fontWeight: 700,
 											fontSize: 13,
 											whiteSpace: 'nowrap',
+											...numericSx,
 										}}
 									>
 										{stock.last_rate || '—'}
@@ -265,10 +281,10 @@ export function CustomDataTable({ rows, searchQuery, monoFont = 'var(--wc-font-m
 										align="right"
 										sx={{
 											color: chgColor,
-											fontFamily: monoFont,
 											fontWeight: 600,
 											fontSize: 12,
 											whiteSpace: 'nowrap',
+											...numericSx,
 										}}
 									>
 										<Stack direction="row" spacing={0.4} sx={{ justifyContent: 'flex-end', alignItems: 'center' }}>
@@ -286,9 +302,9 @@ export function CustomDataTable({ rows, searchQuery, monoFont = 'var(--wc-font-m
 										align="right"
 										sx={{
 											color: 'var(--wc-text-secondary)',
-											fontFamily: monoFont,
 											fontSize: 12,
 											whiteSpace: 'nowrap',
+											...numericSx,
 										}}
 									>
 										{stock.eps != null ? stock.eps.toFixed(2) : '—'}
@@ -298,9 +314,9 @@ export function CustomDataTable({ rows, searchQuery, monoFont = 'var(--wc-font-m
 										align="right"
 										sx={{
 											color: 'var(--wc-text-secondary)',
-											fontFamily: monoFont,
 											fontSize: 12,
 											whiteSpace: 'nowrap',
+											...numericSx,
 										}}
 									>
 										{stock.pe != null ? `${stock.pe.toFixed(1)}x` : '—'}
@@ -314,7 +330,7 @@ export function CustomDataTable({ rows, searchQuery, monoFont = 'var(--wc-font-m
 								<TableCell
 									colSpan={10}
 									align="center"
-									sx={{ color: 'var(--wc-text-secondary)', fontFamily: monoFont, fontSize: 12, py: 5 }}
+									sx={{ color: 'var(--wc-text-secondary)', fontFamily: UI_FONT, fontSize: 13, py: 5 }}
 								>
 									No symbols match &quot;{searchQuery}&quot;
 								</TableCell>
@@ -336,11 +352,11 @@ export function CustomDataTable({ rows, searchQuery, monoFont = 'var(--wc-font-m
 				}}
 				rowsPerPageOptions={[10, 25, 50, 100]}
 				sx={{
-					borderRadius: '0 0 1.5rem 1.5rem',
-					borderTop: '1px solid var(--wc-divider)',
-					bgcolor: 'var(--wc-paper)',
+					borderRadius: '0 0 12px 12px',
+					borderTop: '1px solid var(--wc-border)',
+					bgcolor: 'var(--wc-surface-soft)',
 					'& .MuiTablePagination-toolbar, & .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows, & .MuiInputBase-root': {
-						fontFamily: monoFont,
+						fontFamily: UI_FONT,
 						fontSize: 12,
 						color: 'var(--wc-text-secondary)',
 					},

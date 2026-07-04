@@ -257,7 +257,7 @@ function CurriculumSeason({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontFamily: 'var(--wc-font-mono)',
+              fontFamily: 'var(--wc-font-data)',
               fontSize: 11,
               fontWeight: 800,
               flexShrink: 0,
@@ -269,10 +269,10 @@ function CurriculumSeason({
             <Typography
               sx={{
                 color: 'var(--wc-primary)',
-                fontFamily: 'var(--wc-font-display)',
+                fontFamily: 'var(--wc-font-body)',
                 fontSize: 10,
                 fontWeight: 700,
-                letterSpacing: 0,
+                letterSpacing: '0.08em',
                 textTransform: 'uppercase',
               }}
             >
@@ -281,7 +281,7 @@ function CurriculumSeason({
             <Typography
               sx={{
                 color: 'var(--wc-text-primary)',
-                fontFamily: 'var(--wc-font-display)',
+                fontFamily: 'var(--wc-font-body)',
                 fontSize: { xs: 17, md: 22 },
                 fontWeight: 700,
                 lineHeight: 1.18,
@@ -319,7 +319,7 @@ function CurriculumSeason({
               <Typography
                 sx={{
                   color: 'var(--wc-primary)',
-                  fontFamily: 'var(--wc-font-mono)',
+                  fontFamily: 'var(--wc-font-data)',
                   fontSize: 10,
                   fontWeight: 800,
                 }}
@@ -438,14 +438,14 @@ export function MasterclassesPage() {
     <Box
       component="main"
       sx={{
-        pt: { xs: 'calc(64px + 2.6rem)', md: 'calc(72px + 3.8rem)' },
-        pb: { xs: 7, md: 10 },
+        pt: { xs: 'var(--wc-page-top-xs)', md: 'var(--wc-page-top-md)' },
+        pb: { xs: 'var(--wc-page-bottom-xs)', md: 'var(--wc-page-bottom-md)' },
         bgcolor: 'var(--wc-bg)',
         minHeight: '100vh',
       }}
     >
-      <Container maxWidth="xl" sx={{ maxWidth: '1200px !important', px: { xs: 2.5, md: 5 } }}>
-        <Stack spacing={{ xs: 5.5, md: 6.8 }}>
+      <Container maxWidth="xl" sx={{ maxWidth: '1280px !important', px: { xs: 'var(--wc-page-gutter-xs)', md: 'var(--wc-page-gutter-md)' } }}>
+        <Stack spacing={{ xs: 7, md: 9 }}>
           <Box
             component={motion.section}
             initial={reduceMotion ? false : { opacity: 0, y: 24 }}
@@ -466,10 +466,10 @@ export function MasterclassesPage() {
                 sx={{
                   color: 'var(--wc-text-primary)',
                   fontFamily: 'var(--wc-font-display)',
-                  fontSize: { xs: '3.1rem', sm: '4.2rem', md: '5.1rem' },
+                  fontSize: { xs: '2.3rem', sm: '2.8rem', md: '3.35rem' },
                   fontWeight: 700,
-                  lineHeight: 0.98,
-                  letterSpacing: 0,
+                  lineHeight: 0.95,
+                  letterSpacing: '-0.045em',
                 }}
               >
                 Master

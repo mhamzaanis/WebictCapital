@@ -1,5 +1,4 @@
 import { useRef, useState, type FormEvent } from 'react'
-import AccountBalanceOutlinedIcon from '@mui/icons-material/AccountBalanceOutlined'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import BarChartRoundedIcon from '@mui/icons-material/BarChartRounded'
 import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined'
@@ -115,7 +114,7 @@ function StatGrid() {
             key={stat.label}
             component={motion.div}
             variants={fadeUp}
-            whileHover={{ y: -3 }}
+            // whileHover={{ y: -3 }}
             sx={{
               pr: { md: 4 },
               pl: { md: index === 0 ? 0 : 4 },
@@ -170,7 +169,7 @@ function MarketPreview() {
             <Box
               key={cell}
               component={motion.div}
-              whileHover={{ scale: 1.04 }}
+              // whileHover={{ scale: 1.04 }}
               sx={{
                 gridColumn: big ? 'span 2' : 'span 1',
                 gridRow: big ? 'span 2' : 'span 1',
@@ -181,7 +180,7 @@ function MarketPreview() {
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontFamily: 'var(--wc-font-mono)',
+                fontFamily: 'var(--wc-font-data)',
                 fontSize: big ? 13 : 9,
                 fontWeight: 900,
               }}
@@ -229,7 +228,7 @@ function GlossaryPreview() {
           <Box
             key={term}
             component={motion.div}
-            whileHover={{ x: 3 }}
+            // whileHover={{ x: 3 }}
             sx={{
               height: 22,
               px: 1.2,
@@ -259,7 +258,7 @@ function SipPreview() {
         {['Rs 12.00 L', 'Rs 18.57 L', 'Rs 27.07 L'].map((value, index) => (
           <Box key={value} sx={{ border: '1px solid #dce6f4', borderRadius: '4px', p: 0.9, bgcolor: index === 1 ? '#f4fbf7' : '#f8fbff' }}>
             <Typography sx={{ color: '#6b7fa3', fontSize: 8 }}>Total {index === 0 ? 'Invested' : index === 1 ? 'Returns' : 'Value'}</Typography>
-            <Typography sx={{ mt: 0.3, color: index === 1 ? 'var(--wc-success)' : '#071329', fontFamily: 'var(--wc-font-mono)', fontSize: 10, fontWeight: 900 }}>
+            <Typography sx={{ mt: 0.3, color: index === 1 ? 'var(--wc-success)' : '#071329', fontFamily: 'var(--wc-font-data)', fontSize: 10, fontWeight: 900 }}>
               {value}
             </Typography>
           </Box>
@@ -302,14 +301,12 @@ function SipPreview() {
 
 function ProductCard({ product, index }: { product: (typeof PRODUCTS)[number]; index: number }) {
   const Preview = product.preview === 'markets' ? MarketPreview : product.preview === 'glossary' ? GlossaryPreview : SipPreview
-  const reduceMotion = useReducedMotion()
 
   return (
     <Box
       component={motion.div}
       variants={fadeUp}
       custom={index}
-      whileHover={reduceMotion ? undefined : { y: -8 }}
       transition={{ duration: 0.25 }}
       data-cursor="active"
       sx={{
@@ -323,10 +320,10 @@ function ProductCard({ product, index }: { product: (typeof PRODUCTS)[number]; i
         boxShadow: '0 18px 42px rgba(10,36,99,0.025)',
         overflow: 'hidden',
         position: 'relative',
-        '&:hover': {
-          borderColor: '#b9c9e4',
-          boxShadow: '0 26px 54px rgba(10,36,99,0.08)',
-        },
+        // '&:hover': {
+        //   borderColor: '#b9c9e4',
+        //   boxShadow: '0 26px 54px rgba(10,36,99,0.08)',
+        // },
       }}
     >
       <Preview />
@@ -406,10 +403,10 @@ function NewsletterBand() {
         />
 
         <Box sx={{ position: 'relative' }}>
-          <Typography sx={{ color: '#90a4c8', fontFamily: 'var(--wc-font-display)', fontSize: 11, fontWeight: 700, letterSpacing: 0, textTransform: 'uppercase', mb: 1.5 }}>
+          <Typography sx={{ color: '#90a4c8', fontFamily: 'var(--wc-font-body)', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', mb: 1.5 }}>
             Stay in touch
           </Typography>
-          <Typography variant="h2" sx={{ color: '#ffffff', fontSize: { xs: '2rem', md: '2.85rem' }, lineHeight: 1.05, fontWeight: 700, letterSpacing: 0, maxWidth: 455 }}>
+          <Typography variant="h2" sx={{ color: '#ffffff', fontSize: { xs: '2rem', md: '2.85rem' }, lineHeight: 1.05, fontWeight: 700, letterSpacing: '-0.035em', maxWidth: 455 }}>
             Insights that help you invest with{' '}
             <Box component="span" sx={{ color: '#a8c5ff', fontStyle: 'italic' }}>
               confidence.
@@ -475,15 +472,15 @@ export function HomePage() {
       <Box
         component="main"
         sx={{
-          pt: { xs: 'calc(64px + 2.8rem)', md: 'calc(72px + 4.2rem)' },
-          pb: { xs: 6, md: 3 },
+          pt: { xs: 'var(--wc-page-top-xs)', md: 'var(--wc-page-top-md)' },
+          pb: { xs: 'var(--wc-page-bottom-xs)', md: 'var(--wc-page-bottom-md)' },
           bgcolor: '#ffffff',
           minHeight: '100vh',
           overflow: 'hidden',
         }}
       >
-        <Container maxWidth="xl" sx={{ maxWidth: '1720px !important', px: { xs: 2.5, md: 5, xl: 7 } }}>
-          <Stack spacing={{ xs: 5, md: 6 }}>
+        <Container maxWidth="xl" sx={{ maxWidth: '1880px !important', px: { xs: 'var(--wc-page-gutter-xs)', md: 'var(--wc-page-gutter-md)', xl: 'var(--wc-page-gutter-xl)' } }}>
+          <Stack spacing={{ xs: 7, md: 9 }}>
             <Box
               ref={heroRef}
               component={motion.section}
@@ -505,22 +502,25 @@ export function HomePage() {
                   <Typography
                     variant="h1"
                     sx={{
-                      color: '#071329',
-                      fontSize: { xs: '3.45rem', sm: '4.8rem', md: '6.2rem' },
-                      lineHeight: 0.98,
+                      color: 'var(--wc-text-primary)',
+                      fontSize: { xs: '2.35rem', sm: '2.9rem', md: '3.45rem' },
+                      lineHeight: 0.95,
                       fontWeight: 700,
-                      letterSpacing: 0,
+                      letterSpacing: '-0.045em',
                     }}
                   >
-                    Learn. Invest.{' '}
-                    <Box component="span" sx={{ color: '#143baf' }}>
-                      Lead.
+                    Markets reward those
+                    <br />
+                    who see{' '}
+                    <Box component="span" sx={{ color: 'var(--wc-primary)' }}>
+                      beyond the obvious
                     </Box>
+                    .
                   </Typography>
-                  <Typography sx={{ mt: 3, color: '#435981', fontSize: { xs: 15.5, md: 18 }, lineHeight: 1.75, maxWidth: 690 }}>
-                    Webict Capital is an investing education platform for serious investors in Pakistan. We combine
-                    market intelligence, practical tools, and structured learning to help you build confidence,
-                    compound wealth, and lead with insight.
+                  <Typography sx={{ mt: 3, color: 'var(--wc-text-secondary)', fontSize: { xs: 15.5, md: 16 }, lineHeight: 1.75, maxWidth: 690 }}>
+                    Webict Capital is a research-driven investing community for the Pakistan Stock Exchange.
+                    We help investors move past noise, develop independent thinking, and transform raw information
+                    into actionable market intelligence.
                   </Typography>
                 </Box>
 
@@ -536,8 +536,8 @@ export function HomePage() {
               <Box
                 sx={{
                   position: 'relative',
-                  minHeight: { xs: 360, md: 640 },
-                  borderRadius: '7px',
+                  // minHeight: { xs: 360, md: 640 },
+                  borderRadius: '17px',
                   overflow: 'hidden',
                   border: '1px solid #dce6f4',
                   boxShadow: '0 26px 54px rgba(10,36,99,0.12)',
@@ -559,9 +559,90 @@ export function HomePage() {
               </Box>
             </Box>
 
+            <Box component={motion.section} ref={productsRef}>
+              <MotionReveal>
+                <Box sx={{ textAlign: 'center', maxWidth: 800, mx: 'auto', mb: { xs: 3.5, md: 4.5 } }}>
+                  <Typography
+                    sx={{
+                      fontSize: 11,
+                      fontFamily: 'var(--wc-font-body)',
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                      color: 'var(--wc-primary)',
+                      mb: 1.5,
+                    }}
+                  >
+                    Our Approach
+                  </Typography>
+                  <Typography variant="h2" sx={{ color: 'var(--wc-text-primary)', fontSize: { xs: '1.75rem', md: '2.4rem' }, lineHeight: 1.1, fontWeight: 700, letterSpacing: '-0.02em' }}>
+                    How we think about{' '}
+                    <Box component="span" sx={{ color: 'var(--wc-primary)' }}>
+                      markets
+                    </Box>
+                    .
+                  </Typography>
+                </Box>
+              </MotionReveal>
+
+              <Box
+                component={motion.div}
+                initial="hidden"
+                animate={productsInView ? 'visible' : 'hidden'}
+                variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
+                sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 2.5 }}
+              >
+                {[
+                  {
+                    title: 'Research Focus',
+                    body: 'We believe disciplined research is the foundation of every sound investment decision. Our approach prioritises depth over speed — understanding businesses, sectors, and cycles before forming a view.',
+                    // icon: BarChartRoundedIcon,
+                  },
+                  {
+                    title: 'Differentiation',
+                    body: 'The market is full of opinions. Our edge is independence. We filter out consensus noise and build perspectives grounded in data, logic, and long-term thinking — not headlines or herd sentiment.',
+                    // icon: AccountBalanceOutlinedIcon,
+                  },
+                  {
+                    title: 'Information into Intelligence',
+                    body: 'Raw data is everywhere. What matters is how you read it. We teach investors to connect the dots — turning market signals, financial statements, and macro trends into clear, confident action.',
+                    // icon: SchoolOutlinedIcon,
+                  },
+                ].map((item) => {
+                  return (
+                    <Box
+                      key={item.title}
+                      component={motion.div}
+                      variants={fadeUp}
+                      // whileHover={reduceMotion ? undefined : { y: -4 }}
+                      sx={{
+                        border: '1px solid var(--wc-border)',
+                        borderRadius: '10px',
+                        bgcolor: 'var(--wc-surface)',
+                        p: { xs: 2.4, md: 3 },
+                        boxShadow: 'var(--wc-shadow-card)',
+                        transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+                        '&:hover': {
+                          // borderColor: 'rgba(10,46,120,0.35)',
+                          boxShadow: '0 14px 38px rgba(7,19,41,0.06)',
+                        },
+                      }}
+                    >
+                      
+                      <Typography sx={{ color: 'var(--wc-text-primary)', fontSize: 17, fontWeight: 700, mb: 1.2, letterSpacing: '-0.01em' }}>
+                        {item.title}
+                      </Typography>
+                      <Typography sx={{ color: 'var(--wc-text-secondary)', fontSize: 14, lineHeight: 1.7 }}>
+                        {item.body}
+                      </Typography>
+                    </Box>
+                  )
+                })}
+              </Box>
+            </Box>
+
             <MarketGlance />
 
-            <Box ref={productsRef} component="section">
+            <Box component="section">
               <MotionReveal>
                 <Box sx={{ textAlign: 'center', maxWidth: 800, mx: 'auto', mb: { xs: 3.5, md: 4.5 } }}>
                   
@@ -590,9 +671,9 @@ export function HomePage() {
             <MotionReveal>
               <Box
                 sx={{
-                  border: '1px solid #dce6f4',
-                  borderRadius: '7px',
-                  bgcolor: '#ffffff',
+                  border: '1px solid var(--wc-border)',
+                  borderRadius: '10px',
+                  bgcolor: '#071329',
                   minHeight: 260,
                   display: 'flex',
                   alignItems: 'center',
@@ -600,22 +681,42 @@ export function HomePage() {
                   textAlign: 'center',
                   px: { xs: 3, md: 8 },
                   py: { xs: 5, md: 6 },
-                  boxShadow: '0 18px 42px rgba(10,36,99,0.025)',
+                  boxShadow: '0 18px 42px rgba(7,19,41,0.12)',
+                  position: 'relative',
+                  overflow: 'hidden',
                 }}
               >
-                <Box sx={{ maxWidth: 760 }}>
-                  <AccountBalanceOutlinedIcon sx={{ color: '#143baf', fontSize: 42, mb: 2 }} />
-                  <Typography variant="h2" sx={{ color: '#071329', fontSize: { xs: '2rem', md: '3rem' }, lineHeight: 1.1, fontWeight: 700 }}>
-                    Investing in companies and
-                    <br />
-                    the{' '}
-                    <Box component="span" sx={{ color: '#143baf', fontStyle: 'italic' }}>
-                      people building them.
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    inset: 0,
+                    background: 'linear-gradient(105deg, rgba(255,255,255,0.03), rgba(255,255,255,0) 48%, rgba(10,46,120,0.15))',
+                    pointerEvents: 'none',
+                  }}
+                />
+                <Box sx={{ maxWidth: 720, position: 'relative' }}>
+                  <Typography
+                    sx={{
+                      color: '#90a4c8',
+                      fontFamily: 'var(--wc-font-body)',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                      mb: 2,
+                    }}
+                  >
+                    Start Your Journey
+                  </Typography>
+                  <Typography variant="h2" sx={{ color: '#ffffff', fontSize: { xs: '2rem', md: '3rem' }, lineHeight: 1.05, fontWeight: 700, letterSpacing: '-0.035em' }}>
+                    Shape Your Mind.{' '}
+                    <Box component="span" sx={{ color: '#a8c5ff', fontStyle: 'italic' }}>
+                      Then Shape Markets.
                     </Box>
                   </Typography>
-                  <Typography sx={{ mt: 2.2, color: '#435981', fontSize: 15.5, lineHeight: 1.75 }}>
-                    We care about and support founders as people, not just CEOs or business leaders.
-                    Building a strong company requires resilient leadership and disciplined support.
+                  <Typography sx={{ mt: 2.2, color: 'rgba(255,255,255,0.78)', fontSize: 15.5, lineHeight: 1.75, maxWidth: 600, mx: 'auto' }}>
+                    Investing mastery begins with how you think — not which stock you pick. Join a community
+                    built around research discipline, independent analysis, and long-term conviction.
                   </Typography>
                 </Box>
               </Box>
