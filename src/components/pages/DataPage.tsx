@@ -2,6 +2,8 @@ import {
   Box,
   Button,
   Container,
+  Menu,
+  MenuItem,
   Stack,
   Typography,
 } from '@mui/material'
@@ -626,6 +628,36 @@ function VolumeLeaderTable({
   )
 }
 
+// -- Export -------------------------------------------------------------------
+
+function exportToCSV(stocks: PsxStock[], filename: string) {
+  const headers = ['Symbol', 'Company', 'Industry', 'Open', 'High', 'Low', 'Last Rate', 'Change', 'Turnover', 'EPS', 'P/E', 'Result Period']
+  const rows = stocks.map((s) => [
+    s.symbol,
+    `"${s.company.replace(/"/g, '""')}"`,
+    s.industry ?? '',
+    toNum(s.open),
+    toNum(s.high),
+    toNum(s.low),
+    toNum(s.last_rate),
+    changeVal(s.change),
+    toNum(s.turnover),
+    s.eps != null ? toNum(s.eps) : '',
+    s.pe != null ? s.pe.toFixed(2) : '',
+    s.result_period ?? '',
+  ])
+  const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
+
 // -- Component ----------------------------------------------------------------
 
 export function DataPage() {
@@ -638,6 +670,7 @@ export function DataPage() {
   const [search, setSearch] = useState('')
   const [movementFilter, setMovementFilter] = useState<MovementFilter>('all')
   const [industryFilter, setIndustryFilter] = useState('all')
+  const [exportAnchor, setExportAnchor] = useState<HTMLElement | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -1329,6 +1362,7 @@ export function DataPage() {
                     />
                     <Button
                       startIcon={<FileDownloadOutlinedIcon sx={{ fontSize: 16 }} />}
+                      onClick={(e) => setExportAnchor(e.currentTarget)}
                       sx={{
                         height: 40,
                         px: 2,
@@ -1343,6 +1377,45 @@ export function DataPage() {
                     >
                       Export
                     </Button>
+                    <Menu
+                      anchorEl={exportAnchor}
+                      open={Boolean(exportAnchor)}
+                      onClose={() => setExportAnchor(null)}
+                      anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                      transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                      slotProps={{
+                        paper: {
+                          sx: {
+                            mt: 0.8,
+                            minWidth: 200,
+                            borderRadius: '10px',
+                            border: '1px solid var(--wc-border)',
+                            boxShadow: '0 12px 28px rgba(10,36,99,0.1)',
+                            overflow: 'hidden',
+                          },
+                        },
+                      }}
+                    >
+                      <MenuItem
+                        onClick={() => {
+                          const filename = `psx-market-data-${latestTradeDate ?? activeData?.date ?? 'export'}.csv`
+                          exportToCSV(displayedStocks, filename)
+                          setExportAnchor(null)
+                        }}
+                        sx={{
+                          fontSize: 13,
+                          fontWeight: 600,
+                          color: 'var(--wc-text-primary)',
+                          py: 1.4,
+                          gap: 1.2,
+                          fontFamily: 'var(--wc-font-body)',
+                          '&:hover': { bgcolor: 'var(--wc-surface-soft)' },
+                        }}
+                      >
+                        <FileDownloadOutlinedIcon sx={{ fontSize: 16, color: 'var(--wc-primary)' }} />
+                        Export as CSV
+                      </MenuItem>
+                    </Menu>
                   </Box>
 
                   <CustomDataTable rows={displayedStocks} searchQuery={search} dataFont={NUMBER_FONT} />
