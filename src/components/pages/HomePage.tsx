@@ -1,5 +1,4 @@
 import { useRef, useState, type FormEvent } from 'react'
-import AccountBalanceOutlinedIcon from '@mui/icons-material/AccountBalanceOutlined'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import BarChartRoundedIcon from '@mui/icons-material/BarChartRounded'
 import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined'
@@ -302,14 +301,12 @@ function SipPreview() {
 
 function ProductCard({ product, index }: { product: (typeof PRODUCTS)[number]; index: number }) {
   const Preview = product.preview === 'markets' ? MarketPreview : product.preview === 'glossary' ? GlossaryPreview : SipPreview
-  const reduceMotion = useReducedMotion()
 
   return (
     <Box
       component={motion.div}
       variants={fadeUp}
       custom={index}
-      // whileHover={reduceMotion ? undefined : { y: -8 }}
       transition={{ duration: 0.25 }}
       data-cursor="active"
       sx={{
@@ -464,7 +461,6 @@ function NewsletterBand() {
 }
 
 export function HomePage() {
-  const reduceMotion = useReducedMotion()
   const productsRef = useRef<HTMLDivElement>(null)
   const productsInView = useInView(productsRef, { once: true, margin: '-80px' })
   const heroRef = useRef<HTMLDivElement>(null)
@@ -611,7 +607,7 @@ export function HomePage() {
                     body: 'Raw data is everywhere. What matters is how you read it. We teach investors to connect the dots — turning market signals, financial statements, and macro trends into clear, confident action.',
                     // icon: SchoolOutlinedIcon,
                   },
-                ].map((item, index) => {
+                ].map((item) => {
                   return (
                     <Box
                       key={item.title}

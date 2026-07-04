@@ -5,7 +5,6 @@ export const FONT_FAMILY = {
 	display: 'var(--wc-font-display)',
 	body: 'var(--wc-font-body)',
 	data: 'var(--wc-font-data)',
-	data: 'var(--wc-font-data)',
 	echartsBody: 'Inter, sans-serif',
 	echartsData: 'Inter, sans-serif',
 }
