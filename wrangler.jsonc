@@ -10,6 +10,14 @@
     {
       "pattern": "preview.webictcapital.com",
       "custom_domain": true
+    },
+    {
+      "pattern": "webictcapital.com",
+      "custom_domain": true
+    },
+    {
+      "pattern": "www.webictcapital.com",
+      "custom_domain": true
     }
   ],
   "observability": {
