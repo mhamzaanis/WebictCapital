@@ -1154,8 +1154,8 @@ export function PortfolioPage() {
         minHeight: '100vh',
       }}
     >
-      <Container maxWidth="xl" sx={{ maxWidth: '1200px !important', px: { xs: 'var(--wc-page-gutter-xs)', md: 'var(--wc-page-gutter-md)' } }}>
-        <Stack spacing={{ xs: 8, md: 12 }}>
+      <Container maxWidth="xl" sx={{ maxWidth: '1280px !important', px: { xs: 'var(--wc-page-gutter-xs)', md: 'var(--wc-page-gutter-md)' } }}>
+        <Stack spacing={{ xs: 9, md: 14 }}>
 
           {/* ── Page Header ─────────────────────────────────────────────── */}
           <MotionReveal>

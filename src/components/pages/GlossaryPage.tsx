@@ -140,8 +140,8 @@ export function GlossaryPage() {
         minHeight: '100vh',
       }}
     >
-      <Container maxWidth="xl" sx={{ maxWidth: '1720px !important', px: { xs: 'var(--wc-page-gutter-xs)', md: 'var(--wc-page-gutter-md)', xl: 'var(--wc-page-gutter-xl)' } }}>
-        <Stack spacing={{ xs: 5.5, md: 7 }}>
+      <Container maxWidth="xl" sx={{ maxWidth: '1880px !important', px: { xs: 'var(--wc-page-gutter-xs)', md: 'var(--wc-page-gutter-md)', xl: 'var(--wc-page-gutter-xl)' } }}>
+        <Stack spacing={{ xs: 6, md: 8 }}>
           <MotionReveal>
             <Box sx={{ maxWidth: 1180 }}>
               {/* <Box

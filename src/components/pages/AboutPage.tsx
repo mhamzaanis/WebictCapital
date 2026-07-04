@@ -95,8 +95,8 @@ export function AboutPage() {
         bgcolor: '#ffffff',
       }}
     >
-      <Container maxWidth="xl" sx={{ maxWidth: '1200px !important', px: { xs: 'var(--wc-page-gutter-xs)', md: 'var(--wc-page-gutter-md)' } }}>
-        <Stack spacing={{ xs: 11, md: 18 }}>
+      <Container maxWidth="xl" sx={{ maxWidth: '1280px !important', px: { xs: 'var(--wc-page-gutter-xs)', md: 'var(--wc-page-gutter-md)' } }}>
+        <Stack spacing={{ xs: 12, md: 20 }}>
 
           {/* ── ABOUT HERO ─────────────────────────────────────────────── */}
           <MotionReveal>

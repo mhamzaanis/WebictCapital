@@ -241,8 +241,8 @@ export function SipCalculatorPage() {
           smooth: true,
           symbol: 'circle',
           symbolSize: 6,
-          lineStyle: { color: SUCCESS, width: 3 },
-          itemStyle: { color: SUCCESS, borderColor: '#ffffff', borderWidth: 2 },
+          lineStyle: { color: '#147a4d', width: 3 },
+          itemStyle: { color: '#147a4d', borderColor: '#ffffff', borderWidth: 2 },
           areaStyle: {
             color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
               { offset: 0, color: 'rgba(15,138,85,0.18)' },
@@ -256,7 +256,7 @@ export function SipCalculatorPage() {
           data: yearlyData.investedArr,
           smooth: true,
           symbol: 'none',
-          lineStyle: { color: PRIMARY, width: 2, type: 'dashed' },
+          lineStyle: { color: '#0a2e78', width: 2, type: 'dashed' },
         },
       ],
     }
@@ -292,8 +292,8 @@ export function SipCalculatorPage() {
         minHeight: '100vh',
       }}
     >
-      <Container maxWidth="xl" sx={{ maxWidth: '1200px !important', px: { xs: 'var(--wc-page-gutter-xs)', md: 'var(--wc-page-gutter-md)' } }}>
-        <Stack spacing={{ xs: 6, md: 7.5 }}>
+      <Container maxWidth="xl" sx={{ maxWidth: '1280px !important', px: { xs: 'var(--wc-page-gutter-xs)', md: 'var(--wc-page-gutter-md)' } }}>
+        <Stack spacing={{ xs: 7, md: 9 }}>
           <MotionReveal>
             <Box sx={{ maxWidth: 560 }}>
 

@@ -444,8 +444,8 @@ export function MasterclassesPage() {
         minHeight: '100vh',
       }}
     >
-      <Container maxWidth="xl" sx={{ maxWidth: '1200px !important', px: { xs: 'var(--wc-page-gutter-xs)', md: 'var(--wc-page-gutter-md)' } }}>
-        <Stack spacing={{ xs: 6.5, md: 8 }}>
+      <Container maxWidth="xl" sx={{ maxWidth: '1280px !important', px: { xs: 'var(--wc-page-gutter-xs)', md: 'var(--wc-page-gutter-md)' } }}>
+        <Stack spacing={{ xs: 7, md: 9 }}>
           <Box
             component={motion.section}
             initial={reduceMotion ? false : { opacity: 0, y: 24 }}

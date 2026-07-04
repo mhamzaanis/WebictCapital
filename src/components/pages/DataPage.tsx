@@ -392,9 +392,9 @@ function HeaderMetric({
   return (
     <Box
       sx={{
-        minWidth: { xs: 150, lg: 132 },
-        px: { xs: 0, lg: 2.3 },
-        py: { xs: 1.2, lg: 0 },
+        minWidth: { xs: 150, lg: 140 },
+        px: { xs: 0, lg: 2.8 },
+        py: { xs: 1.2, lg: 0.8 },
         borderLeft: { lg: '1px solid var(--wc-divider)' },
       }}
     >
@@ -440,7 +440,7 @@ function LeaderTable({
   dataFont: string
 }) {
   return (
-    <Box sx={{ ...CARD_SX, p: 2.2, minHeight: 330 }}>
+    <Box sx={{ ...CARD_SX, p: { xs: 2.2, md: 2.8 }, minHeight: 330 }}>
       <SectionTitle icon={icon} title={title} subtitle={subtitle} />
       <Box sx={{ overflowX: 'auto' }}>
         <Box sx={{ minWidth: 470 }}>
@@ -481,7 +481,7 @@ function LeaderTable({
                   gridTemplateColumns: '34px 82px minmax(0,1fr) 78px 86px',
                   columnGap: 1.5,
                   alignItems: 'center',
-                  minHeight: 36,
+                  minHeight: 42,
                   borderBottom: index === items.length - 1 ? 'none' : '1px solid var(--wc-divider)',
                 }}
               >
@@ -542,7 +542,7 @@ function VolumeLeaderTable({
   dataFont: string
 }) {
   return (
-    <Box sx={{ ...CARD_SX, p: 2.2, minHeight: 330 }}>
+    <Box sx={{ ...CARD_SX, p: { xs: 2.2, md: 2.8 }, minHeight: 330 }}>
       <SectionTitle
         icon={<StackedBarChartIcon sx={{ fontSize: 18 }} />}
         title="Volume Leaders"
@@ -589,7 +589,7 @@ function VolumeLeaderTable({
                   gridTemplateColumns: '34px 82px minmax(0,1fr) 88px 88px',
                   columnGap: 1.5,
                   alignItems: 'center',
-                  minHeight: 36,
+                  minHeight: 42,
                   borderBottom: index === items.length - 1 ? 'none' : '1px solid var(--wc-divider)',
                 }}
               >
@@ -937,8 +937,8 @@ export function DataPage() {
         minHeight: '100vh',
       }}
     >
-      <Container maxWidth="xl" sx={{ maxWidth: '1720px !important', px: { xs: 'var(--wc-page-gutter-xs)', md: 'var(--wc-page-gutter-md)', xl: 'var(--wc-page-gutter-xl)' } }}>
-        <Stack spacing={{ xs: 4.5, md: 5.5 }}>
+      <Container maxWidth="xl" sx={{ maxWidth: '1880px !important', px: { xs: 'var(--wc-page-gutter-xs)', md: 'var(--wc-page-gutter-md)', xl: 'var(--wc-page-gutter-xl)' } }}>
+        <Stack spacing={{ xs: 6, md: 7.5 }}>
           {status === 'loading' && (
             <MotionReveal>
               <Stack spacing={{ xs: 3.5, md: 4.5 }}>
@@ -1043,7 +1043,7 @@ export function DataPage() {
           )}
 
           {status === 'ok' && activeData && (
-            <Stack spacing={{ xs: 3.5, md: 4.5 }}>
+            <Stack spacing={{ xs: 5, md: 6.5 }}>
               <MotionReveal>
                 <Box
                   component={motion.section}
@@ -1053,7 +1053,7 @@ export function DataPage() {
                   sx={{
                     display: 'grid',
                     gridTemplateColumns: { xs: '1fr', xl: 'minmax(0, 0.9fr) minmax(700px, 1.1fr)' },
-                    gap: { xs: 3, xl: 5 },
+                    gap: { xs: 4, xl: 6 },
                     alignItems: 'end',
                   }}
                 >
@@ -1137,7 +1137,7 @@ export function DataPage() {
                     icon={<BubbleChartIcon sx={{ fontSize: 18 }} />}
                     height={390}
                     data={marketVisualData.heatmap}
-                    sx={{ ...CARD_SX, p: 2.2, minHeight: { xs: 420, md: 500 } }}
+                    sx={{ ...CARD_SX, p: { xs: 2.2, md: 2.8 }, minHeight: { xs: 420, md: 500 } }}
                     colors={{
                       positive: MARKET_CHART_COLORS.success,
                       negative: MARKET_CHART_COLORS.error,
@@ -1178,7 +1178,7 @@ export function DataPage() {
                   sx={{
                     display: 'grid',
                     gridTemplateColumns: { xs: '1fr', lg: '0.85fr 1.05fr 1.1fr' },
-                    gap: 1.5,
+                    gap: { xs: 2, md: 2.5 },
                   }}
                 >
                   <DonutChart
@@ -1225,7 +1225,7 @@ export function DataPage() {
                   sx={{
                     display: 'grid',
                     gridTemplateColumns: { xs: '1fr', lg: 'repeat(3, minmax(0, 1fr))' },
-                    gap: 1.5,
+                    gap: { xs: 2, md: 2.5 },
                   }}
                 >
                   <LeaderTable
@@ -1266,10 +1266,10 @@ export function DataPage() {
                 >
                   <Box
                     sx={{
-                      p: 2,
+                      p: { xs: 2, md: 2.5 },
                       display: 'grid',
                       gridTemplateColumns: { xs: '1fr', lg: '1fr auto' },
-                      gap: 1.5,
+                      gap: 2,
                       alignItems: 'center',
                       borderBottom: '1px solid var(--wc-divider)',
                     }}
