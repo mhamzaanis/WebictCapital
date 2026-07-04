@@ -153,9 +153,9 @@ export function AboutPage() {
                       maxWidth: 520,
                     }}
                   >
-                    We build serious investing education for curious learners and disciplined future
-                    investors. Our work combines classical market principles with modern tools to make
-                    decision-making clearer, calmer, and more consistent.
+                    Welcome to a research-driven investing community — built for those who want to move
+                    beyond headlines, develop independent conviction, and make informed decisions on the
+                    Pakistan Stock Exchange.
                   </Typography>
 
                   <Stack
@@ -184,6 +184,66 @@ export function AboutPage() {
               </Grid>
             </Grid>
           </MotionReveal>
+
+          {/* ── VISION ─────────────────────────────────────────────────── */}
+          <Box
+            component={motion.section}
+            whileInView={reduceMotion ? undefined : { opacity: [0, 1], y: [20, 0] }}
+            viewport={{ once: true, amount: 0.15 }}
+            transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <Box sx={{ borderTop: '1px solid #e2eaf5', pt: 5, mb: 5 }}>
+              <Typography
+                sx={{
+                  fontSize: 11,
+                  fontFamily: 'var(--wc-font-body)',
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  color: 'var(--wc-primary)',
+                  mb: 1.5,
+                }}
+              >
+                Our Vision
+              </Typography>
+              <Typography sx={{ fontSize: { xs: 24, md: 30 }, color: '#080e1a', fontWeight: 700, letterSpacing: '-0.02em', maxWidth: 780 }}>
+                Helping Investors See What{' '}
+                <Box component="span" sx={{ color: 'var(--wc-primary)' }}>
+                  Others Miss
+                </Box>
+                .
+              </Typography>
+            </Box>
+
+            <Grid container spacing={{ xs: 2, md: 2.5 }}>
+              {[
+                {
+                  title: 'Beyond the Obvious',
+                  body: 'Most investors stop at the headline — price targets, quarterly results, sector sentiment. We push deeper. Our community learns to question assumptions, read between the lines of financial statements, and identify structural shifts before they become consensus.',
+                },
+                {
+                  title: 'Independent Thinking',
+                  body: 'The Pakistan Stock Exchange is full of noise — tips, rumours, and reactive trading. We cultivate a disciplined, research-first mindset that filters out the irrelevant and focuses on what drives long-term value creation.',
+                },
+                {
+                  title: 'Turning Data into Conviction',
+                  body: 'Information is abundant. Conviction is rare. We bridge the gap by teaching investors how to synthesise market data, macroeconomic signals, and company fundamentals into clear, confident investment decisions.',
+                },
+              ].map((item, index) => (
+                <Grid key={item.title} size={{ xs: 12, md: 4 }}>
+                  <MotionReveal delay={Math.min(index * 0.08, 0.2)}>
+                    <Box sx={{ borderTop: '2px solid var(--wc-primary)', pt: 2 }}>
+                      <Typography sx={{ fontWeight: 600, color: '#080e1a', mb: 0.9, fontSize: 16 }}>
+                        {item.title}
+                      </Typography>
+                      <Typography sx={{ color: '#4a5e78', fontSize: 14.2, lineHeight: 1.75 }}>
+                        {item.body}
+                      </Typography>
+                    </Box>
+                  </MotionReveal>
+                </Grid>
+              ))}
+            </Grid>
+          </Box>
 
           {/* ── WHO / WHAT / WHY ───────────────────────────────────────── */}
           <Grid container spacing={{ xs: 1.5, md: 2 }}>
@@ -271,6 +331,123 @@ export function AboutPage() {
               ))}
             </Grid>
           </Box>
+
+          {/* ── FOUNDER MESSAGE ────────────────────────────────────────── */}
+          <MotionReveal>
+            <Box
+              sx={{
+                border: '1px solid var(--wc-border)',
+                borderRadius: '10px',
+                bgcolor: 'var(--wc-surface)',
+                p: { xs: 3, md: 5 },
+                boxShadow: 'var(--wc-shadow-card)',
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', md: 'minmax(0, 1fr) minmax(360px, 0.8fr)' },
+                gap: { xs: 3, md: 6 },
+                alignItems: 'center',
+              }}
+            >
+              <Box>
+                <Typography
+                  sx={{
+                    fontSize: 11,
+                    fontFamily: 'var(--wc-font-body)',
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    color: 'var(--wc-primary)',
+                    mb: 1.5,
+                  }}
+                >
+                  A Message from the Founder
+                </Typography>
+                <Typography
+                  variant="h2"
+                  sx={{
+                    color: 'var(--wc-text-primary)',
+                    fontSize: { xs: '1.5rem', md: '2rem' },
+                    fontWeight: 700,
+                    lineHeight: 1.15,
+                    letterSpacing: '-0.02em',
+                    mb: 2,
+                  }}
+                >
+                  Why I built{' '}
+                  <Box component="span" sx={{ color: 'var(--wc-primary)' }}>
+                    Webict Capital
+                  </Box>
+                  .
+                </Typography>
+                <Typography sx={{ color: 'var(--wc-text-secondary)', fontSize: 14.5, lineHeight: 1.8, mb: 2 }}>
+                  I started investing in the Pakistan Stock Exchange the way most people do — following tips,
+                  reacting to news, and hoping for the best. It didn't work. What did work was treating
+                  investing as a research discipline: studying businesses, understanding sectors, and
+                  building frameworks that survive market cycles.
+                </Typography>
+                <Typography sx={{ color: 'var(--wc-text-secondary)', fontSize: 14.5, lineHeight: 1.8 }}>
+                  Webict Capital exists because I believe every serious investor in Pakistan deserves access
+                  to structured education, clear data, and a community that values depth over speed.
+                  This platform is built for the curious, the disciplined, and the quietly ambitious —
+                  investors who understand that real wealth is built slowly, with conviction, over time.
+                </Typography>
+              </Box>
+
+              <Box
+                sx={{
+                  borderLeft: { md: '1px solid var(--wc-divider)' },
+                  pl: { md: 5 },
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                }}
+              >
+                <Typography sx={{ color: 'var(--wc-text-primary)', fontSize: 17, fontWeight: 700, mb: 1 }}>
+                  Asaad Sohail
+                </Typography>
+                <Typography sx={{ color: 'var(--wc-text-muted)', fontSize: 12.5, letterSpacing: '0.04em', textTransform: 'uppercase', mb: 2 }}>
+                  Founder, Webict Capital
+                </Typography>
+                <Box
+                  sx={{
+                    borderLeft: '3px solid var(--wc-primary)',
+                    pl: 2.2,
+                    py: 1,
+                  }}
+                >
+                  <Typography sx={{ color: 'var(--wc-text-secondary)', fontSize: 14, lineHeight: 1.7, fontStyle: 'italic' }}>
+                    "The goal is not to predict the market. The goal is to understand it well enough
+                    to make decisions you can stand behind — even when the crowd moves the other way."
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
+          </MotionReveal>
+
+          {/* ── CLOSING TAGLINE ─────────────────────────────────────────── */}
+          <MotionReveal>
+            <Box sx={{ textAlign: 'center', py: { xs: 3, md: 4 } }}>
+              <Typography
+                sx={{
+                  color: 'var(--wc-text-primary)',
+                  fontFamily: 'var(--wc-font-display)',
+                  fontSize: { xs: '1.5rem', md: '2.2rem' },
+                  fontWeight: 700,
+                  lineHeight: 1.2,
+                  letterSpacing: '-0.03em',
+                }}
+              >
+                Stay Curious.
+                <br />
+                Stay{' '}
+                <Box component="span" sx={{ color: 'var(--wc-primary)' }}>
+                  Disciplined
+                </Box>
+                .
+              </Typography>
+              <Typography sx={{ mt: 1.5, color: 'var(--wc-text-secondary)', fontSize: 14 }}>
+                Investing is a lifelong practice. We're here for the full journey.
+              </Typography>
+            </Box>
+          </MotionReveal>
 
           {/* ── CONTACT ────────────────────────────────────────────────── */}
           <Box id="contact" ref={contactRef}>

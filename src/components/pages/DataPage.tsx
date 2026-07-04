@@ -1088,6 +1088,49 @@ export function DataPage() {
                         {formatMarketDate(latestTradeDate ?? activeData.date)}
                       </Box>
                     </Typography>
+
+                    <Box
+                      sx={{
+                        mt: 2.2,
+                        border: '1px solid var(--wc-border)',
+                        borderRadius: '8px',
+                        bgcolor: 'var(--wc-surface-soft)',
+                        px: 2.2,
+                        py: 1.6,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 2,
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          width: 6,
+                          height: 6,
+                          borderRadius: '50%',
+                          bgcolor: 'var(--wc-primary)',
+                          flexShrink: 0,
+                        }}
+                      />
+                      <Box>
+                        <Typography
+                          sx={{
+                            color: 'var(--wc-primary)',
+                            fontFamily: 'var(--wc-font-body)',
+                            fontSize: 12,
+                            fontWeight: 700,
+                            letterSpacing: '0.06em',
+                            textTransform: 'uppercase',
+                            mb: 0.3,
+                          }}
+                        >
+                          Beyond Daily Prices
+                        </Typography>
+                        <Typography sx={{ color: 'var(--wc-text-secondary)', fontSize: 12.5, lineHeight: 1.5 }}>
+                          Every number tells a story. We look past the surface — connecting market movements,
+                          sector rotations, and company fundamentals to reveal the deeper narrative behind the data.
+                        </Typography>
+                      </Box>
+                    </Box>
                   </Box>
 
                   <Box
