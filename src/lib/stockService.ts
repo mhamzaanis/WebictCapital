@@ -260,10 +260,12 @@ export type MarketIndexSnapshot = {
   hasData: boolean
 }
 
+// History fetches expose the selected index volume through curr_volume so older
+// chart builders can stay compatible without reading regular-market volume.
 export type MarketHistoryRow = Pick<DbMarketSummaryRow, 'trade_date'> &
   Partial<Pick<DbMarketSummaryRow, MarketIndexCloseKey | 'curr_volume'>>
 
-type MarketHistoryDbRow = Pick<DbMarketSummaryRow, 'trade_date' | 'curr_volume'> &
+type MarketHistoryDbRow = Pick<DbMarketSummaryRow, 'trade_date'> &
   Partial<Pick<DbMarketSummaryRow, MarketIndexCloseKey | MarketIndexFieldKey>>
 
 type DbMarketAiSummaryRow = {
@@ -705,11 +707,13 @@ export async function fetchMarketHistoryRows(
 ): Promise<MarketHistoryRow[]> {
   if (!hasStockService() || !supabase) return []
 
+  const volumeKey = INDEX_VOLUME_BY_CLOSE_KEY[closeKey]
+
   if (summaryCache && Date.now() - summaryCache.fetchedAt < SUMMARY_CACHE_TTL_MS) {
     const cached = summaryCache.rows.slice(0, limit).map((row) => ({
       trade_date: row.trade_date,
       [closeKey]: row[closeKey],
-      curr_volume: row.curr_volume,
+      curr_volume: nullableNum(row[volumeKey]),
     }))
     if (cached.length >= limit) return cached as MarketHistoryRow[]
   }
@@ -717,8 +721,7 @@ export async function fetchMarketHistoryRows(
   const latestTradeDate = await fetchLatestTradeDate()
   if (!latestTradeDate) return []
 
-  const volumeKey = INDEX_VOLUME_BY_CLOSE_KEY[closeKey]
-  const selectCols = `trade_date,${closeKey},${volumeKey},curr_volume`
+  const selectCols = `trade_date,${closeKey},${volumeKey}`
   const { data, error } = await supabase
     .from('market_daily_summary')
     .select(selectCols)
@@ -734,7 +737,7 @@ export async function fetchMarketHistoryRows(
   return (data as unknown as MarketHistoryDbRow[]).map((row) => ({
     trade_date: row.trade_date,
     [closeKey]: row[closeKey],
-    curr_volume: nullableNum(row[volumeKey]) ?? row.curr_volume,
+    curr_volume: nullableNum(row[volumeKey]),
   }))
 }
 

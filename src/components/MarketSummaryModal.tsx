@@ -214,17 +214,14 @@ export function MarketSummaryModal({ open, onClose, summary, loading = false }: 
     const kse100 = summary?.kse100History[range] ?? { labels: [], values: [], volumes: [] }
     const kse30 = summary?.kse30History[range] ?? { labels: [], values: [], volumes: [] }
     const useKse100 = kse100.labels.length >= kse30.labels.length
-
-    // Volume: use curr_volume as a single daily figure spread across the range.
-    // Real per-day volume isn't in history rows, so we show a flat reference bar
-    // at each point to give visual weight without fabricating data.
-    const count = useKse100 ? kse100.labels.length : kse30.labels.length
+    const selectedIndex = useKse100 ? kse100 : kse30
+    const count = selectedIndex.labels.length
 
     return {
       labels: useKse100 ? kse100.labels : kse30.labels,
       kse100Values: kse100.values,
       kse30Values: kse30.values,
-      volumeValues: (useKse100 ? kse100 : kse30).volumes ?? Array(count).fill(summary?.curr_volume ?? 0),
+      volumeValues: selectedIndex.volumes.length === count ? selectedIndex.volumes : Array(count).fill(0),
     }
   }, [range, summary])
 
@@ -367,7 +364,7 @@ export function MarketSummaryModal({ open, onClose, summary, loading = false }: 
         changePct: summary.kse100_prev !== 0 ? (summary.kse100_change / summary.kse100_prev) * 100 : null,
         high: null,
         low: null,
-        volume: summary.curr_volume,
+        volume: null,
         hasData: true,
       },
       {
@@ -383,6 +380,7 @@ export function MarketSummaryModal({ open, onClose, summary, loading = false }: 
         hasData: true,
       },
     ]
+  const kse100Index = indexCards.find((index) => index.key === 'kse100') ?? null
   const chartHeight = isXs ? 320 : 360
   const formattedDate = summary.tradeDate
     ? new Date(summary.tradeDate).toLocaleDateString('en-PK', {
@@ -541,20 +539,25 @@ export function MarketSummaryModal({ open, onClose, summary, loading = false }: 
         <Box
           sx={{
             display: 'grid',
-            gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' },
+            gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)', lg: 'repeat(5, 1fr)' },
             gap: 1.5,
           }}
         >
           {[
             {
-              label: 'Volume (Today)',
+              label: 'Regular Volume',
               value: fmtNumber(summary.curr_volume),
               sub: summary.prev_volume > 0
-                ? `vs ${fmtNumber(summary.prev_volume)} prev`
+                ? `vs ${fmtNumber(summary.prev_volume)} prev regular`
                 : undefined,
               highlight: summary.curr_volume > summary.prev_volume ? CHART.success
                 : summary.curr_volume < summary.prev_volume ? '#b94040'
                   : undefined,
+            },
+            {
+              label: 'KSE 100 Volume',
+              value: fmtNumber(kse100Index?.volume),
+              sub: 'Index shares',
             },
             {
               label: 'Advancing',
@@ -707,7 +710,7 @@ export function MarketSummaryModal({ open, onClose, summary, loading = false }: 
                     },
                   },
                   {
-                    // Volume axis (right, hidden — bars fill bottom 25% of chart)
+                    // Index volume axis (right, hidden — bars fill bottom 25% of chart)
                     type: 'value',
                     show: false,
                     min: 0,
@@ -744,7 +747,7 @@ export function MarketSummaryModal({ open, onClose, summary, loading = false }: 
                     z: 3,
                   },
                   {
-                    name: 'Volume',
+                    name: 'Index Volume',
                     type: 'bar',
                     yAxisIndex: 1,
                     data: chartData.volumeValues,
@@ -782,7 +785,7 @@ export function MarketSummaryModal({ open, onClose, summary, loading = false }: 
                   formatter: (params: { seriesName?: string; value: number | number[] }[]) => {
                     const kse100 = params.find((p) => p.seriesName === 'KSE 100')?.value as number | undefined
                     const kse30 = params.find((p) => p.seriesName === 'KSE 30')?.value as number | undefined
-                    const vol = params.find((p) => p.seriesName === 'Volume')?.value as number | undefined
+                    const vol = params.find((p) => p.seriesName === 'Index Volume')?.value as number | undefined
                     if (kse100 == null && kse30 == null) return ''
                     const fmtVol = (v: number) => {
                       if (v >= 1_000_000_000) return `${(v / 1_000_000_000).toFixed(2)}B`
@@ -797,7 +800,7 @@ export function MarketSummaryModal({ open, onClose, summary, loading = false }: 
                       `<span style="font-weight:700;color:${CHART.primary}">${kse100 != null ? fmtIndex(kse100) : '—'}</span>`,
                       `<span style="display:inline-flex;align-items:center;gap:5px;color:${CHART.textSecondary}"><span style="width:10px;height:2px;background:${CHART.success};display:inline-block;border-radius:2px;"></span>KSE 30</span>`,
                       `<span style="font-weight:700;color:${CHART.success}">${kse30 != null ? fmtIndex(kse30) : '—'}</span>`,
-                      vol != null ? `<span style="color:${CHART.textSecondary};margin-top:2px;">Vol</span><span style="font-weight:600;color:${CHART.text}">${fmtVol(vol)}</span>` : '',
+                      vol != null ? `<span style="color:${CHART.textSecondary};margin-top:2px;">Index vol</span><span style="font-weight:600;color:${CHART.text}">${fmtVol(vol)}</span>` : '',
                       `</div>`,
                     ].join('')
                   },
@@ -810,7 +813,7 @@ export function MarketSummaryModal({ open, onClose, summary, loading = false }: 
             {[
               { label: 'KSE 100', color: COLORS.primary, bar: false },
               { label: 'KSE 30', color: COLORS.success, bar: false },
-              { label: 'Volume', color: 'rgba(10,36,99,0.25)', bar: true },
+              { label: 'Index Volume', color: 'rgba(10,36,99,0.25)', bar: true },
             ].map(({ label, color, bar }) => (
               <Box key={label} sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
                 {bar
