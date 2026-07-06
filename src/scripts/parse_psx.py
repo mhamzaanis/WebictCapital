@@ -63,8 +63,11 @@ BATCH_SIZE = int(os.getenv("BATCH_SIZE", "200"))
 MAX_DAYS_PER_RUN = int(os.getenv("MAX_DAYS_PER_RUN", "0"))  # 0 = no cap
 
 # AI daily market brief configuration.
-# Alpha Vantage is useful for market-data enrichment, but it is not a text-generation model.
-# For a true AI-written brief, set these LLM_* variables for any OpenAI-compatible chat API.
+# For Gemini generateContent, set:
+#   LLM_API_KEY=<your Gemini API key>
+#   LLM_API_URL=https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent
+# Optional:
+#   LLM_MODEL=gemini-flash-latest
 AI_SUMMARY_ENABLED = os.getenv("AI_SUMMARY_ENABLED", "1").strip().lower() not in {
     "0",
     "false",
@@ -74,7 +77,7 @@ AI_SUMMARY_TYPE = os.getenv("AI_SUMMARY_TYPE", "daily_market_close")
 AI_PROMPT_VERSION = os.getenv("AI_PROMPT_VERSION", "v1")
 LLM_API_KEY = os.getenv("LLM_API_KEY")
 LLM_API_URL = os.getenv("LLM_API_URL")
-LLM_MODEL = os.getenv("LLM_MODEL")
+LLM_MODEL = os.getenv("LLM_MODEL", "gemini-flash-latest")
 LLM_TIMEOUT = int(os.getenv("LLM_TIMEOUT", "60"))
 
 _DEFAULT_PDF_URL_TEMPLATES = (
@@ -417,27 +420,45 @@ Tone: professional, clear, research-style, suitable for retail investors.
 
 def call_llm_summary(ai_input: dict) -> str | None:
     """
-    Calls any OpenAI-compatible chat-completions API.
+    Calls Google's Gemini generateContent API.
 
     Required env vars:
-      LLM_API_KEY
-      LLM_API_URL
-      LLM_MODEL
+      LLM_API_KEY  -> Gemini API key
+      LLM_API_URL  -> https://generativelanguage.googleapis.com/v1beta/models/<model>:generateContent
+
+    Optional env vars:
+      LLM_MODEL    -> stored in DB for tracking only; default gemini-flash-latest
     """
-    if not (LLM_API_KEY and LLM_API_URL and LLM_MODEL):
+    if not (LLM_API_KEY and LLM_API_URL):
         return None
 
+    user_prompt = (
+        "Write the daily PSX market summary using this JSON data only.\n\n"
+        f"{json.dumps(ai_input, ensure_ascii=False, default=str)}"
+    )
+
     payload = {
-        "model": LLM_MODEL,
-        "messages": [
-            {"role": "system", "content": LLM_SYSTEM_PROMPT},
-            {"role": "user", "content": json.dumps(ai_input, ensure_ascii=False, default=str)},
+        "systemInstruction": {
+            "parts": [
+                {"text": LLM_SYSTEM_PROMPT}
+            ]
+        },
+        "contents": [
+            {
+                "role": "user",
+                "parts": [
+                    {"text": user_prompt}
+                ],
+            }
         ],
-        "temperature": 0.2,
+        "generationConfig": {
+            "temperature": 0.2,
+            "maxOutputTokens": 800,
+        },
     }
 
     headers = {
-        "Authorization": f"Bearer {LLM_API_KEY}",
+        "x-goog-api-key": LLM_API_KEY,
         "Content-Type": "application/json",
     }
 
@@ -445,8 +466,10 @@ def call_llm_summary(ai_input: dict) -> str | None:
     resp.raise_for_status()
     data = resp.json()
 
-    # Standard OpenAI-compatible response shape.
-    return data["choices"][0]["message"]["content"].strip()
+    try:
+        return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+    except (KeyError, IndexError, TypeError) as exc:
+        raise RuntimeError(f"Unexpected Gemini response shape: {data}") from exc
 
 
 def get_existing_ai_summary_hash(sb: Client, trade_date_str: str) -> str | None:
