@@ -111,11 +111,17 @@ function buildRealMarketHistory(
   if (rows.length === 0) return EMPTY_MARKET_HISTORY
 
   const sorted = [...rows].reverse()
+  const volumeKey = closeKey === 'kse100_close' ? 'kse100_volume' : 'kse30_volume'
 
   const buildSlice = (data: Array<MarketHistoryRow | DbMarketSummaryRow>) => ({
     labels: data.map((r) => fmtDateLabel(r.trade_date)),
     values: data.map((r) => ((r[closeKey] as number) ?? 0)),
-    volumes: data.map((r) => ((r as DbMarketSummaryRow).curr_volume ?? (r as MarketHistoryRow).curr_volume ?? 0)),
+    volumes: data.map((r) => {
+      if (volumeKey in r) {
+        return (r as Pick<DbMarketSummaryRow, typeof volumeKey>)[volumeKey] ?? 0
+      }
+      return (r as MarketHistoryRow).curr_volume ?? 0
+    }),
   })
 
   const currentYear = new Date().getFullYear()
@@ -1024,7 +1030,7 @@ export function PortfolioPage() {
           changePct: marketSummary.kse100_prev !== 0 ? (marketSummary.kse100_change / marketSummary.kse100_prev) * 100 : null,
           high: null,
           low: null,
-          volume: marketSummary.curr_volume,
+          volume: null,
           hasData: true,
         },
         {
