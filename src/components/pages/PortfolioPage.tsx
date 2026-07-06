@@ -27,8 +27,8 @@ import {
   removeFromWatchlist as removeFromWatchlistDb,
   insertUserTrade, deleteUserTradesBySymbol, deleteUserBuyTradesBySymbol,
   fetchUserTrades, fetchWatchlistSymbols,
-  fetchUniqueSymbols, fetchMarketDailySummaryRows, fetchMarketHistoryRows,
-  type UserTrade, type MarketSymbolSnapshot, type DbMarketSummaryRow, type MarketHistoryRow,
+  fetchUniqueSymbols, fetchMarketDailySummaryRows, fetchMarketHistoryRows, getMarketIndexSnapshots,
+  type UserTrade, type MarketSymbolSnapshot, type DbMarketSummaryRow, type MarketHistoryRow, type MarketIndexSnapshot,
 } from '../../lib/stockService'
 import { useAuth } from '../../context/AuthContext'
 import { AuthModal } from '../AuthModal'
@@ -71,6 +71,19 @@ const fmtCompact = (v: number) => {
   if (abs >= 1_000_000) return `${(v / 1_000_000).toFixed(2)}M`
   if (abs >= 1_000) return `${(v / 1_000).toFixed(1)}K`
   return v.toString()
+}
+const fmtIndex = (v: number | null | undefined) => (
+  v == null ? '—' : v.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+)
+const fmtSignedIndex = (v: number | null | undefined) => {
+  if (v == null) return '—'
+  if (v === 0) return '0.00'
+  return `${v > 0 ? '+' : '-'}${Math.abs(v).toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
+const fmtPct = (v: number | null | undefined) => {
+  if (v == null) return '—'
+  if (v === 0) return '0.00%'
+  return `${v > 0 ? '+' : '-'}${Math.abs(v).toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`
 }
 
 const toNum = (v: unknown): number => {
@@ -334,6 +347,43 @@ function PLBadge({ value, pct }: { value: number; pct: number }) {
         color: positive ? 'var(--wc-success)' : 'var(--wc-error)',
       }}>
         {positive ? '+' : ''}{Math.abs(pct).toFixed(2)}%
+      </Typography>
+    </Box>
+  )
+}
+
+function PortfolioIndexCard({ index }: { index: MarketIndexSnapshot }) {
+  const positive = (index.change ?? 0) >= 0
+  const flat = index.change == null || index.change === 0
+  const color = flat ? 'var(--wc-text-secondary)' : positive ? 'var(--wc-success)' : 'var(--wc-error)'
+
+  return (
+    <Box
+      sx={{
+        border: '1px solid var(--wc-divider)',
+        borderRadius: 1,
+        bgcolor: 'var(--wc-surface)',
+        p: { xs: 1.5, md: 1.8 },
+        minHeight: 118,
+      }}
+    >
+      <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 11, fontWeight: 700, color: 'var(--wc-text-secondary, #4a5e78)', letterSpacing: '0.09em', textTransform: 'uppercase' }}>
+        {index.label}
+      </Typography>
+      <Typography sx={{ mt: 0.8, fontFamily: NUMBER_FONT, fontSize: { xs: 18, md: 20 }, fontWeight: 800, color: 'var(--wc-text-primary)', letterSpacing: '-0.03em', lineHeight: 1 }}>
+        {fmtIndex(index.close)}
+      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, mt: 0.7 }}>
+        {!flat && (positive
+          ? <ArrowDropUpIcon sx={{ fontSize: 22, color }} />
+          : <ArrowDropDownIcon sx={{ fontSize: 22, color }} />
+        )}
+        <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 13, fontWeight: 700, color }}>
+          {fmtSignedIndex(index.change)} ({fmtPct(index.changePct)})
+        </Typography>
+      </Box>
+      <Typography sx={{ mt: 0.8, fontFamily: NUMBER_FONT, fontSize: 11.5, fontWeight: 600, color: 'var(--wc-text-secondary, #4a5e78)' }}>
+        Vol {index.volume == null ? '—' : fmtCompact(index.volume)}
       </Typography>
     </Box>
   )
@@ -734,6 +784,7 @@ export function PortfolioPage() {
     prev_volume: 0, curr_volume: 0,
     advances: 0, declines: 0, unchanged: 0,
     flu_no: null,
+    indexes: [],
     kse100History: EMPTY_MARKET_HISTORY,
     kse30History: EMPTY_MARKET_HISTORY,
   }))
@@ -748,9 +799,12 @@ export function PortfolioPage() {
 
     const normalized = normalizeSummaryRows(summaryRows)
     const latest = normalized[0]
+    const indexes = getMarketIndexSnapshots(latest).filter((index) => index.hasData)
+    const kse100Index = indexes.find((index) => index.key === 'kse100')
+    const kse30Index = indexes.find((index) => index.key === 'kse30')
 
-    const kse100Close = latest.kse100_close ?? 0
-    const kse30Close = latest.kse30_close ?? 0
+    const kse100Close = kse100Index?.close ?? latest.kse100_close ?? 0
+    const kse30Close = kse30Index?.close ?? latest.kse30_close ?? 0
 
     setMarketSummary((prev) => {
       const hasFullHistory =
@@ -759,18 +813,19 @@ export function PortfolioPage() {
 
       return {
         tradeDate: latest.trade_date,
-        kse100_prev: latest.kse100_prev ?? 0,
+        kse100_prev: kse100Index?.previousClose ?? latest.kse100_prev ?? 0,
         kse100_close: kse100Close,
-        kse100_change: latest.kse100_change ?? 0,
-        kse30_prev: latest.kse30_prev ?? 0,
+        kse100_change: kse100Index?.change ?? latest.kse100_change ?? 0,
+        kse30_prev: kse30Index?.previousClose ?? latest.kse30_prev ?? 0,
         kse30_close: kse30Close,
-        kse30_change: latest.kse30_change ?? 0,
+        kse30_change: kse30Index?.change ?? latest.kse30_change ?? 0,
         prev_volume: latest.prev_volume ?? 0,
         curr_volume: latest.curr_volume ?? 0,
         advances: latest.advances ?? 0,
         declines: latest.declines ?? 0,
         unchanged: latest.unchanged ?? 0,
         flu_no: latest.flu_no,
+        indexes,
         kse100History: hasFullHistory
           ? prev.kse100History
           : buildRealMarketHistory(normalized, 'kse100_close'),
@@ -859,7 +914,7 @@ export function PortfolioPage() {
           const totalPLPct = costBasis !== 0 ? (totalPL / costBasis) * 100 : 0
           const todayPL = (currentPrice - previousPrice) * data.quantity
           const todayPLPct = previousPrice !== 0 ? ((currentPrice - previousPrice) / previousPrice) * 100 : 0
-          const sector = (live as any)?.sector || 'Unclassified'
+          const sector = live?.sector || 'Unclassified'
           const shortSector = sector.length > 20 ? sector.slice(0, 18) + '…' : sector
 
           sectorMap.set(shortSector, (sectorMap.get(shortSector) ?? 0) + currentValue)
@@ -956,6 +1011,37 @@ export function PortfolioPage() {
   const hasMarketHistory =
     marketSummary.kse100History['1Y'].values.length > 30 &&
     marketSummary.kse30History['1Y'].values.length > 30
+  const visibleMarketIndexes = useMemo<MarketIndexSnapshot[]>(
+    () => marketSummary.indexes.length > 0
+      ? marketSummary.indexes
+      : [
+        {
+          key: 'kse100',
+          label: 'KSE 100',
+          previousClose: marketSummary.kse100_prev,
+          close: marketSummary.kse100_close,
+          change: marketSummary.kse100_change,
+          changePct: marketSummary.kse100_prev !== 0 ? (marketSummary.kse100_change / marketSummary.kse100_prev) * 100 : null,
+          high: null,
+          low: null,
+          volume: marketSummary.curr_volume,
+          hasData: true,
+        },
+        {
+          key: 'kse30',
+          label: 'KSE 30',
+          previousClose: marketSummary.kse30_prev,
+          close: marketSummary.kse30_close,
+          change: marketSummary.kse30_change,
+          changePct: marketSummary.kse30_prev !== 0 ? (marketSummary.kse30_change / marketSummary.kse30_prev) * 100 : null,
+          high: null,
+          low: null,
+          volume: null,
+          hasData: true,
+        },
+      ],
+    [marketSummary],
+  )
 
   useEffect(() => {
     if (
@@ -1003,6 +1089,7 @@ export function PortfolioPage() {
   const holdingAvailableStocks = useMemo(() =>
     marketSnapshots.map((m) => ({
       symbol: m.symbol, company: m.company, sector: m.sector, price: m.price,
+      change: m.change, changePct: m.changePct, volume: m.volume,
     })), [marketSnapshots])
 
   // ── Callbacks ─────────────────────────────────────────────────────────────
@@ -1233,36 +1320,17 @@ export function PortfolioPage() {
                     },
                   }}
                 >
-                  <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 2.5 }}>
-                    {/* KSE 100 */}
-                    <Box>
-                      <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: { xs: 20, md: 24 }, fontWeight: 700, color: 'var(--wc-text-primary)', letterSpacing: '-0.03em', lineHeight: 1 }}>
-                        KSE 100: {marketSummary.kse100_close.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </Typography>
-                      <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.4, mt: 0.6 }}>
-                        {marketSummary.kse100_change >= 0
-                          ? <ArrowDropUpIcon sx={{ fontSize: 35, color: 'var(--wc-success)' }} />
-                          : <ArrowDropDownIcon sx={{ fontSize: 35, color: 'var(--wc-error)' }} />}
-                        <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 25, fontWeight: 600, color: marketSummary.kse100_change >= 0 ? 'var(--wc-success)' : 'var(--wc-error)' }}>
-                          {marketSummary.kse100_change >= 0 ? '+' : ''}{marketSummary.kse100_change.toFixed(2)}
-                        </Typography>
-                      </Box>
-                    </Box>
-
-                    {/* KSE 30 */}
-                    <Box sx={{ borderLeft: '1px solid var(--wc-divider)', pl: 2 }}>
-                      <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: { xs: 20, md: 24 }, fontWeight: 700, color: 'var(--wc-text-primary)', letterSpacing: '-0.03em', lineHeight: 1 }}>
-                        KSE 30: {marketSummary.kse30_close.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </Typography>
-                      <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.4, mt: 0.6 }}>
-                        {marketSummary.kse30_change >= 0
-                          ? <ArrowDropUpIcon sx={{ fontSize: 35, color: 'var(--wc-success)' }} />
-                          : <ArrowDropDownIcon sx={{ fontSize: 35, color: 'var(--wc-error)' }} />}
-                        <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 25, fontWeight: 600, color: marketSummary.kse30_change >= 0 ? 'var(--wc-success)' : 'var(--wc-error)' }}>
-                          {marketSummary.kse30_change >= 0 ? '+' : ''}{marketSummary.kse30_change.toFixed(2)}
-                        </Typography>
-                      </Box>
-                    </Box>
+                  <Box
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))', lg: 'repeat(3, minmax(0, 1fr))' },
+                      gap: 1.5,
+                      mb: 2.5,
+                    }}
+                  >
+                    {visibleMarketIndexes.map((index) => (
+                      <PortfolioIndexCard key={index.key} index={index} />
+                    ))}
                   </Box>
 
                   {/* Footer row */}

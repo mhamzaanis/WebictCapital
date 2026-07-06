@@ -8,6 +8,7 @@ import { motion, useReducedMotion } from 'motion/react'
 import { forwardRef, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactElement, Ref } from 'react'
 import { PulseSkeleton } from './PulseSkeleton'
+import type { MarketIndexSnapshot } from '../lib/stockService'
 
 export type MarketSummary = {
   tradeDate: string
@@ -23,6 +24,7 @@ export type MarketSummary = {
   declines: number
   unchanged: number
   flu_no?: string | null
+  indexes: MarketIndexSnapshot[]
   kse100History: Record<'1M' | 'YTD' | '1Y', { labels: string[]; values: number[]; volumes: number[] }>
   kse30History: Record<'1M' | 'YTD' | '1Y', { labels: string[]; values: number[]; volumes: number[] }>
 }
@@ -154,8 +156,31 @@ function InfoTile({ label, value, sub, onClick }: { label: string; value: string
 }
 
 
-const fmtIndex = (v: number) => v.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-const fmtNumber = (v: number) => v.toLocaleString('en-PK')
+const fmtIndex = (v: number | null | undefined) => (
+  v == null ? '-' : v.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+)
+const fmtNumber = (v: number | null | undefined) => (v == null ? '-' : v.toLocaleString('en-PK'))
+const fmtCompact = (v: number | null | undefined) => {
+  if (v == null) return '-'
+  const abs = Math.abs(v)
+  if (abs >= 1_000_000_000) return `${(v / 1_000_000_000).toFixed(2)}B`
+  if (abs >= 1_000_000) return `${(v / 1_000_000).toFixed(2)}M`
+  if (abs >= 1_000) return `${(v / 1_000).toFixed(1)}K`
+  return v.toLocaleString('en-PK')
+}
+const fmtSigned = (v: number | null | undefined) => {
+  if (v == null) return '-'
+  if (v === 0) return '0.00'
+  return `${v > 0 ? '+' : '-'}${Math.abs(v).toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
+const fmtPercent = (v: number | null | undefined) => {
+  if (v == null) return '-'
+  if (v === 0) return '0.00%'
+  return `${v > 0 ? '+' : '-'}${Math.abs(v).toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`
+}
+const moveColor = (v: number | null | undefined) => (
+  v == null || v === 0 ? COLORS.textSecondary : v > 0 ? COLORS.success : COLORS.error
+)
 
 export function MarketSummaryModal({ open, onClose, summary, loading = false }: MarketSummaryModalProps) {
   const reduce = useReducedMotion()
@@ -330,10 +355,34 @@ export function MarketSummaryModal({ open, onClose, summary, loading = false }: 
 
   if (!summary) return null
 
-  const pos = summary.kse100_change >= 0
-  const pos30 = summary.kse30_change >= 0
-  const changeColor = pos ? COLORS.success : COLORS.error
-  const change30Color = pos30 ? COLORS.success : COLORS.error
+  const indexCards: MarketIndexSnapshot[] = summary.indexes.length > 0
+    ? summary.indexes
+    : [
+      {
+        key: 'kse100',
+        label: 'KSE 100',
+        previousClose: summary.kse100_prev,
+        close: summary.kse100_close,
+        change: summary.kse100_change,
+        changePct: summary.kse100_prev !== 0 ? (summary.kse100_change / summary.kse100_prev) * 100 : null,
+        high: null,
+        low: null,
+        volume: summary.curr_volume,
+        hasData: true,
+      },
+      {
+        key: 'kse30',
+        label: 'KSE 30',
+        previousClose: summary.kse30_prev,
+        close: summary.kse30_close,
+        change: summary.kse30_change,
+        changePct: summary.kse30_prev !== 0 ? (summary.kse30_change / summary.kse30_prev) * 100 : null,
+        high: null,
+        low: null,
+        volume: null,
+        hasData: true,
+      },
+    ]
   const chartHeight = isXs ? 320 : 360
   const formattedDate = summary.tradeDate
     ? new Date(summary.tradeDate).toLocaleDateString('en-PK', {
@@ -439,77 +488,53 @@ export function MarketSummaryModal({ open, onClose, summary, loading = false }: 
           transition={{ duration: 0.36, ease: [0.22, 1, 0.36, 1] }}
           sx={{
             display: 'grid',
-            gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+            gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))', lg: 'repeat(3, minmax(0, 1fr))' },
             gap: 1.5,
           }}
         >
-          {/* KSE 100 */}
-          <Box
-            sx={{
-              border: `1px solid ${changeColor}20`,
-              borderRadius: '12px',
-              bgcolor: pos ? `${COLORS.success}08` : `${COLORS.error}08`,
-              px: 2,
-              py: 1.6,
-              position: 'relative',
-              overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0, left: 0,
-                width: '100%', height: '3px',
-                background: `linear-gradient(90deg, ${changeColor}, ${changeColor}60)`,
-                borderRadius: '0 0 3px 0',
-              },
-            }}
-          >
-            <Typography sx={{ fontSize: 11, color: COLORS.textSecondary, fontFamily: SERIF, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-              KSE 100 Change
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6, mt: 0.6 }}>
-              {pos ? <ArrowDropUpIcon sx={{ fontSize: 16, color: changeColor }} /> : <ArrowDropDownIcon sx={{ fontSize: 16, color: changeColor }} />}
-              <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 20, fontWeight: 700, color: changeColor, letterSpacing: '-0.02em' }}>
-                {pos ? '+' : ''}{summary.kse100_change.toFixed(2)}
-              </Typography>
-            </Box>
-            <Typography sx={{ fontSize: 11, color: COLORS.textSecondary, fontFamily: SERIF, mt: 0.5 }}>
-              Close {fmtIndex(summary.kse100_close)}
-            </Typography>
-          </Box>
-
-          {/* KSE 30 */}
-          <Box
-            sx={{
-              border: `1px solid ${change30Color}20`,
-              borderRadius: '12px',
-              bgcolor: pos30 ? `${COLORS.success}08` : `${COLORS.error}08`,
-              px: 2,
-              py: 1.6,
-              position: 'relative',
-              overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0, left: 0,
-                width: '100%', height: '3px',
-                background: `linear-gradient(90deg, ${change30Color}, ${change30Color}60)`,
-                borderRadius: '0 0 3px 0',
-              },
-            }}
-          >
-            <Typography sx={{ fontSize: 11, color: COLORS.textSecondary, fontFamily: SERIF, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-              KSE 30 Change
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6, mt: 0.6 }}>
-              {pos30 ? <ArrowDropUpIcon sx={{ fontSize: 16, color: change30Color }} /> : <ArrowDropDownIcon sx={{ fontSize: 16, color: change30Color }} />}
-              <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 20, fontWeight: 700, color: change30Color, letterSpacing: '-0.02em' }}>
-                {pos30 ? '+' : ''}{summary.kse30_change.toFixed(2)}
-              </Typography>
-            </Box>
-            <Typography sx={{ fontSize: 11, color: COLORS.textSecondary, fontFamily: SERIF, mt: 0.5 }}>
-              Close {fmtIndex(summary.kse30_close)}
-            </Typography>
-          </Box>
+          {indexCards.map((index) => {
+            const color = moveColor(index.change)
+            const positive = (index.change ?? 0) >= 0
+            const flat = index.change == null || index.change === 0
+            return (
+              <Box
+                key={index.key}
+                sx={{
+                  border: `1px solid ${color}20`,
+                  borderRadius: '12px',
+                  bgcolor: flat ? COLORS.surface : positive ? `${COLORS.success}08` : `${COLORS.error}08`,
+                  px: 2,
+                  py: 1.6,
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0, left: 0,
+                    width: '100%', height: '3px',
+                    background: `linear-gradient(90deg, ${color}, ${color}60)`,
+                    borderRadius: '0 0 3px 0',
+                  },
+                }}
+              >
+                <Typography sx={{ fontSize: 11, color: COLORS.textSecondary, fontFamily: SERIF, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                  {index.label}
+                </Typography>
+                <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 18, fontWeight: 700, color: COLORS.text, letterSpacing: '-0.02em', mt: 0.6, lineHeight: 1.1 }}>
+                  {fmtIndex(index.close)}
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6, mt: 0.8 }}>
+                  {positive ? <ArrowDropUpIcon sx={{ fontSize: 16, color }} /> : <ArrowDropDownIcon sx={{ fontSize: 16, color }} />}
+                  <Typography sx={{ fontFamily: NUMBER_FONT, fontSize: 15, fontWeight: 700, color, letterSpacing: '-0.02em' }}>
+                    {fmtSigned(index.change)} ({fmtPercent(index.changePct)})
+                  </Typography>
+                </Box>
+                <Typography sx={{ fontSize: 11, color: COLORS.textSecondary, fontFamily: SERIF, mt: 0.6 }}>
+                  Volume {fmtCompact(index.volume)}
+                </Typography>
+              </Box>
+            )
+          })}
         </Box>
 
         {/* ── SESSION STATS ── */}
@@ -801,11 +826,15 @@ export function MarketSummaryModal({ open, onClose, summary, loading = false }: 
         </Box>
 
         {/* ── INFO TILES ── */}
-        <Box sx={{ display: 'grid', gap: 1.5, gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' } }}>
-          <InfoTile label="KSE 100 Open" value={fmtIndex(summary.kse100_prev)} />
-          <InfoTile label="KSE 100 Close" value={fmtIndex(summary.kse100_close)} />
-          <InfoTile label="KSE 30 Open" value={fmtIndex(summary.kse30_prev)} />
-          <InfoTile label="KSE 30 Close" value={fmtIndex(summary.kse30_close)} />
+        <Box sx={{ display: 'grid', gap: 1.5, gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' } }}>
+          {indexCards.map((index) => (
+            <InfoTile
+              key={`${index.key}-detail`}
+              label={`${index.label} Range`}
+              value={`${fmtIndex(index.low)} / ${fmtIndex(index.high)}`}
+              sub={`Prev ${fmtIndex(index.previousClose)} · Vol ${fmtCompact(index.volume)}`}
+            />
+          ))}
         </Box>
 
         {/* ── MARKET BREADTH ── */}
