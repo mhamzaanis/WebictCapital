@@ -40,6 +40,7 @@ from zoneinfo import ZoneInfo
 
 import pdfplumber
 from curl_cffi import requests
+from bs4 import BeautifulSoup
 from postgrest.exceptions import APIError
 from supabase import Client, create_client
 
@@ -79,6 +80,34 @@ LLM_API_KEY = os.getenv("LLM_API_KEY")
 LLM_API_URL = os.getenv("LLM_API_URL")
 LLM_MODEL = os.getenv("LLM_MODEL", "gemini-flash-latest")
 LLM_TIMEOUT = int(os.getenv("LLM_TIMEOUT", "60"))
+
+# Live PSX index panel configuration.
+# This uses the same DPS homepage source as your psxtest.py.
+# It provides KSE100, KSE100PR, KSE ALL, KSE30, KMI30, and KMI ALL
+# high/low/close/volume/change/change%/previous close.
+INDEX_SCRAPE_ENABLED = os.getenv("INDEX_SCRAPE_ENABLED", "1").strip().lower() not in {
+    "0",
+    "false",
+    "no",
+}
+INDEX_BASE_URL = os.getenv("INDEX_BASE_URL", "https://dps.psx.com.pk")
+INDEX_TARGETS = ["KSE100", "KSE100PR", "ALLSHR", "KSE30", "KMI30", "KMIALLSHR"]
+INDEX_COLUMN_PREFIX = {
+    "KSE100": "kse100",
+    "KSE100PR": "kse100pr",
+    "ALLSHR": "kse_all",
+    "KSE30": "kse30",
+    "KMI30": "kmi30",
+    "KMIALLSHR": "kmi_all",
+}
+INDEX_DISPLAY_NAMES = {
+    "KSE100": "KSE 100",
+    "KSE100PR": "KSE 100 PR",
+    "ALLSHR": "KSE All Share",
+    "KSE30": "KSE 30",
+    "KMI30": "KMI 30",
+    "KMIALLSHR": "KMI All Share",
+}
 
 _DEFAULT_PDF_URL_TEMPLATES = (
     "https://dps.psx.com.pk/download/closing_rates/{day_iso}.pdf,"
@@ -196,6 +225,199 @@ def replace_rows_for_date(sb: Client, trade_date_str: str, rows: list[dict]) -> 
                     f"Supabase table '{TABLE_NAME}' was not found."
                 ) from exc
             raise
+
+
+# ---------------------------------------------------------------------------
+# PSX live index panel helpers
+# ---------------------------------------------------------------------------
+
+def _to_index_float(text: str | None) -> float | None:
+    """Convert PSX panel text like '179,571.27' or '-0.15%' to float."""
+    if text is None:
+        return None
+    cleaned = re.sub(r"[,\s%]", "", str(text))
+    if not cleaned or cleaned == "-":
+        return None
+    try:
+        return float(cleaned)
+    except ValueError:
+        return None
+
+
+def _to_index_int(value: float | None) -> int | None:
+    if value is None:
+        return None
+    return int(value)
+
+
+def _parse_index_as_of(as_of: str | None) -> str | None:
+    """Convert PSX data-date text to an ISO timestamptz string in Asia/Karachi."""
+    if not as_of:
+        return None
+    try:
+        return datetime.strptime(as_of, "%Y-%m-%d %H:%M:%S").replace(tzinfo=PKT_TZ).isoformat()
+    except ValueError:
+        return None
+
+
+def _index_headers() -> dict:
+    return {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://dps.psx.com.pk/",
+        "Connection": "keep-alive",
+        "Cache-Control": "no-cache",
+    }
+
+
+def parse_index_panels(html: str) -> list[dict]:
+    """
+    Parse index panels from https://dps.psx.com.pk/.
+
+    Source fields follow your psxtest.py logic:
+      - close: data-close / h1 price
+      - change and change_pct: marketIndices__change span
+      - high, low, volume, previous close: stats_item label/value pairs
+    """
+    soup = BeautifulSoup(html, "html.parser")
+    results: list[dict] = []
+    target_set = set(INDEX_TARGETS)
+
+    for panel in soup.find_all("div", class_="marketIndices__details"):
+        index_code = str(panel.get("data-name", "")).upper().strip()
+        if index_code not in target_set:
+            continue
+
+        close_val = _to_index_float(panel.get("data-close"))
+        if close_val is None:
+            h1 = panel.find("h1", class_="marketIndices__price")
+            if h1:
+                h1_text = h1.find(string=True, recursive=False)
+                close_val = _to_index_float(str(h1_text or ""))
+
+        change_val = None
+        change_pct = None
+        chg_span = panel.find("span", class_="marketIndices__change")
+        if chg_span:
+            chg_text = chg_span.get_text(" ", strip=True)
+            nums = re.findall(r"[-+]?\d[\d,]*(?:\.\d+)?", chg_text)
+            if len(nums) >= 1:
+                change_val = _to_index_float(nums[0])
+            if len(nums) >= 2:
+                change_pct = _to_index_float(nums[1])
+            classes = chg_span.get("class", []) or []
+            if "change__text--neg" in classes:
+                if change_val is not None:
+                    change_val = -abs(change_val)
+                if change_pct is not None:
+                    change_pct = -abs(change_pct)
+
+        stats: dict[str, float | None] = {}
+        for item in panel.find_all("div", class_="stats_item"):
+            label_div = item.find("div", class_="stats_label")
+            value_div = item.find("div", class_="stats_value")
+            if not (label_div and value_div):
+                continue
+            label = label_div.get_text(" ", strip=True).upper()
+            value_text = value_div.find(string=True, recursive=False)
+            if value_text is None:
+                value_text = value_div.get_text(" ", strip=True).split("—")[0].strip()
+            stats[label] = _to_index_float(str(value_text))
+
+        results.append(
+            {
+                "index_code": index_code,
+                "display_name": INDEX_DISPLAY_NAMES.get(index_code, index_code),
+                "prev_close": stats.get("PREVIOUS CLOSE"),
+                "high": stats.get("HIGH"),
+                "low": stats.get("LOW"),
+                "close": close_val,
+                "volume": _to_index_int(stats.get("VOLUME")),
+                "change": change_val,
+                "change_pct": change_pct,
+                "as_of": _parse_index_as_of(panel.get("data-date")),
+            }
+        )
+
+    idx_map = {row["index_code"]: row for row in results}
+    return [idx_map[index_code] for index_code in INDEX_TARGETS if index_code in idx_map]
+
+
+def fetch_live_index_rows() -> list[dict]:
+    """Fetch the current/live DPS homepage index rows."""
+    resp = requests.get(
+        INDEX_BASE_URL.rstrip("/") + "/",
+        headers=_index_headers(),
+        impersonate="chrome120",
+        timeout=30,
+    )
+    resp.raise_for_status()
+    rows = parse_index_panels(resp.text)
+    if not rows:
+        raise RuntimeError("No PSX index panels found on DPS homepage.")
+    return rows
+
+
+def merge_index_rows_into_summary(summary: dict, index_rows: list[dict]) -> None:
+    """
+    Store fixed index fields directly inside market_daily_summary.
+
+    This intentionally does NOT create a separate index table. The summary table is one row per day,
+    and these six indices are a fixed daily snapshot, so wide columns are acceptable here.
+    """
+    first_as_of = None
+    for row in index_rows:
+        code = row.get("index_code")
+        prefix = INDEX_COLUMN_PREFIX.get(str(code))
+        if not prefix:
+            continue
+
+        summary[f"{prefix}_prev"] = row.get("prev_close")
+        summary[f"{prefix}_close"] = row.get("close")
+        summary[f"{prefix}_change"] = row.get("change")
+        summary[f"{prefix}_change_pct"] = row.get("change_pct")
+        summary[f"{prefix}_high"] = row.get("high")
+        summary[f"{prefix}_low"] = row.get("low")
+        summary[f"{prefix}_volume"] = row.get("volume")
+
+        if not first_as_of and row.get("as_of"):
+            first_as_of = row.get("as_of")
+
+    if first_as_of:
+        summary["index_as_of"] = first_as_of
+
+
+def build_index_activity_from_summary(summary: dict) -> list[dict]:
+    """Compact index list for Gemini from the wide market_daily_summary columns."""
+    items = []
+    for code in INDEX_TARGETS:
+        prefix = INDEX_COLUMN_PREFIX[code]
+        close = summary.get(f"{prefix}_close")
+        volume = summary.get(f"{prefix}_volume")
+        change = summary.get(f"{prefix}_change")
+        change_pct = summary.get(f"{prefix}_change_pct")
+        high = summary.get(f"{prefix}_high")
+        low = summary.get(f"{prefix}_low")
+        prev = summary.get(f"{prefix}_prev")
+
+        if all(value is None for value in [close, volume, change, change_pct, high, low, prev]):
+            continue
+
+        items.append(
+            {
+                "index_code": code,
+                "display_name": INDEX_DISPLAY_NAMES.get(code, code),
+                "prev_close": _round_or_none(prev),
+                "high": _round_or_none(high),
+                "low": _round_or_none(low),
+                "close": _round_or_none(close),
+                "volume": volume,
+                "change": _round_or_none(change),
+                "change_pct": _round_or_none(change_pct),
+            }
+        )
+    return items
 
 
 # ---------------------------------------------------------------------------
@@ -320,6 +542,7 @@ def build_ai_input(summary: dict, rows: list[dict]) -> dict:
 
     return {
         "market_summary": market_summary,
+        "index_activity": build_index_activity_from_summary(market_summary),
         "top_gainers": top_gainers,
         "top_losers": top_losers,
         "volume_leaders": volume_leaders,
@@ -357,6 +580,7 @@ def build_rule_based_summary(ai_input: dict) -> tuple[str, list[str]]:
     declines = m.get("declines")
     unchanged = m.get("unchanged")
     curr_volume = m.get("curr_volume")
+    index_activity = ai_input.get("index_activity") or []
 
     direction = "higher" if (kse100_change or 0) > 0 else "lower" if (kse100_change or 0) < 0 else "flat"
     breadth = "positive" if (advances or 0) > (declines or 0) else "negative" if (declines or 0) > (advances or 0) else "mixed"
@@ -390,6 +614,22 @@ def build_rule_based_summary(ai_input: dict) -> tuple[str, list[str]]:
         f"Top percentage losers included {loser_symbols}.",
         f"Volume leadership came from {volume_symbols}.",
     ]
+
+    if index_activity:
+        index_map = {row.get("index_code"): row for row in index_activity}
+        preferred = ["KSE100", "ALLSHR", "KSE30", "KMI30", "KMIALLSHR"]
+        index_bits = []
+        for code in preferred:
+            idx = index_map.get(code)
+            if not idx:
+                continue
+            index_bits.append(
+                f"{idx.get('display_name') or code}: close {_fmt_number(idx.get('close'))}, "
+                f"change {_fmt_number(idx.get('change'), signed=True)}, "
+                f"volume {_fmt_int(idx.get('volume'))}"
+            )
+        if index_bits:
+            key_points.append("Index activity — " + "; ".join(index_bits) + ".")
 
     summary = (
         f"{overview}\n\n"
@@ -819,6 +1059,17 @@ def main() -> None:
 
         summary, rows = parse_pdf(pdf_bytes, current)
         log.info("  Parsed %d ticker rows", len(rows))
+
+        if INDEX_SCRAPE_ENABLED and current == today:
+            try:
+                index_rows = fetch_live_index_rows()
+                merge_index_rows_into_summary(summary, index_rows)
+                log.info("  Merged %d live index rows into market_daily_summary", len(index_rows))
+            except Exception as exc:
+                # Keep the PDF/symbol job alive even if DPS homepage index panels fail.
+                log.warning("  Live index scrape failed; storing PDF summary only: %s", exc)
+        elif INDEX_SCRAPE_ENABLED:
+            log.info("  Live index scrape skipped for %s; DPS homepage is current-day only.", current)
 
         upsert_summary(sb, summary)
         replace_rows_for_date(sb, current.isoformat(), rows)
