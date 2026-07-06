@@ -23,11 +23,11 @@ const HEATMAP_POSITIVE = '#147a4d'
 const HEATMAP_NEGATIVE = '#c53346'
 const HEATMAP_NEUTRAL = '#eef2f7'
 
-function restrainedHeatmapColor(changePct: number, neutralColor = HEATMAP_NEUTRAL): string {
-	if (!Number.isFinite(changePct) || changePct === 0) return neutralColor
+function restrainedHeatmapColor(changePct: number, colors?: HeatmapColors): string {
+	if (!Number.isFinite(changePct) || changePct === 0) return colors?.neutral ?? HEATMAP_NEUTRAL
 	const clamped = Math.min(6, Math.abs(changePct))
-	const opacity = 0.2 + (clamped / 6) * 0.54
-	const base = changePct > 0 ? HEATMAP_POSITIVE : HEATMAP_NEGATIVE
+	const opacity = 0.32 + (clamped / 6) * 0.54
+	const base = changePct > 0 ? colors?.positive ?? HEATMAP_POSITIVE : colors?.negative ?? HEATMAP_NEGATIVE
 	return colorWithOpacity(base, opacity)
 }
 
@@ -98,7 +98,7 @@ export function StockHeatmap({
 						itemStyle: {
 							color:
 								item.color ??
-									(restrainedHeatmapColor(item.changePct ?? NaN, colors?.neutral ?? HEATMAP_NEUTRAL) ||
+								(restrainedHeatmapColor(item.changePct ?? NaN, colors) ||
 									heatmapColor(item.changePct ?? NaN, heatmapPalette, colors?.neutral)),
 						},
 						label: {
