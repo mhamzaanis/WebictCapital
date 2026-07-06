@@ -40,6 +40,16 @@ export type Holding = {
   buyLots: BuyLot[]
 }
 
+export type HoldingStockOption = {
+  symbol: string
+  company: string
+  sector: string
+  price: number
+  change?: number
+  changePct?: number
+  volume?: string
+}
+
 type HoldingModalProps = {
   open: boolean
   onClose: () => void
@@ -48,7 +58,7 @@ type HoldingModalProps = {
   onDelete?: (symbol: string, isSell?: boolean, sellPrice?: number) => void
   initialMode?: 'new' | 'manage'
   initialHolding?: Holding | null
-  availableStocks?: { symbol: string; company: string; sector: string; price: number }[]
+  availableStocks?: HoldingStockOption[]
 }
 
 // ─── Design tokens ─────────────────────────────────────────────────────────────
@@ -89,6 +99,14 @@ const SlideUp = forwardRef(function Transition(
 const fmt = (v: number) => v.toLocaleString('en-PK')
 const fmtPkr = (v: number) => `Rs. ${fmt(Math.round(v))}`
 const todayIso = () => new Date().toISOString().slice(0, 10)
+const fmtSigned = (v: number) => {
+  if (v === 0) return '0.00'
+  return `${v > 0 ? '+' : '-'}${Math.abs(v).toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
+const fmtPercent = (v: number) => {
+  if (v === 0) return '0.00%'
+  return `${v > 0 ? '+' : '-'}${Math.abs(v).toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`
+}
 const fmtTradeDate = (value: string) => {
   const d = new Date(value + 'T00:00:00')
   if (Number.isNaN(d.getTime())) return value
@@ -621,6 +639,8 @@ export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initia
                 filteredStocks.map((s) => {
                   const isSelected = s.symbol === selectedStock
                   const alreadyHeld = holdings.some(h => h.symbol === s.symbol)
+                  const hasMove = typeof s.change === 'number' && Number.isFinite(s.change)
+                  const moveColor = hasMove && (s.change ?? 0) < 0 ? C.neg : hasMove && (s.change ?? 0) > 0 ? C.pos : C.muted
                   return (
                     <Box
                       key={s.symbol}
@@ -656,11 +676,24 @@ export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initia
                         <Typography sx={{ fontFamily: body, fontSize: 11, color: C.ink2 }}>
                           {s.company}
                         </Typography>
+                        {s.volume && (
+                          <Typography sx={{ fontFamily: data, fontSize: 10.5, color: C.muted, mt: 0.25 }}>
+                            Vol {s.volume}
+                          </Typography>
+                        )}
                       </Box>
                       <Box sx={{ textAlign: 'right', flexShrink: 0 }}>
                         <Typography sx={{ fontFamily: data, fontSize: 11.5, color: C.ink }}>
                           Rs. {fmt(s.price)}
                         </Typography>
+                        {hasMove && (
+                          <Typography sx={{ fontFamily: data, fontSize: 10.8, fontWeight: 700, color: moveColor, mt: 0.25 }}>
+                            {fmtSigned(s.change ?? 0)}
+                            {typeof s.changePct === 'number' && Number.isFinite(s.changePct)
+                              ? ` (${fmtPercent(s.changePct)})`
+                              : ''}
+                          </Typography>
+                        )}
                         {alreadyHeld && (
                           <Typography sx={{ fontFamily: data, fontSize: 11, color: C.muted }}>
                             already held

@@ -110,6 +110,7 @@ export function hasStockService(): boolean {
 const MARKET_CACHE_TTL_MS = 6 * 60 * 60 * 1000
 const USER_CACHE_TTL_MS = 6 * 60 * 60 * 1000
 const SUMMARY_CACHE_TTL_MS = 10 * 60 * 1000 // 10 min
+const AI_SUMMARY_CACHE_TTL_MS = 10 * 60 * 1000 // 10 min
 const TRADE_DATE_CACHE_TTL_MS = 5 * 60 * 1000  // 5 min
 const STOCK_DETAIL_CACHE_TTL_MS = 30 * 60 * 1000 // 30 min per symbol
 
@@ -118,6 +119,8 @@ let marketInFlight: Promise<MarketSymbolSnapshot[]> | null = null
 
 let summaryRowsInFlight: Promise<DbMarketSummaryRow[]> | null = null
 let summaryCache: { rows: DbMarketSummaryRow[]; fetchedAt: number } | null = null
+const aiSummaryCache = new Map<string, { data: MarketAiSummary | null; fetchedAt: number }>()
+const aiSummaryInFlight = new Map<string, Promise<MarketAiSummary | null>>()
 
 // Cache the latest trade date so we don't hit the DB on every summary fetch
 let tradeDateCache: { date: string; fetchedAt: number } | null = null
@@ -140,12 +143,49 @@ function clearUserCaches(userId: string): void {
 
 export type DbMarketSummaryRow = {
   trade_date: string
+  index_as_of: string | null
   kse100_prev: number | null
   kse100_close: number | null
   kse100_change: number | null
+  kse100_high: number | null
+  kse100_low: number | null
+  kse100_volume: number | null
+  kse100_change_pct: number | null
+  kse100pr_prev: number | null
+  kse100pr_close: number | null
+  kse100pr_change: number | null
+  kse100pr_change_pct: number | null
+  kse100pr_high: number | null
+  kse100pr_low: number | null
+  kse100pr_volume: number | null
+  kse_all_prev: number | null
+  kse_all_close: number | null
+  kse_all_change: number | null
+  kse_all_change_pct: number | null
+  kse_all_high: number | null
+  kse_all_low: number | null
+  kse_all_volume: number | null
   kse30_prev: number | null
   kse30_close: number | null
   kse30_change: number | null
+  kse30_high: number | null
+  kse30_low: number | null
+  kse30_volume: number | null
+  kse30_change_pct: number | null
+  kmi30_prev: number | null
+  kmi30_close: number | null
+  kmi30_change: number | null
+  kmi30_change_pct: number | null
+  kmi30_high: number | null
+  kmi30_low: number | null
+  kmi30_volume: number | null
+  kmi_all_prev: number | null
+  kmi_all_close: number | null
+  kmi_all_change: number | null
+  kmi_all_change_pct: number | null
+  kmi_all_high: number | null
+  kmi_all_low: number | null
+  kmi_all_volume: number | null
   prev_volume: number | null
   curr_volume: number | null
   advances: number | null
@@ -154,10 +194,367 @@ export type DbMarketSummaryRow = {
   flu_no: string | null
 }
 
-export type MarketHistoryRow = Pick<DbMarketSummaryRow, 'trade_date'> &
-  Partial<Pick<DbMarketSummaryRow, 'kse100_close' | 'kse30_close' | 'curr_volume'>>
+export type MarketIndexKey = 'kse100' | 'kse100pr' | 'kse_all' | 'kse30' | 'kmi30' | 'kmi_all'
+export type MarketIndexCloseKey =
+  | 'kse100_close'
+  | 'kse100pr_close'
+  | 'kse_all_close'
+  | 'kse30_close'
+  | 'kmi30_close'
+  | 'kmi_all_close'
 
-type MarketHistoryDbRow = Pick<DbMarketSummaryRow, 'trade_date' | 'kse100_close' | 'kse30_close' | 'curr_volume'>
+type MarketIndexFieldKey =
+  | 'kse100_prev'
+  | 'kse100_close'
+  | 'kse100_change'
+  | 'kse100_change_pct'
+  | 'kse100_high'
+  | 'kse100_low'
+  | 'kse100_volume'
+  | 'kse100pr_prev'
+  | 'kse100pr_close'
+  | 'kse100pr_change'
+  | 'kse100pr_change_pct'
+  | 'kse100pr_high'
+  | 'kse100pr_low'
+  | 'kse100pr_volume'
+  | 'kse_all_prev'
+  | 'kse_all_close'
+  | 'kse_all_change'
+  | 'kse_all_change_pct'
+  | 'kse_all_high'
+  | 'kse_all_low'
+  | 'kse_all_volume'
+  | 'kse30_prev'
+  | 'kse30_close'
+  | 'kse30_change'
+  | 'kse30_change_pct'
+  | 'kse30_high'
+  | 'kse30_low'
+  | 'kse30_volume'
+  | 'kmi30_prev'
+  | 'kmi30_close'
+  | 'kmi30_change'
+  | 'kmi30_change_pct'
+  | 'kmi30_high'
+  | 'kmi30_low'
+  | 'kmi30_volume'
+  | 'kmi_all_prev'
+  | 'kmi_all_close'
+  | 'kmi_all_change'
+  | 'kmi_all_change_pct'
+  | 'kmi_all_high'
+  | 'kmi_all_low'
+  | 'kmi_all_volume'
+
+export type MarketIndexSnapshot = {
+  key: MarketIndexKey
+  label: string
+  previousClose: number | null
+  close: number | null
+  change: number | null
+  changePct: number | null
+  high: number | null
+  low: number | null
+  volume: number | null
+  hasData: boolean
+}
+
+export type MarketHistoryRow = Pick<DbMarketSummaryRow, 'trade_date'> &
+  Partial<Pick<DbMarketSummaryRow, MarketIndexCloseKey | 'curr_volume'>>
+
+type MarketHistoryDbRow = Pick<DbMarketSummaryRow, 'trade_date' | 'curr_volume'> &
+  Partial<Pick<DbMarketSummaryRow, MarketIndexCloseKey | MarketIndexFieldKey>>
+
+type DbMarketAiSummaryRow = {
+  id: number
+  trade_date: string
+  summary_type: string
+  model_name: string | null
+  prompt_version: string
+  input_hash: string
+  summary: string
+  key_points: unknown
+  top_gainers: unknown
+  top_losers: unknown
+  volume_leaders: unknown
+  sector_activity: unknown
+  generated_at: string
+  status: 'pending' | 'completed' | 'failed'
+  error_message: string | null
+}
+
+export type MarketAiSummary = Omit<
+  DbMarketAiSummaryRow,
+  'key_points' | 'top_gainers' | 'top_losers' | 'volume_leaders' | 'sector_activity'
+> & {
+  key_points: string[]
+  top_gainers: Array<Record<string, unknown>>
+  top_losers: Array<Record<string, unknown>>
+  volume_leaders: Array<Record<string, unknown>>
+  sector_activity: Array<Record<string, unknown>>
+}
+
+const MARKET_SUMMARY_SELECT = [
+  'trade_date',
+  'index_as_of',
+  'kse100_prev',
+  'kse100_close',
+  'kse100_change',
+  'kse100_change_pct',
+  'kse100_high',
+  'kse100_low',
+  'kse100_volume',
+  'kse100pr_prev',
+  'kse100pr_close',
+  'kse100pr_change',
+  'kse100pr_change_pct',
+  'kse100pr_high',
+  'kse100pr_low',
+  'kse100pr_volume',
+  'kse_all_prev',
+  'kse_all_close',
+  'kse_all_change',
+  'kse_all_change_pct',
+  'kse_all_high',
+  'kse_all_low',
+  'kse_all_volume',
+  'kse30_prev',
+  'kse30_close',
+  'kse30_change',
+  'kse30_change_pct',
+  'kse30_high',
+  'kse30_low',
+  'kse30_volume',
+  'kmi30_prev',
+  'kmi30_close',
+  'kmi30_change',
+  'kmi30_change_pct',
+  'kmi30_high',
+  'kmi30_low',
+  'kmi30_volume',
+  'kmi_all_prev',
+  'kmi_all_close',
+  'kmi_all_change',
+  'kmi_all_change_pct',
+  'kmi_all_high',
+  'kmi_all_low',
+  'kmi_all_volume',
+  'prev_volume',
+  'curr_volume',
+  'advances',
+  'declines',
+  'unchanged',
+  'flu_no',
+].join(',')
+
+const MARKET_SUMMARY_LEGACY_SELECT =
+  'trade_date,kse100_prev,kse100_close,kse100_change,kse30_prev,kse30_close,kse30_change,prev_volume,curr_volume,advances,declines,unchanged,flu_no'
+
+const MARKET_AI_SUMMARY_SELECT =
+  'id,trade_date,summary_type,model_name,prompt_version,input_hash,summary,key_points,top_gainers,top_losers,volume_leaders,sector_activity,generated_at,status,error_message'
+
+const MARKET_INDEX_DEFS: Array<{
+  key: MarketIndexKey
+  label: string
+  prev: MarketIndexFieldKey
+  close: MarketIndexCloseKey
+  change: MarketIndexFieldKey
+  changePct: MarketIndexFieldKey
+  high: MarketIndexFieldKey
+  low: MarketIndexFieldKey
+  volume: MarketIndexFieldKey
+}> = [
+  {
+    key: 'kse100',
+    label: 'KSE 100',
+    prev: 'kse100_prev',
+    close: 'kse100_close',
+    change: 'kse100_change',
+    changePct: 'kse100_change_pct',
+    high: 'kse100_high',
+    low: 'kse100_low',
+    volume: 'kse100_volume',
+  },
+  {
+    key: 'kse100pr',
+    label: 'KSE 100 PR',
+    prev: 'kse100pr_prev',
+    close: 'kse100pr_close',
+    change: 'kse100pr_change',
+    changePct: 'kse100pr_change_pct',
+    high: 'kse100pr_high',
+    low: 'kse100pr_low',
+    volume: 'kse100pr_volume',
+  },
+  {
+    key: 'kse_all',
+    label: 'KSE All Share',
+    prev: 'kse_all_prev',
+    close: 'kse_all_close',
+    change: 'kse_all_change',
+    changePct: 'kse_all_change_pct',
+    high: 'kse_all_high',
+    low: 'kse_all_low',
+    volume: 'kse_all_volume',
+  },
+  {
+    key: 'kse30',
+    label: 'KSE 30',
+    prev: 'kse30_prev',
+    close: 'kse30_close',
+    change: 'kse30_change',
+    changePct: 'kse30_change_pct',
+    high: 'kse30_high',
+    low: 'kse30_low',
+    volume: 'kse30_volume',
+  },
+  {
+    key: 'kmi30',
+    label: 'KMI 30',
+    prev: 'kmi30_prev',
+    close: 'kmi30_close',
+    change: 'kmi30_change',
+    changePct: 'kmi30_change_pct',
+    high: 'kmi30_high',
+    low: 'kmi30_low',
+    volume: 'kmi30_volume',
+  },
+  {
+    key: 'kmi_all',
+    label: 'KMI All Share',
+    prev: 'kmi_all_prev',
+    close: 'kmi_all_close',
+    change: 'kmi_all_change',
+    changePct: 'kmi_all_change_pct',
+    high: 'kmi_all_high',
+    low: 'kmi_all_low',
+    volume: 'kmi_all_volume',
+  },
+]
+
+const INDEX_VOLUME_BY_CLOSE_KEY: Record<MarketIndexCloseKey, MarketIndexFieldKey> = {
+  kse100_close: 'kse100_volume',
+  kse100pr_close: 'kse100pr_volume',
+  kse_all_close: 'kse_all_volume',
+  kse30_close: 'kse30_volume',
+  kmi30_close: 'kmi30_volume',
+  kmi_all_close: 'kmi_all_volume',
+}
+
+function nullableNum(val: unknown): number | null {
+  if (val === null || val === undefined || val === '') return null
+  const n = toNum(val)
+  return Number.isFinite(n) ? n : null
+}
+
+function normalizeJsonArray(value: unknown): Array<Record<string, unknown>> {
+  if (!Array.isArray(value)) return []
+  return value.filter((item): item is Record<string, unknown> => (
+    typeof item === 'object' && item !== null && !Array.isArray(item)
+  ))
+}
+
+function normalizeKeyPoints(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  return value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+}
+
+function mapAiSummaryRow(row: DbMarketAiSummaryRow): MarketAiSummary {
+  return {
+    ...row,
+    key_points: normalizeKeyPoints(row.key_points),
+    top_gainers: normalizeJsonArray(row.top_gainers),
+    top_losers: normalizeJsonArray(row.top_losers),
+    volume_leaders: normalizeJsonArray(row.volume_leaders),
+    sector_activity: normalizeJsonArray(row.sector_activity),
+  }
+}
+
+export function getMarketIndexSnapshots(row: DbMarketSummaryRow | null | undefined): MarketIndexSnapshot[] {
+  if (!row) return []
+
+  return MARKET_INDEX_DEFS.map((def) => {
+    const previousClose = nullableNum(row[def.prev])
+    const close = nullableNum(row[def.close])
+    const high = nullableNum(row[def.high])
+    const low = nullableNum(row[def.low])
+    const volume = nullableNum(row[def.volume])
+    const rawChange = nullableNum(row[def.change])
+    const change = rawChange ?? (close != null && previousClose != null ? close - previousClose : null)
+    const rawChangePct = nullableNum(row[def.changePct])
+    const changePct =
+      rawChangePct ??
+      (change != null && previousClose != null && previousClose !== 0 ? (change / previousClose) * 100 : null)
+    const hasData = [previousClose, close, change, changePct, high, low, volume].some((value) => value != null)
+
+    return {
+      key: def.key,
+      label: def.label,
+      previousClose,
+      close,
+      change,
+      changePct,
+      high,
+      low,
+      volume,
+      hasData,
+    }
+  })
+}
+
+export function getPrimaryIndexSnapshot(
+  row: DbMarketSummaryRow | null | undefined,
+  key: MarketIndexKey = 'kse100',
+): MarketIndexSnapshot | null {
+  return getMarketIndexSnapshots(row).find((index) => index.key === key && index.hasData) ?? null
+}
+
+export async function fetchMarketAiSummary(tradeDate?: string): Promise<MarketAiSummary | null> {
+  if (!hasStockService() || !supabase) return null
+
+  const cacheKey = tradeDate ?? '__latest__'
+  const cached = aiSummaryCache.get(cacheKey)
+  if (cached && Date.now() - cached.fetchedAt < AI_SUMMARY_CACHE_TTL_MS) {
+    return cached.data
+  }
+
+  const existing = aiSummaryInFlight.get(cacheKey)
+  if (existing) return existing
+
+  const request = (async () => {
+    let query = supabase!
+      .from('market_ai_summaries')
+      .select(MARKET_AI_SUMMARY_SELECT)
+      .eq('summary_type', 'daily_market_close')
+      .eq('status', 'completed')
+
+    if (tradeDate) query = query.eq('trade_date', tradeDate)
+
+    const { data, error } = await query
+      .order('trade_date', { ascending: false })
+      .order('generated_at', { ascending: false })
+      .limit(1)
+
+    if (error) {
+      console.warn('fetchMarketAiSummary failed:', error.message)
+      return null
+    }
+
+    const row = (data?.[0] ?? null) as DbMarketAiSummaryRow | null
+    return row ? mapAiSummaryRow(row) : null
+  })()
+
+  aiSummaryInFlight.set(cacheKey, request)
+  try {
+    const data = await request
+    aiSummaryCache.set(cacheKey, { data, fetchedAt: Date.now() })
+    return data
+  } finally {
+    aiSummaryInFlight.delete(cacheKey)
+  }
+}
+
 
 async function fetchLatestTradeDate(): Promise<string | null> {
   if (!hasStockService() || !supabase) return null
@@ -222,19 +619,28 @@ export async function fetchMarketDailySummaryRows(
     if (!latestTradeDate) {
       const direct = await supabase
         .from('market_daily_summary')
-        .select('trade_date,kse100_prev,kse100_close,kse100_change,curr_volume,advances,declines,unchanged')
+        .select(MARKET_SUMMARY_SELECT)
         .order('trade_date', { ascending: false })
         .limit(fetchLimit)
-      if (direct.error || !direct.data?.length) {
-        console.warn('fetchMarketDailySummaryRows returned no rows')
-        return []
+      if (direct.error) {
+        const legacy = await supabase
+          .from('market_daily_summary')
+          .select(MARKET_SUMMARY_LEGACY_SELECT)
+          .order('trade_date', { ascending: false })
+          .limit(fetchLimit)
+        if (legacy.error || !legacy.data?.length) {
+          console.warn('fetchMarketDailySummaryRows returned no rows')
+          return []
+        }
+        return legacy.data as unknown as DbMarketSummaryRow[]
       }
-      return direct.data as DbMarketSummaryRow[]
+      if (!direct.data?.length) return []
+      return direct.data as unknown as DbMarketSummaryRow[]
     }
 
     const { data, error } = await supabase
       .from('market_daily_summary')
-      .select('trade_date,kse100_prev,kse100_close,kse100_change,kse30_prev,kse30_close,kse30_change,prev_volume,curr_volume,advances,declines,unchanged,flu_no')
+      .select(MARKET_SUMMARY_SELECT)
       .lte('trade_date', latestTradeDate)
       .order('trade_date', { ascending: false })
       .limit(fetchLimit)
@@ -243,7 +649,7 @@ export async function fetchMarketDailySummaryRows(
       if (error.message.includes('column') || error.message.includes('does not exist')) {
         const fb = await supabase
           .from('market_daily_summary')
-          .select('trade_date,kse100_prev,kse100_close,kse100_change,curr_volume,advances,declines,unchanged')
+          .select(MARKET_SUMMARY_LEGACY_SELECT)
           .lte('trade_date', latestTradeDate)
           .order('trade_date', { ascending: false })
           .limit(fetchLimit)
@@ -251,7 +657,7 @@ export async function fetchMarketDailySummaryRows(
           console.warn('fetchMarketDailySummaryRows fallback failed:', fb.error?.message)
           return []
         }
-        return fb.data as DbMarketSummaryRow[]
+        return fb.data as unknown as DbMarketSummaryRow[]
       }
       console.warn('fetchMarketDailySummaryRows failed:', error.message)
       return []
@@ -260,16 +666,25 @@ export async function fetchMarketDailySummaryRows(
     if (!data?.length) {
       const single = await supabase
         .from('market_daily_summary')
-        .select('trade_date,kse100_prev,kse100_close,kse100_change,curr_volume,advances,declines,unchanged')
+        .select(MARKET_SUMMARY_SELECT)
         .eq('trade_date', latestTradeDate)
         .limit(1)
-      if (single.error || !single.data?.length) {
-        console.warn('fetchMarketDailySummaryRows returned no rows for trade_date', latestTradeDate)
-        return []
+      if (single.error) {
+        const legacySingle = await supabase
+          .from('market_daily_summary')
+          .select(MARKET_SUMMARY_LEGACY_SELECT)
+          .eq('trade_date', latestTradeDate)
+          .limit(1)
+        if (legacySingle.error || !legacySingle.data?.length) {
+          console.warn('fetchMarketDailySummaryRows returned no rows for trade_date', latestTradeDate)
+          return []
+        }
+        return legacySingle.data as unknown as DbMarketSummaryRow[]
       }
-      return single.data as DbMarketSummaryRow[]
+      if (!single.data?.length) return []
+      return single.data as unknown as DbMarketSummaryRow[]
     }
-    return data as DbMarketSummaryRow[]
+    return data as unknown as DbMarketSummaryRow[]
   })()
 
   try {
@@ -285,7 +700,7 @@ export async function fetchMarketDailySummaryRows(
  * Fetches minimal history rows for a single index (trade_date + close column only).
  */
 export async function fetchMarketHistoryRows(
-  closeKey: 'kse100_close' | 'kse30_close',
+  closeKey: MarketIndexCloseKey,
   limit = 252,
 ): Promise<MarketHistoryRow[]> {
   if (!hasStockService() || !supabase) return []
@@ -302,7 +717,8 @@ export async function fetchMarketHistoryRows(
   const latestTradeDate = await fetchLatestTradeDate()
   if (!latestTradeDate) return []
 
-  const selectCols = `trade_date,${closeKey},curr_volume`
+  const volumeKey = INDEX_VOLUME_BY_CLOSE_KEY[closeKey]
+  const selectCols = `trade_date,${closeKey},${volumeKey},curr_volume`
   const { data, error } = await supabase
     .from('market_daily_summary')
     .select(selectCols)
@@ -318,7 +734,7 @@ export async function fetchMarketHistoryRows(
   return (data as unknown as MarketHistoryDbRow[]).map((row) => ({
     trade_date: row.trade_date,
     [closeKey]: row[closeKey],
-    curr_volume: row.curr_volume,
+    curr_volume: nullableNum(row[volumeKey]) ?? row.curr_volume,
   }))
 }
 

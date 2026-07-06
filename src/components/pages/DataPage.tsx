@@ -8,13 +8,23 @@ import {
   Typography,
 } from '@mui/material'
 import AnalyticsIcon from '@mui/icons-material/Analytics'
+import AutoAwesomeOutlinedIcon from '@mui/icons-material/AutoAwesomeOutlined'
 import BubbleChartIcon from '@mui/icons-material/BubbleChart'
 import DonutLargeIcon from '@mui/icons-material/DonutLarge'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
+import QueryStatsIcon from '@mui/icons-material/QueryStats'
 import StackedBarChartIcon from '@mui/icons-material/StackedBarChart'
 import TimelineIcon from '@mui/icons-material/Timeline'
 import { motion, useReducedMotion } from 'motion/react'
 import { hasSupabaseConfig, supabase } from '../../lib/supabase'
+import {
+  fetchMarketAiSummary,
+  fetchMarketDailySummaryRows,
+  getMarketIndexSnapshots,
+  type DbMarketSummaryRow,
+  type MarketAiSummary,
+  type MarketIndexSnapshot,
+} from '../../lib/stockService'
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import { MarketDashboardSkeleton, PriceTableSkeleton } from './CustomSkeleton'
 import { CustomDataTable } from './CustomDataTable'
@@ -55,15 +65,7 @@ type PsxStock = {
 type PsxData = {
   date: string
   source: 'Supabase'
-  market?: {
-    previous_kse100?: number
-    close_kse100?: number
-    curr_volume?: number
-    advances?: number
-    declines?: number
-    unchanged?: number
-    kse100_change?: number
-  }
+  market?: DbMarketSummaryRow
   total_stocks: number
   stocks: PsxStock[]
 }
@@ -82,17 +84,6 @@ type DbStockTableRow = {
   eps: number | null
   result_period: string | null
   period_ending: string | null
-}
-
-type DbSummaryRow = {
-  trade_date: string
-  kse100_prev: number | null
-  kse100_close: number | null
-  kse100_change: number | null
-  curr_volume: number | null
-  advances: number | null
-  declines: number | null
-  unchanged: number | null
 }
 
 type RankedStock = PsxStock & {
@@ -282,26 +273,19 @@ function mapDbStockTableRow(row: DbStockTableRow): PsxStock {
   }
 }
 
-async function fetchSupabaseTradeDay(tradeDate: string): Promise<PsxData> {
+async function fetchSupabaseTradeDay(summaryRow: DbMarketSummaryRow): Promise<PsxData> {
   if (!supabase) throw new Error('Supabase client is not configured')
 
-  const [summaryResult, stocksResult] = await Promise.all([
-    supabase
-      .from('market_daily_summary')
-      .select('trade_date,kse100_prev,kse100_close,kse100_change,curr_volume,advances,declines,unchanged')
-      .eq('trade_date', tradeDate)
-      .single<DbSummaryRow>(),
-    supabase
-      .from('v_stock_table')
-      .select('symbol,company,section,trade_date,open,high,low,close,turnover,change,eps,result_period,period_ending')
-      .eq('trade_date', tradeDate)
-      .neq('section', 'EXCHANGE TRADED FUNDS')
-      .neq('section', 'CLOSE - END MUTUAL FUND')
-      .neq('section', 'INV. BANKS / INV. COS. / SECURITIES COS.')
-      .order('symbol', { ascending: true }),
-  ])
+  const tradeDate = summaryRow.trade_date
+  const stocksResult = await supabase
+    .from('v_stock_table')
+    .select('symbol,company,section,trade_date,open,high,low,close,turnover,change,eps,result_period,period_ending')
+    .eq('trade_date', tradeDate)
+    .neq('section', 'EXCHANGE TRADED FUNDS')
+    .neq('section', 'CLOSE - END MUTUAL FUND')
+    .neq('section', 'INV. BANKS / INV. COS. / SECURITIES COS.')
+    .order('symbol', { ascending: true })
 
-  if (summaryResult.error) throw summaryResult.error
   if (stocksResult.error) throw stocksResult.error
 
   const rows = ((stocksResult.data ?? []) as DbStockTableRow[]).map(mapDbStockTableRow)
@@ -309,19 +293,7 @@ async function fetchSupabaseTradeDay(tradeDate: string): Promise<PsxData> {
   return {
     date: tradeDate,
     source: 'Supabase',
-    market: summaryResult.data
-      ? {
-        // `kse100_prev` is the DB column for the previous session's close —
-        // it is NOT today's open, so it's mapped to `previous_kse100`.
-        previous_kse100: summaryResult.data.kse100_prev ?? undefined,
-        close_kse100: summaryResult.data.kse100_close ?? undefined,
-        kse100_change: summaryResult.data.kse100_change ?? undefined,
-        curr_volume: summaryResult.data.curr_volume ?? undefined,
-        advances: summaryResult.data.advances ?? undefined,
-        declines: summaryResult.data.declines ?? undefined,
-        unchanged: summaryResult.data.unchanged ?? undefined,
-      }
-      : undefined,
+    market: summaryRow,
     total_stocks: rows.length,
     stocks: rows,
   }
@@ -344,11 +316,65 @@ function formatMarketDate(value: string | null | undefined): string {
   return `${parsed.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} 05:00 PM PKT`
 }
 
+function formatMarketTimestamp(asOf: string | null | undefined, fallbackDate: string | null | undefined): string {
+  if (asOf) {
+    const parsed = new Date(asOf)
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toLocaleString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'Asia/Karachi',
+        timeZoneName: 'short',
+      })
+    }
+  }
+  return formatMarketDate(fallbackDate)
+}
+
 function formatShortDate(value: string | null | undefined): string {
   if (!value) return '-'
   const parsed = new Date(`${value}T12:00:00+05:00`)
   if (Number.isNaN(parsed.getTime())) return value
   return parsed.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+function formatNullableNumber(value: number | null | undefined, maximumFractionDigits = 2): string {
+  return value == null ? '-' : formatNumber(value, maximumFractionDigits)
+}
+
+function formatNullableCompact(value: number | null | undefined): string {
+  return value == null ? '-' : formatCompactNumber(value)
+}
+
+function formatNullableSigned(value: number | null | undefined, maximumFractionDigits = 2): string {
+  return value == null ? '-' : formatSignedNumber(value, maximumFractionDigits)
+}
+
+function formatNullablePercent(value: number | null | undefined): string {
+  return value == null ? '-' : formatPercent(value)
+}
+
+function moveTone(value: number | null | undefined): 'positive' | 'negative' | 'neutral' {
+  if (value == null || value === 0) return 'neutral'
+  return value > 0 ? 'positive' : 'negative'
+}
+
+function moveToneColor(value: number | null | undefined): string {
+  const tone = moveTone(value)
+  if (tone === 'positive') return 'var(--wc-success)'
+  if (tone === 'negative') return 'var(--wc-error)'
+  return 'var(--wc-text-secondary)'
+}
+
+function getSummaryIntro(summary: string): string {
+  const firstParagraph = summary
+    .split(/\n{2,}/)
+    .map((part) => part.trim())
+    .find((part) => part.length > 0)
+  return firstParagraph ?? summary.trim()
 }
 
 
@@ -424,6 +450,163 @@ function HeaderMetric({
           {detail}
         </Typography>
       )}
+    </Box>
+  )
+}
+
+function MarketAiBrief({ summary }: { summary: MarketAiSummary }) {
+  const points = summary.key_points.slice(0, 3)
+  const intro = getSummaryIntro(summary.summary)
+
+  return (
+    <Box
+      sx={{
+        ...CARD_SX,
+        p: { xs: 2.4, md: 3 },
+        display: 'grid',
+        gridTemplateColumns: { xs: '1fr', lg: 'minmax(0, 1.15fr) minmax(280px, 0.85fr)' },
+        gap: { xs: 2.4, md: 3 },
+        alignItems: 'start',
+        minWidth: 0,
+      }}
+    >
+      <Box sx={{ minWidth: 0 }}>
+        <Stack direction="row" spacing={1.1} sx={{ alignItems: 'center', mb: 1.4 }}>
+          <Box sx={{ color: 'var(--wc-primary)', display: 'flex', alignItems: 'center' }}>
+            <AutoAwesomeOutlinedIcon sx={{ fontSize: 18 }} />
+          </Box>
+          <Typography sx={{ color: 'var(--wc-primary)', fontFamily: UI_FONT, fontSize: 12, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+            Market Close Brief
+          </Typography>
+        </Stack>
+        <Typography
+          sx={{
+            color: 'var(--wc-text-primary)',
+            fontSize: { xs: 15, md: 16 },
+            lineHeight: 1.75,
+            maxWidth: 980,
+          }}
+        >
+          {intro}
+        </Typography>
+      </Box>
+
+      {points.length > 0 && (
+        <Box
+          sx={{
+            borderLeft: { lg: '1px solid var(--wc-divider)' },
+            pl: { lg: 3 },
+            display: 'grid',
+            gap: 1.2,
+            minWidth: 0,
+          }}
+        >
+          {points.map((point, index) => (
+            <Box key={`${summary.id}-point-${index}`} sx={{ display: 'grid', gridTemplateColumns: '10px minmax(0, 1fr)', gap: 1.2, alignItems: 'start' }}>
+              <Box sx={{ width: 5, height: 5, borderRadius: '50%', bgcolor: 'var(--wc-primary)', mt: 0.9 }} />
+              <Typography sx={{ color: 'var(--wc-text-secondary)', fontSize: 12.5, lineHeight: 1.55 }}>
+                {point}
+              </Typography>
+            </Box>
+          ))}
+        </Box>
+      )}
+    </Box>
+  )
+}
+
+function IndexMoveCard({ index }: { index: MarketIndexSnapshot }) {
+  const tone = moveTone(index.change)
+  const color = moveToneColor(index.change)
+
+  return (
+    <Box
+      sx={{
+        ...CARD_SX,
+        p: { xs: 2, md: 2.3 },
+        minHeight: 154,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        gap: 1.6,
+      }}
+    >
+      <Stack direction="row" spacing={1.2} sx={{ alignItems: 'flex-start', justifyContent: 'space-between', minWidth: 0 }}>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography sx={{ color: 'var(--wc-text-muted)', fontFamily: UI_FONT, fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+            {index.label}
+          </Typography>
+          <Typography sx={{ mt: 0.8, color: 'var(--wc-text-primary)', fontFamily: NUMBER_FONT, fontSize: { xs: 19, md: 21 }, fontWeight: 800, lineHeight: 1.1, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
+            {formatNullableNumber(index.close)}
+          </Typography>
+        </Box>
+        <Box
+          sx={{
+            px: 0.9,
+            py: 0.45,
+            borderRadius: '7px',
+            bgcolor: tone === 'positive' ? 'var(--wc-success-soft)' : tone === 'negative' ? 'var(--wc-error-soft)' : 'var(--wc-surface-soft)',
+            color,
+            fontFamily: NUMBER_FONT,
+            fontSize: 11,
+            fontWeight: 800,
+            whiteSpace: 'nowrap',
+            fontVariantNumeric: 'tabular-nums',
+            fontFeatureSettings: '"tnum" 1',
+          }}
+        >
+          {formatNullablePercent(index.changePct)}
+        </Box>
+      </Stack>
+
+      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5, pt: 1.3, borderTop: '1px solid var(--wc-divider)' }}>
+        <Box>
+          <Typography sx={{ color: 'var(--wc-text-muted)', fontFamily: UI_FONT, fontSize: 10.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', mb: 0.45 }}>
+            Points
+          </Typography>
+          <Typography sx={{ color, fontFamily: NUMBER_FONT, fontSize: 13, fontWeight: 800, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
+            {formatNullableSigned(index.change)}
+          </Typography>
+        </Box>
+        <Box sx={{ textAlign: 'right' }}>
+          <Typography sx={{ color: 'var(--wc-text-muted)', fontFamily: UI_FONT, fontSize: 10.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', mb: 0.45 }}>
+            Volume
+          </Typography>
+          <Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: NUMBER_FONT, fontSize: 13, fontWeight: 800, fontVariantNumeric: 'tabular-nums', fontFeatureSettings: '"tnum" 1' }}>
+            {formatNullableCompact(index.volume)}
+          </Typography>
+        </Box>
+      </Box>
+    </Box>
+  )
+}
+
+function MarketIndexBoard({ indexes }: { indexes: MarketIndexSnapshot[] }) {
+  if (indexes.length === 0) return null
+
+  return (
+    <Box>
+      <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 1.8 }}>
+        <Box sx={{ color: 'var(--wc-primary)', display: 'flex', alignItems: 'center' }}>
+          <QueryStatsIcon sx={{ fontSize: 18 }} />
+        </Box>
+        <Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: UI_FONT, fontSize: 16, fontWeight: 800, letterSpacing: '-0.015em' }}>
+          Index Points and Volume
+        </Typography>
+      </Stack>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))', lg: 'repeat(3, minmax(0, 1fr))', xl: 'repeat(6, minmax(0, 1fr))' },
+          gap: { xs: 1.6, md: 2 },
+          minWidth: 0,
+          '& > *': { minWidth: 0 },
+        }}
+      >
+        {indexes.map((index) => (
+          <IndexMoveCard key={index.key} index={index} />
+        ))}
+      </Box>
     </Box>
   )
 }
@@ -669,6 +852,7 @@ export function DataPage() {
   const [status, setStatus] = useState<'loading' | 'ok' | 'error'>('loading')
   const [fetchError, setFetchError] = useState<string | null>(null)
   const [latestTradeDate, setLatestTradeDate] = useState<string | null>(null)
+  const [aiSummary, setAiSummary] = useState<MarketAiSummary | null>(null)
 
   const [search, setSearch] = useState('')
   const [movementFilter, setMovementFilter] = useState<MovementFilter>('all')
@@ -688,16 +872,12 @@ export function DataPage() {
       setStatus('loading')
       setFetchError(null)
 
-      const latestDateResult = await supabase
-        .from('market_daily_summary')
-        .select('trade_date')
-        .order('trade_date', { ascending: false })
-        .limit(1)
+      const summaryRows = await fetchMarketDailySummaryRows(1)
+      const summaryRow = summaryRows[0] ?? null
 
-      if (latestDateResult.error || !latestDateResult.data?.length) {
+      if (!summaryRow) {
         if (!cancelled) {
-          const message = latestDateResult.error?.message ?? 'No trade_date entries found in Supabase.'
-          setFetchError(message)
+          setFetchError('No trade_date entries found in Supabase.')
           setStatus('error')
         }
         return
@@ -705,7 +885,7 @@ export function DataPage() {
 
       if (cancelled) return
 
-      const tradeDate = latestDateResult.data[0]?.trade_date ?? null
+      const tradeDate = summaryRow.trade_date ?? null
       if (!tradeDate) {
         setFetchError('No trade_date entries found in Supabase.')
         setStatus('error')
@@ -715,9 +895,13 @@ export function DataPage() {
       setLatestTradeDate(tradeDate)
 
       try {
-        const latestData = await fetchSupabaseTradeDay(tradeDate)
+        const [latestData, aiSummaryForDate] = await Promise.all([
+          fetchSupabaseTradeDay(summaryRow),
+          fetchMarketAiSummary(tradeDate),
+        ])
         if (cancelled) return
         setData(latestData)
+        setAiSummary(aiSummaryForDate)
         setStatus('ok')
       } catch (error: unknown) {
         if (cancelled) return
@@ -739,6 +923,14 @@ export function DataPage() {
 
   const activeData = data
   const stocks = useMemo(() => activeData?.stocks ?? [], [activeData])
+  const marketIndexes = useMemo(
+    () => getMarketIndexSnapshots(activeData?.market ?? null).filter((index) => index.hasData),
+    [activeData],
+  )
+  const kse100Index = useMemo(
+    () => marketIndexes.find((index) => index.key === 'kse100') ?? null,
+    [marketIndexes],
+  )
 
   const industryOptions = useMemo(
     () => Array.from(new Set(stocks.map((s) => s.industry).filter((s): s is string => Boolean(s)))).sort(),
@@ -778,11 +970,15 @@ export function DataPage() {
   const marketSummary = useMemo(() => {
     const market = activeData?.market
     if (market) {
+      const index = kse100Index ?? getMarketIndexSnapshots(market).find((item) => item.key === 'kse100') ?? null
       return {
-        KSE100_PreviousClose: market.previous_kse100 ?? 0,
-        KSE100_Close: market.close_kse100 ?? 0,
-        Volume_Traded: market.curr_volume ?? 0,
-        KSE100_Change: market.kse100_change ?? (market.close_kse100 ?? 0) - (market.previous_kse100 ?? 0),
+        KSE100_PreviousClose: index?.previousClose ?? market.kse100_prev ?? 0,
+        KSE100_Close: index?.close ?? market.kse100_close ?? 0,
+        Volume_Traded: market.curr_volume ?? index?.volume ?? 0,
+        KSE100_Change:
+          index?.change ??
+          market.kse100_change ??
+          ((index?.close ?? market.kse100_close ?? 0) - (index?.previousClose ?? market.kse100_prev ?? 0)),
       }
     }
 
@@ -804,7 +1000,7 @@ export function DataPage() {
       Volume_Traded: totalVolume,
       KSE100_Change: totalClose - totalOpen,
     }
-  }, [stocks, activeData])
+  }, [stocks, activeData, kse100Index])
 
   const dayInsights = useMemo(() => {
     const rankedStocks = stocks.map(getRankedStock)
@@ -1117,7 +1313,7 @@ export function DataPage() {
                     <Typography sx={{ mt: 1.7, color: 'var(--wc-text-secondary)', fontSize: 12.5, fontWeight: 600 }}>
                       Last updated:{' '}
                       <Box component="span" sx={{ color: 'var(--wc-primary)', fontWeight: 800 }}>
-                        {formatMarketDate(latestTradeDate ?? activeData.date)}
+                        {formatMarketTimestamp(activeData.market?.index_as_of, latestTradeDate ?? activeData.date)}
                       </Box>
                     </Typography>
                   </Box>
@@ -1155,11 +1351,23 @@ export function DataPage() {
                     <HeaderMetric
                       label="Volume Traded"
                       value={formatCompactNumber(marketSummary.Volume_Traded)}
-                      detail="Turnover (PKR)"
+                      detail="Market shares"
                     />
                   </Box>
                 </Box>
               </MotionReveal>
+
+              {aiSummary && (
+                <MotionReveal>
+                  <MarketAiBrief summary={aiSummary} />
+                </MotionReveal>
+              )}
+
+              {marketIndexes.length > 0 && (
+                <MotionReveal>
+                  <MarketIndexBoard indexes={marketIndexes} />
+                </MotionReveal>
+              )}
 
               <MotionReveal>
                 <TickerTape
