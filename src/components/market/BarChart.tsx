@@ -53,10 +53,10 @@ export function BarChart({
 				axisTick: { show: false },
 				splitLine: { lineStyle: { color: palette.border } },
 				axisLabel: {
-					color: palette.textSecondary,
-					fontFamily: FONT_FAMILY.echartsData,
-					fontSize: 11,
-					formatter: (value: number) => formatCompactNumber(value),
+					// color: palette.textSecondary,
+					// fontFamily: FONT_FAMILY.echartsData,
+					fontSize: 1,
+					// formatter: (value: number) => formatCompactNumber(value),
 				},
 			},
 			yAxis: {

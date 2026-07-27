@@ -53,9 +53,9 @@ const SEO_BY_PATH: Record<string, PageSeo> = {
     },
   },
   '/data': {
-    title: 'PSX Market Data | Daily Pakistan Stock Exchange Closing Rates',
+    title: 'PSX Market Intelligence | Pakistan Stock Exchange Data',
     description:
-      'Track daily PSX market data including KSE-100 index movement, advances, declines, volume, and per-stock closing price updates. Free daily Pakistan Stock Exchange data from Webict Capital.',
+      'Explore API-backed Pakistan Stock Exchange market intelligence including index snapshots, breadth, movers, sector analytics, and daily stock observations.',
     structuredData: {
       '@context': 'https://schema.org',
       '@type': 'DataCatalog',
@@ -69,6 +69,55 @@ const SEO_BY_PATH: Record<string, PageSeo> = {
       },
       temporalCoverage: '2024/..',
       spatialCoverage: 'Pakistan',
+    },
+  },
+  '/data/stocks': {
+    title: 'PSX Stocks Explorer | Webict Capital Markets',
+    description:
+      'Search, filter, sort, compare, and export latest Pakistan Stock Exchange stock observations from the WebICTCapital market API.',
+    structuredData: {
+      '@context': 'https://schema.org',
+      '@type': 'DataCatalog',
+      name: 'PSX Stocks Explorer',
+      url: `${SITE_URL}/data/stocks`,
+      publisher: { '@type': 'Organization', name: 'Webict Capital', url: `${SITE_URL}/` },
+    },
+  },
+  '/data/compare': {
+    title: 'PSX Stock Comparison | Webict Capital Markets',
+    description:
+      'Compare two PSX securities using raw historical observations, normalized performance, volatility, drawdown, and common-date analytics.',
+    structuredData: {
+      '@context': 'https://schema.org',
+      '@type': 'WebApplication',
+      name: 'PSX Stock Comparison',
+      url: `${SITE_URL}/data/compare`,
+      provider: { '@type': 'Organization', name: 'Webict Capital', url: `${SITE_URL}/` },
+    },
+  },
+  '/data/rates': {
+    title: 'KIBOR and USD/PKR Rates | Webict Capital Markets',
+    description:
+      'Track canonical SBP KIBOR bid/offer observations and USD/PKR Mark-to-Market Ready rates from the WebICTCapital API.',
+    structuredData: {
+      '@context': 'https://schema.org',
+      '@type': 'Dataset',
+      name: 'Pakistan Rates and Macro Data',
+      url: `${SITE_URL}/data/rates`,
+      publisher: { '@type': 'Organization', name: 'Webict Capital', url: `${SITE_URL}/` },
+    },
+  },
+  '/portfolio': {
+    title: 'My PSX Portfolio | Webict Capital',
+    description:
+      'Track PSX holdings, trades, watchlists, and portfolio performance with Supabase Google OAuth and user-scoped portfolio tables.',
+    structuredData: {
+      '@context': 'https://schema.org',
+      '@type': 'WebApplication',
+      name: 'Webict Capital Portfolio',
+      url: `${SITE_URL}/portfolio`,
+      applicationCategory: 'FinanceApplication',
+      provider: { '@type': 'Organization', name: 'Webict Capital', url: `${SITE_URL}/` },
     },
   },
   '/glossary': {
@@ -176,7 +225,12 @@ const SEO_BY_PATH: Record<string, PageSeo> = {
 export function AppLayout() {
   const { pathname } = useLocation()
   const reduceMotion = useReducedMotion()
-  const seo = SEO_BY_PATH[pathname] ?? SEO_BY_PATH['/']
+  const seo = pathname.startsWith('/stocks/')
+    ? {
+        title: `${pathname.split('/').pop()?.toUpperCase() ?? 'PSX Stock'} Detail | Webict Capital Markets`,
+        description: 'API-backed PSX ticker detail with raw price history, technical indicators, company facts, and descriptive analytics.',
+      }
+    : SEO_BY_PATH[pathname] ?? SEO_BY_PATH['/']
   const canonicalUrl = pathname === '/' ? SITE_URL : `${SITE_URL}${pathname}`
 
   return (
