@@ -5,7 +5,8 @@ const tabs = [
   { label: 'Overview', href: '/data' },
   { label: 'Stocks', href: '/data/stocks' },
   { label: 'Compare', href: '/data/compare' },
-  { label: 'Rates', href: '/data/rates' },
+  { label: 'KIBOR', href: '/data/rates' },
+  { label: 'USD/PKR', href: '/data/rates/usd-pkr' },
 ]
 
 export function MarketsNav() {

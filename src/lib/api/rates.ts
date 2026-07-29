@@ -6,6 +6,11 @@ export type KiborRatesRequest = {
   endDate: string
 }
 
+export type UsdPkrRatesRequest = {
+  startDate: string
+  endDate: string
+}
+
 export function fetchKiborRates({ startDate, endDate }: KiborRatesRequest, signal?: AbortSignal) {
   return apiGet<KiborResponseDto>('/rates/kibor', {
     query: { startDate, endDate },
@@ -14,8 +19,9 @@ export function fetchKiborRates({ startDate, endDate }: KiborRatesRequest, signa
   })
 }
 
-export function fetchUsdPkrRates(signal?: AbortSignal) {
+export function fetchUsdPkrRates({ startDate, endDate }: UsdPkrRatesRequest, signal?: AbortSignal) {
   return apiGet<UsdPkrResponseDto>('/rates/usd-pkr', {
+    query: { startDate, endDate },
     signal,
     cacheMs: 30 * 60 * 1000,
   })

@@ -1,5 +1,5 @@
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
-import { Box, Button, Checkbox, FormControlLabel, Stack, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, Tabs, TextField, Typography } from '@mui/material'
+import { Box, Button, Checkbox, FormControlLabel, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Typography } from '@mui/material'
 import ReactECharts from 'echarts-for-react'
 import { memo, useCallback, useEffect, useMemo, useState, type ChangeEvent, type ReactNode } from 'react'
 import { fetchKiborRates, fetchUsdPkrRates } from '../../lib/api/rates'
@@ -7,7 +7,7 @@ import type { KiborObservationDto, KiborResponseDto, UsdPkrResponseDto } from '.
 import { downloadCsv } from '../../lib/csv'
 import { MarketShell } from '../markets/MarketShell'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../markets/StateBlocks'
-import { CARD_SX, DATA_FONT, fmtDate, fmtNumber, fmtSigned } from '../markets/marketUtils'
+import { CARD_SX, fmtDate, fmtNumber } from '../markets/marketUtils'
 
 const KIBOR_TENORS = ['1W', '2W', '1M', '3M', '6M', '9M', '1Y'] as const
 const DEFAULT_CHART_TENORS = ['3M', '6M', '1Y'] as const
@@ -30,7 +30,8 @@ const KIBOR_COLORS: Record<string, string> = {
 }
 const RATE_TABLE_PAGE_SIZE_OPTIONS = [25, 50, 100, 250]
 const KIBOR_MIN_DATE = '2021-01-04'
-const KIBOR_RANGE_PRESETS = [
+const USD_PKR_MIN_DATE = '2021-01-01'
+const RATE_RANGE_PRESETS = [
   { value: '3M', label: '3M' },
   { value: '6M', label: '6M' },
   { value: '1Y', label: '1Y' },
@@ -39,7 +40,7 @@ const KIBOR_RANGE_PRESETS = [
 const UNAVAILABLE_VALUE = '—'
 
 type KiborTenor = typeof KIBOR_TENORS[number]
-type KiborRangePreset = typeof KIBOR_RANGE_PRESETS[number]['value']
+type RateRangePreset = typeof RATE_RANGE_PRESETS[number]['value']
 type DateRange = {
   startDate: string
   endDate: string
@@ -83,22 +84,26 @@ function addMonths(date: Date, months: number): Date {
   return next
 }
 
-function clampKiborStartDate(value: string): string {
-  return value < KIBOR_MIN_DATE ? KIBOR_MIN_DATE : value
+function clampStartDate(value: string, minDate: string): string {
+  return value < minDate ? minDate : value
 }
 
 function currentDateOnly(): string {
   return formatDateOnly(new Date())
 }
 
-function rangeForKiborPreset(preset: KiborRangePreset, endDate = currentDateOnly()): DateRange {
-  if (preset === 'ALL') return { startDate: KIBOR_MIN_DATE, endDate }
+function rangeForRatePreset(preset: RateRangePreset, minDate: string, endDate = currentDateOnly()): DateRange {
+  if (preset === 'ALL') return { startDate: minDate, endDate }
   const end = parseDateOnly(endDate)
   const months = preset === '3M' ? -3 : preset === '6M' ? -6 : -12
-  return { startDate: clampKiborStartDate(formatDateOnly(addMonths(end, months))), endDate }
+  return { startDate: clampStartDate(formatDateOnly(addMonths(end, months)), minDate), endDate }
 }
 
 function kiborObservations(data: KiborResponseDto): KiborObservationDto[] {
+  return data.observations ?? data.points ?? []
+}
+
+function usdPkrObservations(data: UsdPkrResponseDto): NonNullable<UsdPkrResponseDto['points']> {
   return data.observations ?? data.points ?? []
 }
 
@@ -141,58 +146,69 @@ function kiborTooltipFormatter(params: KiborTooltipParam | KiborTooltipParam[]):
   ].join('')
 }
 
-function useUsdPkrRates() {
-  const [usdPkr, setUsdPkr] = useState<UsdPkrResponseDto | null>(null)
+export function RatesMacroPage() {
+  return (
+    <MarketShell title="KIBOR Rates" subtitle="Canonical SBP KIBOR bid/offer observations from the WebICTCapital API.">
+      <KiborSection />
+    </MarketShell>
+  )
+}
+
+export function UsdPkrRatesPage() {
+  const [dateRange, setDateRange] = useState<DateRange>(() => rangeForRatePreset('1Y', USD_PKR_MIN_DATE))
+  const [rangePreset, setRangePreset] = useState<RateRangePreset>('1Y')
+  const [data, setData] = useState<UsdPkrResponseDto | null>(null)
   const [error, setError] = useState<unknown>(null)
   const [loading, setLoading] = useState(true)
+  const handleRangePresetChange = useCallback((nextPreset: RateRangePreset) => {
+    setRangePreset(nextPreset)
+    setLoading(true)
+    setError(null)
+    setDateRange(rangeForRatePreset(nextPreset, USD_PKR_MIN_DATE))
+  }, [])
 
   useEffect(() => {
     const controller = new AbortController()
-    fetchUsdPkrRates(controller.signal)
-      .then((nextUsdPkr) => {
-        setUsdPkr(nextUsdPkr)
-      })
+    fetchUsdPkrRates(dateRange, controller.signal)
+      .then((nextData) => setData(nextData))
       .catch((caught) => {
         if (!(caught instanceof DOMException && caught.name === 'AbortError')) setError(caught)
       })
-      .finally(() => setLoading(false))
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false)
+      })
     return () => controller.abort()
-  }, [])
-
-  return { usdPkr, error, loading }
-}
-
-export function RatesMacroPage() {
-  const [tab, setTab] = useState('kibor')
-  const { usdPkr, error, loading } = useUsdPkrRates()
+  }, [dateRange])
 
   return (
-    <MarketShell title="Rates & Macro" subtitle="Canonical SBP KIBOR and USD/PKR history from the WebICTCapital API.">
-      <Stack spacing={2.4}>
-        <Tabs value={tab} onChange={(_, value: string) => setTab(value)} variant="scrollable" scrollButtons="auto">
-          <Tab value="kibor" label="KIBOR" />
-          <Tab value="usd-pkr" label="USD/PKR" />
-        </Tabs>
-        {tab === 'kibor' && <KiborSection />}
-        {tab === 'usd-pkr' && loading && <LoadingBlock />}
-        {tab === 'usd-pkr' && Boolean(error) && <ErrorBlock error={error} />}
-        {!loading && !error && tab === 'usd-pkr' && usdPkr && <UsdPkrSection data={usdPkr} />}
-      </Stack>
+    <MarketShell title="USD/PKR Rates" subtitle="SBP Mark-to-Market Ready USD/PKR observations from the WebICTCapital API.">
+      {!data && loading && <LoadingBlock />}
+      {!data && Boolean(error) && <ErrorBlock error={error} />}
+      {data && (
+        <UsdPkrSection
+          data={data}
+          dateRange={dateRange}
+          rangePreset={rangePreset}
+          loading={loading}
+          error={error}
+          onRangePresetChange={handleRangePresetChange}
+        />
+      )}
     </MarketShell>
   )
 }
 
 const KiborSection = memo(function KiborSection() {
-  const [dateRange, setDateRange] = useState<DateRange>(() => rangeForKiborPreset('1Y'))
+  const [dateRange, setDateRange] = useState<DateRange>(() => rangeForRatePreset('1Y', KIBOR_MIN_DATE))
   const [data, setData] = useState<KiborResponseDto | null>(null)
   const [error, setError] = useState<unknown>(null)
   const [loading, setLoading] = useState(true)
   const observations = useMemo(() => data ? kiborObservations(data) : [], [data])
   const tenorOrder = useMemo(() => normalizeTenorOrder(data?.tenorOrder ?? []), [data?.tenorOrder])
-  const handleRangePresetChange = useCallback((nextPreset: KiborRangePreset) => {
+  const handleRangePresetChange = useCallback((nextPreset: RateRangePreset) => {
     setLoading(true)
     setError(null)
-    setDateRange(rangeForKiborPreset(nextPreset))
+    setDateRange(rangeForRatePreset(nextPreset, KIBOR_MIN_DATE))
   }, [])
 
   useEffect(() => {
@@ -275,10 +291,10 @@ const KiborChartSection = memo(function KiborChartSection({
   dateRange: DateRange
   loading: boolean
   error: unknown
-  onRangePresetChange: (preset: KiborRangePreset) => void
+  onRangePresetChange: (preset: RateRangePreset) => void
 }) {
   const [selectedTenors, setSelectedTenors] = useState<readonly KiborTenor[]>(DEFAULT_CHART_TENORS)
-  const [rangePreset, setRangePreset] = useState<KiborRangePreset>('1Y')
+  const [rangePreset, setRangePreset] = useState<RateRangePreset>('1Y')
   const visibleTenors = useMemo(() => tenorOrder.filter((tenor) => selectedTenors.includes(tenor)), [selectedTenors, tenorOrder])
   const quoteDates = useMemo(() => Array.from(new Set(points.map((point) => point.quoteDate))).sort(), [points])
   const pointsByTenorDate = useMemo(() => {
@@ -309,7 +325,7 @@ const KiborChartSection = memo(function KiborChartSection({
   const toggleTenor = useCallback((tenor: KiborTenor) => {
     setSelectedTenors((current) => current.includes(tenor) ? current.filter((item) => item !== tenor) : [...current, tenor])
   }, [])
-  const handleRangePresetClick = useCallback((preset: KiborRangePreset) => {
+  const handleRangePresetClick = useCallback((preset: RateRangePreset) => {
     setRangePreset(preset)
     onRangePresetChange(preset)
   }, [onRangePresetChange])
@@ -383,7 +399,7 @@ const KiborChartSection = memo(function KiborChartSection({
         </Box>
         <Stack spacing={1} sx={{ alignItems: { xs: 'stretch', md: 'flex-end' } }}>
           <ChartControlGroup label="Date range">
-            {KIBOR_RANGE_PRESETS.map((preset) => (
+            {RATE_RANGE_PRESETS.map((preset) => (
               <RangePresetButton
                 key={preset.value}
                 label={preset.label}
@@ -480,7 +496,7 @@ const RatesTableSection = memo(function RatesTableSection({ points, tenorOrder }
   )
 })
 
-const RangePresetButton = memo(function RangePresetButton({ label, value, selected, onSelect }: { label: string; value: KiborRangePreset; selected: boolean; onSelect: (preset: KiborRangePreset) => void }) {
+const RangePresetButton = memo(function RangePresetButton({ label, value, selected, onSelect }: { label: string; value: RateRangePreset; selected: boolean; onSelect: (preset: RateRangePreset) => void }) {
   const handleClick = useCallback(() => onSelect(value), [onSelect, value])
 
   return (
@@ -531,16 +547,26 @@ const TenorCheckbox = memo(function TenorCheckbox({ label, checked, onChange, co
   )
 })
 
-function UsdPkrSection({ data }: { data: UsdPkrResponseDto }) {
-  const points = data.points
-  const previous = points.length > 1 ? points[points.length - 2] : null
-  const latest = data.asOf
-  const first = points[0]
-  const availableRange = useMemo(() => {
-    const dates = points.map((point) => point.quoteDate).filter(Boolean).sort()
-    if (dates.length === 0) return '-'
-    return `${dates[0]} to ${dates[dates.length - 1]}`
-  }, [points])
+function UsdPkrSection({
+  data,
+  dateRange,
+  rangePreset,
+  loading,
+  error,
+  onRangePresetChange,
+}: {
+  data: UsdPkrResponseDto
+  dateRange: DateRange
+  rangePreset: RateRangePreset
+  loading: boolean
+  error: unknown
+  onRangePresetChange: (preset: RateRangePreset) => void
+}) {
+  const points = useMemo(() => usdPkrObservations(data), [data])
+  const latest = data.asOf ?? points[points.length - 1] ?? null
+  const handleRangePresetClick = useCallback((preset: RateRangePreset) => {
+    onRangePresetChange(preset)
+  }, [onRangePresetChange])
   const option = useMemo(() => ({
     animation: false,
     useDirtyRect: true,
@@ -567,40 +593,48 @@ function UsdPkrSection({ data }: { data: UsdPkrResponseDto }) {
 
   return (
     <Stack spacing={2.4}>
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(6, 1fr)' }, gap: 1.4 }}>
-        <Metric label="Pair" value={data.pair} />
-        <Metric label="Rate type" value={data.label} />
-        <Metric label="Unit" value={data.unit} />
-        <Metric label="Available range" value={availableRange} />
-        <Metric label="Prev publication change" value={fmtSigned(latest && previous ? latest.rate - previous.rate : null)} />
-        <Metric label="Period change" value={fmtSigned(latest && first ? latest.rate - first.rate : null)} />
-      </Box>
       <Box sx={{ ...CARD_SX, p: 2.4 }}>
-        <Typography sx={{ color: 'var(--wc-text-primary)', fontWeight: 850 }}>USD/PKR - SBP Mark-to-Market - Ready</Typography>
-        <Typography sx={{ color: 'var(--wc-text-secondary)', fontSize: 12 }}>
-          Quote date {fmtDate(latest?.quoteDate)} - effective date {fmtDate(latest?.effectiveDate)}
-        </Typography>
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.2} sx={{ justifyContent: 'space-between', alignItems: { xs: 'stretch', md: 'flex-start' } }}>
+          <Box>
+            <Typography sx={{ color: 'var(--wc-text-primary)', fontWeight: 850 }}>{data.label}</Typography>
+            <Typography sx={{ color: 'var(--wc-text-secondary)', fontSize: 12 }}>
+              {dateRange.startDate} to {dateRange.endDate}{loading ? ' - updating' : ''} · latest quote {fmtDate(latest?.quoteDate)} · effective {fmtDate(latest?.effectiveDate)}
+            </Typography>
+            {Boolean(error) && <Typography sx={{ color: 'var(--wc-error)', fontSize: 12 }}>Could not refresh the selected range. Showing the previous response.</Typography>}
+          </Box>
+          <ChartControlGroup label="Date range">
+            {RATE_RANGE_PRESETS.map((preset) => (
+              <RangePresetButton
+                key={preset.value}
+                label={preset.label}
+                value={preset.value}
+                selected={rangePreset === preset.value}
+                onSelect={handleRangePresetClick}
+              />
+            ))}
+          </ChartControlGroup>
+        </Stack>
         {points.length === 0 ? <EmptyBlock title="No USD/PKR points" detail="The returned USD/PKR history is empty." /> : <ReactECharts option={option} style={USD_CHART_STYLE} opts={CANVAS_OPTS} notMerge={false} lazyUpdate />}
       </Box>
-      <UsdPkrRatesTableSection data={data} />
+      <UsdPkrRatesTableSection points={points} />
     </Stack>
   )
 }
 
-const UsdPkrRatesTableSection = memo(function UsdPkrRatesTableSection({ data }: { data: UsdPkrResponseDto }) {
+const UsdPkrRatesTableSection = memo(function UsdPkrRatesTableSection({ points }: { points: NonNullable<UsdPkrResponseDto['points']> }) {
   const [page, setPage] = useState(0)
   const [pageSize, setPageSize] = useState(DEFAULT_TABLE_PAGE_SIZE)
   const [filter, setFilter] = useState('')
   const normalizedFilter = filter.trim().toLowerCase()
-  const indexedRows = useMemo(() => data.points
+  const indexedRows = useMemo(() => points
     .map((point) => ({
       key: `${point.quoteDate}-usd-pkr`,
       quoteDate: point.quoteDate,
-      cells: [point.quoteDate, fmtNumber(point.rate, 4), point.effectiveDate ?? '-'],
+      cells: [point.quoteDate, fmtNumber(point.rate, 4), point.effectiveDate ?? UNAVAILABLE_VALUE],
       exportRow: [point.quoteDate, point.rate, point.effectiveDate] as ExportCell[],
       searchText: `${point.quoteDate} ${point.effectiveDate ?? ''}`.toLowerCase(),
     }))
-    .sort((a, b) => b.quoteDate.localeCompare(a.quoteDate)), [data.points])
+    .sort((a, b) => b.quoteDate.localeCompare(a.quoteDate)), [points])
   const filteredRows = useMemo(() => {
     if (!normalizedFilter) return indexedRows
     return indexedRows.filter((row) => row.searchText.includes(normalizedFilter))
@@ -639,10 +673,6 @@ const UsdPkrRatesTableSection = memo(function UsdPkrRatesTableSection({ data }: 
     />
   )
 })
-
-function Metric({ label, value }: { label: string; value: string }) {
-  return <Box sx={{ ...CARD_SX, p: 1.8 }}><Typography sx={{ color: 'var(--wc-text-muted)', fontSize: 10.5, fontWeight: 900, textTransform: 'uppercase' }}>{label}</Typography><Typography sx={{ mt: 0.7, color: 'var(--wc-text-primary)', fontFamily: DATA_FONT, fontSize: 15, fontWeight: 850 }}>{value}</Typography></Box>
-}
 
 const RatesTable = memo(function RatesTable({
   headers,

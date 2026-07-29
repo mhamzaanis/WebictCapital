@@ -7,7 +7,7 @@ import { HomePage } from './components/pages/HomePage'
 import { MarketsOverviewPage } from './components/pages/MarketsOverviewPage'
 import { MasterclassesPage } from './components/pages/MasterclassesPage'
 import { PortfolioPage } from './components/pages/PortfolioPage'
-import { RatesMacroPage } from './components/pages/RatesMacroPage'
+import { RatesMacroPage, UsdPkrRatesPage } from './components/pages/RatesMacroPage'
 import { SipCalculatorPage } from './components/pages/SipCalculatorPage'
 import { StockComparisonPage } from './components/pages/StockComparisonPage'
 import { StockDetailPage } from './components/pages/StockDetailPage'
@@ -24,6 +24,7 @@ function App() {
         <Route path="/data/stocks" element={<StocksExplorerPage />} />
         <Route path="/data/compare" element={<StockComparisonPage />} />
         <Route path="/data/rates" element={<RatesMacroPage />} />
+        <Route path="/data/rates/usd-pkr" element={<UsdPkrRatesPage />} />
         <Route path="/glossary" element={<GlossaryPage />} />
         <Route path="/masterclasses" element={<MasterclassesPage />} />
         <Route path="/portfolio" element={<PortfolioPage />} />

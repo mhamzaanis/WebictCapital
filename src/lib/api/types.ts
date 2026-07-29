@@ -239,5 +239,6 @@ export type UsdPkrResponseDto = {
   label: string
   unit: string
   asOf: UsdPkrPointDto | null
-  points: UsdPkrPointDto[]
+  observations?: UsdPkrPointDto[]
+  points?: UsdPkrPointDto[]
 }

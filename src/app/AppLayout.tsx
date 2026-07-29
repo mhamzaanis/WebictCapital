@@ -96,14 +96,26 @@ const SEO_BY_PATH: Record<string, PageSeo> = {
     },
   },
   '/data/rates': {
-    title: 'KIBOR and USD/PKR Rates | Webict Capital Markets',
+    title: 'KIBOR Rates | Webict Capital Markets',
     description:
-      'Track canonical SBP KIBOR bid/offer observations and USD/PKR Mark-to-Market Ready rates from the WebICTCapital API.',
+      'Track canonical SBP KIBOR bid/offer observations from the WebICTCapital API.',
     structuredData: {
       '@context': 'https://schema.org',
       '@type': 'Dataset',
-      name: 'Pakistan Rates and Macro Data',
+      name: 'Pakistan KIBOR Rates',
       url: `${SITE_URL}/data/rates`,
+      publisher: { '@type': 'Organization', name: 'Webict Capital', url: `${SITE_URL}/` },
+    },
+  },
+  '/data/rates/usd-pkr': {
+    title: 'USD/PKR Rates | Webict Capital Markets',
+    description:
+      'Track SBP Mark-to-Market Ready USD/PKR observations.',
+    structuredData: {
+      '@context': 'https://schema.org',
+      '@type': 'Dataset',
+      name: 'USD/PKR Mark-to-Market Ready Rates',
+      url: `${SITE_URL}/data/rates/usd-pkr`,
       publisher: { '@type': 'Organization', name: 'Webict Capital', url: `${SITE_URL}/` },
     },
   },
