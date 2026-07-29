@@ -78,6 +78,12 @@ export type TickerQuoteDto = {
   peRatioTtm: number | null
 }
 
+export type TickerValuationDto = {
+  asOf: string | null
+  marketCap: number | null
+  peRatioTtm: number | null
+}
+
 export type TickerTechnicalPointDto = {
   tradeDate: string
   return1dPct: number | null
@@ -137,7 +143,7 @@ export type FinancialStatementDto = {
 
 export type FinancialRatioDto = {
   fiscalYear: number
-  values: unknown
+  values: Record<string, number | null> | unknown
   validFrom?: string | null
   validTo?: string | null
   isCurrent?: boolean | null
@@ -193,16 +199,46 @@ export type TickerComparisonItemDto = {
   companyName: string | null
   availableQuoteRange: DateRangeDto | null
   asOfQuote: TickerQuoteDto | null
+  profile: CompanyProfileDto | null
   quotes: TickerQuoteDto[]
+  valuation: TickerValuationDto | null
   equity: EquityProfileDto | null
+  latestAnnualEps: {
+    fiscalYear: number | null
+    period: string | null
+    eps: number | null
+  } | null
   financialStatements: FinancialStatementDto[]
   ratios: FinancialRatioDto[]
-  technicals: TickerTechnicalSeriesDto
+  technicals: TickerTechnicalSeriesDto | null
+}
+
+export type BenchmarkQuoteDto = {
+  tradeDate: string
+  open?: number | null
+  high?: number | null
+  low?: number | null
+  close: number | null
+  volume?: number | null
+  change?: number | null
+  changePct?: number | null
+}
+
+export type BenchmarkComparisonItemDto = {
+  code: string
+  displayName: string | null
+  availableRange?: DateRangeDto | null
+  availableQuoteRange?: DateRangeDto | null
+  asOf?: BenchmarkQuoteDto | null
+  asOfQuote?: BenchmarkQuoteDto | null
+  points?: BenchmarkQuoteDto[]
+  quotes?: BenchmarkQuoteDto[]
 }
 
 export type TickerComparisonResponse = {
   requestedRange: DateRangeDto | null
   items: TickerComparisonItemDto[]
+  benchmarks: BenchmarkComparisonItemDto[]
 }
 
 export type KiborCurvePointDto = {

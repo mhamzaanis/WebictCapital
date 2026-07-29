@@ -27,10 +27,12 @@ export function fetchTickerDetail(request: TickerDetailRequest, signal?: AbortSi
 }
 
 export type TickerCompareRequest = {
-  symbols: [string, string]
+  symbols: readonly string[]
+  benchmarks?: readonly string[]
   from?: string
   to?: string
   financialYears?: number
+  include?: readonly string[]
 }
 
 export function fetchTickerComparison(request: TickerCompareRequest, signal?: AbortSignal) {
@@ -39,9 +41,11 @@ export function fetchTickerComparison(request: TickerCompareRequest, signal?: Ab
     cacheMs: 10 * 60 * 1000,
     query: {
       symbols: request.symbols.map((symbol) => symbol.trim().toUpperCase()),
+      benchmarks: request.benchmarks?.map((benchmark) => benchmark.trim().toUpperCase()),
       from: dateOnly(request.from),
       to: dateOnly(request.to),
       financialYears: request.financialYears,
+      include: request.include?.join(','),
     },
   })
 }
