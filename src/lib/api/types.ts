@@ -222,7 +222,8 @@ export type KiborResponseDto = {
   asOfDate: string | null
   tenorOrder: string[]
   latestCurve: KiborCurvePointDto[]
-  points: KiborObservationDto[]
+  observations?: KiborObservationDto[]
+  points?: KiborObservationDto[]
 }
 
 export type UsdPkrPointDto = {
