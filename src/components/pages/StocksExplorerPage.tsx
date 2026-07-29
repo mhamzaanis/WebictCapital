@@ -11,6 +11,7 @@ import {
   InputLabel,
   MenuItem,
   Select,
+  Skeleton,
   Stack,
   Table,
   TableBody,
@@ -30,7 +31,7 @@ import type { MarketSummaryTickersResponse, MarketTickerDto } from '../../lib/ap
 import { useAuth } from '../../context/AuthContext'
 import { addToWatchlist } from '../../lib/stockService'
 import { MarketShell } from '../markets/MarketShell'
-import { EmptyBlock, ErrorBlock, LoadingBlock } from '../markets/StateBlocks'
+import { EmptyBlock, ErrorBlock } from '../markets/StateBlocks'
 import { CARD_SX, DATA_FONT, changePctFromQuote, estimatedValue, fmtCompact, fmtNumber, fmtPct, fmtSigned, toneColor } from '../markets/marketUtils'
 
 type SortKey = 'symbol' | 'companyName' | 'section' | 'close' | 'changePct' | 'turnover' | 'estimated'
@@ -141,14 +142,19 @@ export function StocksExplorerPage() {
     setWatchMessage(`${symbol} added to watchlist.`)
   }
 
-  if (loading) return <MarketShell title="Stocks Explorer" subtitle="Search and screen latest PSX observations."><LoadingBlock /></MarketShell>
-  if (error) return <MarketShell title="Stocks Explorer" subtitle="Search and screen latest PSX observations."><ErrorBlock error={error} /></MarketShell>
-  if (!data) return <MarketShell title="Stocks Explorer" subtitle="Search and screen latest PSX observations."><EmptyBlock title="No stock listing" detail="The latest market API response was empty." /></MarketShell>
+  if (loading)
+    return (
+      <MarketShell title="Stocks Explorer">
+        <ExplorerPageSkeleton />
+      </MarketShell>
+    )
+  if (error) return <MarketShell title="Stocks Explorer"><ErrorBlock error={error} /></MarketShell>
+  if (!data) return <MarketShell title="Stocks Explorer"><EmptyBlock title="No stock listing" detail="The latest market API response was empty." /></MarketShell>
 
   return (
     <MarketShell
       title="Stocks Explorer"
-      subtitle={`Latest trade date ${data.tradeDate}. Unsupported fields such as market cap, latest RSI, and SMA relationship are omitted from this listing until the API exposes them here.`}
+    // subtitle={`Latest trade date ${data.tradeDate}. Unsupported fields such as market cap, latest RSI, and SMA relationship are omitted from this listing until the API exposes them here.`}
     >
       <Stack spacing={2.4}>
         <Box sx={{ ...CARD_SX, p: 2.4 }}>
@@ -184,10 +190,10 @@ export function StocksExplorerPage() {
         </Box>
 
         <Box sx={{ ...CARD_SX, overflow: 'hidden' }}>
-          <Box sx={{ p: 2, borderBottom: '1px solid var(--wc-border)' }}>
+          {/* <Box sx={{ p: 2, borderBottom: '1px solid var(--wc-border)' }}>
             <Typography sx={{ color: 'var(--wc-text-primary)', fontWeight: 850 }}>{filtered.length.toLocaleString('en-PK')} observations</Typography>
             <Typography sx={{ color: 'var(--wc-text-secondary)', fontSize: 12 }}>Turnover is share quantity. Estimated traded value is close multiplied by shares traded when both are valid.</Typography>
-          </Box>
+          </Box> */}
           {filtered.length === 0 ? <EmptyBlock title="No matches" detail="Adjust search or filters to see observations." /> : (
             <TableContainer sx={{ maxHeight: 720, overflowX: 'auto' }}>
               <Table stickyHeader size="small" sx={{ minWidth: 1120 }}>
@@ -229,6 +235,53 @@ export function StocksExplorerPage() {
         </Box>
       </Stack>
     </MarketShell>
+  )
+}
+
+// ─── Skeleton ───────────────────────────────────────────────────────────────
+
+function ExplorerPageSkeleton() {
+  const COL_WIDTHS = [70, 200, 140, 80, 100, 90, 90, 90]
+  return (
+    <Stack spacing={2.4}>
+      {/* Filter bar */}
+      <Box sx={{ ...CARD_SX, p: 2.4 }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'minmax(260px,1fr) 220px 180px auto' }, gap: 1.5 }}>
+          <Skeleton variant="rounded" height={48} />
+          <Skeleton variant="rounded" height={48} />
+          <Skeleton variant="rounded" height={48} />
+          <Skeleton variant="rounded" height={48} width={72} />
+        </Box>
+      </Box>
+
+      {/* Table */}
+      <Box sx={{ ...CARD_SX, overflow: 'hidden' }}>
+        {/* Header row */}
+        <Box sx={{ display: 'flex', gap: 1, px: 1.5, py: 1.2, borderBottom: '1px solid var(--wc-border)', bgcolor: 'var(--wc-surface-soft)' }}>
+          {COL_WIDTHS.map((w, i) => (
+            <Skeleton key={i} variant="text" width={w} height={14} />
+          ))}
+        </Box>
+        {/* Data rows */}
+        {Array.from({ length: 15 }).map((_, rowIdx) => (
+          <Box
+            key={rowIdx}
+            sx={{
+              display: 'flex',
+              gap: 1,
+              px: 1.5,
+              py: 1.1,
+              borderBottom: '1px solid var(--wc-divider-soft)',
+              alignItems: 'center',
+            }}
+          >
+            {COL_WIDTHS.map((w, i) => (
+              <Skeleton key={i} variant="text" width={w * (0.6 + Math.random() * 0.5)} height={13} />
+            ))}
+          </Box>
+        ))}
+      </Box>
+    </Stack>
   )
 }
 

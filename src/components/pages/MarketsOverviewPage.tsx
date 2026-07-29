@@ -1,16 +1,14 @@
 import AnalyticsIcon from '@mui/icons-material/Analytics'
 import AutoAwesomeOutlinedIcon from '@mui/icons-material/AutoAwesomeOutlined'
 import BubbleChartIcon from '@mui/icons-material/BubbleChart'
-import SearchIcon from '@mui/icons-material/Search'
+import GridViewIcon from '@mui/icons-material/GridView'
 import TrendingDownIcon from '@mui/icons-material/TrendingDown'
 import TrendingUpIcon from '@mui/icons-material/TrendingUp'
 import {
   Box,
   Button,
-  Chip,
-  InputAdornment,
+  Skeleton,
   Stack,
-  TextField,
   Typography,
 } from '@mui/material'
 import ReactECharts from 'echarts-for-react'
@@ -18,8 +16,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchLatestMarketSummary } from '../../lib/api/market'
 import type { MarketSummaryTickersResponse, MarketTickerDto } from '../../lib/api/types'
+import { StockHeatmap } from '../market/StockHeatmap'
 import { MarketShell } from '../markets/MarketShell'
-import { EmptyBlock, ErrorBlock, LoadingBlock } from '../markets/StateBlocks'
+import { EmptyBlock, ErrorBlock } from '../markets/StateBlocks'
 import {
   BODY_FONT,
   CARD_SX,
@@ -28,7 +27,6 @@ import {
   estimatedValue,
   fmtCompact,
   fmtDate,
-  fmtInstant,
   fmtNumber,
   fmtPct,
   fmtSigned,
@@ -88,7 +86,7 @@ function IndexCards({ market }: { market: MarketSummaryTickersResponse }) {
   const indices = [...(market.indexSnapshot?.indices ?? [])].sort(
     (a, b) => INDEX_ORDER.indexOf(a.code) - INDEX_ORDER.indexOf(b.code),
   )
-  if (indices.length === 0) return <EmptyBlock title="Index snapshot unavailable" detail="The API returned no same-date index observations." />
+  if (indices.length === 0) return <EmptyBlock title="Index snapshot unavailable" />
 
   return (
     <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' }, gap: 2 }}>
@@ -96,7 +94,7 @@ function IndexCards({ market }: { market: MarketSummaryTickersResponse }) {
         <Box key={index.code} sx={{ ...CARD_SX, p: 2.2 }}>
           <Stack direction="row" sx={{ justifyContent: 'space-between', gap: 1 }}>
             <Typography sx={{ color: 'var(--wc-primary)', fontWeight: 900 }}>{index.code}</Typography>
-            <Chip size="small" label={fmtInstant(index.asOf) === '-' ? fmtDate(market.tradeDate) : fmtInstant(index.asOf)} sx={{ fontSize: 10, fontFamily: DATA_FONT }} />
+            {/* <Chip size="small" label={fmtInstant(index.asOf) === '-' ? fmtDate(market.tradeDate) : fmtInstant(index.asOf)} sx={{ fontSize: 10, fontFamily: DATA_FONT }} /> */}
           </Stack>
           <Typography sx={{ mt: 1.4, color: 'var(--wc-text-primary)', fontFamily: DATA_FONT, fontSize: 30, fontWeight: 850 }}>
             {fmtNumber(index.close)}
@@ -259,6 +257,121 @@ function Cell({ children, strong = false }: { children: React.ReactNode; strong?
   return <Typography sx={{ color: strong ? 'var(--wc-text-primary)' : 'var(--wc-text-secondary)', fontFamily: strong ? BODY_FONT : DATA_FONT, fontSize: 12.5, fontWeight: strong ? 800 : 700 }}>{children}</Typography>
 }
 
+// ─── Skeleton Primitives ─────────────────────────────────────────────────────
+
+function SkeletonCard({ height = 80, sx }: { height?: number; sx?: object }) {
+  return (
+    <Box sx={{ ...CARD_SX, p: 2.2, ...sx }}>
+      <Skeleton variant="text" width="45%" height={14} sx={{ mb: 1 }} />
+      <Skeleton variant="text" width="65%" height={32} sx={{ mb: 0.5 }} />
+      <Skeleton variant="text" width="40%" height={14} />
+    </Box>
+  )
+}
+
+function OverviewPageSkeleton() {
+  return (
+    <Stack spacing={3}>
+      {/* Index Cards */}
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' }, gap: 2 }}>
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Box key={i} sx={{ ...CARD_SX, p: 2.2 }}>
+            <Skeleton variant="text" width="40%" height={14} sx={{ mb: 1 }} />
+            <Skeleton variant="text" width="70%" height={36} sx={{ mb: 0.8 }} />
+            <Skeleton variant="text" width="55%" height={14} sx={{ mb: 1.5 }} />
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1 }}>
+              <Skeleton variant="rounded" height={32} />
+              <Skeleton variant="rounded" height={32} />
+              <Skeleton variant="rounded" height={32} />
+            </Box>
+          </Box>
+        ))}
+      </Box>
+
+      {/* Breadth + Commentary */}
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '0.9fr 1.1fr' }, gap: 2 }}>
+        <Box sx={{ ...CARD_SX, p: 2.4, minHeight: 335 }}>
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 2 }}>
+            <Skeleton variant="circular" width={22} height={22} />
+            <Skeleton variant="text" width={140} height={18} />
+          </Stack>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '220px 1fr' }, gap: 2, alignItems: 'center' }}>
+            <Skeleton variant="circular" width={180} height={180} sx={{ mx: 'auto' }} />
+            <Stack spacing={1.4}>
+              <SkeletonCard height={80} />
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1 }}>
+                <Skeleton variant="rounded" height={36} />
+                <Skeleton variant="rounded" height={36} />
+                <Skeleton variant="rounded" height={36} />
+              </Box>
+            </Stack>
+          </Box>
+        </Box>
+        <Box sx={{ ...CARD_SX, p: 2.4 }}>
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 2 }}>
+            <Skeleton variant="circular" width={22} height={22} />
+            <Skeleton variant="text" width={160} height={18} />
+          </Stack>
+          <Stack spacing={1.2}>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} variant="text" width={`${75 + Math.sin(i) * 20}%`} height={16} />
+            ))}
+          </Stack>
+        </Box>
+      </Box>
+
+      {/* Movers */}
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: 'repeat(4, 1fr)' }, gap: 2 }}>
+        {Array.from({ length: 4 }).map((_, col) => (
+          <Box key={col} sx={{ ...CARD_SX, p: 2.2 }}>
+            <Skeleton variant="text" width="60%" height={18} sx={{ mb: 1.4 }} />
+            <Stack spacing={1.15}>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Stack key={i} direction="row" justifyContent="space-between" alignItems="center">
+                  <Box>
+                    <Skeleton variant="text" width={55} height={14} />
+                    <Skeleton variant="text" width={90} height={12} />
+                  </Box>
+                  <Skeleton variant="text" width={50} height={14} />
+                </Stack>
+              ))}
+            </Stack>
+          </Box>
+        ))}
+      </Box>
+
+      {/* Heatmap */}
+      <Box sx={{ ...CARD_SX, p: 2.4, minHeight: 420 }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 2 }}>
+          <Skeleton variant="circular" width={22} height={22} />
+          <Skeleton variant="text" width={150} height={18} />
+        </Stack>
+        <Skeleton variant="rounded" width="100%" height={340} sx={{ borderRadius: 2 }} />
+      </Box>
+
+      {/* Sector Table */}
+      <Box sx={{ ...CARD_SX, p: 2.4 }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 2 }}>
+          <Skeleton variant="circular" width={22} height={22} />
+          <Skeleton variant="text" width={130} height={18} />
+        </Stack>
+        <Stack spacing={1.2}>
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Box key={i} sx={{ display: 'grid', gridTemplateColumns: 'minmax(180px,1fr) repeat(5,110px)', gap: 1.4, py: 1 }}>
+              <Skeleton variant="text" height={14} width="80%" />
+              {Array.from({ length: 5 }).map((_, j) => (
+                <Skeleton key={j} variant="text" height={14} width="60%" />
+              ))}
+            </Box>
+          ))}
+        </Stack>
+      </Box>
+    </Stack>
+  )
+}
+
+// ─── Main Page ───────────────────────────────────────────────────────────────
+
 export function MarketsOverviewPage() {
   const { data, error, loading } = useLatestMarket()
   const [search, setSearch] = useState('')
@@ -270,58 +383,38 @@ export function MarketsOverviewPage() {
     return ranked.filter((ticker) => ticker.symbol.includes(query) || (ticker.companyName ?? '').toUpperCase().includes(query))
   }, [ranked, search])
 
-  if (loading) return <MarketShell title="Pakistan Stock Exchange" subtitle="API-backed market intelligence workspace."><LoadingBlock /></MarketShell>
-  if (error) return <MarketShell title="Pakistan Stock Exchange" subtitle="API-backed market intelligence workspace."><ErrorBlock error={error} /></MarketShell>
-  if (!data) return <MarketShell title="Pakistan Stock Exchange" subtitle="API-backed market intelligence workspace."><EmptyBlock title="No market data" detail="The API returned no latest market summary." /></MarketShell>
+  const heatmapData = useMemo(
+    () =>
+      ranked
+        .filter((t) => t.turnover != null && t.turnover > 0)
+        .map((t) => ({
+          label: t.symbol,
+          value: t.turnover ?? 1,
+          company: t.companyName ?? t.symbol,
+          changePct: t.changePct ?? undefined,
+        })),
+    [ranked],
+  )
 
-  const kse100 = data.indexSnapshot?.indices.find((index) => index.code === 'KSE100') ?? null
+  if (loading)
+    return (
+      <MarketShell title="Pakistan Stock Exchange">
+        <OverviewPageSkeleton />
+      </MarketShell>
+    )
+  if (error) return <MarketShell title="Pakistan Stock Exchange"><ErrorBlock error={error} /></MarketShell>
+  if (!data) return <MarketShell title="Pakistan Stock Exchange"><EmptyBlock title="No market data" detail="The API returned no latest market summary." /></MarketShell>
+
   const keyPoints = jsonStringList(data.aiSummary?.keyPoints)
-  const staleDays = data.tradeDate < '2026-07-21' ? 5 : 0
 
   return (
-    <MarketShell
-      title="Pakistan Stock Exchange"
-      subtitle="Latest completed PSX session from the WebICTCapital API. Raw market facts are displayed as returned; gaps remain visible."
-    >
+    <MarketShell title="Pakistan Stock Exchange">
       <Stack spacing={3}>
-        <Box sx={{ ...CARD_SX, p: { xs: 2.4, md: 3.2 }, bgcolor: '#fff' }}>
-          <Stack direction={{ xs: 'column', lg: 'row' }} spacing={2.4} sx={{ justifyContent: 'space-between' }}>
-            <Box>
-              <Typography sx={{ color: 'var(--wc-primary)', fontWeight: 900, fontSize: 12, letterSpacing: '0.09em', textTransform: 'uppercase' }}>
-                Latest completed session - {fmtDate(data.tradeDate)}
-              </Typography>
-              <Typography sx={{ mt: 1.2, color: 'var(--wc-text-primary)', fontFamily: DATA_FONT, fontSize: { xs: 38, md: 58 }, fontWeight: 900, lineHeight: 1 }}>
-                {fmtNumber(kse100?.close)}
-              </Typography>
-              <Typography sx={{ mt: 0.8, color: toneColor(kse100?.change), fontFamily: DATA_FONT, fontWeight: 850 }}>
-                KSE100 {fmtSigned(kse100?.change)} ({fmtPct(kse100?.changePct)})
-              </Typography>
-              <Typography sx={{ mt: 1.2, color: staleDays > 4 ? 'var(--wc-error)' : 'var(--wc-text-secondary)', fontSize: 12.5 }}>
-                Source freshness: {fmtInstant(kse100?.asOf)} {staleDays > 4 ? '- stale data warning' : '- market closed / completed-session view'}
-              </Typography>
-            </Box>
-            <Box sx={{ width: { xs: '100%', lg: 360 } }}>
-              <TextField
-                fullWidth
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search symbol or company"
-                slotProps={{ input: { startAdornment: <InputAdornment position="start"><SearchIcon /></InputAdornment> } }}
-              />
-              <Stack direction="row" spacing={1} sx={{ mt: 1.4, flexWrap: 'wrap', rowGap: 1 }}>
-                <Chip label={`${data.tickers.length.toLocaleString('en-PK')} tickers`} />
-                <Chip label={`Shares traded ${fmtCompact(data.summary.currVolume)}`} />
-                {data.aiSummary && <Chip icon={<AutoAwesomeOutlinedIcon />} label="AI commentary available" />}
-              </Stack>
-            </Box>
-          </Stack>
-        </Box>
-
         <IndexCards market={data} />
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '0.9fr 1.1fr' }, gap: 2 }}>
           <BreadthPanel market={data} />
           <Box sx={{ ...CARD_SX, p: 2.4 }}>
-            <PanelTitle icon={<AutoAwesomeOutlinedIcon />} title="AI-generated market commentary" detail={`Source trade date ${fmtDate(data.aiSummary?.tradeDate ?? data.tradeDate)}. Browser does not regenerate commentary.`} />
+            <PanelTitle icon={<AutoAwesomeOutlinedIcon />} title="Market commentary" detail={`Source trade date ${fmtDate(data.aiSummary?.tradeDate ?? data.tradeDate)}`} />
             {data.aiSummary?.summary ? (
               <Stack spacing={1.4}>
                 <Typography sx={{ color: 'var(--wc-text-primary)', lineHeight: 1.7 }}>{data.aiSummary.summary}</Typography>
@@ -332,6 +425,16 @@ export function MarketsOverviewPage() {
         </Box>
 
         <MoversPanel ranked={filtered} />
+
+        <StockHeatmap
+          heading="Market Heatmap"
+          detail="Treemap sized by share turnover, coloured by price move. Hover a tile for full details."
+          icon={<GridViewIcon />}
+          height={380}
+          data={heatmapData}
+          emptyLabel="Heatmap data is unavailable for this session."
+        />
+
         <SectorPanel ranked={filtered} />
       </Stack>
     </MarketShell>

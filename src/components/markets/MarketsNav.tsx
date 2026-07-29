@@ -13,7 +13,7 @@ export function MarketsNav() {
   const active = tabs.find((tab) => pathname === tab.href)?.href ?? false
 
   return (
-    <Box sx={{ borderBottom: '1px solid var(--wc-border)', bgcolor: 'rgba(255,255,255,0.86)', position: 'sticky', top: 72, zIndex: 8, backdropFilter: 'blur(12px)' }}>
+    <Box sx={{ borderBottom: '1px solid var(--wc-border)', bgcolor: 'rgba(255,255,255,0.86)', position: 'sticky', top: 80, zIndex: 8, backdropFilter: 'blur(2px)', marginBottom: 0, marginTop: 10, borderRadius: 50, marginLeft: 10, marginRight: 10 }}>
       <Container maxWidth="xl">
         <Tabs
           value={active}
