@@ -15,15 +15,14 @@ import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import QueryStatsIcon from '@mui/icons-material/QueryStats'
 import StackedBarChartIcon from '@mui/icons-material/StackedBarChart'
 import { motion, useReducedMotion } from 'motion/react'
-import { hasSupabaseConfig, supabase } from '../../lib/supabase'
-import {
-  fetchMarketAiSummary,
-  fetchMarketDailySummaryRows,
-  getMarketIndexSnapshots,
-  type DbMarketSummaryRow,
-  type MarketAiSummary,
-  type MarketIndexSnapshot,
-} from '../../lib/stockService'
+import { fetchLatestMarketSummary } from '../../lib/api/market'
+import type {
+  MarketAiSummaryDto,
+  MarketIndexDto,
+  MarketIndexSnapshotDto,
+  MarketSummaryDto,
+  MarketTickerDto,
+} from '../../lib/api/types'
 import { type Dispatch, type ReactNode, type SetStateAction, useEffect, useMemo, useState } from 'react'
 import { MarketDashboardSkeleton, PriceTableSkeleton } from './CustomSkeleton'
 import { CustomDataTable } from './CustomDataTable'
@@ -60,26 +59,11 @@ type PsxStock = {
 
 type PsxData = {
   date: string
-  source: 'Supabase'
-  market?: DbMarketSummaryRow
+  source: 'Market API'
+  market?: MarketSummaryDto
+  indexSnapshot?: MarketIndexSnapshotDto | null
   total_stocks: number
   stocks: PsxStock[]
-}
-
-type DbStockTableRow = {
-  symbol: string
-  company: string
-  section: string | null
-  trade_date: string
-  open: number | null
-  high: number | null
-  low: number | null
-  close: number | null
-  turnover: number | null
-  change: number | null
-  eps: number | null
-  result_period: string | null
-  period_ending: string | null
 }
 
 type RankedStock = PsxStock & {
@@ -99,6 +83,29 @@ type SectorActivity = {
   losers: number
   unchanged: number
   avgChangePct: number
+}
+
+type MarketIndexSnapshot = {
+  key: 'kse100' | 'kse100pr' | 'kse_all' | 'kse30' | 'kmi30' | 'kmi_all'
+  label: string
+  previousClose: number | null
+  close: number | null
+  change: number | null
+  changePct: number | null
+  high: number | null
+  low: number | null
+  volume: number | null
+  hasData: boolean
+}
+
+type DisplayMarketAiSummary = {
+  summary: string
+  key_points: string[]
+  top_gainers: Array<Record<string, unknown>>
+  top_losers: Array<Record<string, unknown>>
+  volume_leaders: Array<Record<string, unknown>>
+  sector_activity: Array<Record<string, unknown>>
+  generated_at: string | null
 }
 
 
@@ -235,56 +242,117 @@ function mapSectorVolumeItem(sector: SectorActivity): BarChartItem {
   }
 }
 
-function mapDbStockTableRow(row: DbStockTableRow): PsxStock {
-  const close = row.close != null ? toNum(row.close) : null
-  const eps = row.eps != null ? toNum(row.eps) : null
-  const pe =
-    close != null && eps != null && eps > 0
-      ? parseFloat((close / eps).toFixed(2))
-      : null
-
+function mapMarketTicker(ticker: MarketTickerDto): PsxStock {
   return {
-    symbol: row.symbol,
-    company: row.company,
-    section: row.section,
-    industry: row.section,
-    turnover: row.turnover,
-    open: row.open,
-    high: row.high,
-    low: row.low,
-    last_rate: row.close,
-    change: row.change,
-    eps: eps != null ? parseFloat(eps.toFixed(2)) : null,
-    pe,
-    result_period: row.result_period,
-    period_ending: row.period_ending,
+    symbol: ticker.symbol,
+    company: ticker.companyName ?? ticker.symbol,
+    section: ticker.section,
+    industry: ticker.section,
+    turnover: ticker.turnover,
+    open: ticker.open,
+    high: ticker.high,
+    low: ticker.low,
+    last_rate: ticker.close,
+    change: ticker.change,
+    eps: null,
+    pe: null,
+    result_period: null,
+    period_ending: null,
   }
 }
 
-async function fetchSupabaseTradeDay(summaryRow: DbMarketSummaryRow): Promise<PsxData> {
-  if (!supabase) throw new Error('Supabase client is not configured')
+function normalizeStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  return value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+}
 
-  const tradeDate = summaryRow.trade_date
-  const stocksResult = await supabase
-    .from('v_stock_table')
-    .select('symbol,company,section,trade_date,open,high,low,close,turnover,change,eps,result_period,period_ending')
-    .eq('trade_date', tradeDate)
-    .neq('section', 'EXCHANGE TRADED FUNDS')
-    .neq('section', 'CLOSE - END MUTUAL FUND')
-    .neq('section', 'INV. BANKS / INV. COS. / SECURITIES COS.')
-    .order('symbol', { ascending: true })
+function normalizeRecordArray(value: unknown): Array<Record<string, unknown>> {
+  if (!Array.isArray(value)) return []
+  return value.filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object' && !Array.isArray(item))
+}
 
-  if (stocksResult.error) throw stocksResult.error
-
-  const rows = ((stocksResult.data ?? []) as DbStockTableRow[]).map(mapDbStockTableRow)
-
+function mapMarketAiSummary(aiSummary: MarketAiSummaryDto | null): DisplayMarketAiSummary | null {
+  if (!aiSummary) return null
   return {
-    date: tradeDate,
-    source: 'Supabase',
-    market: summaryRow,
+    summary: aiSummary.summary,
+    key_points: normalizeStringArray(aiSummary.keyPoints),
+    top_gainers: normalizeRecordArray(aiSummary.topGainers),
+    top_losers: normalizeRecordArray(aiSummary.topLosers),
+    volume_leaders: normalizeRecordArray(aiSummary.volumeLeaders),
+    sector_activity: normalizeRecordArray(aiSummary.sectorActivity),
+    generated_at: aiSummary.generatedAt ?? null,
+  }
+}
+
+function mapMarketData(response: {
+  tradeDate: string
+  summary: MarketSummaryDto
+  tickers: MarketTickerDto[]
+  indexSnapshot: MarketIndexSnapshotDto | null
+}): PsxData {
+  const rows = response.tickers.map(mapMarketTicker)
+  return {
+    date: response.tradeDate,
+    source: 'Market API',
+    market: response.summary,
+    indexSnapshot: response.indexSnapshot,
     total_stocks: rows.length,
     stocks: rows,
   }
+}
+
+function mapIndexCodeToKey(code: string): MarketIndexSnapshot['key'] | null {
+  switch (code) {
+    case 'KSE100':
+      return 'kse100'
+    case 'KSE100PR':
+      return 'kse100pr'
+    case 'ALLSHR':
+      return 'kse_all'
+    case 'KSE30':
+      return 'kse30'
+    case 'KMI30':
+      return 'kmi30'
+    case 'KMIALLSHR':
+      return 'kmi_all'
+    default:
+      return null
+  }
+}
+
+function mapMarketIndex(index: MarketIndexDto): MarketIndexSnapshot | null {
+  const key = mapIndexCodeToKey(index.code)
+  if (!key) return null
+  const previousClose = index.prevClose
+  const close = index.close
+  const change = index.change ?? (close != null && previousClose != null ? close - previousClose : null)
+  const changePct =
+    index.changePct ??
+    (change != null && previousClose != null && previousClose !== 0 ? (change / previousClose) * 100 : null)
+  const hasData = [previousClose, close, change, changePct, index.high, index.low, index.volume].some((value) => value != null)
+
+  return {
+    key,
+    label: index.displayName ?? index.code,
+    previousClose,
+    close,
+    change,
+    changePct,
+    high: index.high,
+    low: index.low,
+    volume: index.volume,
+    hasData,
+  }
+}
+
+function mapMarketIndexSnapshot(snapshot: MarketIndexSnapshotDto | null | undefined): MarketIndexSnapshot[] {
+  return (snapshot?.indices ?? [])
+    .map(mapMarketIndex)
+    .filter((index): index is MarketIndexSnapshot => index != null && index.hasData)
+}
+
+function latestIndexTimestamp(snapshot: MarketIndexSnapshotDto | null | undefined): string | null {
+  return snapshot?.indices.find((index) => Boolean(index.asOf))?.asOf ?? null
 }
 
 const NUMBER_FONT = 'var(--wc-font-data)'
@@ -463,7 +531,7 @@ function AiMarketSummaryCard({
   unchanged,
 }: {
   activeStocks: number
-  aiSummary: MarketAiSummary | null
+  aiSummary: DisplayMarketAiSummary | null
   gainers: number
   generatedLabel: string
   kse100Change: number
@@ -582,7 +650,9 @@ function MarketHero({
   kse100Change,
   kse100ChangePct,
   regularVolume,
+  previousVolume,
   kse100Volume,
+  fluNo,
   activeStocks,
   topVolumeShare,
   gainers,
@@ -592,12 +662,14 @@ function MarketHero({
   updatedLabel: string
   dateLabel: string
   generatedLabel: string
-  aiSummary: MarketAiSummary | null
+  aiSummary: DisplayMarketAiSummary | null
   kse100Close: number
   kse100Change: number
   kse100ChangePct: number
   regularVolume: number
+  previousVolume: number
   kse100Volume: number
+  fluNo: string | null
   activeStocks: number
   topVolumeShare: number
   gainers: number
@@ -689,7 +761,7 @@ function MarketHero({
           <Box
             sx={{
               display: 'grid',
-              gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, minmax(0, 1fr))' },
+              gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))', md: 'repeat(5, minmax(0, 1fr))' },
               gap: { xs: 1.6, sm: 2 },
               pt: 2.2,
               borderTop: '1px solid var(--wc-divider)',
@@ -698,6 +770,8 @@ function MarketHero({
             <HeroMetaItem label="Last updated" value={updatedLabel} />
             <HeroMetaItem label="KSE-100 volume" value={kse100Volume > 0 ? formatVolume(kse100Volume) : '-'} />
             <HeroMetaItem label="Regular volume" value={regularVolume > 0 ? formatVolume(regularVolume) : '-'} />
+            <HeroMetaItem label="Prev. volume" value={previousVolume > 0 ? formatVolume(previousVolume) : '-'} />
+            <HeroMetaItem label="FLU no." value={fluNo?.trim() || '-'} />
           </Box>
         </Box>
 
@@ -1364,6 +1438,80 @@ function exportToCSV(stocks: PsxStock[], filename: string) {
   URL.revokeObjectURL(url)
 }
 
+function recordString(record: Record<string, unknown>, ...keys: string[]): string | null {
+  for (const key of keys) {
+    const value = record[key]
+    if (typeof value === 'string' && value.trim()) return value.trim()
+  }
+  return null
+}
+
+function recordNumber(record: Record<string, unknown>, ...keys: string[]): number {
+  for (const key of keys) {
+    const value = toNum(record[key])
+    if (Number.isFinite(value)) return value
+  }
+  return NaN
+}
+
+function zeroIfInvalid(value: number): number {
+  return Number.isFinite(value) ? value : 0
+}
+
+function mapAiLeaderStock(record: Record<string, unknown>): RankedStock | null {
+  const symbol = recordString(record, 'symbol')
+  if (!symbol) return null
+
+  const company = recordString(record, 'company', 'companyName') ?? symbol
+  const section = recordString(record, 'section', 'industry')
+  const open = recordNumber(record, 'open')
+  const high = recordNumber(record, 'high')
+  const low = recordNumber(record, 'low')
+  const close = recordNumber(record, 'close', 'price')
+  const change = recordNumber(record, 'change')
+  const turnover = recordNumber(record, 'turnover', 'volume')
+  const changePct = recordNumber(record, 'change_pct', 'changePct')
+  const dailyRange = Number.isFinite(high) && Number.isFinite(low) ? high - low : NaN
+
+  return {
+    symbol,
+    company,
+    section,
+    industry: section,
+    turnover,
+    open,
+    high,
+    low,
+    last_rate: close,
+    change,
+    eps: null,
+    pe: null,
+    result_period: null,
+    period_ending: null,
+    numericTurnover: turnover,
+    numericChange: change,
+    numericClose: close,
+    changePct: Number.isFinite(changePct) ? changePct : getChangePct(close, change),
+    dailyRange,
+    dailyRangePct: Number.isFinite(dailyRange) && low > 0 ? (dailyRange / low) * 100 : NaN,
+  }
+}
+
+function mapAiSectorActivity(record: Record<string, unknown>): SectorActivity | null {
+  const industry = recordString(record, 'section', 'industry')
+  if (!industry) return null
+
+  return {
+    industry,
+    turnover: Math.max(0, zeroIfInvalid(recordNumber(record, 'total_turnover', 'turnover'))),
+    count: Math.max(0, zeroIfInvalid(recordNumber(record, 'symbols_count', 'count'))),
+    gainers: Math.max(0, zeroIfInvalid(recordNumber(record, 'advancers', 'gainers'))),
+    losers: Math.max(0, zeroIfInvalid(recordNumber(record, 'decliners', 'losers'))),
+    unchanged: Math.max(0, zeroIfInvalid(recordNumber(record, 'unchanged'))),
+    avgChangePct: recordNumber(record, 'avg_change_pct', 'avgChangePct'),
+  }
+}
+
 // -- Component ----------------------------------------------------------------
 
 export function DataPage() {
@@ -1372,7 +1520,7 @@ export function DataPage() {
   const [status, setStatus] = useState<'loading' | 'ok' | 'error'>('loading')
   const [fetchError, setFetchError] = useState<string | null>(null)
   const [latestTradeDate, setLatestTradeDate] = useState<string | null>(null)
-  const [aiSummary, setAiSummary] = useState<MarketAiSummary | null>(null)
+  const [aiSummary, setAiSummary] = useState<DisplayMarketAiSummary | null>(null)
 
   const [search, setSearch] = useState('')
   const [movementFilter, setMovementFilter] = useState<MovementFilter>('all')
@@ -1382,59 +1530,29 @@ export function DataPage() {
   useEffect(() => {
     let cancelled = false
 
-    async function loadLatestSupabaseData() {
-      if (!hasSupabaseConfig || !supabase) {
-        setFetchError('Supabase env vars are missing.')
-        setStatus('error')
-        return
-      }
-
+    async function loadLatestMarketData() {
       setStatus('loading')
       setFetchError(null)
 
-      const summaryRows = await fetchMarketDailySummaryRows(1)
-      const summaryRow = summaryRows[0] ?? null
-
-      if (!summaryRow) {
-        if (!cancelled) {
-          setFetchError('No trade_date entries found in Supabase.')
-          setStatus('error')
-        }
-        return
-      }
-
-      if (cancelled) return
-
-      const tradeDate = summaryRow.trade_date ?? null
-      if (!tradeDate) {
-        setFetchError('No trade_date entries found in Supabase.')
-        setStatus('error')
-        return
-      }
-
-      setLatestTradeDate(tradeDate)
-
       try {
-        const [latestData, aiSummaryForDate] = await Promise.all([
-          fetchSupabaseTradeDay(summaryRow),
-          fetchMarketAiSummary(tradeDate),
-        ])
+        const latestMarket = await fetchLatestMarketSummary()
         if (cancelled) return
-        setData(latestData)
-        setAiSummary(aiSummaryForDate)
+        setLatestTradeDate(latestMarket.tradeDate)
+        setData(mapMarketData(latestMarket))
+        setAiSummary(mapMarketAiSummary(latestMarket.aiSummary))
         setStatus('ok')
       } catch (error: unknown) {
         if (cancelled) return
         const message =
           typeof error === 'object' && error !== null && 'message' in error && typeof error.message === 'string'
             ? error.message
-            : 'Unknown error while querying Supabase.'
+            : 'Unknown error while querying the market API.'
         setFetchError(message)
         setStatus('error')
       }
     }
 
-    loadLatestSupabaseData()
+    loadLatestMarketData()
 
     return () => {
       cancelled = true
@@ -1444,7 +1562,7 @@ export function DataPage() {
   const activeData = data
   const stocks = useMemo(() => activeData?.stocks ?? [], [activeData])
   const marketIndexes = useMemo(
-    () => getMarketIndexSnapshots(activeData?.market ?? null).filter((index) => index.hasData),
+    () => mapMarketIndexSnapshot(activeData?.indexSnapshot ?? null),
     [activeData],
   )
   const kse100Index = useMemo(
@@ -1490,24 +1608,23 @@ export function DataPage() {
   const marketSummary = useMemo(() => {
     const market = activeData?.market
     if (market) {
-      const index = kse100Index ?? getMarketIndexSnapshots(market).find((item) => item.key === 'kse100') ?? null
+      const index = kse100Index ?? null
       return {
-        KSE100_PreviousClose: index?.previousClose ?? market.kse100_prev ?? 0,
-        KSE100_Close: index?.close ?? market.kse100_close ?? 0,
+        KSE100_PreviousClose: index?.previousClose ?? 0,
+        KSE100_Close: index?.close ?? 0,
         KSE100_ChangePct:
           index?.changePct ??
-          market.kse100_change_pct ??
           (
-            (index?.previousClose ?? market.kse100_prev ?? 0) > 0
-              ? ((index?.change ?? market.kse100_change ?? 0) / (index?.previousClose ?? market.kse100_prev ?? 0)) * 100
+            (index?.previousClose ?? 0) > 0
+              ? ((index?.change ?? 0) / (index?.previousClose ?? 0)) * 100
               : NaN
-          ),
-        RegularVolume: market.curr_volume ?? 0,
-        KSE100_Volume: index?.volume ?? market.kse100_volume ?? 0,
+        ),
+        RegularVolume: market.currVolume ?? 0,
+        PreviousVolume: market.prevVolume ?? 0,
+        KSE100_Volume: index?.volume ?? 0,
         KSE100_Change:
           index?.change ??
-          market.kse100_change ??
-          ((index?.close ?? market.kse100_close ?? 0) - (index?.previousClose ?? market.kse100_prev ?? 0)),
+          ((index?.close ?? 0) - (index?.previousClose ?? 0)),
       }
     }
 
@@ -1528,6 +1645,7 @@ export function DataPage() {
       KSE100_Close: totalClose,
       KSE100_ChangePct: totalOpen > 0 ? ((totalClose - totalOpen) / totalOpen) * 100 : NaN,
       RegularVolume: totalVolume,
+      PreviousVolume: 0,
       KSE100_Volume: 0,
       KSE100_Change: totalClose - totalOpen,
     }
@@ -1535,15 +1653,27 @@ export function DataPage() {
 
   const dayInsights = useMemo(() => {
     const rankedStocks = stocks.map(getRankedStock)
-    const gainers = rankedStocks
+    const apiGainers = (aiSummary?.top_gainers ?? [])
+      .map(mapAiLeaderStock)
+      .filter((stock): stock is RankedStock => Boolean(stock))
+    const apiLosers = (aiSummary?.top_losers ?? [])
+      .map(mapAiLeaderStock)
+      .filter((stock): stock is RankedStock => Boolean(stock))
+    const apiVolumeLeaders = (aiSummary?.volume_leaders ?? [])
+      .map(mapAiLeaderStock)
+      .filter((stock): stock is RankedStock => Boolean(stock))
+    const apiSectors = (aiSummary?.sector_activity ?? [])
+      .map(mapAiSectorActivity)
+      .filter((sector): sector is SectorActivity => Boolean(sector))
+    const gainers = apiGainers.length > 0 ? apiGainers.slice(0, 5) : rankedStocks
       .filter((stock) => Number.isFinite(stock.numericChange) && stock.numericChange > 0)
       .sort((a, b) => changeRankValue(b) - changeRankValue(a))
       .slice(0, 5)
-    const losers = rankedStocks
+    const losers = apiLosers.length > 0 ? apiLosers.slice(0, 5) : rankedStocks
       .filter((stock) => Number.isFinite(stock.numericChange) && stock.numericChange < 0)
       .sort((a, b) => changeRankValue(a) - changeRankValue(b))
       .slice(0, 5)
-    const volumeLeaders = rankedStocks
+    const volumeLeaders = apiVolumeLeaders.length > 0 ? apiVolumeLeaders.slice(0, 5) : rankedStocks
       .filter((stock) => Number.isFinite(stock.numericTurnover) && stock.numericTurnover > 0)
       .sort((a, b) => b.numericTurnover - a.numericTurnover)
       .slice(0, 5)
@@ -1603,13 +1733,14 @@ export function DataPage() {
       sectorMap.set(industry, current)
     })
 
-    const sectors = Array.from(sectorMap.values())
+    const derivedSectors = Array.from(sectorMap.values())
       .map(({ changePctCount, changePctTotal, ...sector }) => ({
         ...sector,
         avgChangePct: changePctCount > 0 ? changePctTotal / changePctCount : NaN,
       }))
       .sort((a, b) => b.turnover - a.turnover)
       .slice(0, 5)
+    const sectors = apiSectors.length > 0 ? apiSectors.slice(0, 5) : derivedSectors
 
     return {
       activeStocks,
@@ -1623,7 +1754,7 @@ export function DataPage() {
       totalVolume,
       volumeLeaders,
     }
-  }, [marketSummary.RegularVolume, stats.gainers, stats.losers, stats.unchanged, stocks])
+  }, [aiSummary, marketSummary.RegularVolume, stats.gainers, stats.losers, stats.unchanged, stocks])
 
   const breadthChartItems = useMemo<DonutChartItem[]>(
     () => [
@@ -1730,7 +1861,7 @@ export function DataPage() {
                     mb: 0.5,
                   }}
                 >
-                  Please verify database access and environment variables.
+                  Please verify the market API endpoint and network access.
                 </Typography>
 
                 <Box
@@ -1770,15 +1901,17 @@ export function DataPage() {
                   transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                 >
                   <MarketHero
-                    updatedLabel={formatMarketTimestamp(activeData.market?.index_as_of, latestTradeDate ?? activeData.date)}
-                    generatedLabel={formatMarketTimestamp(aiSummary?.generated_at ?? activeData.market?.index_as_of, latestTradeDate ?? activeData.date)}
+                    updatedLabel={formatMarketTimestamp(latestIndexTimestamp(activeData.indexSnapshot), latestTradeDate ?? activeData.date)}
+                    generatedLabel={formatMarketTimestamp(aiSummary?.generated_at ?? latestIndexTimestamp(activeData.indexSnapshot), latestTradeDate ?? activeData.date)}
                     dateLabel={formatShortDate(latestTradeDate ?? activeData.date)}
                     aiSummary={aiSummary}
                     kse100Close={marketSummary.KSE100_Close}
                     kse100Change={marketSummary.KSE100_Change}
                     kse100ChangePct={indexChangePct}
                     regularVolume={marketSummary.RegularVolume}
+                    previousVolume={marketSummary.PreviousVolume}
                     kse100Volume={marketSummary.KSE100_Volume}
+                    fluNo={activeData.market?.fluNo ?? null}
                     activeStocks={dayInsights.activeStocks}
                     topVolumeShare={dayInsights.topVolumeShare}
                     gainers={stats.gainers}

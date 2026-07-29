@@ -45,17 +45,17 @@ export type MarketIndexSnapshotDto = {
 }
 
 export type MarketAiSummaryDto = {
-  tradeDate: string
-  summaryType: string
-  modelName: string
-  promptVersion: string
+  tradeDate?: string
+  summaryType?: string
+  modelName?: string | null
+  promptVersion?: string
   summary: string
   keyPoints: unknown
   topGainers: unknown
   topLosers: unknown
   volumeLeaders: unknown
   sectorActivity: unknown
-  generatedAt: string
+  generatedAt?: string | null
 }
 
 export type MarketSummaryTickersResponse = {
@@ -219,8 +219,6 @@ export type KiborObservationDto = {
 }
 
 export type KiborResponseDto = {
-  availableRange: DateRangeDto | null
-  requestedRange: DateRangeDto | null
   asOfDate: string | null
   tenorOrder: string[]
   latestCurve: KiborCurvePointDto[]
@@ -240,8 +238,6 @@ export type UsdPkrResponseDto = {
   tenor: string
   label: string
   unit: string
-  availableRange: DateRangeDto | null
-  requestedRange: DateRangeDto | null
   asOf: UsdPkrPointDto | null
   points: UsdPkrPointDto[]
 }

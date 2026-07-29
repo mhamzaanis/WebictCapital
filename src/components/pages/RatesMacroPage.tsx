@@ -1,8 +1,7 @@
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
-import { Box, Button, Stack, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tabs, TextField, Typography } from '@mui/material'
+import { Box, Button, Stack, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tabs, Typography } from '@mui/material'
 import ReactECharts from 'echarts-for-react'
 import { useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
 import { fetchKiborRates, fetchUsdPkrRates } from '../../lib/api/rates'
 import type { KiborResponseDto, UsdPkrResponseDto } from '../../lib/api/types'
 import { downloadCsv } from '../../lib/csv'
@@ -10,13 +9,7 @@ import { MarketShell } from '../markets/MarketShell'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../markets/StateBlocks'
 import { CARD_SX, DATA_FONT, fmtDate, fmtInstant, fmtNumber, fmtSigned } from '../markets/marketUtils'
 
-function todayMinusMonths(months: number) {
-  const date = new Date()
-  date.setMonth(date.getMonth() - months)
-  return date.toISOString().slice(0, 10)
-}
-
-function useRates(from: string, to: string) {
+function useRates() {
   const [kibor, setKibor] = useState<KiborResponseDto | null>(null)
   const [usdPkr, setUsdPkr] = useState<UsdPkrResponseDto | null>(null)
   const [error, setError] = useState<unknown>(null)
@@ -25,8 +18,8 @@ function useRates(from: string, to: string) {
   useEffect(() => {
     const controller = new AbortController()
     Promise.all([
-      fetchKiborRates({ from, to }, controller.signal),
-      fetchUsdPkrRates({ from, to }, controller.signal),
+      fetchKiborRates(controller.signal),
+      fetchUsdPkrRates(controller.signal),
     ])
       .then(([nextKibor, nextUsdPkr]) => {
         setKibor(nextKibor)
@@ -37,33 +30,18 @@ function useRates(from: string, to: string) {
       })
       .finally(() => setLoading(false))
     return () => controller.abort()
-  }, [from, to])
+  }, [])
 
   return { kibor, usdPkr, error, loading }
 }
 
 export function RatesMacroPage() {
-  const [params, setParams] = useSearchParams()
   const [tab, setTab] = useState('kibor')
-  const from = params.get('from') ?? todayMinusMonths(12)
-  const to = params.get('to') ?? new Date().toISOString().slice(0, 10)
-  const { kibor, usdPkr, error, loading } = useRates(from, to)
-
-  function update(key: string, value: string) {
-    const next = new URLSearchParams(params)
-    next.set(key, value)
-    setParams(next, { replace: true })
-  }
+  const { kibor, usdPkr, error, loading } = useRates()
 
   return (
-    <MarketShell title="Rates & Macro" subtitle="Canonical SBP KIBOR and USD/PKR series from the WebICTCapital API. Publication gaps remain gaps.">
+    <MarketShell title="Rates & Macro" subtitle="Canonical SBP KIBOR and USD/PKR series from the WebICTCapital API. Full available history is returned; publication gaps remain gaps.">
       <Stack spacing={2.4}>
-        <Box sx={{ ...CARD_SX, p: 2.4 }}>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.4}>
-            <TextField label="From" type="date" value={from} onChange={(event) => update('from', event.target.value)} slotProps={{ inputLabel: { shrink: true } }} />
-            <TextField label="To" type="date" value={to} onChange={(event) => update('to', event.target.value)} slotProps={{ inputLabel: { shrink: true } }} />
-          </Stack>
-        </Box>
         <Tabs value={tab} onChange={(_, value: string) => setTab(value)} variant="scrollable" scrollButtons="auto">
           <Tab value="kibor" label="KIBOR" />
           <Tab value="usd-pkr" label="USD/PKR" />
@@ -78,10 +56,15 @@ export function RatesMacroPage() {
 }
 
 function KiborSection({ data }: { data: KiborResponseDto }) {
-  const selectedTenor = data.tenorOrder.includes('6M') ? '6M' : data.tenorOrder[0]
+  const selectedTenor = data.tenorOrder.includes('6M') ? '6M' : data.tenorOrder[0] ?? data.latestCurve[0]?.tenor ?? ''
   const history = data.points.filter((point) => point.tenor === selectedTenor)
   const previous = history.length > 1 ? history[history.length - 2] : null
   const latest = history.length > 0 ? history[history.length - 1] : null
+  const availableRange = useMemo(() => {
+    const dates = data.points.map((point) => point.quoteDate).filter(Boolean).sort()
+    if (dates.length === 0) return '-'
+    return `${dates[0]} to ${dates[dates.length - 1]}`
+  }, [data.points])
   const curveOption = {
     animation: false,
     tooltip: { trigger: 'axis' },
@@ -112,7 +95,7 @@ function KiborSection({ data }: { data: KiborResponseDto }) {
     <Stack spacing={2.4}>
       <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(4, 1fr)' }, gap: 1.4 }}>
         <Metric label="As of" value={fmtDate(data.asOfDate)} />
-        <Metric label="Available range" value={data.availableRange ? `${data.availableRange.from} to ${data.availableRange.to}` : '-'} />
+        <Metric label="Available range" value={availableRange} />
         <Metric label={`${selectedTenor} bid change`} value={fmtSigned(latest?.bid != null && previous?.bid != null ? latest.bid - previous.bid : null)} />
         <Metric label={`${selectedTenor} offer change`} value={fmtSigned(latest?.offer != null && previous?.offer != null ? latest.offer - previous.offer : null)} />
       </Box>
@@ -123,7 +106,7 @@ function KiborSection({ data }: { data: KiborResponseDto }) {
       </Box>
       <Box sx={{ ...CARD_SX, p: 2.4 }}>
         <Typography sx={{ color: 'var(--wc-text-primary)', fontWeight: 850 }}>{selectedTenor} history</Typography>
-        <ReactECharts option={historyOption} style={{ height: 360 }} opts={{ renderer: 'svg' }} />
+        {history.length === 0 ? <EmptyBlock title="No KIBOR history" detail="The returned KIBOR history is empty." /> : <ReactECharts option={historyOption} style={{ height: 360 }} opts={{ renderer: 'svg' }} />}
       </Box>
       <RatesTable
         headers={['Quote date', 'Tenor', 'Bid', 'Offer']}
