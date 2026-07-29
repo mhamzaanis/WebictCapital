@@ -7,7 +7,7 @@ import type { KiborResponseDto, UsdPkrResponseDto } from '../../lib/api/types'
 import { downloadCsv } from '../../lib/csv'
 import { MarketShell } from '../markets/MarketShell'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../markets/StateBlocks'
-import { CARD_SX, DATA_FONT, fmtDate, fmtInstant, fmtNumber, fmtSigned } from '../markets/marketUtils'
+import { CARD_SX, DATA_FONT, fmtDate, fmtNumber, fmtSigned } from '../markets/marketUtils'
 
 function useRates() {
   const [kibor, setKibor] = useState<KiborResponseDto | null>(null)
@@ -122,6 +122,11 @@ function UsdPkrSection({ data }: { data: UsdPkrResponseDto }) {
   const previous = points.length > 1 ? points[points.length - 2] : null
   const latest = data.asOf
   const first = points[0]
+  const availableRange = useMemo(() => {
+    const dates = points.map((point) => point.quoteDate).filter(Boolean).sort()
+    if (dates.length === 0) return '-'
+    return `${dates[0]} to ${dates[dates.length - 1]}`
+  }, [points])
   const option = {
     animation: false,
     tooltip: { trigger: 'axis' },
@@ -134,24 +139,25 @@ function UsdPkrSection({ data }: { data: UsdPkrResponseDto }) {
 
   return (
     <Stack spacing={2.4}>
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(5, 1fr)' }, gap: 1.4 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(6, 1fr)' }, gap: 1.4 }}>
         <Metric label="Pair" value={data.pair} />
         <Metric label="Rate type" value={data.label} />
         <Metric label="Unit" value={data.unit} />
+        <Metric label="Available range" value={availableRange} />
         <Metric label="Prev publication change" value={fmtSigned(latest && previous ? latest.rate - previous.rate : null)} />
         <Metric label="Period change" value={fmtSigned(latest && first ? latest.rate - first.rate : null)} />
       </Box>
       <Box sx={{ ...CARD_SX, p: 2.4 }}>
         <Typography sx={{ color: 'var(--wc-text-primary)', fontWeight: 850 }}>USD/PKR - SBP Mark-to-Market - Ready</Typography>
         <Typography sx={{ color: 'var(--wc-text-secondary)', fontSize: 12 }}>
-          Quote date {fmtDate(latest?.quoteDate)} - effective date {fmtDate(latest?.effectiveDate)} - source updated {fmtInstant(latest?.updatedAt)}
+          Quote date {fmtDate(latest?.quoteDate)} - effective date {fmtDate(latest?.effectiveDate)}
         </Typography>
-        {points.length === 0 ? <EmptyBlock title="No USD/PKR points" detail="The requested canonical range is empty." /> : <ReactECharts option={option} style={{ height: 420 }} opts={{ renderer: 'svg' }} />}
+        {points.length === 0 ? <EmptyBlock title="No USD/PKR points" detail="The returned USD/PKR history is empty." /> : <ReactECharts option={option} style={{ height: 420 }} opts={{ renderer: 'svg' }} />}
       </Box>
       <RatesTable
-        headers={['Quote date', 'Rate', 'Effective date', 'Source updated']}
-        rows={points.map((point) => [point.quoteDate, fmtNumber(point.rate, 4), point.effectiveDate ?? '-', fmtInstant(point.updatedAt)])}
-        onExport={() => downloadCsv('usd-pkr.csv', ['Quote date', 'Rate', 'Effective date', 'Source updated'], points.map((point) => [point.quoteDate, point.rate, point.effectiveDate, point.updatedAt]))}
+        headers={['Quote date', 'Rate', 'Effective date']}
+        rows={points.map((point) => [point.quoteDate, fmtNumber(point.rate, 4), point.effectiveDate ?? '-'])}
+        onExport={() => downloadCsv('usd-pkr.csv', ['Quote date', 'Rate', 'Effective date'], points.map((point) => [point.quoteDate, point.rate, point.effectiveDate]))}
       />
     </Stack>
   )
@@ -163,7 +169,7 @@ function Metric({ label, value }: { label: string; value: string }) {
 
 function RatesTable({ headers, rows, onExport }: { headers: string[]; rows: string[][]; onExport: () => void }) {
   const visibleRows = useMemo(() => rows.slice(-80).reverse(), [rows])
-  if (rows.length === 0) return <EmptyBlock title="No rows" detail="The requested range returned no rows." />
+  if (rows.length === 0) return <EmptyBlock title="No rows" detail="The returned dataset has no rows." />
   return (
     <Box sx={{ ...CARD_SX, overflow: 'hidden' }}>
       <Stack direction="row" sx={{ p: 2, justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--wc-border)' }}>

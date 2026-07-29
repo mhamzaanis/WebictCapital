@@ -229,7 +229,6 @@ export type UsdPkrPointDto = {
   quoteDate: string
   rate: number
   effectiveDate: string | null
-  updatedAt: string
 }
 
 export type UsdPkrResponseDto = {
