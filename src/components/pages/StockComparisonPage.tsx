@@ -261,7 +261,9 @@ export function StockComparisonPage() {
   }, [state.data])
 
   return (
-    <MarketShell title="Stock Comparison" subtitle="Compare up to four PSX stocks against selected market benchmarks.">
+    <MarketShell title="Stock Comparison" 
+    // subtitle="Compare up to four PSX stocks against selected market benchmarks."
+    >
       <Stack spacing={2.4}>
         <ComparisonControls
           tickers={tickers}
@@ -427,7 +429,7 @@ const StockSelector = memo(function StockSelector({
 
   return (
     <Stack spacing={1}>
-      <Typography sx={{ color: 'var(--wc-text-primary)', fontWeight: 850 }}>Stocks</Typography>
+      {/* <Typography sx={{ color: 'var(--wc-text-primary)', fontWeight: 850 }}>Stocks</Typography> */}
       <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', rowGap: 1 }}>
         {symbols.map((symbol, index) => (
           <Chip

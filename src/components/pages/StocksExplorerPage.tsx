@@ -21,7 +21,7 @@ import {
   Typography,
 } from '@mui/material'
 import { useDeferredValue, useEffect, useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { downloadCsv } from '../../lib/csv'
 import { fetchLatestMarketSummary } from '../../lib/api/market'
 import type { MarketSummaryTickersResponse, MarketTickerDto } from '../../lib/api/types'
@@ -71,9 +71,9 @@ function compare(a: ExplorerRow, b: ExplorerRow, key: SortKey) {
 export function StocksExplorerPage() {
   const { data, error, loading } = useLatestMarket()
   const [params, setParams] = useSearchParams()
+  const navigate = useNavigate()
 
-  const queryParam = params.get('q') ?? ''
-  const [query, setQuery] = useState(queryParam)
+  const [query, setQuery] = useState('')
   const deferredQuery = useDeferredValue(query)
   const sector = params.get('sector') ?? 'all'
   const movement = params.get('move') ?? 'all'
@@ -81,21 +81,11 @@ export function StocksExplorerPage() {
   const dir = (params.get('dir') as SortDir | null) ?? 'asc'
 
   useEffect(() => {
-    setQuery(queryParam)
-  }, [queryParam])
-
-  useEffect(() => {
-    if (query === queryParam) return
-
-    const timeout = window.setTimeout(() => {
-      const next = new URLSearchParams(params)
-      if (!query) next.delete('q')
-      else next.set('q', query)
-      setParams(next, { replace: true })
-    }, 200)
-
-    return () => window.clearTimeout(timeout)
-  }, [params, query, queryParam, setParams])
+    if (!params.has('q')) return
+    const next = new URLSearchParams(params)
+    next.delete('q')
+    setParams(next, { replace: true })
+  }, [params, setParams])
 
   const rows = useMemo<ExplorerRow[]>(() => (data?.tickers ?? []).map((ticker) => ({
     ...ticker,
@@ -122,6 +112,7 @@ export function StocksExplorerPage() {
 
   function updateParam(key: string, value: string) {
     const next = new URLSearchParams(params)
+    next.delete('q')
     if (!value || value === 'all' || (key === 'sort' && value === 'symbol') || (key === 'dir' && value === 'asc')) next.delete(key)
     else next.set(key, value)
     setParams(next, { replace: true })
@@ -131,10 +122,15 @@ export function StocksExplorerPage() {
     if (sort === key) updateParam('dir', dir === 'asc' ? 'desc' : 'asc')
     else {
       const next = new URLSearchParams(params)
+      next.delete('q')
       next.set('sort', key)
       next.delete('dir')
       setParams(next, { replace: true })
     }
+  }
+
+  function openStock(symbol: string) {
+    navigate(`/stocks/${symbol}`)
   }
 
   function exportRows() {
@@ -222,21 +218,25 @@ export function StocksExplorerPage() {
                 </TableHead>
                 <TableBody>
                   {filtered.map((row) => (
-                    <TableRow key={row.symbol} hover>
-                      <TableCell><Button component={Link} to={`/stocks/${row.symbol}`} sx={{ p: 0, fontWeight: 900 }}>{row.symbol}</Button></TableCell>
+                    <TableRow
+                      key={row.symbol}
+                      hover
+                      tabIndex={0}
+                      onClick={() => openStock(row.symbol)}
+                      onKeyDown={(event) => {
+                        if (event.key !== 'Enter' && event.key !== ' ') return
+                        event.preventDefault()
+                        openStock(row.symbol)
+                      }}
+                      sx={{ cursor: 'pointer' }}
+                    >
+                      <TableCell><Typography sx={{ color: 'var(--wc-primary)', fontSize: 12.5, fontWeight: 900 }}>{row.symbol}</Typography></TableCell>
                       <TableCell sx={{ maxWidth: 260 }}><Typography noWrap sx={{ fontSize: 12.5 }}>{row.companyName ?? row.symbol}</Typography></TableCell>
                       <TableCell sx={{ maxWidth: 260 }}><Typography noWrap sx={{ fontSize: 12.5, color: 'var(--wc-text-secondary)' }}>{row.section ?? '-'}</Typography></TableCell>
                       <Num>{fmtNumber(row.close)}</Num>
                       <TableCell align="right"><Typography sx={{ color: toneColor(row.change), fontFamily: DATA_FONT, fontWeight: 800 }}>{fmtSigned(row.change)} ({fmtPct(row.changePct)})</Typography></TableCell>
                       <Num>{fmtCompact(row.turnover)}</Num>
                       <Num>{fmtCompact(row.estimated)}</Num>
-                      <TableCell>
-                        <Stack direction="row" spacing={0.5}>
-                          {/* <Button component={Link} to={`/stocks/${row.symbol}`} aria-label={`Open ${row.symbol}`}><VisibilityIcon fontSize="small" /></Button> */}
-                          {/* <Button component={Link} to={`/data/compare?a=${row.symbol}&b=HBL`} aria-label={`Compare ${row.symbol}`}><AddchartIcon fontSize="small" /></Button> */}
-                          {/* <Button onClick={() => void watch(row.symbol)} aria-label={`Watch ${row.symbol}`}><StarBorderIcon fontSize="small" /></Button> */}
-                        </Stack>
-                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
