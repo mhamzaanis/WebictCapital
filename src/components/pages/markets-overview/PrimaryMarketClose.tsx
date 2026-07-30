@@ -144,7 +144,7 @@ function BreadthSummary({ market }: { market: MarketSummaryTickersResponse }) {
         <Typography component="h2" sx={{ color: 'var(--wc-text-primary)', fontSize: 18, fontWeight: 800 }}>
           Market breadth
         </Typography>
-        <Typography sx={{ ...metadataSx, mt: 0.35 }}>Advancing share {fmtPct(breadth.advancingShare, false)}</Typography>
+        {/* <Typography sx={{ ...metadataSx, mt: 0.35 }}>Advancing share {fmtPct(breadth.advancingShare, false)}</Typography> */}
       </Box>
 
       <Box
@@ -206,9 +206,9 @@ function MarketCommentary({ aiSummary, tradeDate }: { aiSummary: MarketAiSummary
         <Typography component="h2" sx={{ color: 'var(--wc-text-primary)', fontSize: 18, fontWeight: 800 }}>
           Market close summary
         </Typography>
-        <Typography sx={{ ...metadataSx, mt: 0.35 }}>
+        {/* <Typography sx={{ ...metadataSx, mt: 0.35 }}>
           Source: Webict Capital market summary · Trade date {formatTradeDate(aiSummary?.tradeDate ?? tradeDate)}
-        </Typography>
+        </Typography> */}
       </Box>
       {summary && (
         <Stack spacing={1.15}>

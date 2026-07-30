@@ -1,8 +1,5 @@
-import AddchartIcon from '@mui/icons-material/Addchart'
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined'
 import SearchIcon from '@mui/icons-material/Search'
-import StarBorderIcon from '@mui/icons-material/StarBorder'
-import VisibilityIcon from '@mui/icons-material/Visibility'
 import {
   Box,
   Button,
@@ -23,13 +20,11 @@ import {
   TextField,
   Typography,
 } from '@mui/material'
-import { useEffect, useMemo, useState } from 'react'
+import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { downloadCsv } from '../../lib/csv'
 import { fetchLatestMarketSummary } from '../../lib/api/market'
 import type { MarketSummaryTickersResponse, MarketTickerDto } from '../../lib/api/types'
-import { useAuth } from '../../context/AuthContext'
-import { addToWatchlist } from '../../lib/stockService'
 import { MarketShell } from '../markets/MarketShell'
 import { EmptyBlock, ErrorBlock } from '../markets/StateBlocks'
 import { CARD_SX, DATA_FONT, changePctFromQuote, estimatedValue, fmtCompact, fmtNumber, fmtPct, fmtSigned, toneColor } from '../markets/marketUtils'
@@ -74,16 +69,33 @@ function compare(a: ExplorerRow, b: ExplorerRow, key: SortKey) {
 }
 
 export function StocksExplorerPage() {
-  const { user } = useAuth()
   const { data, error, loading } = useLatestMarket()
   const [params, setParams] = useSearchParams()
-  const [watchMessage, setWatchMessage] = useState<string | null>(null)
 
-  const query = params.get('q') ?? ''
+  const queryParam = params.get('q') ?? ''
+  const [query, setQuery] = useState(queryParam)
+  const deferredQuery = useDeferredValue(query)
   const sector = params.get('sector') ?? 'all'
   const movement = params.get('move') ?? 'all'
   const sort = (params.get('sort') as SortKey | null) ?? 'symbol'
   const dir = (params.get('dir') as SortDir | null) ?? 'asc'
+
+  useEffect(() => {
+    setQuery(queryParam)
+  }, [queryParam])
+
+  useEffect(() => {
+    if (query === queryParam) return
+
+    const timeout = window.setTimeout(() => {
+      const next = new URLSearchParams(params)
+      if (!query) next.delete('q')
+      else next.set('q', query)
+      setParams(next, { replace: true })
+    }, 200)
+
+    return () => window.clearTimeout(timeout)
+  }, [params, query, queryParam, setParams])
 
   const rows = useMemo<ExplorerRow[]>(() => (data?.tickers ?? []).map((ticker) => ({
     ...ticker,
@@ -94,7 +106,7 @@ export function StocksExplorerPage() {
   const sectors = useMemo(() => Array.from(new Set(rows.map((row) => row.section).filter((value): value is string => Boolean(value)))).sort(), [rows])
 
   const filtered = useMemo(() => {
-    const needle = query.trim().toUpperCase()
+    const needle = deferredQuery.trim().toUpperCase()
     return rows
       .filter((row) => !needle || row.symbol.includes(needle) || (row.companyName ?? '').toUpperCase().includes(needle))
       .filter((row) => sector === 'all' || row.section === sector)
@@ -106,7 +118,7 @@ export function StocksExplorerPage() {
         return true
       })
       .sort((a, b) => dir === 'asc' ? compare(a, b, sort) : -compare(a, b, sort))
-  }, [dir, movement, query, rows, sector, sort])
+  }, [deferredQuery, dir, movement, rows, sector, sort])
 
   function updateParam(key: string, value: string) {
     const next = new URLSearchParams(params)
@@ -133,14 +145,14 @@ export function StocksExplorerPage() {
     )
   }
 
-  async function watch(symbol: string) {
-    if (!user) {
-      setWatchMessage('Sign in with Google to use watchlists. Supabase RLS must protect watchlist rows.')
-      return
-    }
-    await addToWatchlist(symbol)
-    setWatchMessage(`${symbol} added to watchlist.`)
-  }
+  // async function watch(symbol: string) {
+  //   if (!user) {
+  //     setWatchMessage('Sign in with Google to use watchlists. Supabase RLS must protect watchlist rows.')
+  //     return
+  //   }
+  //   await addToWatchlist(symbol)
+  //   setWatchMessage(`${symbol} added to watchlist.`)
+  // }
 
   if (loading)
     return (
@@ -161,7 +173,7 @@ export function StocksExplorerPage() {
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'minmax(260px,1fr) 220px 180px auto' }, gap: 1.5, alignItems: 'center' }}>
             <TextField
               value={query}
-              onChange={(event) => updateParam('q', event.target.value)}
+              onChange={(event) => setQuery(event.target.value)}
               placeholder="Search symbol or company"
               slotProps={{ input: { startAdornment: <InputAdornment position="start"><SearchIcon /></InputAdornment> } }}
             />
@@ -186,7 +198,6 @@ export function StocksExplorerPage() {
               CSV
             </Button>
           </Box>
-          {watchMessage && <Typography sx={{ mt: 1.4, color: 'var(--wc-text-secondary)', fontSize: 12.5 }}>{watchMessage}</Typography>}
         </Box>
 
         <Box sx={{ ...CARD_SX, overflow: 'hidden' }}>
@@ -206,7 +217,7 @@ export function StocksExplorerPage() {
                     <Head id="changePct" sort={sort} dir={dir} onSort={handleSort} label="Change" />
                     <Head id="turnover" sort={sort} dir={dir} onSort={handleSort} label="Shares traded" />
                     <Head id="estimated" sort={sort} dir={dir} onSort={handleSort} label="Est. value" />
-                    <TableCell sx={headSx}>Actions</TableCell>
+                    {/* <TableCell sx={headSx}>Actions</TableCell> */}
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -221,9 +232,9 @@ export function StocksExplorerPage() {
                       <Num>{fmtCompact(row.estimated)}</Num>
                       <TableCell>
                         <Stack direction="row" spacing={0.5}>
-                          <Button component={Link} to={`/stocks/${row.symbol}`} aria-label={`Open ${row.symbol}`}><VisibilityIcon fontSize="small" /></Button>
-                          <Button component={Link} to={`/data/compare?a=${row.symbol}&b=HBL`} aria-label={`Compare ${row.symbol}`}><AddchartIcon fontSize="small" /></Button>
-                          <Button onClick={() => void watch(row.symbol)} aria-label={`Watch ${row.symbol}`}><StarBorderIcon fontSize="small" /></Button>
+                          {/* <Button component={Link} to={`/stocks/${row.symbol}`} aria-label={`Open ${row.symbol}`}><VisibilityIcon fontSize="small" /></Button> */}
+                          {/* <Button component={Link} to={`/data/compare?a=${row.symbol}&b=HBL`} aria-label={`Compare ${row.symbol}`}><AddchartIcon fontSize="small" /></Button> */}
+                          {/* <Button onClick={() => void watch(row.symbol)} aria-label={`Watch ${row.symbol}`}><StarBorderIcon fontSize="small" /></Button> */}
                         </Stack>
                       </TableCell>
                     </TableRow>

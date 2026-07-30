@@ -147,14 +147,14 @@ export function MarketOverviewHeatmap({ ranked }: { ranked: RankedTicker[] }) {
     <Box component="section" aria-labelledby="market-heatmap-title">
       <SectionHeader
         title="Market heatmap"
-        detail="Tile size: shares traded · Colour: daily price change"
-        right={<HeatmapLegend />}
+        // detail="Tile size: shares traded · Colour: daily price change"
+        // right={<HeatmapLegend />}
       />
       <Box sx={{ ...SURFACE_SX, p: { xs: 1.5, md: 2 }, minWidth: 0 }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.2} sx={{ justifyContent: 'space-between', alignItems: { xs: 'stretch', sm: 'center' }, mb: 1.4 }}>
-          <Typography sx={{ color: 'var(--wc-text-secondary)', fontSize: 12 }}>
+          {/* <Typography sx={{ color: 'var(--wc-text-secondary)', fontSize: 12 }}>
             Showing {rows.length.toLocaleString('en-PK')} of {available.length.toLocaleString('en-PK')} securities with valid share turnover.
-          </Typography>
+          </Typography> */}
           <Stack direction="row" spacing={0.5} role="group" aria-label="Heatmap row scope">
             <ScopeButton active={mode === 'top'} onClick={() => setMode('top')}>Top securities</ScopeButton>
             <ScopeButton active={mode === 'all'} onClick={() => setMode('all')}>All securities</ScopeButton>

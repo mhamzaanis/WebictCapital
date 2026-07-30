@@ -38,7 +38,7 @@ export function SectorPerformanceTable({ ranked }: { ranked: RankedTicker[] }) {
     <Box component="section" aria-labelledby="sector-performance-title">
       <SectionHeader
         title="Sector performance"
-        detail="Estimated value is included only where close and turnover are valid."
+        // detail="Estimated value is included only where close and turnover are valid."
       />
       <Box sx={{ ...SURFACE_SX, overflow: 'hidden' }}>
         <Box sx={{ overflowX: 'auto', maxWidth: '100%', maxHeight: expanded ? 620 : 'none' }}>
