@@ -1,12 +1,11 @@
 import { Box, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material'
 import type { ReactNode } from 'react'
 import type { MarketIndexDto } from '../../../lib/api/types'
-import { formatTradeDate, indexDisplayName, secondaryIndices, toneForValue } from '../../../lib/marketOverview'
+import { indexDisplayName, secondaryIndices, toneForValue } from '../../../lib/marketOverview'
 import { DATA_FONT } from '../../markets/marketUtils'
 import { fmtCompact, fmtNumber, fmtPct, fmtSigned, SURFACE_SX } from './viewFormat'
-import { SectionHeader } from './viewUtils'
 
-export function SecondaryIndexTable({ indices, tradeDate }: { indices: MarketIndexDto[]; tradeDate: string }) {
+export function SecondaryIndexTable({ indices }: { indices: MarketIndexDto[] }) {
   const rows = secondaryIndices(indices)
 
   return (

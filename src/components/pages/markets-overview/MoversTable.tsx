@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import { moverGroups, type MoverTab, type RankedTicker, toneForValue } from '../../../lib/marketOverview'
 import { DATA_FONT } from '../../markets/marketUtils'
 import { fmtCompact, fmtNumber, fmtPct, SURFACE_SX } from './viewFormat'
-import { NumericCell, SectionHeader } from './viewUtils'
+import { NumericCell } from './viewUtils'
 
 const MOVER_COLUMNS: Record<MoverTab, string[]> = {
   gainers: ['Symbol', 'Company', 'Close', 'Change %', 'Volume'],

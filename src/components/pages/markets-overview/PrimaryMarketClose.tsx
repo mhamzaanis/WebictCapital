@@ -49,7 +49,7 @@ export function PrimaryMarketClose({
           minWidth: 0,
         }}
       >
-        <MarketCommentary aiSummary={market.aiSummary} tradeDate={market.tradeDate} />
+        <MarketCommentary aiSummary={market.aiSummary} />
       </Box>
     </Box>
   )
@@ -193,7 +193,7 @@ function BreadthSummary({ market }: { market: MarketSummaryTickersResponse }) {
   )
 }
 
-function MarketCommentary({ aiSummary, tradeDate }: { aiSummary: MarketAiSummaryDto | null; tradeDate: string }) {
+function MarketCommentary({ aiSummary }: { aiSummary: MarketAiSummaryDto | null }) {
   const keyPoints = commentaryKeyPoints(aiSummary)
   const summary = aiSummary?.summary?.trim().replace(/^Ratio:\s*/i, '')
   const paragraphs = summary ? summary.split(/\n{2,}/).map((part) => part.trim()).filter(Boolean) : []

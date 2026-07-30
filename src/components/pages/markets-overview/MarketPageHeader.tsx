@@ -26,14 +26,14 @@ export function MarketPageHeader({
         {title}
       </Typography>
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 0.35, sm: 1.4 }} sx={{ color: 'var(--wc-text-secondary)' }}>
-        {/* <Typography sx={{ fontSize: { xs: 14, md: 15 }, lineHeight: 1.5 }}>
+        <Typography sx={{ fontSize: { xs: 14, md: 15 }, lineHeight: 1.5 }}>
           Closing market snapshot · {tradeDateLabel}
-        </Typography> */}
-        {/* {updatedLabel && (
+        </Typography>
+        {updatedLabel && (
           <Typography sx={{ fontSize: { xs: 13, md: 14 }, lineHeight: 1.5 }}>
             Updated {updatedLabel}
           </Typography>
-        )} */}
+        )}
       </Stack>
     </Stack>
   )

@@ -84,7 +84,7 @@ export function MarketsOverviewPage() {
               minWidth: 0,
             }}
           >
-            <SecondaryIndexTable indices={indices} tradeDate={data.tradeDate} />
+            <SecondaryIndexTable indices={indices} />
             <MoversTable ranked={ranked} />
           </Box>
           <MarketOverviewHeatmap ranked={ranked} />

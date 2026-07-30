@@ -2,7 +2,6 @@ import { Box, Button, Stack, Typography } from '@mui/material'
 import ReactECharts from 'echarts-for-react'
 import { useMemo, useState } from 'react'
 import type { RankedTicker } from '../../../lib/marketOverview'
-import { DATA_FONT } from '../../markets/marketUtils'
 import { fmtCompact, fmtNumber, fmtPct, SURFACE_SX } from './viewFormat'
 import { SectionHeader } from './viewUtils'
 
@@ -194,26 +193,6 @@ function ScopeButton({ active, onClick, children }: { active: boolean; onClick: 
     >
       {children}
     </Button>
-  )
-}
-
-function HeatmapLegend() {
-  return (
-    <Stack direction="row" spacing={0.8} sx={{ alignItems: 'center' }}>
-      <Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: DATA_FONT, fontSize: 11 }}>-10%</Typography>
-      <Box
-        aria-hidden
-        sx={{
-          width: { xs: 120, sm: 180 },
-          height: 8,
-          border: '1px solid var(--wc-border)',
-          borderRadius: '3px',
-          background: 'linear-gradient(90deg, #C83E4D 0%, #E4E7EC 50%, #187A55 100%)',
-        }}
-      />
-      <Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: DATA_FONT, fontSize: 11 }}>0</Typography>
-      <Typography sx={{ color: 'var(--wc-text-secondary)', fontFamily: DATA_FONT, fontSize: 11 }}>+10%</Typography>
-    </Stack>
   )
 }
 
