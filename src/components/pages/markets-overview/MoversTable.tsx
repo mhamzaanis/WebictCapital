@@ -20,12 +20,12 @@ export function MoversTable({ ranked }: { ranked: RankedTicker[] }) {
   const columns = MOVER_COLUMNS[activeGroup.id]
 
   return (
-    <Box component="section" aria-labelledby="market-movers-title">
-      <SectionHeader
+    <Box component="section" aria-labelledby="market-movers-title" sx={{ height: '100%', minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+      {/* <SectionHeader
         title="Market movers"
-        // detail={active === 'value' ? 'Estimated value is calculated as close x shares traded.' : undefined}
-      />
-      <Box sx={SURFACE_SX}>
+        detail={active === 'value' ? 'Estimated value is calculated as close x shares traded.' : undefined}
+      /> */}
+      <Box sx={{ ...SURFACE_SX, flex: 1, minWidth: 0, maxWidth: '100%', overflow: 'hidden' }}>
         <Tabs
           value={active}
           onChange={(_, value: MoverTab) => setActive(value)}
@@ -53,11 +53,11 @@ export function MoversTable({ ranked }: { ranked: RankedTicker[] }) {
             <Tab key={group.id} value={group.id} label={group.label} />
           ))}
         </Tabs>
-        <Box sx={{ overflowX: 'auto', maxWidth: '100%' }}>
+        <Box sx={{ maxWidth: '100%', minWidth: 0 }}>
           {activeGroup.rows.length === 0 ? (
             <Typography sx={{ color: 'var(--wc-text-secondary)', fontSize: 13, p: 2.5 }}>No rows are available for this mover category.</Typography>
           ) : (
-            <Table size="small" aria-label={`${activeGroup.label} movers table`} sx={{ minWidth: 820 }}>
+            <Table size="small" aria-label={`${activeGroup.label} movers table`} sx={{ width: '100%', tableLayout: 'fixed' }}>
               <TableHead>
                 <TableRow>
                   {columns.map((label, index) => (
@@ -71,6 +71,7 @@ export function MoversTable({ ranked }: { ranked: RankedTicker[] }) {
                         py: 1.15,
                         borderBottom: '1px solid var(--wc-border)',
                         whiteSpace: 'nowrap',
+                        width: index === 0 ? '13%' : index === 1 ? '43%' : `${44 / (columns.length - 2)}%`,
                       }}
                     >
                       {label}
@@ -105,7 +106,7 @@ function MoverRow({ tab, row }: { tab: MoverTab; row: RankedTicker }) {
           {row.symbol}
         </MuiLink>
       </TableCell>
-      <TableCell sx={{ color: 'var(--wc-text-primary)', fontSize: 13, minWidth: 260 }}>
+      <TableCell sx={{ color: 'var(--wc-text-primary)', fontSize: 13, minWidth: 0, overflowWrap: 'anywhere', lineHeight: 1.35 }}>
         {row.companyName?.trim() || row.symbol}
       </TableCell>
       {tab === 'active' ? (

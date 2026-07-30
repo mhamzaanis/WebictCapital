@@ -80,7 +80,7 @@ export function MarketsOverviewPage() {
               display: 'grid',
               gridTemplateColumns: { xs: '1fr', lg: 'minmax(0, 2fr) minmax(0, 3fr)' },
               gap: { xs: 3.5, md: 2.4 },
-              alignItems: 'start',
+              alignItems: 'stretch',
               minWidth: 0,
             }}
           >
