@@ -31,8 +31,6 @@ export type TickerCompareRequest = {
   benchmarks?: readonly string[]
   from?: string
   to?: string
-  financialYears?: number
-  include?: readonly string[]
 }
 
 export function fetchTickerComparison(request: TickerCompareRequest, signal?: AbortSignal) {
@@ -44,8 +42,6 @@ export function fetchTickerComparison(request: TickerCompareRequest, signal?: Ab
       benchmarks: request.benchmarks?.map((benchmark) => benchmark.trim().toUpperCase()),
       from: dateOnly(request.from),
       to: dateOnly(request.to),
-      financialYears: request.financialYears,
-      include: request.include?.join(','),
     },
   })
 }

@@ -33,8 +33,6 @@ import { fetchLatestMarketSummary } from '../../lib/api/market'
 import { fetchTickerComparison } from '../../lib/api/tickers'
 import type { FinancialStatementDto, MarketTickerDto, TickerComparisonItemDto, TickerComparisonResponse, TickerTechnicalPointDto } from '../../lib/api/types'
 import {
-  COMPARISON_FINANCIAL_YEARS,
-  COMPARISON_INCLUDE,
   COMPARISON_MIN_DATE,
   RANGE_PRESETS,
   STOCK_SERIES_COLORS,
@@ -72,7 +70,6 @@ const BENCHMARK_LABELS: Record<BenchmarkCode, string> = {
   KMI30: 'KMI-30',
   KSEALL: 'KSE All Share',
 }
-const DEFAULT_SYMBOLS = ['MEBL', 'HBL']
 const CHART_OPTS = { renderer: 'canvas' as const, useDirtyRect: true }
 const TECHNICAL_CHART_HEIGHT = 220
 
@@ -160,11 +157,11 @@ function comparisonKey(comparison: AppliedComparison): string {
 function readInitialComparison(params: URLSearchParams): AppliedComparison {
   const symbols = params.getAll('symbols').length > 0
     ? params.getAll('symbols')
-    : [params.get('a') ?? DEFAULT_SYMBOLS[0], params.get('b') ?? DEFAULT_SYMBOLS[1]]
+    : [params.get('a'), params.get('b')].filter((value): value is string => Boolean(value))
   const benchmarks = params.getAll('benchmarks').length > 0 ? params.getAll('benchmarks') : params.getAll('benchmark')
   const fallbackRange = rangeForPreset('1Y', currentDateOnly())
   return {
-    symbols: normalizeCodesBounded(symbols, 4).slice(0, 4).length >= 2 ? normalizeCodesBounded(symbols, 4).slice(0, 4) : DEFAULT_SYMBOLS,
+    symbols: normalizeCodesBounded(symbols, 4).slice(0, 4),
     benchmarks: normalizeCodesBounded(benchmarks, 1).filter((benchmark): benchmark is BenchmarkCode => SUPPORTED_BENCHMARKS.includes(benchmark as BenchmarkCode)),
     from: (params.get('from') ?? fallbackRange.from) < COMPARISON_MIN_DATE ? COMPARISON_MIN_DATE : params.get('from') ?? fallbackRange.from,
     to: params.get('to') ?? fallbackRange.to,
@@ -190,8 +187,8 @@ function useTickerCatalogue() {
   return tickers
 }
 
-function useComparisonData(initial: AppliedComparison) {
-  const [state, setState] = useState<ComparisonState>(() => ({ key: comparisonKey(initial), data: null, error: null, loading: true }))
+function useComparisonData() {
+  const [state, setState] = useState<ComparisonState>(() => ({ key: '', data: null, error: null, loading: false }))
   const abortRef = useRef<AbortController | null>(null)
 
   const run = useCallback((comparison: AppliedComparison) => {
@@ -205,8 +202,6 @@ function useComparisonData(initial: AppliedComparison) {
       benchmarks: comparison.benchmarks,
       from: comparison.from,
       to: comparison.to,
-      financialYears: COMPARISON_FINANCIAL_YEARS,
-      include: COMPARISON_INCLUDE,
     }, controller.signal)
       .then((data) => {
         if (!controller.signal.aborted) setState({ key, data, error: null, loading: false })
@@ -218,13 +213,7 @@ function useComparisonData(initial: AppliedComparison) {
       })
   }, [])
 
-  useEffect(() => {
-    const timeout = window.setTimeout(() => run(initial), 0)
-    return () => {
-      window.clearTimeout(timeout)
-      abortRef.current?.abort()
-    }
-  }, [initial, run])
+  useEffect(() => () => abortRef.current?.abort(), [])
 
   return { state, run }
 }
@@ -232,7 +221,7 @@ function useComparisonData(initial: AppliedComparison) {
 export function StockComparisonPage() {
   const [params, setParams] = useSearchParams()
   const initial = useMemo(() => readInitialComparison(params), [params])
-  const [applied, setApplied] = useState<AppliedComparison>(initial)
+  const [applied, setApplied] = useState<AppliedComparison | null>(null)
   const [draftSymbols, setDraftSymbols] = useState(initial.symbols)
   const [draftBenchmarks, setDraftBenchmarks] = useState(initial.benchmarks)
   const [draftFrom, setDraftFrom] = useState(initial.from)
@@ -240,7 +229,7 @@ export function StockComparisonPage() {
   const [rangePreset, setRangePreset] = useState<RangePreset>('1Y')
   const [tab, setTab] = useState<MainTab>('performance')
   const tickers = useTickerCatalogue()
-  const { state, run } = useComparisonData(applied)
+  const { state, run } = useComparisonData()
 
   const controlValidation = useMemo(() => validateDraft(draftSymbols, draftBenchmarks, draftFrom, draftTo), [draftBenchmarks, draftFrom, draftSymbols, draftTo])
   const handleApply = useCallback(() => {
@@ -252,10 +241,12 @@ export function StockComparisonPage() {
       to: draftTo,
     }
     setApplied(next)
-    setParams(buildComparisonSearchParams({ ...next, financialYears: COMPARISON_FINANCIAL_YEARS, include: COMPARISON_INCLUDE }), { replace: false })
+    setParams(buildComparisonSearchParams(next), { replace: false })
     run(next)
   }, [controlValidation, draftBenchmarks, draftFrom, draftSymbols, draftTo, run, setParams])
-  const handleRetry = useCallback(() => run(applied), [applied, run])
+  const handleRetry = useCallback(() => {
+    if (applied) run(applied)
+  }, [applied, run])
 
   const normalized = useMemo(() => {
     const data = state.data
@@ -293,6 +284,9 @@ export function StockComparisonPage() {
 
         {state.loading && <ComparisonSkeleton />}
         {Boolean(state.error) && <ComparisonError error={state.error} onRetry={handleRetry} />}
+        {!state.loading && !state.error && !state.data && (
+          <EmptyBlock title="Choose stocks to compare" detail="Select at least two stocks, adjust the date range if needed, then click Compare." />
+        )}
         {!state.loading && !state.error && state.data && (
           <>
             <StockSnapshotTable items={safeArray(state.data.items)} normalized={normalized} />
@@ -379,7 +373,7 @@ const ComparisonControls = memo(function ComparisonControls({
           </Stack>
         </Stack>
         <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', rowGap: 0.7, alignItems: 'center' }}>
-          <Typography sx={{ color: 'var(--wc-text-secondary)', fontSize: 12 }}>Applied request uses inclusive dates: {humanDate(from)} to {humanDate(to)}</Typography>
+          <Typography sx={{ color: 'var(--wc-text-secondary)', fontSize: 12 }}>Selected range uses inclusive dates: {humanDate(from)} to {humanDate(to)}</Typography>
           {validation && <Typography sx={{ color: 'var(--wc-error)', fontSize: 12, fontWeight: 800 }}>{validation}</Typography>}
         </Stack>
       </Stack>

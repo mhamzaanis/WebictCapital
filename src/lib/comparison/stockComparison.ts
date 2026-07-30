@@ -1,8 +1,6 @@
 import type { BenchmarkComparisonItemDto, BenchmarkQuoteDto, FinancialRatioDto, FinancialStatementDto, TickerComparisonItemDto, TickerQuoteDto } from '../api/types'
 
 export const COMPARISON_MIN_DATE = '2021-01-01'
-export const COMPARISON_FINANCIAL_YEARS = 5
-export const COMPARISON_INCLUDE = ['quotes', 'profile', 'equity', 'valuation', 'financials', 'ratios', 'technicals'] as const
 export const SUPPORTED_BENCHMARKS = ['KSE100', 'KSE30', 'KMI30', 'KSEALL'] as const
 export const STOCK_SERIES_COLORS = ['#0a4fb3', '#087f8c', '#c96b15', '#6f42c1'] as const
 export const BENCHMARK_SERIES_COLORS = ['#64748b'] as const
@@ -133,23 +131,17 @@ export function buildComparisonSearchParams({
   benchmarks,
   from,
   to,
-  financialYears = COMPARISON_FINANCIAL_YEARS,
-  include = COMPARISON_INCLUDE,
 }: {
   symbols: readonly string[]
   benchmarks: readonly string[]
   from: string
   to: string
-  financialYears?: number
-  include?: readonly string[]
 }): URLSearchParams {
   const params = new URLSearchParams()
   uniqueUppercase(symbols).forEach((symbol) => params.append('symbols', symbol))
   uniqueUppercase(benchmarks).forEach((benchmark) => params.append('benchmarks', benchmark))
   params.set('from', clampDateOnly(from))
   params.set('to', to)
-  params.set('financialYears', String(financialYears))
-  params.set('include', include.join(','))
   return params
 }
 
