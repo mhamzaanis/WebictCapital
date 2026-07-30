@@ -374,7 +374,7 @@ const ComparisonControls = memo(function ComparisonControls({
             <DateTextField key={`from-${from}`} label="From" value={from} onChange={onFromChange} />
             <DateTextField key={`to-${to}`} label="To" value={to} onChange={onToChange} />
             <Button variant="contained" disabled={loading || Boolean(validation)} onClick={onApply} startIcon={<RefreshIcon />} sx={{ minHeight: 40, fontWeight: 850 }}>
-              {loading ? 'Updating' : 'Update comparison'}
+              {loading ? 'Loading' : 'Compare'}
             </Button>
           </Stack>
         </Stack>
