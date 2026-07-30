@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "test:comparison": "node --test scripts/test-stock-comparison-utils.mjs",
+    "test:market-overview": "node --test scripts/test-market-overview-utils.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
