@@ -1,4 +1,5 @@
 import AddIcon from '@mui/icons-material/Add'
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import {
   Autocomplete,
@@ -21,6 +22,7 @@ import {
   TableRow,
   Tabs,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material'
 import ReactECharts from 'echarts-for-react'
@@ -62,7 +64,7 @@ import {
 } from '../../lib/comparison/stockComparison'
 import { MarketShell } from '../markets/MarketShell'
 import { EmptyBlock } from '../markets/StateBlocks'
-import { CARD_SX, fmtCompact, fmtNumber, fmtPct } from '../markets/marketUtils'
+import { CARD_SX, DATA_FONT, fmtCompact, fmtNumber, fmtPct } from '../markets/marketUtils'
 
 const BENCHMARK_LABELS: Record<BenchmarkCode, string> = {
   KSE100: 'KSE-100',
@@ -75,6 +77,7 @@ const CHART_OPTS = { renderer: 'canvas' as const, useDirtyRect: true }
 const TECHNICAL_CHART_HEIGHT = 220
 
 type MainTab = 'performance' | 'fundamentals' | 'technicals'
+type PerformanceChartMode = 'normalized' | 'raw'
 type TickerOption = { symbol: string; companyName: string | null }
 type AppliedComparison = {
   symbols: string[]
@@ -430,16 +433,6 @@ const StockSelector = memo(function StockSelector({
   return (
     <Stack spacing={1}>
       {/* <Typography sx={{ color: 'var(--wc-text-primary)', fontWeight: 850 }}>Stocks</Typography> */}
-      <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', rowGap: 1 }}>
-        {symbols.map((symbol, index) => (
-          <Chip
-            key={symbol}
-            label={symbol}
-            onDelete={canRemoveStock(symbols) ? () => removeSymbol(symbol) : undefined}
-            sx={{ borderColor: STOCK_SERIES_COLORS[index], borderWidth: 1, borderStyle: 'solid', fontWeight: 850 }}
-          />
-        ))}
-      </Stack>
       <Autocomplete<TickerOption, false, false, true>
         freeSolo
         disabled={maxed}
@@ -481,6 +474,16 @@ const StockSelector = memo(function StockSelector({
         )}
         popupIcon={<AddIcon fontSize="small" />}
       />
+      <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', rowGap: 1 }}>
+        {symbols.map((symbol, index) => (
+          <Chip
+            key={symbol}
+            label={symbol}
+            onDelete={canRemoveStock(symbols) ? () => removeSymbol(symbol) : undefined}
+            sx={{ borderColor: STOCK_SERIES_COLORS[index], borderWidth: 1, borderStyle: 'solid', fontWeight: 850 }}
+          />
+        ))}
+      </Stack>
     </Stack>
   )
 })
@@ -567,6 +570,7 @@ function formatAnnualEps(item: TickerComparisonItemDto): string {
 const PerformanceTab = memo(function PerformanceTab({ normalized }: { normalized: NormalizedComparison }) {
   const [visible, setVisible] = useState<LegendState>({})
   const [showCorrelation, setShowCorrelation] = useState(false)
+  const [chartMode, setChartMode] = useState<PerformanceChartMode>('normalized')
   const ready = normalized.status === 'ready' ? normalized : null
   const visibleIds = useMemo(() => {
     if (!ready) return new Set<string>()
@@ -574,19 +578,39 @@ const PerformanceTab = memo(function PerformanceTab({ normalized }: { normalized
   }, [ready, visible])
   const analytics = useMemo(() => ready ? ready.series.map(seriesAnalytics) : [], [ready])
   const matrix = useMemo(() => ready ? correlationMatrix(ready.series) : null, [ready])
-  const option = useMemo(() => ready ? relativePerformanceOption(ready, visibleIds) : null, [ready, visibleIds])
+  const option = useMemo(() => ready ? relativePerformanceOption(ready, visibleIds, chartMode) : null, [chartMode, ready, visibleIds])
 
   if (normalized.status === 'empty') return <EmptyBlock title="No shared comparison range" detail={normalized.reason} />
   if (!ready) return null
 
   return (
     <Stack spacing={2.2}>
-      <Box>
-        <Typography sx={{ color: 'var(--wc-text-primary)', fontWeight: 850 }}>Relative price performance</Typography>
-        <Typography sx={{ color: 'var(--wc-text-secondary)', fontSize: 12 }}>
-          Rebased to 100 on the first shared trading date · base {humanDate(ready.baseDate)} · end {humanDate(ready.endDate)} · {ready.commonObservationCount} common observations
-        </Typography>
-      </Box>
+      <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.2} sx={{ justifyContent: 'space-between', alignItems: { md: 'flex-start' } }}>
+        <Box>
+          <Stack direction="row" spacing={0.7} sx={{ alignItems: 'center' }}>
+            <Typography sx={{ color: 'var(--wc-text-primary)', fontWeight: 850 }}>Relative price performance</Typography>
+            <Tooltip title="Normalized means every series starts at 100 on the first shared trading date, so percentage moves are comparable even when stock prices differ.">
+              <InfoOutlinedIcon sx={{ color: 'var(--wc-text-muted)', fontSize: 17 }} />
+            </Tooltip>
+          </Stack>
+          <Typography sx={{ color: 'var(--wc-text-secondary)', fontSize: 12 }}>
+            Rebased to 100 on the first shared trading date · base {humanDate(ready.baseDate)} · end {humanDate(ready.endDate)} · {ready.commonObservationCount} common observations
+          </Typography>
+        </Box>
+        <Stack direction="row" spacing={0.8} sx={{ flexWrap: 'wrap', rowGap: 0.8 }}>
+          {(['normalized', 'raw'] as const).map((mode) => (
+            <Button
+              key={mode}
+              size="small"
+              variant={chartMode === mode ? 'contained' : 'outlined'}
+              onClick={() => setChartMode(mode)}
+              sx={{ fontWeight: 850 }}
+            >
+              {mode === 'normalized' ? 'Normalized' : 'Raw close'}
+            </Button>
+          ))}
+        </Stack>
+      </Stack>
       <CustomLegend series={ready.series} visible={visible} onToggle={(id) => setVisible((current) => ({ ...current, [id]: current[id] === false }))} />
       {option && <ReactECharts option={option} style={{ height: 430, width: '100%' }} opts={CHART_OPTS} notMerge={false} lazyUpdate />}
       <PerformanceAnalyticsTable rows={analytics} />
@@ -600,15 +624,20 @@ const PerformanceTab = memo(function PerformanceTab({ normalized }: { normalized
   )
 })
 
-function relativePerformanceOption(normalized: Extract<NormalizedComparison, { status: 'ready' }>, visibleIds: Set<string>) {
+function relativePerformanceOption(normalized: Extract<NormalizedComparison, { status: 'ready' }>, visibleIds: Set<string>, mode: PerformanceChartMode) {
   return {
     animation: false,
-    tooltip: { trigger: 'axis', transitionDuration: 0, axisPointer: { animation: false }, formatter: performanceTooltip },
+    tooltip: { trigger: 'axis', transitionDuration: 0, axisPointer: { animation: false }, formatter: performanceTooltip(mode) },
     axisPointer: { animation: false },
     legend: { show: false },
     grid: { left: 56, right: 24, top: 28, bottom: 62 },
     xAxis: { type: 'category', data: normalized.dates, axisPointer: { animation: false } },
-    yAxis: { type: 'value', name: 'Start = 100', scale: true },
+    yAxis: {
+      type: 'value',
+      name: mode === 'normalized' ? 'Start = 100' : 'Close price',
+      scale: true,
+      axisLabel: { formatter: (value: number) => mode === 'normalized' ? fmtNumber(value) : fmtCompact(value) },
+    },
     dataZoom: [{ type: 'inside', throttle: 80 }, { type: 'slider', bottom: 10, height: 22 }],
     series: normalized.series.map((series) => ({
       name: series.id,
@@ -618,7 +647,16 @@ function relativePerformanceOption(normalized: Extract<NormalizedComparison, { s
       showSymbol: false,
       symbol: 'none',
       connectNulls: false,
-      data: visibleIds.has(series.id) ? series.points.map((point) => ({ value: point.normalized, close: point.close, date: point.date, returnPct: point.periodReturnPct, seriesLabel: series.label })) : [],
+      data: visibleIds.has(series.id)
+        ? series.points.map((point) => ({
+          value: mode === 'normalized' ? point.normalized : point.close,
+          normalized: point.normalized,
+          close: point.close,
+          date: point.date,
+          returnPct: point.periodReturnPct,
+          seriesLabel: series.label,
+        }))
+        : [],
       lineStyle: { width: series.kind === 'benchmark' ? 1.4 : 2.2, color: series.color, type: series.dashed ? 'dashed' : 'solid' },
       itemStyle: { color: series.color },
       emphasis: { disabled: true },
@@ -626,15 +664,18 @@ function relativePerformanceOption(normalized: Extract<NormalizedComparison, { s
   }
 }
 
-type TooltipParam = { marker?: string; seriesName?: string; data?: { date?: string; close?: number | null; value?: number | null; returnPct?: number | null; seriesLabel?: string } }
+type TooltipParam = { marker?: string; seriesName?: string; data?: { date?: string; close?: number | null; value?: number | null; normalized?: number | null; returnPct?: number | null; seriesLabel?: string } }
 
-function performanceTooltip(params: TooltipParam | TooltipParam[]): string {
-  const list = Array.isArray(params) ? params : [params]
-  const date = list.find((param) => param.data?.date)?.data?.date
-  const rows = list.filter((param) => param.data && param.data.value != null).map((param) => (
-    `<div style="margin-top:6px">${param.marker ?? ''}<strong>${param.data?.seriesLabel ?? param.seriesName}</strong><br/>Close: ${fmtPrice(param.data?.close)}<br/>Normalized: ${fmtNumber(param.data?.value ?? null)}<br/>Return: ${fmtPct(param.data?.returnPct)}</div>`
-  ))
-  return [`<strong>${humanDate(date)}</strong>`, ...rows].join('')
+function performanceTooltip(mode: PerformanceChartMode) {
+  return (params: TooltipParam | TooltipParam[]): string => {
+    const list = Array.isArray(params) ? params : [params]
+    const date = list.find((param) => param.data?.date)?.data?.date
+    const chartLabel = mode === 'normalized' ? 'Chart value' : 'Raw close'
+    const rows = list.filter((param) => param.data && param.data.value != null).map((param) => (
+      `<div style="margin-top:6px">${param.marker ?? ''}<strong>${param.data?.seriesLabel ?? param.seriesName}</strong><br/>${chartLabel}: ${mode === 'normalized' ? fmtNumber(param.data?.value ?? null) : fmtPrice(param.data?.value)}<br/>Close: ${fmtPrice(param.data?.close)}<br/>Normalized: ${fmtNumber(param.data?.normalized ?? null)}<br/>Return: ${fmtPct(param.data?.returnPct)}</div>`
+    ))
+    return [`<strong>${humanDate(date)}</strong>`, ...rows].join('')
+  }
 }
 
 const CustomLegend = memo(function CustomLegend({ series, visible, onToggle }: { series: readonly NormalizedSeries[]; visible: LegendState; onToggle: (id: string) => void }) {
@@ -681,13 +722,86 @@ function PerformanceAnalyticsTable({ rows }: { rows: ReturnType<typeof seriesAna
 function CorrelationTable({ matrix }: { matrix: NonNullable<ReturnType<typeof correlationMatrix>> }) {
   const byKey = new Map(matrix.cells.map((cell) => [`${cell.rowId}|${cell.columnId}`, cell.value]))
   return (
-    <TableContainer sx={{ mt: 1 }}>
-      <Table size="small">
-        <TableHead><TableRow><TableCell>Stock</TableCell>{matrix.series.map((series) => <TableCell key={series.id}>{series.label}</TableCell>)}</TableRow></TableHead>
-        <TableBody>{matrix.series.map((row) => <TableRow key={row.id}><TableCell>{row.label}</TableCell>{matrix.series.map((column) => <TableCell key={column.id}>{fmtRatio(byKey.get(`${row.id}|${column.id}`))}</TableCell>)}</TableRow>)}</TableBody>
+    <TableContainer sx={{ mt: 1.2, border: '1px solid var(--wc-border)', borderRadius: 1, overflow: 'hidden' }}>
+      <Table size="small" sx={{ minWidth: 520 }}>
+        <TableHead>
+          <TableRow>
+            <TableCell sx={{ bgcolor: 'var(--wc-surface-soft)', fontWeight: 900 }}>Stock</TableCell>
+            {matrix.series.map((series) => (
+              <TableCell key={series.id} align="center" sx={{ bgcolor: 'var(--wc-surface-soft)', fontWeight: 900 }}>
+                {series.label}
+              </TableCell>
+            ))}
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {matrix.series.map((row) => (
+            <TableRow key={row.id}>
+              <TableCell sx={{ bgcolor: 'var(--wc-surface-soft)', fontWeight: 900 }}>{row.label}</TableCell>
+              {matrix.series.map((column) => {
+                const value = byKey.get(`${row.id}|${column.id}`)
+                return (
+                  <TableCell
+                    key={column.id}
+                    align="center"
+                    title={correlationLabel(value)}
+                    sx={correlationCellSx(value, row.id === column.id)}
+                  >
+                    {fmtRatio(value)}
+                  </TableCell>
+                )
+              })}
+            </TableRow>
+          ))}
+        </TableBody>
       </Table>
     </TableContainer>
   )
+}
+
+function correlationLabel(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(value)) return 'Insufficient overlapping returns'
+  const abs = Math.abs(value)
+  if (abs >= 0.8) return value > 0 ? 'Very strong positive correlation' : 'Very strong negative correlation'
+  if (abs >= 0.5) return value > 0 ? 'Moderate positive correlation' : 'Moderate negative correlation'
+  if (abs >= 0.2) return value > 0 ? 'Low positive correlation' : 'Low negative correlation'
+  return 'Little linear correlation'
+}
+
+function correlationCellSx(value: number | null | undefined, diagonal: boolean) {
+  if (diagonal) {
+    return {
+      bgcolor: 'rgba(10, 79, 179, 0.14)',
+      color: '#063b84',
+      fontFamily: DATA_FONT,
+      fontWeight: 900,
+      borderLeft: '1px solid rgba(10, 79, 179, 0.12)',
+    } as const
+  }
+  if (value == null || !Number.isFinite(value)) {
+    return {
+      bgcolor: 'rgba(148, 163, 184, 0.12)',
+      color: 'var(--wc-text-muted)',
+      fontFamily: DATA_FONT,
+      fontWeight: 850,
+    } as const
+  }
+  const abs = Math.abs(value)
+  if (abs < 0.2) {
+    return {
+      bgcolor: 'rgba(148, 163, 184, 0.12)',
+      color: 'var(--wc-text-secondary)',
+      fontFamily: DATA_FONT,
+      fontWeight: 850,
+    } as const
+  }
+  const alpha = 0.08 + Math.min(abs, 1) * 0.26
+  return {
+    bgcolor: value > 0 ? `rgba(24, 122, 85, ${alpha})` : `rgba(200, 62, 77, ${alpha})`,
+    color: value > 0 ? '#0f5132' : '#842029',
+    fontFamily: DATA_FONT,
+    fontWeight: 900,
+  } as const
 }
 
 const FundamentalsTab = memo(function FundamentalsTab({ items }: { items: readonly TickerComparisonItemDto[] }) {

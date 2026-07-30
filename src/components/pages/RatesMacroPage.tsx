@@ -148,7 +148,9 @@ function kiborTooltipFormatter(params: KiborTooltipParam | KiborTooltipParam[]):
 
 export function RatesMacroPage() {
   return (
-    <MarketShell title="KIBOR Rates" subtitle="Canonical SBP KIBOR bid/offer observations from the WebICTCapital API.">
+    <MarketShell title="KIBOR Rates" 
+    // subtitle="Canonical SBP KIBOR bid/offer observations from the WebICTCapital API."
+    >
       <KiborSection />
     </MarketShell>
   )
