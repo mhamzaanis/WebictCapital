@@ -34,6 +34,21 @@ pnpm test
 pnpm run build
 ```
 
+## Container deployment
+
+The production image compiles Vite configuration at build time and serves the resulting SPA as an unprivileged Nginx process on port `8080`. Build WebICT mode with public configuration only:
+
+```bash
+docker build \
+  --build-arg VITE_PLATFORM_MODE=webict \
+  --build-arg VITE_MARKET_API_BASE_URL=https://staging-api.example.invalid \
+  -t webict-capital:staging .
+
+docker run --rm -p 8080:8080 webict-capital:staging
+```
+
+Replace the example API origin before building. Container runtime `-e VITE_*` values do not rewrite an existing Vite bundle; build a new immutable image for configuration changes. Supabase mode additionally requires `VITE_SUPABASE_URL` and the public `VITE_SUPABASE_ANON_KEY` as build arguments. Never pass a service-role credential to this image.
+
 ## Transition status
 
 - Production remains on the Supabase auth/portfolio adapter.
