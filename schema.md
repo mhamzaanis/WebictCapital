@@ -36,7 +36,7 @@ schemas
 
 Contract revision
 
-2026-08-01.4
+2026-08-01.5
 
 Production migration level
 
@@ -140,8 +140,9 @@ Schema and implementation state
 | app_portfolio | Migration 008, authenticated APIs, PortfolioImporter, and offline SupabaseExporter are implemented, reviewed, and tested. | Proposed and unapplied; objects and imported facts do not yet exist in production. |
 
 Implemented code is not evidence that its proposed production objects or data
-exist. AUTH_CUTOVER_ENABLED=false and ALLOW_NEW_USER_REGISTRATION=false remain
-the deployed values, and the React frontend continues to use Supabase.
+exist. AUTH_CUTOVER_ENABLED=false, ALLOW_NEW_USER_REGISTRATION=false, and
+PORTFOLIO_WRITES_ENABLED=false remain the deployed values, and the React
+frontend continues to use Supabase.
 
 Contents
 
@@ -999,15 +1000,25 @@ GET /api/tickers/compare?symbols=MEBL&symbols=HBL&benchmarks=KSE100
 
 Quotes, raw technicals, profile, equity, valuation, statements, ratios, and optional benchmark history for two to four symbols
 
+Standalone market-index history
+
+GET /api/market-indexes/{code}/history?from={date}&to={date}
+
+market_index dimension and ascending index_daily observations
+
 KIBOR curve/history
 
-GET /api/rates/kibor
+GET /api/rates/kibor (canonical)
+
+GET /rates/kibor (compatibility alias)
 
 kibor_rate bid/offer observations by publication quote_date and canonical tenor
 
 Canonical USD/PKR
 
-GET /api/rates/usd-pkr
+GET /api/rates/usd-pkr (canonical)
+
+GET /rates/usd-pkr (compatibility alias)
 
 v_usdpkr_m2m_ready point rates and publication metadata only
 
@@ -1022,6 +1033,11 @@ market_summary row exists, both return HTTP 404 with the same
 "No market summary tickers were found." message. Repository/infrastructure
 failures remain server errors. Neither route may be silently removed during the
 Supabase/frontend migration.
+
+MarketSummaryService opens one connection and one read-only repeatable-read
+transaction before selecting the newest market_summary row. The ticker rows,
+completed AI summary, and index rows receive that same connection and
+transaction and use the selected date. No component opens an unrelated snapshot.
 
 Single-ticker query parameters:
 
@@ -1080,6 +1096,32 @@ Integer from 1 through 20; omitted defaults to 5
 The public benchmark allow-list is KSE100, KSE30, KMI30, and KSEALL.KSEALL maps to stored market_index.code = 'ALLSHR'; all other codes resolvedirectly by market_index.code. Unsupported codes return HTTP 400. A supportedbenchmark with no dimension/history returns HTTP 404 and identifies everyunresolved code. Stock and benchmark order follows the request. Numeric IDs anddisplay order are never part of the contract.
 
 The default comparison date range is resolved from the requested stock symbols,not from benchmark coverage, so stock charts remain comparable. Benchmarksretain genuine missing dates inside that range.
+
+Standalone market-index history contract
+
+`GET /api/market-indexes/{code}/history?from={date}&to={date}` is the canonical
+anonymous, GET-only history route. The public code allow-list is `KSE100`,
+`KSE30`, `KMI30`, and `KSEALL`; `KSEALL` maps to the existing stored `ALLSHR`
+dimension. Unsupported public codes return HTTP 400 ProblemDetails. A supported
+code whose dimension or complete history is absent returns HTTP 404
+ProblemDetails.
+
+`from` and `to` are optional inclusive ISO date-only values. An omitted `to`
+resolves to the latest available observation. An omitted `from` resolves to one
+calendar year before the resolved `to`. The applied lower bound is clamped to
+`2021-01-01`; `from > to` and an applied range longer than ten years return HTTP
+400. A valid applied range with no observations returns HTTP 200 with an empty
+`points` array and null `asOf`. Points are ascending actual observations;
+weekends, holidays, and other missing dates are not fabricated.
+
+The response is `MarketIndexHistoryResponseDto = {code, displayName,
+availableRange, requestedRange, appliedRange, asOf, points}`.
+`availableRange` and `appliedRange` reuse `DateRangeDto = {from, to}`;
+`requestedRange = {from: date|null, to: date|null}` preserves omissions; and
+`asOf` plus each point reuse `BenchmarkPointDto = {tradeDate, open, high, low,
+close, volume, change, changePct}`. A separate top-level history DTO is required
+because comparison benchmark items do not carry requested and applied ranges;
+the point DTO is shared so decimal and int64 semantics do not diverge.
 
 Valuation is an as-of object, not a value to smear over every quote. It carriesdaily_valuation.trade_date as asOf; a quote-level valuation join uses bothsecurity_id and exact trade_date. peRatioTtm remains nullable. The APIdoes not calculate P/E from PEG, EPS, current market cap, or frontend inputs.
 
@@ -1179,6 +1221,12 @@ Use when the client requests source document metadata
 
 Do not map SBP bid/offer data into OHLC fields, average a spread into a rate, orcombine rate families. API decimals must remain decimals; do not convert themthrough binary floating point.
 
+The canonical routes for new consumers are `GET /api/rates/kibor` and
+`GET /api/rates/usd-pkr`. The retained compatibility aliases are
+`GET /rates/kibor` and `GET /rates/usd-pkr`. Each canonical route and its alias
+map to the same controller action and exact DTO. All four surfaces are anonymous
+and GET-only; POST, PUT, PATCH, and DELETE return HTTP 405.
+
 The deployed query names recorded by the API project are startDate andendDate, both optional, inclusive, date-only values. The KIBOR route does notaccept a tenor filter; every successful response is constrained to the built-incanonical set 1W, 2W, 1M, 3M, 6M, 9M, 1Y. When both dates are omitted, thecurrently deployed default is 2025-01-01 through 2025-12-31. Unknown queryarguments, invalid dates, or startDate > endDate return HTTP 400ProblemDetails.
 
 GET /api/rates/kibor returns tenorOrder, ascending observations, and alatestCurve built from one common latest quoteDate inside the applied range;it never selects a different latest date for each tenor. Bid and offer remainseparate nullable decimals and are never averaged.
@@ -1250,6 +1298,15 @@ NameIdentifier UUID belongs to an active app_identity.user_account. No route,
 query, or request DTO accepts user_id. All mutations require X-CSRF-TOKEN.
 The controller exposes the following exact routes:
 
+`PORTFOLIO_WRITES_ENABLED` is an independent emergency gate and defaults to
+`false`. It gates the four POST mutations plus watchlist PUT and DELETE. After
+authentication, CSRF validation, and ordinary request validation, a disabled
+gate returns HTTP 503 ProblemDetails and the action performs no database write.
+Authenticated portfolio reads, `/api/auth/csrf`, `/api/auth/me`, logout, and
+anonymous market reads remain available. Staging and cutover must set the gate
+to `true` explicitly; returning it to `false` stops later native writes without
+deleting, reversing, or rewriting existing history.
+
 | Method and path | Request | Success response |
 | --- | --- | --- |
 | GET /api/portfolio | None | HTTP 200 PortfolioSummaryResponse. |
@@ -1314,9 +1371,15 @@ PortfolioMutationResponse = {activityId: UUID, portfolioVersion: int64}.
 LotCorrectionResponse = {activityId: UUID, portfolioVersion: int64, lotVersion:
 int64}.
 
-Logical dates are ISO date-only values and instants use ISO 8601. JSON numeric
-prices, costs, and values preserve decimal semantics. No portfolio response has
-a cash field.
+Logical dates are ISO date-only values and instants use ISO 8601. ASP.NET Core
+emits `decimal` and `long` values as exact JSON numeric tokens; it does not
+coerce them through binary floating point or globally convert them to strings.
+IDs, quantities, versions, prices, costs, rates, and valuations retain their
+exact wire representation. WebICT frontend code must use a lossless JSON parser
+for these fields rather than native `response.json()`, and mutation payloads
+must serialize financial decimals and int64 values without first coercing them
+through JavaScript `Number`. Date-only values remain ISO calendar-date strings.
+No portfolio response has a cash field.
 
 Native sells lock the active default portfolio and relevant security/lot state,
 reject overselling, consider only lots acquired on or before tradeDate, and
@@ -1338,6 +1401,11 @@ missing or inactive identity returns 401; controller domain errors use
 ProblemDetails. Authorization denial returns 403 ProblemDetails, and missing or
 invalid CSRF returns 400 ProblemDetails. Watchlist PUT/DELETE are naturally idempotent and require no
 mutation UUID.
+
+When `PORTFOLIO_WRITES_ENABLED=false`, an otherwise authenticated and valid
+request to any of the six mutation routes returns HTTP 503 ProblemDetails and
+commits zero writes. This operational response does not weaken authentication,
+CSRF, mutation-key replay, optimistic version, or domain validation rules.
 
 Surviving imported Supabase BUY rows become legacy opening lots and determine
 initial holdings. Imported SELL rows remain visible as position-neutral legacy
@@ -1379,6 +1447,12 @@ Latest market summary, same-date indexes/tickers, completed AI brief
 
 Show the trade date and source freshness; omit a missing/failed AI brief without hiding market facts
 
+Stock catalogue and selection
+
+GET /api/market-summary/latest/tickers for searchable current symbols and latest market values; GET /api/tickers/{symbol} after selection
+
+Populate the selector from the summary response, then fetch detail only for the selected symbol; do not issue an N+1 detail request for every ticker
+
 Ticker detail
 
 Quotes, raw technical indicators, as-of valuation, current profile/equity, fundamentals, ratios, announcements, payouts, reports
@@ -1390,6 +1464,12 @@ Ticker comparison
 Two to four stock items plus zero to two optional benchmark series on one shared stock range
 
 Preserve requested order; align by actual trade date; preserve gaps; label technical basis, valuation asOf, and fiscal period/year
+
+Market-index history
+
+GET /api/market-indexes/{code}/history for KSE100, KSE30, KMI30, or KSEALL
+
+Use requested/applied/available ranges; preserve ascending actual observations and missing trading dates; never expose stored ALLSHR as a second public code
 
 KIBOR
 
@@ -1410,6 +1490,10 @@ Full normalized FX surface through the API
 Require/label rate type and tenor; render either a rate or bid/offer pair
 
 Frontend numeric rules:
+
+parse API JSON with a lossless parser rather than native response.json() where
+financial decimals or int64 values are present; retain exact JSON numeric tokens
+for IDs, quantities, versions, prices, costs, rates, and valuations;
 
 treat prices, ratios, rates, EPS, market capitalization, and percentages asdecimal values; format only at presentation time;
 
@@ -1457,8 +1541,10 @@ client refreshes portfolio state after every successful mutation and after HTTP
 Date-only fields stay ISO calendar-date strings and must not pass through a
 timezone conversion that changes the date. Decimal prices, costs, quantities,
 and values remain decimals through transport and display logic rather than
-binary-floating-point approximations. Portfolio responses have no cash field;
-the UI must not display an absent migrated cash balance as zero.
+binary-floating-point approximations. The client must serialize portfolio
+mutation decimals and int64 values without first passing them through JavaScript
+`Number`. Portfolio responses have no cash field; the UI must not display an
+absent migrated cash balance as zero.
 
 The final switch is one coordinated operation: freeze Supabase writes, take the
 final repeatable-read export, validate exact-byte checksums, approve/apply
@@ -1571,6 +1657,11 @@ KIBOR reviewed aliases/anomalies and FX catalogue mismatches documented aboveare
 Identity, portfolios, and research boundaries
 
 Migration 007_identity_foundation.sql was applied to production on 2026-08-01.Its app_identity.user_account, app_identity.external_login, andapp_identity.authentication_audit tables were empty immediately afterapplication, and all reviewed constraints, indexes, and delete protection wereverified. Authentication remains disabled with AUTH_CUTOVER_ENABLED=false andALLOW_NEW_USER_REGISTRATION=false. No Supabase identities or portfolios havebeen imported.
+
+Native portfolio writes also remain disabled with
+`PORTFOLIO_WRITES_ENABLED=false`. This is independent of the authentication
+cutover flag. No real export or import has run, and the React frontend remains
+on Supabase.
 
 Migration 008_portfolio_foundation.sql and its API/importer implementation are
 implemented, reviewed, and tested, but the migration remains a proposal and has

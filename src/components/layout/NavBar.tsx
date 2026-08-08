@@ -44,6 +44,7 @@ export function NavBar() {
 
   // Close mobile menu on route change
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsMobileMenuOpen(false)
   }, [pathname])
 
@@ -190,8 +191,8 @@ export function NavBar() {
               >
                 {user && (
                   <Avatar
-                    src={user.user_metadata?.avatar_url ?? undefined}
-                    alt={user.user_metadata?.full_name ?? user.email ?? ''}
+                    src={user.avatarUrl ?? undefined}
+                    alt={user.displayName ?? user.email ?? ''}
                     onClick={handleUserMenuOpen}
                     sx={{
                       width: 30,
@@ -393,8 +394,8 @@ export function NavBar() {
                     }}
                   >
                     <Avatar
-                      src={user.user_metadata?.avatar_url ?? undefined}
-                      alt={user.user_metadata?.full_name ?? user.email ?? ''}
+                      src={user.avatarUrl ?? undefined}
+                      alt={user.displayName ?? user.email ?? ''}
                       sx={{
                         width: 32,
                         height: 32,
@@ -414,7 +415,7 @@ export function NavBar() {
                         textOverflow: 'ellipsis',
                       }}
                     >
-                      {user.user_metadata?.full_name ?? user.email?.split('@')[0] ?? 'User'}
+                      {user.displayName ?? user.email?.split('@')[0] ?? 'User'}
                     </Typography>
                   </Box>
                 )}
@@ -465,7 +466,7 @@ export function NavBar() {
         {user && (
           <Box sx={{ px: 2, py: 1.5 }}>
             <Typography sx={{ fontSize: 12, fontWeight: 600, color: '#080e1a', fontFamily: 'var(--wc-font-body)' }}>
-              {user.user_metadata?.full_name ?? 'User'}
+              {user.displayName ?? 'User'}
             </Typography>
             <Typography sx={{ fontSize: 10.5, color: '#4a5e78', fontFamily: 'var(--wc-font-data)', mt: 0.1 }}>
               {user.email}
@@ -617,13 +618,13 @@ export function NavBar() {
             {user && (
               <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1.2 }}>
                 <Avatar
-                  src={user.user_metadata?.avatar_url ?? undefined}
-                  alt={user.user_metadata?.full_name ?? user.email ?? ''}
+                  src={user.avatarUrl ?? undefined}
+                  alt={user.displayName ?? user.email ?? ''}
                   sx={{ width: 32, height: 32, border: '1.5px solid #e2eaf5' }}
                 />
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography sx={{ fontSize: 12.5, fontWeight: 600, color: '#080e1a', fontFamily: 'var(--wc-font-body)' }}>
-                    {user.user_metadata?.full_name ?? 'User'}
+                    {user.displayName ?? 'User'}
                   </Typography>
                   <Typography sx={{ fontSize: 10, color: '#4a5e78', fontFamily: 'var(--wc-font-data)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {user.email}

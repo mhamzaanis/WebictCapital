@@ -23,11 +23,13 @@ import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { snapshotAnalytics } from '../../lib/api/analytics'
 import { fetchTickerDetail } from '../../lib/api/tickers'
 import type { TickerDetailResponse, TickerQuoteDto } from '../../lib/api/types'
-import { addToWatchlist } from '../../lib/stockService'
+import { addSymbolToWatchlist } from '../../lib/platformWatchlist'
 import { useAuth } from '../../context/AuthContext'
 import { MarketShell } from '../markets/MarketShell'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../markets/StateBlocks'
 import { CARD_SX, DATA_FONT, fmtCompact, fmtDate, fmtNumber, fmtPct, fmtSigned, toneColor } from '../markets/marketUtils'
+import Decimal from 'decimal.js'
+import { projectNumeric } from '../../lib/numericPresentation'
 
 const RANGES = ['1M', '3M', '6M', '1Y', '3Y', '5Y', 'Max'] as const
 type Range = typeof RANGES[number]
@@ -55,7 +57,7 @@ function useTicker(symbol: string, range: Range) {
     fetchTickerDetail({
       symbol,
       from: rangeFromTo(range),
-      include: ['quotes', 'profile', 'equity', 'financials', 'ratios', 'announcements', 'payouts', 'reports', 'technicals'],
+      include: ['quotes', 'profile', 'equity', 'valuation', 'financials', 'ratios', 'announcements', 'payouts', 'reports', 'technicals'],
       financialYears: 5,
       eventLimit: 30,
     }, controller.signal)
@@ -64,7 +66,7 @@ function useTicker(symbol: string, range: Range) {
       })
       .catch((caught) => {
         if (active && !(caught instanceof DOMException && caught.name === 'AbortError')) {
-          setState({ key: requestKey, data: null, error: caught, loading: false })
+          setState((current) => ({ key: requestKey, data: current.data, error: caught, loading: false }))
         }
       })
     return () => {
@@ -74,14 +76,18 @@ function useTicker(symbol: string, range: Range) {
   }, [range, requestKey, symbol])
 
   return {
-    data: state.key === requestKey ? state.data : null,
+    data: state.data,
     error: state.key === requestKey ? state.error : null,
     loading: state.key !== requestKey || state.loading,
   }
 }
 
-function hasFiniteValue(value: number | null | undefined): value is number {
-  return typeof value === 'number' && Number.isFinite(value)
+function hasFiniteValue(value: Decimal | null | undefined): value is Decimal {
+  return value != null && value.isFinite()
+}
+
+function chartValue(value: Decimal | bigint | null | undefined, label: string): number | null {
+  return value == null ? null : projectNumeric(value, label)
 }
 
 function priceChartOption(quotes: TickerQuoteDto[], technicals: TickerDetailResponse['technicals'], overlays: { sma20: boolean; sma50: boolean; sma200: boolean; rsi: boolean }) {
@@ -98,14 +104,19 @@ function priceChartOption(quotes: TickerQuoteDto[], technicals: TickerDetailResp
     type: hasCompleteOhlc ? 'candlestick' : 'line',
     connectNulls: false,
     data: hasCompleteOhlc
-      ? quotes.map((quote) => [quote.open, quote.close, quote.low, quote.high])
-      : quotes.map((quote) => quote.close),
+      ? quotes.map((quote) => [
+          chartValue(quote.open, 'open'),
+          chartValue(quote.close, 'close'),
+          chartValue(quote.low, 'low'),
+          chartValue(quote.high, 'high'),
+        ])
+      : quotes.map((quote) => chartValue(quote.close, 'close')),
   }]
-  if (overlays.sma20) series.push({ name: 'SMA 20', type: 'line', connectNulls: false, showSymbol: false, data: dates.map((date) => techByDate.get(date)?.sma20 ?? null) })
-  if (overlays.sma50) series.push({ name: 'SMA 50', type: 'line', connectNulls: false, showSymbol: false, data: dates.map((date) => techByDate.get(date)?.sma50 ?? null) })
-  if (overlays.sma200) series.push({ name: 'SMA 200', type: 'line', connectNulls: false, showSymbol: false, data: dates.map((date) => techByDate.get(date)?.sma200 ?? null) })
-  series.push({ name: 'Shares traded', type: 'bar', xAxisIndex: 1, yAxisIndex: 1, data: quotes.map((quote) => quote.turnover ?? null), itemStyle: { color: '#7b8da8' } })
-  if (overlays.rsi) series.push({ name: 'RSI 14', type: 'line', xAxisIndex: 2, yAxisIndex: 2, connectNulls: false, showSymbol: false, data: dates.map((date) => techByDate.get(date)?.rsi14 ?? null) })
+  if (overlays.sma20) series.push({ name: 'SMA 20', type: 'line', connectNulls: false, showSymbol: false, data: dates.map((date) => chartValue(techByDate.get(date)?.sma20, 'SMA20')) })
+  if (overlays.sma50) series.push({ name: 'SMA 50', type: 'line', connectNulls: false, showSymbol: false, data: dates.map((date) => chartValue(techByDate.get(date)?.sma50, 'SMA50')) })
+  if (overlays.sma200) series.push({ name: 'SMA 200', type: 'line', connectNulls: false, showSymbol: false, data: dates.map((date) => chartValue(techByDate.get(date)?.sma200, 'SMA200')) })
+  series.push({ name: 'Shares traded', type: 'bar', xAxisIndex: 1, yAxisIndex: 1, data: quotes.map((quote) => chartValue(quote.turnover, 'turnover')), itemStyle: { color: '#7b8da8' } })
+  if (overlays.rsi) series.push({ name: 'RSI 14', type: 'line', xAxisIndex: 2, yAxisIndex: 2, connectNulls: false, showSymbol: false, data: dates.map((date) => chartValue(techByDate.get(date)?.rsi14, 'RSI14')) })
 
   return {
     animation: false,
@@ -129,8 +140,8 @@ export function StockDetailPage() {
   const [overlays, setOverlays] = useState({ sma20: true, sma50: false, sma200: false, rsi: true })
   const analytics = useMemo(() => snapshotAnalytics(data?.quotes ?? []), [data])
 
-  if (loading) return <MarketShell title={symbol} subtitle="Loading ticker detail from the WebICTCapital API."><LoadingBlock /></MarketShell>
-  if (error) return <MarketShell title={symbol} subtitle="Ticker detail"><ErrorBlock error={error} /></MarketShell>
+  if (loading && !data) return <MarketShell title={symbol} subtitle="Loading ticker detail from the WebICTCapital API."><LoadingBlock /></MarketShell>
+  if (error && !data) return <MarketShell title={symbol} subtitle="Ticker detail"><ErrorBlock error={error} /></MarketShell>
   if (!data) return <MarketShell title={symbol} subtitle="Ticker detail"><EmptyBlock title="Ticker not found" detail="The API returned no ticker detail." /></MarketShell>
 
   const asOf = data.asOfQuote
@@ -152,7 +163,7 @@ export function StockDetailPage() {
               </Stack>
             </Box>
             <Stack direction="row" spacing={1} sx={{ alignItems: 'flex-start' }}>
-              <Button startIcon={<StarBorderIcon />} onClick={() => user ? void addToWatchlist(data.symbol) : undefined} sx={{ border: '1px solid var(--wc-border)' }}>Watch</Button>
+              <Button startIcon={<StarBorderIcon />} onClick={() => user ? void addSymbolToWatchlist(data.symbol) : undefined} sx={{ border: '1px solid var(--wc-border)' }}>Watch</Button>
               <Button component={Link} to={`/data/compare?a=${data.symbol}&b=HBL`} startIcon={<AddchartIcon />} sx={{ border: '1px solid var(--wc-border)' }}>Compare</Button>
             </Stack>
           </Stack>
@@ -195,7 +206,7 @@ export function StockDetailPage() {
           </Tabs>
           <Box sx={{ p: 2.4 }}>
             {tab === 'profile' && <Typography sx={{ color: 'var(--wc-text-secondary)', lineHeight: 1.7 }}>{data.profile?.businessDescription ?? 'Profile data unavailable.'}</Typography>}
-            {tab === 'equity' && <SimpleRows rows={[['Shares', fmtCompact(data.equity?.shares)], ['Free float shares', fmtCompact(data.equity?.freeFloatShares)], ['Free float %', fmtPct(data.equity?.freeFloatPct, false)], ['Market cap', fmtCompact(asOf?.marketCap)], ['P/E TTM', fmtNumber(asOf?.peRatioTtm)]]} />}
+            {tab === 'equity' && <SimpleRows rows={[['Shares', fmtCompact(data.equity?.shares)], ['Free float shares', fmtCompact(data.equity?.freeFloatShares)], ['Free float %', fmtPct(data.equity?.freeFloatPct, false)], ['Market cap', fmtCompact(data.valuation?.marketCap)], ['P/E TTM', fmtNumber(data.valuation?.peRatioTtm)], ['Valuation as of', fmtDate(data.valuation?.asOf)]]} />}
             {tab === 'financials' && <FinancialRows rows={data.financialStatements.map((row) => [String(row.fiscalYear), row.period, fmtCompact(row.sales), fmtCompact(row.profitAfterTax), fmtNumber(row.eps), row.isCurrent == null ? '-' : String(row.isCurrent)])} headers={['Year', 'Period', 'Sales', 'PAT', 'EPS', 'Current']} />}
             {tab === 'ratios' && <FinancialRows rows={data.ratios.map((row) => [String(row.fiscalYear), JSON.stringify(row.values), row.isCurrent == null ? '-' : String(row.isCurrent)])} headers={['Year', 'Values', 'Current']} />}
             {tab === 'events' && <FinancialRows rows={[...data.announcements.map((row) => [row.announcementDate ?? '-', row.title, row.category ?? '-']), ...data.payouts.map((row) => [row.periodEnded ?? row.announcedAt, row.resultType ?? 'Payout', row.details ?? '-'])]} headers={['Date', 'Title/type', 'Detail']} />}

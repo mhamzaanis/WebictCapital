@@ -25,5 +25,7 @@ dist-ssr
 
 /src/scripts/_pycache__/
 .env
+.env.*
+!.env.example
 
 *.txt

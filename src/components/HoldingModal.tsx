@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded'
 import AddRoundedIcon from '@mui/icons-material/AddRounded'
 import EditRoundedIcon from '@mui/icons-material/EditRounded'
@@ -230,7 +231,7 @@ function SaveBtn({
 export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initialMode, initialHolding, availableStocks: stocksProp }: HoldingModalProps) {
   const reduce = useReducedMotion()
 
-  const stocks = stocksProp ?? []
+  const stocks = useMemo(() => stocksProp ?? [], [stocksProp])
 
   const isManage = initialMode === 'manage'
   const managedHolding = isManage ? (initialHolding ?? null) : null
@@ -287,7 +288,7 @@ export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initia
       ? (stocks.find(s => s.symbol === selectedStock)?.price ?? 0)
       : 0
 
-  const stockDetail = useMemo(() => stocks.find(s => s.symbol === selectedStock), [selectedStock])
+  const stockDetail = useMemo(() => stocks.find(s => s.symbol === selectedStock), [selectedStock, stocks])
   const existingHolding = useMemo(
     () => (!isManage && selectedStock ? holdings.find(h => h.symbol === selectedStock) ?? null : null),
     [holdings, isManage, selectedStock]
@@ -351,7 +352,7 @@ export function HoldingModal({ open, onClose, holdings, onSave, onDelete, initia
     setEditingLotId(null)
     setEditShares('')
     setEditPrice('')
-  }, [open, initialMode, managedHolding])
+  }, [open, initialMode, isManage, managedHolding])
 
   useEffect(() => {
     if (!open || isManage) return

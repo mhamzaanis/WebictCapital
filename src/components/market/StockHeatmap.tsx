@@ -108,7 +108,7 @@ export function StockHeatmap({
 				},
 			],
 		}),
-		[colors?.neutral, data, heatmapPalette, palette],
+		[colors, data, heatmapPalette, palette],
 	)
 
 	return (

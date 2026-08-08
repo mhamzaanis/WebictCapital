@@ -1,4 +1,5 @@
 import type { Tone } from '../../../lib/marketOverview'
+import { formatNumeric, formatSignedNumeric, projectNumeric, type PresentableNumeric } from '../../../lib/numericPresentation'
 
 export const SURFACE_SX = {
   bgcolor: 'var(--wc-surface)',
@@ -27,30 +28,26 @@ export function toneColor(tone: Tone): string {
   return 'var(--wc-text-secondary)'
 }
 
-export function fmtNumber(value: number | null | undefined, digits = 2): string {
-  if (value == null || !Number.isFinite(value)) return 'N/A'
-  return value.toLocaleString('en-PK', { maximumFractionDigits: digits })
+export function fmtNumber(value: PresentableNumeric | null | undefined, digits = 2): string {
+  return formatNumeric(value, digits, 'N/A')
 }
 
-export function fmtSigned(value: number | null | undefined, digits = 2): string {
-  if (value == null || !Number.isFinite(value)) return 'N/A'
-  if (value === 0) return '0'
-  return `${value > 0 ? '+' : '-'}${Math.abs(value).toLocaleString('en-PK', { maximumFractionDigits: digits })}`
+export function fmtSigned(value: PresentableNumeric | null | undefined, digits = 2): string {
+  return value == null ? 'N/A' : formatSignedNumeric(value, digits)
 }
 
-export function fmtPct(value: number | null | undefined, signed = true): string {
-  if (value == null || !Number.isFinite(value)) return 'N/A'
-  const formatted = Math.abs(value).toLocaleString('en-PK', { maximumFractionDigits: 2 })
-  if (!signed || value === 0) return `${formatted}%`
-  return `${value > 0 ? '+' : '-'}${formatted}%`
+export function fmtPct(value: PresentableNumeric | null | undefined, signed = true): string {
+  if (value == null) return 'N/A'
+  return `${signed ? formatSignedNumeric(value, 2) : formatNumeric(value, 2, 'N/A')}%`
 }
 
-export function fmtCompact(value: number | null | undefined): string {
-  if (value == null || !Number.isFinite(value)) return 'N/A'
-  const abs = Math.abs(value)
-  const sign = value < 0 ? '-' : ''
+export function fmtCompact(value: PresentableNumeric | null | undefined): string {
+  if (value == null || (typeof value === 'number' && !Number.isFinite(value))) return 'N/A'
+  const projected = projectNumeric(value, 'compact market display')
+  const abs = Math.abs(projected)
+  const sign = projected < 0 ? '-' : ''
   if (abs >= 1_000_000_000) return `${sign}${(abs / 1_000_000_000).toFixed(2)}B`
   if (abs >= 1_000_000) return `${sign}${(abs / 1_000_000).toFixed(2)}M`
   if (abs >= 1_000) return `${sign}${(abs / 1_000).toFixed(1)}K`
-  return value.toLocaleString('en-PK')
+  return projected.toLocaleString('en-PK')
 }

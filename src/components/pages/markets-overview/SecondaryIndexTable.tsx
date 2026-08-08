@@ -14,7 +14,7 @@ export function SecondaryIndexTable({ indices }: { indices: MarketIndexDto[] }) 
         title="Secondary indexes"
         detail={`All non-primary indexes returned by the API · ${formatTradeDate(tradeDate)}`}
       /> */}
-      <Box sx={{ ...SURFACE_SX, flex: 1, minWidth: 0, maxWidth: '100%', overflow: 'hidden' }}>
+      <Box sx={{ ...SURFACE_SX, flex: 1, minWidth: 0, maxWidth: '100%', overflowX: 'auto' }}>
         {rows.length === 0 ? (
           <Typography sx={{ color: 'var(--wc-text-secondary)', fontSize: 13, p: 2.5 }}>No secondary index rows were returned.</Typography>
         ) : (

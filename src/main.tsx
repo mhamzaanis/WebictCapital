@@ -7,6 +7,9 @@ import './index.css'
 import App from './App.tsx'
 import { siteTheme } from './app/theme'
 import { AuthProvider } from './context/AuthContext'
+import { initializeRuntimeConfig } from './lib/runtimeConfig'
+
+initializeRuntimeConfig()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

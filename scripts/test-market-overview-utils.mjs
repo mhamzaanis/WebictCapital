@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import { describe, it } from 'node:test'
 import vm from 'node:vm'
 import ts from 'typescript'
+import Decimal from 'decimal.js'
 
 function loadTsModule(path, requireStub = () => ({})) {
   const source = fs.readFileSync(new URL(path, import.meta.url), 'utf8')
@@ -33,10 +34,23 @@ function loadTsModule(path, requireStub = () => ({})) {
   return module.exports
 }
 
-const overview = loadTsModule('../src/lib/marketOverview.ts')
+function moduleStub(specifier) {
+  if (specifier === 'decimal.js') return { __esModule: true, default: Decimal }
+  if (specifier.endsWith('/numericPresentation')) {
+    return {
+      projectNumeric: (value) => Decimal.isDecimal(value) ? value.toNumber() : Number(value),
+      numericSign: (value) => Decimal.isDecimal(value) ? value.cmp(0) : value === 0 || value === 0n ? 0 : value > 0 ? 1 : -1,
+      formatNumeric: (value, digits = 2, fallback = '-') => value == null || Number.isNaN(Number(value)) ? fallback : Number(value).toLocaleString('en-PK', { maximumFractionDigits: digits }),
+      formatSignedNumeric: (value, digits = 2) => `${Number(value) > 0 ? '+' : Number(value) < 0 ? '-' : ''}${Math.abs(Number(value)).toLocaleString('en-PK', { maximumFractionDigits: digits })}`,
+    }
+  }
+  return {}
+}
+
+const overview = loadTsModule('../src/lib/marketOverview.ts', moduleStub)
 
 function quote(overrides) {
-  return {
+  const row = {
     symbol: 'TEST',
     companyName: 'Test Company Limited',
     open: null,
@@ -48,10 +62,15 @@ function quote(overrides) {
     section: 'COMMERCIAL BANKS',
     ...overrides,
   }
+  for (const key of ['open', 'high', 'low', 'close', 'change']) {
+    if (typeof row[key] === 'number') row[key] = new Decimal(row[key])
+  }
+  if (typeof row.turnover === 'number') row.turnover = BigInt(row.turnover)
+  return row
 }
 
 function index(overrides) {
-  return {
+  const row = {
     code: 'KSE100',
     displayName: null,
     prevClose: null,
@@ -65,6 +84,11 @@ function index(overrides) {
     asOf: '2026-07-29T17:30:00+05:00',
     ...overrides,
   }
+  for (const key of ['prevClose', 'open', 'high', 'low', 'close', 'change', 'changePct']) {
+    if (typeof row[key] === 'number') row[key] = new Decimal(row[key])
+  }
+  if (typeof row.volume === 'number') row.volume = BigInt(row.volume)
+  return row
 }
 
 describe('market overview index model', () => {
@@ -147,7 +171,7 @@ describe('market overview movers and sectors', () => {
   })
 
   it('returns N/A formatting for null render values', () => {
-    const view = loadTsModule('../src/components/pages/markets-overview/viewFormat.ts')
+    const view = loadTsModule('../src/components/pages/markets-overview/viewFormat.ts', moduleStub)
     assert.equal(view.fmtNumber(null), 'N/A')
     assert.equal(view.fmtPct(undefined), 'N/A')
     assert.equal(view.fmtCompact(Number.NaN), 'N/A')
@@ -155,9 +179,9 @@ describe('market overview movers and sectors', () => {
 })
 
 describe('market overview component contracts', () => {
-  it('keeps the API endpoint unchanged', () => {
+  it('pins the canonical market-summary endpoint', () => {
     const source = fs.readFileSync(new URL('../src/lib/api/market.ts', import.meta.url), 'utf8')
-    assert.match(source, /apiGet<MarketSummaryTickersResponse>\('\/market-summary'/)
+    assert.match(source, /publicApiGet\('\/api\/market-summary\/latest\/tickers'/)
   })
 
   it('defines correct column meanings for each mover tab', () => {
@@ -176,8 +200,7 @@ describe('market overview component contracts', () => {
     assert.doesNotMatch(source, /toTitleCase/)
     assert.doesNotMatch(source, /children: sector.children/)
     assert.match(source, /item.value \/ totalValue >= 0.0045/)
-    assert.match(source, /-10%/)
-    assert.match(source, /\+10%/)
+    assert.match(source, /Math\.min\(10, Math\.abs\(changePct\)\)/)
     assert.match(source, /TOP_HEATMAP_LIMIT = 50/)
     assert.match(source, /All securities/)
   })

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded'
 import AddRoundedIcon from '@mui/icons-material/AddRounded'
 import RemoveRoundedIcon from '@mui/icons-material/RemoveRounded'

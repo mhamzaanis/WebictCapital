@@ -1,5 +1,5 @@
-import { apiGet, dateOnly } from './client'
-import type { TickerComparisonResponse, TickerDetailResponse } from './types'
+import { dateOnly, publicApiGet } from './client'
+import { decodeTickerComparison, decodeTickerDetail } from './decoders'
 
 export type TickerDetailRequest = {
   symbol: string
@@ -12,7 +12,7 @@ export type TickerDetailRequest = {
 }
 
 export function fetchTickerDetail(request: TickerDetailRequest, signal?: AbortSignal) {
-  return apiGet<TickerDetailResponse>(`/api/tickers/${encodeURIComponent(request.symbol.trim().toUpperCase())}`, {
+  return publicApiGet(`/api/tickers/${encodeURIComponent(request.symbol.trim().toUpperCase())}`, decodeTickerDetail, {
     signal,
     cacheMs: 10 * 60 * 1000,
     query: {
@@ -34,7 +34,7 @@ export type TickerCompareRequest = {
 }
 
 export function fetchTickerComparison(request: TickerCompareRequest, signal?: AbortSignal) {
-  return apiGet<TickerComparisonResponse>('/api/tickers/compare', {
+  return publicApiGet('/api/tickers/compare', decodeTickerComparison, {
     signal,
     cacheMs: 10 * 60 * 1000,
     query: {

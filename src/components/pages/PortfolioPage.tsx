@@ -32,6 +32,8 @@ import {
 } from '../../lib/stockService'
 import { useAuth } from '../../context/AuthContext'
 import { AuthModal } from '../AuthModal'
+import { getRuntimeConfig } from '../../lib/runtimeConfig'
+import { WebictPortfolioPage } from './WebictPortfolioPage'
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 
@@ -282,23 +284,6 @@ function SecLabel({ children }: { children: React.ReactNode }) {
     <Typography sx={{
       fontSize: 11, fontFamily: NUMBER_FONT, fontWeight: 600, letterSpacing: '0.12em',
       textTransform: 'uppercase', color: 'var(--wc-primary)', mb: 1.5,
-    }}>
-      {children}
-    </Typography>
-  )
-}
-
-// FIXED: was 9px — bumped to 11px
-// @ts-expect-error — kept for future use
-function SectorTag({ children }: { children: React.ReactNode }) {
-  return (
-    <Typography component="span" sx={{
-      display: 'inline-block', fontSize: 11, fontWeight: 700,
-      letterSpacing: '0.06em', textTransform: 'uppercase',
-      color: 'var(--wc-primary)', fontFamily: NUMBER_FONT,
-      px: 0.7, py: 0.25, borderRadius: '3px',
-      bgcolor: 'rgba(10,36,99,0.06)', border: '1px solid rgba(10,36,99,0.15)',
-      lineHeight: 1.5,
     }}>
       {children}
     </Typography>
@@ -740,7 +725,7 @@ function HistRow({ event, index }: { event: HistoryEvent; index: number }) {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-export function PortfolioPage() {
+function SupabasePortfolioPage() {
   const reduce = useReducedMotion()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [drawerStock, setDrawerStock] = useState<StockDetail | null>(null)
@@ -1115,10 +1100,10 @@ export function PortfolioPage() {
       const detail = await fetchStockDetail(symbol)
       setDrawerStock(detail)
     } catch (err: unknown) {
-      const message =
-        typeof err === 'object' && err !== null && 'message' in err && typeof (err as any).message === 'string'
-          ? (err as any).message
-          : 'Failed to load stock data.'
+      const possibleMessage = typeof err === 'object' && err !== null && 'message' in err
+        ? (err as { message?: unknown }).message
+        : null
+      const message = typeof possibleMessage === 'string' ? possibleMessage : 'Failed to load stock data.'
       setDrawerError(message)
       setDrawerStock(null)
     } finally {
@@ -1712,4 +1697,10 @@ export function PortfolioPage() {
       <AuthModal open={authModalOpen} onClose={closeAuthModal} />
     </Box>
   )
+}
+
+export function PortfolioPage() {
+  return getRuntimeConfig().platformMode === 'webict'
+    ? <WebictPortfolioPage />
+    : <SupabasePortfolioPage />
 }

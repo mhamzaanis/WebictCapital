@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import type { RankedTicker } from '../../../lib/marketOverview'
 import { fmtCompact, fmtNumber, fmtPct, SURFACE_SX } from './viewFormat'
 import { SectionHeader } from './viewUtils'
+import { projectNumeric } from '../../../lib/numericPresentation'
 
 type HeatmapMode = 'top' | 'all'
 
@@ -34,19 +35,23 @@ export function MarketOverviewHeatmap({ ranked }: { ranked: RankedTicker[] }) {
   const available = useMemo(
     () =>
       ranked
-        .filter((ticker) => ticker.turnover != null && ticker.turnover > 0)
-        .sort((a, b) => (b.turnover ?? 0) - (a.turnover ?? 0)),
+        .filter((ticker) => ticker.turnover != null && ticker.turnover > 0n)
+        .sort((a, b) => {
+          const left = a.turnover ?? 0n
+          const right = b.turnover ?? 0n
+          return right > left ? 1 : right < left ? -1 : 0
+        }),
     [ranked],
   )
   const rows = useMemo(() => (mode === 'top' ? available.slice(0, TOP_HEATMAP_LIMIT) : available), [available, mode])
-  const totalValue = useMemo(() => rows.reduce((sum, row) => sum + (row.turnover ?? 0), 0), [rows])
+  const totalValue = useMemo(() => rows.reduce((sum, row) => sum + projectNumeric(row.turnover ?? 0n, 'heatmap turnover'), 0), [rows])
   const data = useMemo(
     () =>
       rows.map((ticker) => ({
         name: ticker.symbol,
-        value: ticker.turnover ?? 1,
+        value: projectNumeric(ticker.turnover ?? 1n, 'heatmap turnover'),
         company: ticker.companyName ?? ticker.symbol,
-        close: ticker.close,
+        close: ticker.close == null ? null : projectNumeric(ticker.close, 'heatmap close'),
         changePct: ticker.changePct,
       })),
     [rows],

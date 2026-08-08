@@ -1,4 +1,6 @@
 import type { MarketTickerDto } from '../../lib/api/types'
+import Decimal from 'decimal.js'
+import { formatNumeric, formatSignedNumeric, numericSign, projectNumeric, type PresentableNumeric } from '../../lib/numericPresentation'
 
 export const CARD_SX = {
   bgcolor: 'var(--wc-surface)',
@@ -11,32 +13,28 @@ export const DATA_FONT = 'var(--wc-font-data)'
 export const BODY_FONT = 'var(--wc-font-body)'
 export const DISPLAY_FONT = 'var(--wc-font-display)'
 
-export function fmtNumber(value: number | null | undefined, digits = 2): string {
-  if (value == null || !Number.isFinite(value)) return '-'
-  return value.toLocaleString('en-PK', { maximumFractionDigits: digits })
+export function fmtNumber(value: PresentableNumeric | null | undefined, digits = 2): string {
+  return formatNumeric(value, digits)
 }
 
-export function fmtSigned(value: number | null | undefined, digits = 2): string {
-  if (value == null || !Number.isFinite(value)) return '-'
-  if (value === 0) return '0'
-  return `${value > 0 ? '+' : '-'}${Math.abs(value).toLocaleString('en-PK', { maximumFractionDigits: digits })}`
+export function fmtSigned(value: PresentableNumeric | null | undefined, digits = 2): string {
+  return formatSignedNumeric(value, digits)
 }
 
-export function fmtPct(value: number | null | undefined, signed = true): string {
-  if (value == null || !Number.isFinite(value)) return '-'
-  const formatted = Math.abs(value).toLocaleString('en-PK', { maximumFractionDigits: 2 })
-  if (!signed || value === 0) return `${formatted}%`
-  return `${value > 0 ? '+' : '-'}${formatted}%`
+export function fmtPct(value: PresentableNumeric | null | undefined, signed = true): string {
+  if (value == null) return '-'
+  return `${signed ? formatSignedNumeric(value, 2) : formatNumeric(value, 2)}%`
 }
 
-export function fmtCompact(value: number | null | undefined): string {
-  if (value == null || !Number.isFinite(value)) return '-'
-  const abs = Math.abs(value)
-  const sign = value < 0 ? '-' : ''
+export function fmtCompact(value: PresentableNumeric | null | undefined): string {
+  if (value == null || (typeof value === 'number' && !Number.isFinite(value))) return '-'
+  const projected = projectNumeric(value, 'compact display value')
+  const abs = Math.abs(projected)
+  const sign = projected < 0 ? '-' : ''
   if (abs >= 1_000_000_000) return `${sign}${(abs / 1_000_000_000).toFixed(2)}B`
   if (abs >= 1_000_000) return `${sign}${(abs / 1_000_000).toFixed(2)}M`
   if (abs >= 1_000) return `${sign}${(abs / 1_000).toFixed(1)}K`
-  return value.toLocaleString('en-PK')
+  return projected.toLocaleString('en-PK')
 }
 
 export function fmtDate(value: string | null | undefined): string {
@@ -58,21 +56,21 @@ export function fmtInstant(value: string | null | undefined): string {
   })
 }
 
-export function toneColor(value: number | null | undefined): string {
-  if (value == null || value === 0) return 'var(--wc-text-secondary)'
-  return value > 0 ? 'var(--wc-success)' : 'var(--wc-error)'
+export function toneColor(value: PresentableNumeric | null | undefined): string {
+  if (value == null || numericSign(value) === 0) return 'var(--wc-text-secondary)'
+  return numericSign(value) > 0 ? 'var(--wc-success)' : 'var(--wc-error)'
 }
 
 export function changePctFromQuote(ticker: Pick<MarketTickerDto, 'close' | 'change'>): number | null {
   if (ticker.close == null || ticker.change == null) return null
-  const previous = ticker.close - ticker.change
-  if (previous <= 0) return null
-  return (ticker.change / previous) * 100
+  const previous = ticker.close.minus(ticker.change)
+  if (!previous.isPositive()) return null
+  return projectNumeric(ticker.change.div(previous).mul(100), 'ticker change percentage')
 }
 
 export function estimatedValue(ticker: Pick<MarketTickerDto, 'close' | 'turnover'>): number | null {
-  if (ticker.close == null || ticker.close <= 0 || ticker.turnover == null || ticker.turnover <= 0) return null
-  return ticker.close * ticker.turnover
+  if (ticker.close == null || !ticker.close.isPositive() || ticker.turnover == null || ticker.turnover <= 0n) return null
+  return projectNumeric(ticker.close.mul(new Decimal(ticker.turnover.toString())), 'estimated traded value')
 }
 
 export function jsonStringList(value: unknown): string[] {

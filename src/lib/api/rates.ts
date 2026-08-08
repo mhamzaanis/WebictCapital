@@ -1,5 +1,5 @@
-import { apiGet } from './client'
-import type { KiborResponseDto, UsdPkrResponseDto } from './types'
+import { publicApiGet } from './client'
+import { decodeKiborResponse, decodeUsdPkrResponse } from './decoders'
 
 export type KiborRatesRequest = {
   startDate: string
@@ -12,7 +12,7 @@ export type UsdPkrRatesRequest = {
 }
 
 export function fetchKiborRates({ startDate, endDate }: KiborRatesRequest, signal?: AbortSignal) {
-  return apiGet<KiborResponseDto>('/rates/kibor', {
+  return publicApiGet('/api/rates/kibor', decodeKiborResponse, {
     query: { startDate, endDate },
     signal,
     cacheMs: 30 * 60 * 1000,
@@ -20,7 +20,7 @@ export function fetchKiborRates({ startDate, endDate }: KiborRatesRequest, signa
 }
 
 export function fetchUsdPkrRates({ startDate, endDate }: UsdPkrRatesRequest, signal?: AbortSignal) {
-  return apiGet<UsdPkrResponseDto>('/rates/usd-pkr', {
+  return publicApiGet('/api/rates/usd-pkr', decodeUsdPkrResponse, {
     query: { startDate, endDate },
     signal,
     cacheMs: 30 * 60 * 1000,

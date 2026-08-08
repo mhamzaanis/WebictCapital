@@ -1,534 +1,157 @@
-# Webict Capital — Complete Project Flow & Architecture
+# WebICT Capital frontend architecture
 
-> **Last updated:** July 27, 2026
-> **Stack:** React 19 + Vite · TypeScript · Material UI · Framer Motion · Supabase Auth/user tables · WebICTCapital API · ECharts
+Contract revision: **2026-08-01.5**
+Implementation state: dual-mode frontend ready for local verification; production cutover has not occurred.
 
----
+## Runtime mode and initialization
 
-## Table of Contents
+`src/main.tsx` validates runtime configuration once before rendering. `VITE_PLATFORM_MODE` must be exactly `supabase` or `webict`; missing/invalid values fail closed. `VITE_MARKET_API_BASE_URL` must be an explicit HTTP(S) origin with no path, query, fragment, or embedded credentials. There is no default API host and no fallback between platform modes.
 
-1. [Application Bootstrap](#1-application-bootstrap)
-2. [Global Layout & SEO](#2-global-layout--seo)
-3. [Authentication System](#3-authentication-system)
-4. [Navigation Structure](#4-navigation-structure)
-5. [Page-by-Page Flow](#5-page-by-page-flow)
-   - [Home `/`](#51-home-page-)
-   - [Data `/data`](#52-data-page-data)
-   - [Portfolio `/portfolio`](#53-portfolio-page-portfolio)
-   - [Glossary `/glossary`](#54-glossary-page-glossary)
-   - [Masterclasses `/masterclasses`](#55-masterclasses-page-masterclasses)
-   - [SIP Calculator `/sip-calculator`](#56-sip-calculator-page-sip-calculator)
-   - [Advisory `/advisory`](#57-advisory-page-advisory)
-   - [About `/about`](#58-about-page-about)
-6. [Shared Components](#6-shared-components)
-7. [Data Layer — Supabase & Services](#7-data-layer--supabase--services)
-8. [Caching & Performance](#8-caching--performance)
-9. [Environment Variables](#9-environment-variables)
-10. [External Services](#10-external-services)
+| Variable | Supabase mode | WebICT mode | Meaning |
+| --- | --- | --- | --- |
+| `VITE_PLATFORM_MODE` | `supabase` | `webict` | Explicit browser platform adapter |
+| `VITE_MARKET_API_BASE_URL` | required | required | WebICT API origin |
+| `VITE_SUPABASE_URL` | required | omitted | Transitional public Supabase project origin |
+| `VITE_SUPABASE_ANON_KEY` | required | omitted | Transitional public anonymous key only |
 
----
+No service-role or writer credential belongs in browser configuration. Production remains explicitly configured as `supabase` until coordinated cutover. Staging may explicitly select `webict`.
 
-## 1. Application Bootstrap
+## Public API boundary
 
-**Entry:** `src/main.tsx`
+`src/lib/api/client.ts` provides anonymous URL-cached GETs for public market data. Responses are read with `response.text()` and parsed through `lossless-json`; financial/int64 DTOs never use `response.json()`.
 
-```
-BrowserRouter
-  └─ HelmetProvider          (react-helmet-async — per-page SEO)
-       └─ ThemeProvider      (MUI custom theme)
-            └─ AuthProvider  (Supabase auth context)
-                 └─ App      (routing)
-```
+Canonical routes used by new code:
 
-| File | Role |
-|---|---|
-| `index.html` | Static SEO shell — Schema.org JSON-LD, Open Graph, preloaded fonts |
-| `src/main.tsx` | Wraps app in providers (Theme, Auth, Helmet, Router) |
-| `src/App.tsx` | Defines all `<Route>` elements inside `<AppLayout>` |
-| `src/app/AppLayout.tsx` | Shared layout wrapper (NavBar + Outlet + Footer + per-route SEO) |
+- `GET /api/market-summary/latest/tickers`
+- `GET /api/rates/kibor`
+- `GET /api/rates/usd-pkr`
+- `GET /api/tickers/{symbol}` (ticker detail, with valuation explicitly included)
+- `GET /api/tickers/compare`
+- `GET /api/market-indexes/{code}/history?from={date}&to={date}`
 
----
+The `/market-summary` and `/rates/*` compatibility aliases are not used by new frontend code.
 
-## 2. Global Layout & SEO
+Market summary supplies the security catalogue. Ticker detail is fetched only after a symbol is opened/selected; the catalogue is not expanded through an N+1 detail sweep. Watchlist rows reuse catalogue fields and intentionally omit sparklines until bounded detail is available.
 
-**Component:** `AppLayout` (`src/app/AppLayout.tsx`)
+Ticker comparison supports two to four distinct stocks and zero to two distinct benchmarks (`KSE100`, `KSE30`, `KMI30`, `KSEALL`). Repeated parameters and requested order are preserved. `KSEALL` is the public code for stored `ALLSHR` data. Two distinct benchmark chart colours are available.
 
-Every page is rendered inside `AppLayout`, which provides:
+Market-index history retains available/requested/applied ranges and nullable `asOf`. Points are accepted in ascending order. The portfolio chart requests an explicit range beginning in 2021 and selects the latest 252 actual observations without fabricating calendar rows.
 
-| Feature | Implementation |
-|---|---|
-| **NavBar** | Sticky top bar with logo, desktop links, mobile drawer, user avatar/menu |
-| **Footer** | Site links, social media (Instagram), copyright |
-| **Page transitions** | `AnimatePresence` + `motion.div` fade-up on route change |
-| **Per-route SEO** | `SEO_BY_PATH` object maps each pathname → `{ title, description, structuredData }` |
-| **Open Graph / Twitter** | Injected via `<Helmet>` on every route change |
-| **Structured Data** | JSON-LD schema per page (WebPage, DataCatalog, DefinedTermSet, Course list, WebApplication, Service, AboutPage) |
+## Lossless numeric and temporal model
 
-### SEO Map
+Strict decoders in `src/lib/api/decoders.ts` validate required keys, nullability, integer-ness, UUID/date/instant formats, technical metadata literals, and DTO shape.
 
-| Route | Schema.org Type | Title Pattern |
-|---|---|---|
-| `/` | `WebPage` | Webict Capital \| PSX Stock Market Education… |
-| `/about` | `AboutPage` | About Webict Capital \| PSX Investing… |
-| `/data` | `DataCatalog` | PSX Market Data \| Daily Pakistan Stock Exchange… |
-| `/glossary` | `DefinedTermSet` | PSX Investing Glossary \| Key Stock Market Terms… |
-| `/masterclasses` | `ItemList` (Course) | PSX Investing Masterclasses \| Structured Learning… |
-| `/sip-calculator` | `WebApplication` | SIP Calculator \| Estimate Your Systematic… |
-| `/advisory` | `Service` | Investment Advisory \| Webict Capital - Coming Soon |
-| `/portfolio` | *(uses `/` fallback)* | *(inherits home SEO)* |
+- `bigint`: security/source IDs, quantities, turnover, shares, portfolio versions, lot versions.
+- `Decimal`: prices, costs, rates, EPS, ratios, percentages, market caps, valuations.
+- `number`: safe int32 counts, limits, and fiscal years only.
+- branded strings: UUID, ISO calendar date, and ISO instant remain distinct.
 
----
+Mutation serialization uses `lossless-json` numeric tokens; authoritative values are never first coerced through `Number`, `parseInt`, or `parseFloat`. ECharts receives only deliberate range-checked projections. Text rendering formats Decimal/bigint directly.
 
-## 3. Authentication System
+## Authentication
 
-**Provider:** `AuthContext` (`src/context/AuthContext.tsx`)
-**Backend:** Supabase Auth with Google OAuth
+Components consume the normalized `AuthUser` interface and never receive Supabase sessions, access tokens, or refresh tokens.
 
-### Flow
+### Supabase mode
 
-```
-User clicks "Sign in" (AuthModal or locked feature)
-  └─ signInWithGoogle()
-       └─ supabase.auth.signInWithOAuth({ provider: 'google', options: { queryParams: { prompt: 'select_account' } } })
-            └─ Redirects to Google → returns to app
-                 └─ supabase.auth.onAuthStateChange() fires
-                      └─ AuthContext updates `user` state
-```
+`src/lib/auth/supabaseAdapter.ts` preserves the production Google OAuth/session behavior while mapping the result to `AuthUser`. It is selected only when `VITE_PLATFORM_MODE=supabase`.
 
-### Context API
+### WebICT mode
 
-| Export | Type | Description |
-|---|---|---|
-| `user` | `User \| null` | Current Supabase user object |
-| `loading` | `boolean` | True while session is being resolved |
-| `error` | `string \| null` | Last auth error message |
-| `signInWithGoogle()` | `() => Promise<void>` | Triggers Google OAuth redirect |
-| `signOut()` | `() => Promise<void>` | Signs out and clears session |
-| `clearError()` | `() => void` | Resets error state |
+- Bootstrap: `GET /api/auth/me`, `credentials: "include"`; bare or ProblemDetails 401 means signed out.
+- Google start: top-level navigation to `GET /api/auth/google/start?returnUrl=<same-origin-current-page>`.
+- `/signin-google` and `/api/auth/google/callback` are server-managed and are never invoked by React.
+- Redirect `auth=failed` is shown as a generic failure; internal authentication scheme names are not referenced.
+- Logout: fresh CSRF, then `POST /api/auth/logout`.
+- No WebICT failure falls back to Supabase.
 
-### Where Google Sign-In Is Required
+Logout, 401, and user identity transitions abort in-flight private requests and synchronously clear registered private state so previous-user portfolio/watchlist/activity cannot remain in the DOM.
 
-| Feature | Page | Guard Mechanism |
-|---|---|---|
-| Add/edit/delete trades | Portfolio | `requireUserId()` in `stockService.ts` throws if no user |
-| View holdings & P&L | Portfolio | Data fetched only when `user` is truthy (`loadUserData`) |
-| Watchlist add/remove | Portfolio | `requireUserId()` guard |
-| Trade history | Portfolio | Fetched via `fetchUserTrades()` (requires auth) |
-| AuthModal trigger | Portfolio | `isLocked` state opens modal automatically for anonymous users |
+## CSRF and private requests
 
-### Where Auth Is NOT Required
+Every mutation and logout obtains a fresh token from `GET /api/auth/csrf`, validates `headerName === "X-CSRF-TOKEN"`, then sends that exact header with `credentials: "include"`. Tokens are not logged or persisted. Private requests use `cache: "no-store"` and never enter the public URL cache.
 
-All other pages are fully public: Home, Data, Glossary, Masterclasses, SIP Calculator, Advisory, About.
+HTTP 400, 401, 403, 404, 409, 503, infrastructure, network, and abort outcomes are distinguished. RFC ProblemDetails is decoded when present; 204 is handled without JSON parsing.
 
----
+## Portfolio and watchlist
 
-## 4. Navigation Structure
+WebICT mode uses:
 
-**Config:** `src/content/siteContent.ts` → `navItems[]`
+- `GET /api/portfolio`
+- `GET /api/portfolio/lots`
+- `GET /api/portfolio/holdings`
+- `GET /api/portfolio/activity`
+- `GET /api/portfolio/watchlist`
+- `PUT|DELETE /api/portfolio/watchlist/{symbol}`
+- `POST /api/portfolio/buys`
+- `POST /api/portfolio/sells`
+- `POST /api/portfolio/lots/{lotId}/corrections`
+- `POST /api/portfolio/positions/{symbol}/remove`
 
-```
-NavBar
-├── Learn (dropdown)
-│   ├── Glossary        → /glossary
-│   └── Masterclasses   → /masterclasses
-├── Tools (dropdown)
-│   └── SIP Calculator  → /sip-calculator
-├── My Portfolio         → /portfolio
-├── Data                 → /data
-├── Advisory             → /advisory
-└── About us             → /about
+No request accepts or sends `user_id`. The UI renders the server portfolio summary, lots, holdings, immutable activity, and watchlist. It does not reconstruct holdings from activity, rewrite/delete BUY lots, delete history, or implement client FIFO. Imported SELL activity with `positionEffect=none` is labelled position-neutral. Valuation is holdings-only; there is no cash field or placeholder. Nullable quote/value fields render `N/A`, and the unpriced holding count is exposed.
+
+Corrections and removals require a reason and send expected lot/portfolio versions. The UI displays versions needed for reconfirmation and correction before/after activity data.
+
+## Mutation commands and operational gate
+
+Buy, sell, correction, and removal create one `crypto.randomUUID()` only when confirmed and freeze the logical body. An unknown-outcome/network retry reuses that UUID and exact body, fetching fresh CSRF for every transport attempt. A changed field/version requires user reconfirmation and a new command/UUID.
+
+On success, portfolio summary, lots, holdings, activity, and watchlist are refreshed. On 409, the complete snapshot is refreshed before a reconciliation message; stale corrections/removals and oversells are not automatically retried. Watchlist PUT/DELETE are naturally idempotent and use no mutation UUID.
+
+On 503, authenticated read state remains visible, mutation controls pause, and the UI reports that writes are temporarily unavailable. WebICT mode never falls back to Supabase.
+
+## Cache policy
+
+- Public market GET: bounded URL-only cache and in-flight deduplication.
+- Auth/portfolio/watchlist: uncached, `credentials: "include"`, `cache: "no-store"`.
+- Private state: reset registry plus request abort on logout/401/account transition.
+- No authenticated response is stored in the shared market cache.
+- The last successful ticker/comparison response remains visible while a replacement request loads.
+
+## Transitional Supabase and data-pipeline ownership
+
+The following remain intentionally present for production rollback and the current data pipeline:
+
+- `src/lib/supabase.ts`
+- `src/lib/stockService.ts`
+- Supabase-mode portfolio implementation in `src/components/pages/PortfolioPage.tsx`
+- `src/scripts/parse_psx.py` and `src/scripts/fetch.py`
+- `.github/workflows/psxdata.yml`
+- historical schema material
+
+They are not used for WebICT auth/portfolio/watchlist requests. Removal requires: migration 008 applied in the target environment, rehearsed identity/portfolio import, coordinated flags, validated WebICT production sessions and writes, rollback-window closure, and explicit ownership transfer for remaining market writers. The workflow’s service credential is server-side only; any potentially exposed or service-role-looking credential requires manual rotation and repository-secret cleanup.
+
+## Staging rehearsal
+
+Staging variables:
+
+```dotenv
+VITE_PLATFORM_MODE=webict
+VITE_MARKET_API_BASE_URL=https://staging-api-origin.example
 ```
 
-**Footer columns** (`footerColumns`):
-- Social Media: Instagram link
-- Webict Capital: Glossary, Masterclasses, Portfolio, Data, Advisory, About us
+Do not provide `VITE_SUPABASE_URL` or `VITE_SUPABASE_ANON_KEY` to the WebICT staging build. Backend staging prerequisites remain operational: migration 008, imported test identities/portfolios, allowed staging origin/cookies, auth cutover enabled only in staging, registration policy retained, and portfolio writes enabled only for the controlled write rehearsal.
 
----
+Rehearse signed-out bootstrap, Google round-trip, disabled imported user, logout/CSRF, account switch, every read, mutation success, unknown outcome retry, 409 conflict, 503 gate, nullable valuation, legacy SELL neutrality, and rollback to an explicitly built Supabase-mode artifact.
 
-## 5. Page-by-Page Flow
+## Cutover and rollback
 
----
+Cutover is coordinated with backend/data owners: freeze authoritative Supabase writes, export/import and reconcile, apply required migration/flags, build with `webict`, run smoke checks, then route production traffic. This repository does not claim that any of those events has occurred.
 
-### 5.1 Home Page (`/`)
+Rollback uses the previously verified artifact built with `VITE_PLATFORM_MODE=supabase`; no runtime fallback exists. If WebICT mutations were enabled, backend/data owners must first decide the authoritative write boundary and reconciliation procedure before traffic rollback. Never merge histories client-side.
 
-**Component:** `HomePage` (`src/components/pages/HomePage.tsx`)
-**Auth Required:** ❌ No
+## Verification
 
-#### Sections
+Required local checks:
 
-| Section | Content | Data Source |
-|---|---|---|
-| Hero | Headline, tagline, CTA buttons (Explore Markets, View Masterclasses) | **Static** (hardcoded) |
-| Stats bar | "300+ Investors trained", "12+ PSX workshops", "95% Satisfaction rate" | **Static** (`STATS` array) |
-| Product cards | Markets/PSX Overview, Glossary, SIP Calculator — each with preview, description, link | **Static** (`PRODUCTS` array) |
-| Newsletter | Email subscription form | **Web3Forms API** (`POST https://api.web3forms.com/submit`) |
-
-#### External Calls
-- **Web3Forms** — newsletter signup (access key: `6f47bd12-...`)
-
----
-
-### 5.2 Markets Workspace (`/data`)
-
-The former single Data page is now a route-backed Markets workspace. `/data`
-is retained for compatibility and serves the Market Overview.
-
-| Route | Component | Public data source |
-|---|---|---|
-| `/data` | `MarketsOverviewPage` | `GET /api/market-summary/latest/tickers` |
-| `/data/stocks` | `StocksExplorerPage` | `GET /api/market-summary/latest/tickers` |
-| `/data/compare` | `StockComparisonPage` | `GET /api/tickers/compare` |
-| `/data/rates` | `RatesMacroPage` | `GET /api/rates/kibor`, `GET /api/rates/usd-pkr` |
-| `/stocks/:symbol` | `StockDetailPage` | `GET /api/tickers/{symbol}` |
-
-`src/lib/api/*` is the public market-data boundary. It uses
-`VITE_MARKET_API_BASE_URL` with default `https://api.webictcapital.com`,
-AbortController cancellation, request deduplication, bounded cache freshness,
-date-only query serialization, typed DTOs, and normalized errors.
-
-Confirmed endpoint gaps:
-- Public Swagger/OpenAPI is not exposed at `/swagger/index.html` or
-  `/swagger/v1/swagger.json`; route attributes and DTOs in the deployed API
-  project were used as the contract source.
-- `GET /api/market-summary/latest/tickers` has no date/range parameter,
-  pagination, listing-level technical fields, or richer sector taxonomy beyond
-  `section`.
-- Listing columns such as market cap, latest RSI, and SMA relationship are not
-  fabricated when unsupported.
-- `TickerQuoteDto.marketCap` and `peRatioTtm` may be null in production
-  responses and are rendered as unavailable.
-- Browser requests currently require API CORS enablement. A GET with
-  `Origin: http://127.0.0.1:5174` returned HTTP 200 JSON without
-  `Access-Control-Allow-Origin`, so local visual verification renders the
-  frontend network-error state until API CORS allows the frontend origin.
-
-Legacy details retained below describe the pre-migration implementation and
-remaining Portfolio dependencies.
-
-### 5.2 Legacy Data Page (`/data`) - superseded
-
-**Component:** `DataPage` (`src/components/pages/DataPage.tsx`)
-**Auth Required:** ❌ No
-
-#### Data Loading Flow
-
-```
-On mount:
-  1. fetchMarketDailySummaryRows(1)        → Supabase RPC → latest market_daily_summary row
-  2. Extract trade_date from summary
-  3. Promise.all([
-       fetchSupabaseTradeDay(summaryRow),   → Supabase table query → all stocks for that date
-       fetchMarketAiSummary(tradeDate),     → Supabase table → market_ai_summaries
-     ])
+```bash
+pnpm run typecheck
+pnpm run lint
+pnpm run test:comparison
+pnpm run test:market-overview
+pnpm test
+pnpm run build
+git diff --check
 ```
 
-#### Sections & Data Sources
-
-| Section | Data Source | Details |
-|---|---|---|
-| **Market Dashboard** (KSE-100, KSE-30, All Shares, KSE Meezan 30, etc.) | **Supabase** `market_daily_summary` table via `fetchMarketDailySummaryRows()` → `getMarketIndexSnapshots()` | Shows index close, change, change%, high/low/volume per index |
-| **AI Market Summary** | **Supabase** `market_ai_summaries` table via `fetchMarketAiSummary()` | AI-generated daily analysis (generated server-side via Google Gemini API) |
-| **Market Stats** (Advances/Declines/Unchanged/Volume) | **Supabase** `market_daily_summary` row fields | Derived from `advances`, `declines`, `unchanged`, `curr_volume` |
-| **Stock Heatmap** | **Supabase** stock table rows | Treemap colored by change, sized by turnover |
-| **Sector Activity** (Bar chart + Donut chart) | **Supabase** stock rows, grouped by `industry` | Aggregates turnover, gainers/losers per sector |
-| **Top Gainers / Top Losers / Most Active** | **Supabase** stock rows, ranked client-side | Top N by change%, sorted descending/ascending |
-| **Full Stock Table** | **Supabase** stock rows | Filterable by search, movement (gainers/losers/unchanged), industry |
-| **CSV Export** | Client-side | Generates CSV blob from displayed stocks |
-
-#### Supabase Tables Used
-- `market_daily_summary` — market-level summary (indexes, advances/declines, volume)
-- Stock data table (via RPC `fetchSupabaseTradeDay`) — per-stock OHLC, turnover, EPS, P/E
-- `market_ai_summaries` — AI-generated market analysis text
-
----
-
-### 5.3 Portfolio Page (`/portfolio`)
-
-**Component:** `PortfolioPage` (`src/components/pages/PortfolioPage.tsx`)
-**Auth Required:** ✅ Yes (for user-specific data) / Partial (market data loads anonymously)
-
-#### Two-Tier Data Loading
-
-```
-On mount (refreshPortfolio):
-  If NO user → loadMarketOnly():
-    ├── fetchMarketDailySummaryRows(2)   → market indexes
-    └── fetchUniqueSymbols()             → all market symbol snapshots
-
-  If user exists → loadUserData():
-    ├── fetchMarketDailySummaryRows(2)   → market indexes
-    ├── fetchUserTrades()                → user's trade records (Supabase: user_trades)
-    ├── fetchUniqueSymbols()             → all market snapshots
-    └── fetchWatchlistSymbols()          → user's watchlist (Supabase: watchlists)
-```
-
-#### Sections & Data Sources
-
-| Section | Auth? | Data Source | Details |
-|---|---|---|---|
-| **Market Overview** (KSE-100, KSE-30, indexes) | ❌ | **Supabase** `market_daily_summary` | Shows latest index values, change, history charts |
-| **Market Index History** (1M/3M/6M/1Y) | ❌ | **Supabase** via `fetchMarketHistoryRows()` | Loaded lazily when modal opened |
-| **Holdings Table** | ✅ | **Supabase** `user_trades` + live market data | Calculates shares, avg cost, market value, P&L |
-| **Sector Allocation** (pie chart) | ✅ | Derived from holdings + market `sector` field | Client-side aggregation |
-| **Portfolio Summary** (Total MV, Day P&L, Total P&L) | ✅ | Derived from holdings | Client-side calculation |
-| **Trade History** (recent 10) | ✅ | **Supabase** `user_trades` | Sorted by date descending |
-| **Watchlist** | ✅ | **Supabase** `watchlists` + live market data | Symbols enriched with live price/change/spark |
-| **Add Trade Modal** | ✅ | Writes to **Supabase** `user_trades` via `addUserTrade()` | BUY/SELL form |
-| **Add to Watchlist** | ✅ | Writes to **Supabase** `watchlists` via `addWatchlistSymbol()` | Symbol picker |
-| **Stock Detail Drawer** | ❌ | **Supabase** via `fetchStockDetail()` RPC | Full stock profile with OHLC chart |
-| **Auth Modal** | — | Triggers `signInWithGoogle()` | Opens when anonymous user tries protected action |
-
-#### Supabase Tables Used
-- `market_daily_summary` — indexes, market breadth
-- `user_trades` — BUY/SELL records per user
-- `watchlists` — user watchlist symbols
-- Stock detail RPC (`get_stock_details`) — individual stock deep-dive
-
-#### Key Guard: `requireUserId()`
-Located in `stockService.ts`, this helper throws an error if no authenticated user ID is available. Used by:
-- `fetchUserTrades()`
-- `addUserTrade()`
-- `deleteUserTrade()`
-- `fetchWatchlistSymbols()`
-- `addWatchlistSymbol()`
-- `removeWatchlistSymbol()`
-
----
-
-### 5.4 Glossary Page (`/glossary`)
-
-**Component:** `GlossaryPage` (`src/components/pages/GlossaryPage.tsx`)
-**Auth Required:** ❌ No
-
-#### Data Source
-- **Static** — imported from `src/components/pages/glossary.ts` (`glossaryEntries` array, ~139KB)
-- Each entry: `{ letter, term, meaning, description }`
-
-#### Features
-
-| Feature | Implementation |
-|---|---|
-| Search | Client-side text filter across term + meaning + description |
-| A–Z filter | Alphabet buttons, filters by `letter` field |
-| Sort A→Z / Z→A | Client-side `localeCompare` |
-| Pagination | 25 terms per page, client-side |
-| Expand/collapse definitions | Accordion-style per term |
-| Related terms | Auto-linked to same-letter terms |
-| Popular terms sidebar | Static list (EPS, P/E Ratio, Dividend Yield, Market Cap, Beta) |
-
----
-
-### 5.5 Masterclasses Page (`/masterclasses`)
-
-**Component:** `MasterclassesPage` (`src/components/pages/MasterclassesPage.tsx`)
-**Auth Required:** ❌ No
-
-#### Data Source
-- **Entirely static** — all content hardcoded in component (`SEASONS[]`, `FEATURES[]`, `AUDIENCES[]`)
-
-#### Sections
-
-| Section | Content |
-|---|---|
-| Hero | Title, description, hero image (`/herosection.webp`), "View Curriculum" CTA |
-| Feature strip | 4 cards: Structured Learning, Expert Led, Practical, Certificate |
-| Curriculum (4 seasons) | Accordion with season title + lesson list — Season 01–04, 3-4 lessons each |
-| Audience band | "Who it's for" — Serious Investors, Professionals, Aspiring Analysts |
-
----
-
-### 5.6 SIP Calculator Page (`/sip-calculator`)
-
-**Component:** `SipCalculatorPage` (`src/components/pages/SipCalculatorPage.tsx`)
-**Auth Required:** ❌ No
-
-#### Data Source
-- **Entirely client-side calculation** — no API calls
-
-#### Features
-
-| Feature | Details |
-|---|---|
-| Input sliders | Monthly investment (Rs 500–100K), Annual return (0–30%), Period (1–30 yrs) |
-| Inflation toggle | Adjusts future value by 9% annual inflation rate |
-| Metric cards | Invested amount, Est. returns, Total value |
-| Growth chart | ECharts line chart (invested vs. total value over years) |
-| Date display | SIP start date (May 2025) → calculated end date |
-| Yearly breakdown table | Collapsible table: year, invested, gains, balance |
-| Return breakdown | Visual bar showing invested % vs. gain % |
-| "Why SIP" education | Static principles: Rupee Cost Averaging, Power of Compounding, Financial Discipline |
-| Disclaimer | Static legal disclaimer text |
-
----
-
-### 5.7 Advisory Page (`/advisory`)
-
-**Component:** `AdvisoryPage` (`src/components/pages/AdvisoryPage.tsx`)
-**Auth Required:** ❌ No
-
-#### Data Source
-- **Static content** + **Web3Forms API** for waitlist
-
-#### Sections
-
-| Section | Content | Data Source |
-|---|---|---|
-| Hero | "Advisory is coming" headline, hero image (`/advisory-hero.png`) | **Static** |
-| Features grid | Strategy Sessions, Portfolio Reviews, Risk Guidance, Market Perspective | **Static** (`FEATURES[]`) |
-| Waitlist form | Name, email, investor type dropdown, consent checkbox | **Web3Forms API** |
-| "What to expect" sidebar | 5 expectation bullet points | **Static** (`EXPECTATIONS[]`) |
-| FAQ accordion | 4 Q&A items in 2-column layout | **Static** (`FAQ_ITEMS[]`) |
-
----
-
-### 5.8 About Page (`/about`)
-
-**Component:** `AboutPage` (`src/components/pages/AboutPage.tsx`)
-**Auth Required:** ❌ No
-
-#### Data Source
-- **Static content** + **Web3Forms API** for contact form
-
-#### Sections
-
-| Section | Content | Data Source |
-|---|---|---|
-| Hero | "Built for serious investors" + company info (Karachi, PSX focus) | **Static** |
-| Vision | 3 pillars: Beyond the Obvious, Independent Thinking, Turning Data into Conviction | **Static** |
-| Who/What/Why | 3 highlight cards | **Static** (`teamHighlights[]`) |
-| Principles | Clarity Over Noise, Long-Term Discipline, Local Context Global Standards | **Static** (`principles[]`) |
-| Founder message | Asaad Sohail's personal message + quote | **Static** |
-| Closing tagline | "Stay Curious. Stay Disciplined." | **Static** |
-| Contact form | Full name, email, subject, message → submit | **Web3Forms API** |
-
----
-
-## 6. Shared Components
-
-| Component | File | Used In | Purpose |
-|---|---|---|---|
-| `NavBar` | `src/components/layout/NavBar.tsx` | AppLayout | Top navigation, mobile drawer, user menu (sign out) |
-| `Footer` | `src/components/layout/Footer.tsx` | AppLayout | Site links, copyright |
-| `AuthModal` | `src/components/AuthModal.tsx` | Portfolio | Google sign-in dialog with benefits list |
-| `StockDrawer` | `src/components/StockDrawer.tsx` | Portfolio, Data | Full stock detail modal (OHLC chart, financials, ranges) |
-| `MotionReveal` | `src/components/animations/MotionReveal.tsx` | All pages | Scroll-triggered fade-up animation wrapper |
-| `PulseSkeleton` | `src/components/PulseSkeleton.tsx` | StockDrawer | Loading skeleton placeholder |
-| `CustomDataTable` | `src/components/pages/CustomDataTable.tsx` | Data | Paginated stock table with search highlighting |
-| `FiltersBar` | `src/components/pages/FiltersBar.tsx` | Data | Movement filter (All/Gainers/Losers/Unchanged) |
-| `MarketVisuals` | `src/components/market/MarketVisuals.tsx` | Data | Heatmap, BarChart, DonutChart components |
-| `CustomSkeleton` | `src/components/pages/CustomSkeleton.tsx` | Data | Market dashboard loading skeletons |
-
----
-
-## 7. Data Layer — Supabase & Services
-
-### Supabase Client
-
-**File:** `src/lib/supabase.ts`
-
-```typescript
-const supabase = createClient(VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, {
-  auth: { detectSessionInUrl: true }
-})
-```
-
-### Stock Service
-
-**File:** `src/lib/stockService.ts` (~1100 lines)
-
-This remains the Supabase auth/user-table service for portfolio trades and
-watchlists. Public market data for the Markets workspace now goes through
-`src/lib/api/*`.
-
-#### Public Functions (No Auth)
-
-| Function | Supabase Source | Cache TTL | Description |
-|---|---|---|---|
-| `fetchMarketDailySummaryRows(limit)` | `market_daily_summary` table | 3 min | Latest N market summary rows |
-| `fetchMarketHistoryRows(column, days)` | `market_daily_summary` table | 5 min | Historical index values |
-| `fetchMarketAiSummary(date)` | `market_ai_summaries` table | 5 min | AI-generated daily market analysis |
-| `fetchUniqueSymbols()` | RPC `get_unique_symbols` | 3 min | All traded symbols with latest price/change/spark |
-| `fetchStockDetail(symbol)` | RPC `get_stock_details` | 2 min | Full stock profile (OHLC history, financials, corporate actions) |
-
-#### Authenticated Functions (Require User)
-
-| Function | Supabase Source | Description |
-|---|---|---|
-| `fetchUserTrades()` | `user_trades` table | All trades for current user |
-| `addUserTrade(trade)` | `user_trades` table (INSERT) | Record a BUY/SELL |
-| `deleteUserTrade(id)` | `user_trades` table (DELETE) | Remove a trade |
-| `fetchWatchlistSymbols()` | `watchlists` table | User's watchlist symbol list |
-| `addWatchlistSymbol(symbol)` | `watchlists` table (INSERT) | Add to watchlist |
-| `removeWatchlistSymbol(symbol)` | `watchlists` table (DELETE) | Remove from watchlist |
-
-Client-side `requireUserId()` is a UX guard, not an authorization boundary.
-Production Supabase RLS must enforce that `user_trades.user_id` and
-`watchlists.user_id` match `auth.uid()` for all select/insert/update/delete
-policies.
-
-### Supabase Tables
-
-| Table | Used By | Description |
-|---|---|---|
-| `market_daily_summary` | Data, Portfolio | Daily market summary: indexes, advances/declines, volume |
-| `market_ai_summaries` | Data | AI-generated market commentary per trade date |
-| `user_trades` | Portfolio | User trade records (BUY/SELL with symbol, quantity, price, date) |
-| `watchlists` | Portfolio | User watchlist entries (user_id + symbol) |
-| Stock data (via RPCs) | Data, Portfolio, StockDrawer | Per-stock OHLC, turnover, EPS, P/E, financials, corporate actions |
-
----
-
-## 8. Caching & Performance
-
-`stockService.ts` implements a manual caching layer:
-
-| Mechanism | Implementation |
-|---|---|
-| **TTL Cache** | `Map<string, { data, timestamp }>` — returns cached data if within TTL |
-| **Request Deduplication** | `Map<string, Promise>` — concurrent calls for the same key share one in-flight request |
-| **Cache Keys** | Function-specific (e.g. `market-summary-2`, `stock-detail-OGDC`) |
-| **Default TTLs** | 2–5 minutes depending on data volatility |
-
-This prevents redundant Supabase calls when navigating between pages or re-rendering components.
-
----
-
-## 9. Environment Variables
-
-| Variable | Required | Used By | Purpose |
-|---|---|---|---|
-| `VITE_SUPABASE_URL` | ✅ | `supabase.ts` | Supabase project URL |
-| `VITE_SUPABASE_ANON_KEY` | ✅ | `supabase.ts` | Supabase anonymous/public key |
-| `LLM_API_KEY` | Server-side | AI summary generation | Google Gemini API key |
-| `LLM_API_URL` | Server-side | AI summary generation | Gemini API endpoint |
-
----
-
-## 10. External Services
-
-| Service | Usage | Pages |
-|---|---|---|
-| **WebICTCapital API** | Public market data, ticker detail/comparison, KIBOR, USD/PKR | Markets workspace |
-| **Supabase** (Auth + Database) | Authentication (Google OAuth), user trades, watchlists, temporary Portfolio market enrichment | Portfolio |
-| **Google OAuth** | User sign-in via Supabase Auth | Portfolio (AuthModal) |
-| **Web3Forms** | Contact form & newsletter submissions | Home, About, Advisory |
-| **Google Gemini API** | AI-generated daily market summaries (server-side, stored in Supabase) | Data |
-
----
-
-## Summary: Auth Requirement Matrix
-
-| Page | Route | Auth Required | Data Source |
-|---|---|---|---|
-| Home | `/` | ❌ | Static + Web3Forms |
-| Markets Overview | `/data` | ❌ | WebICTCapital API |
-| Stocks Explorer | `/data/stocks` | ❌ | WebICTCapital API |
-| Stock Comparison | `/data/compare` | ❌ | WebICTCapital API |
-| Rates & Macro | `/data/rates` | ❌ | WebICTCapital API |
-| Stock Detail | `/stocks/:symbol` | ❌ | WebICTCapital API |
-| Portfolio | `/portfolio` | ✅ Partial | Supabase (market: public, user data: auth) |
-| Glossary | `/glossary` | ❌ | Static (local `glossary.ts`) |
-| Masterclasses | `/masterclasses` | ❌ | Static (hardcoded) |
-| SIP Calculator | `/sip-calculator` | ❌ | Client-side calculation only |
-| Advisory | `/advisory` | ❌ | Static + Web3Forms |
-| About | `/about` | ❌ | Static + Web3Forms |
+Tests cover lossless numeric transport, DTO failures, canonical routes, comparison selection/order/colours, market-index ranges/order/252 selection, auth/CSRF, all portfolio endpoints, retry identity, 409 reconciliation, 503 UI, privacy reset, nullable quotes, legacy SELL neutrality, no-cash semantics, and date-only stability.

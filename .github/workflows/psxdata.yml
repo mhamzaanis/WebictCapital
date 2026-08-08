@@ -1,5 +1,9 @@
 name: Daily PSX Data Update
 
+# Transitional market-data writer. This remains owned by the existing data
+# pipeline until explicit post-cutover ownership transfer; it is not a browser
+# configuration source and must never expose its service credential to Vite.
+
 permissions:
   contents: read
 

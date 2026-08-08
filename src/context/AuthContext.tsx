@@ -1,17 +1,23 @@
+/* eslint-disable react-refresh/only-export-components */
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
 } from 'react'
-import type { Session, User } from '@supabase/supabase-js'
-import { supabase, hasSupabaseConfig } from '../lib/supabase'
+import { getErrorMessage } from '../lib/api/errors'
+import { supabaseAuthAdapter } from '../lib/auth/supabaseAdapter'
+import type { AuthAdapter, AuthUser } from '../lib/auth/types'
+import { webictAuthAdapter } from '../lib/auth/webictAdapter'
+import { clearAllPrivateState, registerPrivateStateReset } from '../lib/privateState'
+import { getRuntimeConfig } from '../lib/runtimeConfig'
 
-type AuthState = {
-  user: User | null
-  session: Session | null
+export type AuthState = {
+  user: AuthUser | null
   loading: boolean
   error: string | null
   signInWithGoogle: () => Promise<void>
@@ -21,100 +27,104 @@ type AuthState = {
 
 const AuthContext = createContext<AuthState | undefined>(undefined)
 
+export const GENERIC_AUTH_FAILURE_MESSAGE = 'Sign-in could not be completed. Please try again.'
+
+export function hasGenericAuthFailure(search: string): boolean {
+  return new URLSearchParams(search).get('auth') === 'failed'
+}
+
+function selectedAdapter(): AuthAdapter {
+  return getRuntimeConfig().platformMode === 'webict' ? webictAuthAdapter : supabaseAuthAdapter
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [session, setSession] = useState<Session | null>(null)
+  const adapter = useMemo(() => selectedAdapter(), [])
+  const initialAuthFailure = useMemo(() => hasGenericAuthFailure(window.location.search), [])
+  const [user, setUser] = useState<AuthUser | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(
+    initialAuthFailure ? GENERIC_AUTH_FAILURE_MESSAGE : null,
+  )
+  const userId = useRef<string | null>(null)
 
-  const sessionRef = useRef<Session | null>(null)
-  const userRef = useRef<User | null>(null)
-
-  const updateSessionAndUser = (newSession: Session | null) => {
-    const currentSession = sessionRef.current
-    const isSameSession =
-      currentSession === newSession ||
-      (currentSession !== null &&
-        newSession !== null &&
-        currentSession.access_token === newSession.access_token &&
-        currentSession.user?.id === newSession.user?.id &&
-        currentSession.user?.email === newSession.user?.email &&
-        currentSession.user?.updated_at === newSession.user?.updated_at)
-
-    if (!isSameSession) {
-      sessionRef.current = newSession
-      userRef.current = newSession?.user ?? null
-      setSession(newSession)
-      setUser(newSession?.user ?? null)
-    }
-  }
-
-  const mounted = useRef(true)
-  useEffect(() => {
-    mounted.current = true
-    return () => { mounted.current = false }
+  const transitionUser = useCallback((next: AuthUser | null) => {
+    const nextId = next?.id ?? null
+    if (nextId !== userId.current) clearAllPrivateState()
+    userId.current = nextId
+    setUser(next)
   }, [])
 
+  useEffect(() => registerPrivateStateReset(() => {
+    userId.current = null
+    setUser(null)
+  }), [])
+
   useEffect(() => {
-    if (!hasSupabaseConfig || !supabase) {
-      setLoading(false)
-      return
+    const controller = new AbortController()
+    let mounted = true
+    const params = new URLSearchParams(window.location.search)
+    if (hasGenericAuthFailure(window.location.search)) {
+      params.delete('auth')
+      const query = params.toString()
+      window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`)
     }
 
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (!mounted.current) return
-      if (error) setError(error.message)
-      updateSessionAndUser(session)
-      setLoading(false)
-    })
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        if (!mounted.current) return
-        updateSessionAndUser(session)
+    adapter.bootstrap(controller.signal).then(
+      (next) => {
+        if (!mounted) return
+        transitionUser(next)
         setLoading(false)
-        if (session) setError(null)
-      }
-    )
-
-    return () => subscription.unsubscribe()
-  }, [])
-
-
-  const signInWithGoogle = async () => {
-    if (!supabase) return
-    setError(null)
-
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}${window.location.pathname}`,
-        queryParams: { prompt: 'select_account' },
       },
+      (reason) => {
+        if (!mounted || controller.signal.aborted) return
+        transitionUser(null)
+        setError(getErrorMessage(reason))
+        setLoading(false)
+      },
+    )
+    const unsubscribe = adapter.subscribe((next) => {
+      if (!mounted) return
+      transitionUser(next)
+      setLoading(false)
+      if (next) setError(null)
     })
+    return () => {
+      mounted = false
+      controller.abort()
+      unsubscribe()
+    }
+  }, [adapter, transitionUser])
 
-    if (error) setError(error.message)
-  }
+  const signInWithGoogle = useCallback(async () => {
+    setError(null)
+    try {
+      await adapter.signInWithGoogle()
+    } catch (reason) {
+      setError(getErrorMessage(reason))
+    }
+  }, [adapter])
 
-  const signOut = async () => {
-    if (!supabase) return
-    const { error } = await supabase.auth.signOut()
-    if (!mounted.current) return
-    if (error) { setError(error.message); return }
-    updateSessionAndUser(null)
-  }
+  const signOut = useCallback(async () => {
+    setError(null)
+    transitionUser(null)
+    try {
+      await adapter.signOut()
+    } catch (reason) {
+      setError(getErrorMessage(reason))
+    }
+  }, [adapter, transitionUser])
 
-  const clearError = () => setError(null)
+  const clearError = useCallback(() => setError(null), [])
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, error, signInWithGoogle, signOut, clearError }}>
+    <AuthContext.Provider value={{ user, loading, error, signInWithGoogle, signOut, clearError }}>
       {children}
     </AuthContext.Provider>
   )
 }
 
 export function useAuth(): AuthState {
-  const ctx = useContext(AuthContext)
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider')
-  return ctx
+  const context = useContext(AuthContext)
+  if (!context) throw new Error('useAuth must be used within AuthProvider')
+  return context
 }

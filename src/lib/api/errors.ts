@@ -1,10 +1,22 @@
-export type ApiErrorKind = 'invalid_request' | 'not_found' | 'network' | 'infrastructure' | 'unknown'
+import type { ProblemDetails } from './types'
+
+export type ApiErrorKind =
+  | 'invalid_request'
+  | 'unauthenticated'
+  | 'forbidden'
+  | 'not_found'
+  | 'conflict'
+  | 'writes_unavailable'
+  | 'network'
+  | 'infrastructure'
+  | 'unknown'
 
 export class MarketApiError extends Error {
   kind: ApiErrorKind
   status: number | null
   title: string | null
   detail: string | null
+  problem: ProblemDetails | null
 
   constructor({
     kind,
@@ -12,12 +24,14 @@ export class MarketApiError extends Error {
     status,
     title = null,
     detail = null,
+    problem = null,
   }: {
     kind: ApiErrorKind
     message: string
     status: number | null
     title?: string | null
     detail?: string | null
+    problem?: ProblemDetails | null
   }) {
     super(message)
     this.name = 'MarketApiError'
@@ -25,6 +39,7 @@ export class MarketApiError extends Error {
     this.status = status
     this.title = title
     this.detail = detail
+    this.problem = problem
   }
 }
 

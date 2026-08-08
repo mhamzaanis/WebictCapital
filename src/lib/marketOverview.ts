@@ -1,4 +1,6 @@
 import type { MarketAiSummaryDto, MarketIndexDto, MarketSummaryTickersResponse, MarketTickerDto } from './api/types'
+import Decimal from 'decimal.js'
+import { numericSign, projectNumeric, type PresentableNumeric } from './numericPresentation'
 
 export const PRIMARY_INDEX_CODE = 'KSE100'
 
@@ -55,21 +57,21 @@ export type SectorRow = {
 
 export type SectorSortKey = 'estimated' | 'issues' | 'shares' | 'declines'
 
-export function toneForValue(value: number | null | undefined): Tone {
-  if (value == null || !Number.isFinite(value) || value === 0) return 'neutral'
-  return value > 0 ? 'positive' : 'negative'
+export function toneForValue(value: PresentableNumeric | null | undefined): Tone {
+  if (value == null || numericSign(value) === 0) return 'neutral'
+  return numericSign(value) > 0 ? 'positive' : 'negative'
 }
 
 export function changePctFromQuote(ticker: Pick<MarketTickerDto, 'close' | 'change'>): number | null {
   if (ticker.close == null || ticker.change == null) return null
-  const previous = ticker.close - ticker.change
-  if (previous <= 0) return null
-  return (ticker.change / previous) * 100
+  const previous = ticker.close.minus(ticker.change)
+  if (!previous.isPositive()) return null
+  return projectNumeric(ticker.change.div(previous).mul(100), 'ticker change percentage')
 }
 
 export function estimatedValue(ticker: Pick<MarketTickerDto, 'close' | 'turnover'>): number | null {
-  if (ticker.close == null || ticker.close <= 0 || ticker.turnover == null || ticker.turnover <= 0) return null
-  return ticker.close * ticker.turnover
+  if (ticker.close == null || !ticker.close.isPositive() || ticker.turnover == null || ticker.turnover <= 0n) return null
+  return projectNumeric(ticker.close.mul(new Decimal(ticker.turnover.toString())), 'estimated traded value')
 }
 
 export function rankTickers(tickers: MarketTickerDto[]): RankedTicker[] {
@@ -124,7 +126,7 @@ export function formatTradeDate(value: string | null | undefined): string {
 export function latestIndexTimestamp(indices: MarketIndexDto[]): string | null {
   const timestamps = indices
     .map((index) => index.asOf)
-    .filter((value): value is string => Boolean(value))
+    .filter((value): value is NonNullable<typeof value> => Boolean(value))
     .map((value) => ({ value, time: new Date(value).getTime() }))
     .filter((item) => Number.isFinite(item.time))
   if (timestamps.length === 0) return null
@@ -193,7 +195,11 @@ export function moverGroups(ranked: RankedTicker[], limit = 8): MoverGroup[] {
       label: 'Most active',
       rows: ranked
         .filter((ticker) => ticker.turnover != null)
-        .sort((a, b) => (b.turnover ?? 0) - (a.turnover ?? 0))
+        .sort((a, b) => {
+          const left = a.turnover ?? 0n
+          const right = b.turnover ?? 0n
+          return right > left ? 1 : right < left ? -1 : 0
+        })
         .slice(0, limit),
     },
     {
@@ -222,10 +228,10 @@ export function sectorRows(ranked: RankedTicker[]): SectorRow[] {
         estimatedObservationCount: 0,
       }
       acc[sector].issues += 1
-      if (ticker.change == null || ticker.change === 0) acc[sector].unchanged += 1
-      else if (ticker.change > 0) acc[sector].advances += 1
+      if (ticker.change == null || ticker.change.isZero()) acc[sector].unchanged += 1
+      else if (ticker.change.isPositive()) acc[sector].advances += 1
       else acc[sector].declines += 1
-      if (ticker.turnover != null && Number.isFinite(ticker.turnover)) acc[sector].shares += ticker.turnover
+      if (ticker.turnover != null) acc[sector].shares += projectNumeric(ticker.turnover, 'sector turnover')
       if (ticker.estimatedTradedValue != null && Number.isFinite(ticker.estimatedTradedValue)) {
         acc[sector].estimated += ticker.estimatedTradedValue
         acc[sector].estimatedObservationCount += 1

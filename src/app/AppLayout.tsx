@@ -122,7 +122,7 @@ const SEO_BY_PATH: Record<string, PageSeo> = {
   '/portfolio': {
     title: 'My PSX Portfolio | Webict Capital',
     description:
-      'Track PSX holdings, trades, watchlists, and portfolio performance with Supabase Google OAuth and user-scoped portfolio tables.',
+      'Track PSX holdings, immutable portfolio activity, lots, valuations, and watchlists through WebICT Capital’s secure portfolio experience.',
     structuredData: {
       '@context': 'https://schema.org',
       '@type': 'WebApplication',

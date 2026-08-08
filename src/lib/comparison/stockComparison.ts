@@ -1,16 +1,18 @@
-import type { BenchmarkComparisonItemDto, BenchmarkQuoteDto, FinancialRatioDto, FinancialStatementDto, TickerComparisonItemDto, TickerQuoteDto } from '../api/types'
+import Decimal from 'decimal.js'
+import { projectDecimal } from '../api/json'
+import type { BenchmarkComparisonItemDto, BenchmarkPointDto, FinancialRatioDto, FinancialStatementDto, TickerComparisonItemDto, TickerQuoteDto } from '../api/types'
 
 export const COMPARISON_MIN_DATE = '2021-01-01'
 export const SUPPORTED_BENCHMARKS = ['KSE100', 'KSE30', 'KMI30', 'KSEALL'] as const
 export const STOCK_SERIES_COLORS = ['#0a4fb3', '#087f8c', '#c96b15', '#6f42c1'] as const
-export const BENCHMARK_SERIES_COLORS = ['#64748b'] as const
+export const BENCHMARK_SERIES_COLORS = ['#64748b', '#dc2626'] as const
 export const RANGE_PRESETS = ['1M', '3M', '6M', 'YTD', '1Y', '3Y', '5Y', 'Custom'] as const
 
 export type BenchmarkCode = typeof SUPPORTED_BENCHMARKS[number]
 export type RangePreset = typeof RANGE_PRESETS[number]
 export type PriceLikePoint = {
   tradeDate: string
-  close: number | null
+  close: number | Decimal | null
 }
 export type ComparisonSeriesInput = {
   id: string
@@ -90,7 +92,7 @@ export function canRemoveStock(current: readonly string[]): boolean {
 export function canToggleBenchmark(current: readonly string[], candidate: string): boolean {
   const normalized = normalizeCode(candidate)
   if (!isBenchmarkCode(normalized)) return false
-  return current.includes(normalized) || current.length < 1
+  return current.includes(normalized) || current.length < 2
 }
 
 export function isBenchmarkCode(value: string): value is BenchmarkCode {
@@ -145,6 +147,14 @@ export function buildComparisonSearchParams({
   return params
 }
 
+function projectClose(value: number | Decimal | null | undefined): number | null {
+  if (Decimal.isDecimal(value)) {
+    if (!value.isFinite() || !value.isPositive()) return null
+    return projectDecimal(value, 'comparison close')
+  }
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : null
+}
+
 function isValidClose(value: number | null | undefined): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value > 0
 }
@@ -156,7 +166,8 @@ export function safeArray<T>(value: readonly T[] | null | undefined): readonly T
 export function dateCloseMap(points: readonly PriceLikePoint[] | null | undefined): Map<string, number> {
   const map = new Map<string, number>()
   safeArray(points).forEach((point) => {
-    if (point.tradeDate && isValidClose(point.close)) map.set(point.tradeDate, point.close)
+    const close = projectClose(point.close)
+    if (point.tradeDate && close != null) map.set(point.tradeDate, close)
   })
   return map
 }
@@ -319,7 +330,7 @@ export function ratioValues(row: FinancialRatioDto): Record<string, number | nul
   if (!row.values || typeof row.values !== 'object' || Array.isArray(row.values)) return {}
   const values: Record<string, number | null> = {}
   Object.entries(row.values as Record<string, unknown>).forEach(([key, value]) => {
-    values[key] = typeof value === 'number' && Number.isFinite(value) ? value : null
+    values[key] = Decimal.isDecimal(value) ? projectDecimal(value, `ratio ${key}`) : null
   })
   return values
 }
@@ -352,8 +363,8 @@ export function benchmarkSeriesInputs(benchmarks: readonly BenchmarkComparisonIt
   }))
 }
 
-export function benchmarkQuotes(benchmark: BenchmarkComparisonItemDto): readonly BenchmarkQuoteDto[] {
-  return safeArray(benchmark.points ?? benchmark.quotes)
+export function benchmarkQuotes(benchmark: BenchmarkComparisonItemDto): readonly BenchmarkPointDto[] {
+  return safeArray(benchmark.points)
 }
 
 export function quoteFromTechnical(item: TickerComparisonItemDto, tradeDate: string): TickerQuoteDto | null {
@@ -361,9 +372,9 @@ export function quoteFromTechnical(item: TickerComparisonItemDto, tradeDate: str
 }
 
 export function technicalPointClose(item: TickerComparisonItemDto, tradeDate: string): number | null {
-  return quoteFromTechnical(item, tradeDate)?.close ?? null
+  return projectClose(quoteFromTechnical(item, tradeDate)?.close)
 }
 
-export function benchmarkQuotesFromUnknown(points: readonly BenchmarkQuoteDto[]): PriceLikePoint[] {
+export function benchmarkQuotesFromUnknown(points: readonly BenchmarkPointDto[]): PriceLikePoint[] {
   return points.map((point) => ({ tradeDate: point.tradeDate, close: point.close }))
 }

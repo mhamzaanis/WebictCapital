@@ -63,6 +63,8 @@ import {
 import { MarketShell } from '../markets/MarketShell'
 import { EmptyBlock } from '../markets/StateBlocks'
 import { CARD_SX, DATA_FONT, fmtCompact, fmtNumber, fmtPct } from '../markets/marketUtils'
+import { formatNumeric, projectNumeric, type PresentableNumeric } from '../../lib/numericPresentation'
+import Decimal from 'decimal.js'
 
 const BENCHMARK_LABELS: Record<BenchmarkCode, string> = {
   KSE100: 'KSE-100',
@@ -128,26 +130,27 @@ function parseHumanDateInput(value: string): string | null {
   return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
 }
 
-function fmtPrice(value: number | null | undefined): string {
-  return value == null || !Number.isFinite(value) ? 'N/A' : value.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+function fmtPrice(value: PresentableNumeric | null | undefined): string {
+  return value == null ? 'N/A' : formatNumeric(value, 2, 'N/A')
 }
 
-function fmtPkrCompact(value: number | null | undefined): string {
-  if (value == null || !Number.isFinite(value)) return 'N/A'
-  const abs = Math.abs(value)
-  const sign = value < 0 ? '-' : ''
+function fmtPkrCompact(value: PresentableNumeric | null | undefined): string {
+  if (value == null) return 'N/A'
+  const projected = projectNumeric(value, 'compact PKR display')
+  const abs = Math.abs(projected)
+  const sign = projected < 0 ? '-' : ''
   if (abs >= 1_000_000_000_000) return `PKR ${sign}${(abs / 1_000_000_000_000).toFixed(2)}T`
   if (abs >= 1_000_000_000) return `PKR ${sign}${(abs / 1_000_000_000).toFixed(1)}B`
   if (abs >= 1_000_000) return `PKR ${sign}${(abs / 1_000_000).toFixed(1)}M`
-  return `PKR ${value.toLocaleString('en-PK', { maximumFractionDigits: 0 })}`
+  return `PKR ${formatNumeric(value, 0, 'N/A')}`
 }
 
-function fmtCount(value: number | null | undefined): string {
-  return value == null || !Number.isFinite(value) ? 'N/A' : fmtCompact(value)
+function fmtCount(value: PresentableNumeric | null | undefined): string {
+  return value == null ? 'N/A' : fmtCompact(value)
 }
 
-function fmtRatio(value: number | null | undefined): string {
-  return value == null || !Number.isFinite(value) ? 'N/A' : value.toLocaleString('en-PK', { maximumFractionDigits: 2 })
+function fmtRatio(value: PresentableNumeric | null | undefined): string {
+  return value == null ? 'N/A' : formatNumeric(value, 2, 'N/A')
 }
 
 function comparisonKey(comparison: AppliedComparison): string {
@@ -158,11 +161,13 @@ function readInitialComparison(params: URLSearchParams): AppliedComparison {
   const symbols = params.getAll('symbols').length > 0
     ? params.getAll('symbols')
     : [params.get('a'), params.get('b')].filter((value): value is string => Boolean(value))
-  const benchmarks = params.getAll('benchmarks').length > 0 ? params.getAll('benchmarks') : params.getAll('benchmark')
+  const benchmarks = Array.from(params.entries())
+    .filter(([key]) => key === 'benchmark' || key === 'benchmarks')
+    .flatMap(([, value]) => value.split(','))
   const fallbackRange = rangeForPreset('1Y', currentDateOnly())
   return {
     symbols: normalizeCodesBounded(symbols, 4).slice(0, 4),
-    benchmarks: normalizeCodesBounded(benchmarks, 1).filter((benchmark): benchmark is BenchmarkCode => SUPPORTED_BENCHMARKS.includes(benchmark as BenchmarkCode)),
+    benchmarks: normalizeCodesBounded(benchmarks, 2).filter((benchmark): benchmark is BenchmarkCode => SUPPORTED_BENCHMARKS.includes(benchmark as BenchmarkCode)),
     from: (params.get('from') ?? fallbackRange.from) < COMPARISON_MIN_DATE ? COMPARISON_MIN_DATE : params.get('from') ?? fallbackRange.from,
     to: params.get('to') ?? fallbackRange.to,
   }
@@ -196,7 +201,7 @@ function useComparisonData() {
     const controller = new AbortController()
     const key = comparisonKey(comparison)
     abortRef.current = controller
-    setState({ key, data: null, error: null, loading: true })
+    setState((current) => ({ key, data: current.data, error: null, loading: true }))
     fetchTickerComparison({
       symbols: comparison.symbols,
       benchmarks: comparison.benchmarks,
@@ -236,7 +241,7 @@ export function StockComparisonPage() {
     if (controlValidation) return
     const next = {
       symbols: normalizeCodesBounded(draftSymbols, 4),
-      benchmarks: normalizeCodesBounded(draftBenchmarks, 1),
+      benchmarks: normalizeCodesBounded(draftBenchmarks, 2),
       from: draftFrom < COMPARISON_MIN_DATE ? COMPARISON_MIN_DATE : draftFrom,
       to: draftTo,
     }
@@ -282,12 +287,12 @@ export function StockComparisonPage() {
           onApply={handleApply}
         />
 
-        {state.loading && <ComparisonSkeleton />}
+        {state.loading && !state.data && <ComparisonSkeleton />}
         {Boolean(state.error) && <ComparisonError error={state.error} onRetry={handleRetry} />}
         {!state.loading && !state.error && !state.data && (
           <EmptyBlock title="Choose stocks to compare" detail="Select at least two stocks, adjust the date range if needed, then click Compare." />
         )}
-        {!state.loading && !state.error && state.data && (
+        {state.data && (
           <>
             <StockSnapshotTable items={safeArray(state.data.items)} normalized={normalized} />
             <Box sx={{ ...CARD_SX }}>
@@ -314,7 +319,7 @@ function validateDraft(symbols: readonly string[], benchmarks: readonly string[]
   const normalizedBenchmarks = normalizeCodesBounded(benchmarks, 10)
   if (normalizedSymbols.length < 2) return 'Select at least two stocks.'
   if (normalizedSymbols.length > 4) return 'Maximum 4 stocks.'
-  if (normalizedBenchmarks.length > 1) return 'Maximum 1 benchmark.'
+  if (normalizedBenchmarks.length > 2) return 'Maximum 2 benchmarks.'
   if (from < COMPARISON_MIN_DATE) return 'Minimum date is 2021-01-01.'
   if (from > to) return 'From date must be before To date.'
   return null
@@ -493,7 +498,7 @@ const BenchmarkSelector = memo(function BenchmarkSelector({ selected, onChange }
       <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', rowGap: 1 }}>
         {SUPPORTED_BENCHMARKS.map((code) => {
           const active = selected.includes(code)
-          const disabled = !active && selected.length >= 1
+          const disabled = !active && selected.length >= 2
           return (
             <Button key={code} variant={active ? 'contained' : 'outlined'} disabled={disabled} onClick={() => toggle(code)} size="small" sx={{ fontWeight: 850 }}>
               {BENCHMARK_LABELS[code]}
@@ -501,7 +506,7 @@ const BenchmarkSelector = memo(function BenchmarkSelector({ selected, onChange }
           )
         })}
       </Stack>
-      {selected.length >= 1 && <Typography sx={{ color: 'var(--wc-text-secondary)', fontSize: 12 }}>Maximum 1 benchmark selected.</Typography>}
+      {selected.length >= 2 && <Typography sx={{ color: 'var(--wc-text-secondary)', fontSize: 12 }}>Maximum 2 benchmarks selected.</Typography>}
     </Stack>
   )
 })
@@ -994,17 +999,17 @@ function TechnicalSnapshotTable({ items }: { items: readonly TickerComparisonIte
 
 function macdLabel(point: TickerTechnicalPointDto | null | undefined): string {
   if (point?.macd == null || point.macdSignal == null) return 'N/A'
-  return point.macd >= point.macdSignal ? 'MACD above signal' : 'MACD below signal'
+  return point.macd.gte(point.macdSignal) ? 'MACD above signal' : 'MACD below signal'
 }
 
-function smaLabel(close: number | null | undefined, average: number | null | undefined, label: string): string {
+function smaLabel(close: number | null | undefined, average: Decimal | null | undefined, label: string): string {
   if (close == null || average == null) return 'N/A'
-  return close >= average ? `Above ${label}` : `Below ${label}`
+  return new Decimal(close).gte(average) ? `Above ${label}` : `Below ${label}`
 }
 
-function volumeVsSmaLabel(volume: number | null | undefined, volumeSma20: number | null | undefined): string {
-  if (volume == null || volumeSma20 == null || volumeSma20 <= 0) return 'N/A'
-  return `Volume ${(volume / volumeSma20).toFixed(2)}× 20D average`
+function volumeVsSmaLabel(volume: bigint | null | undefined, volumeSma20: Decimal | null | undefined): string {
+  if (volume == null || volumeSma20 == null || !volumeSma20.isPositive()) return 'N/A'
+  return `Volume ${formatNumeric(new Decimal(volume.toString()).div(volumeSma20), 2)}× 20D average`
 }
 
 function TechnicalCharts({ item }: { item: TickerComparisonItemDto }) {
@@ -1026,23 +1031,23 @@ function technicalDates(item: TickerComparisonItemDto): string[] {
 
 function technicalPriceOption(item: TickerComparisonItemDto) {
   const dates = technicalDates(item)
-  const quoteByDate = new Map(safeArray(item.quotes).map((quote) => [quote.tradeDate, quote]))
+  const quoteByDate = new Map<string, TickerComparisonItemDto['quotes'][number]>(safeArray(item.quotes).map((quote) => [quote.tradeDate, quote]))
   const points = item.technicals?.points ?? []
   return baseChartOption(dates, [
-    { name: 'Close', type: 'line', showSymbol: false, connectNulls: false, data: dates.map((date) => quoteByDate.get(date)?.close ?? null), lineStyle: { color: STOCK_SERIES_COLORS[0], width: 2 } },
-    { name: 'SMA20', type: 'line', showSymbol: false, connectNulls: false, data: points.map((point) => point.sma20), lineStyle: { color: '#16a34a' } },
-    { name: 'SMA50', type: 'line', showSymbol: false, connectNulls: false, data: points.map((point) => point.sma50), lineStyle: { color: '#ea580c' } },
-    { name: 'SMA200', type: 'line', showSymbol: false, connectNulls: false, data: points.map((point) => point.sma200), lineStyle: { color: '#6f42c1' } },
-    { name: 'Bollinger upper', type: 'line', showSymbol: false, connectNulls: false, data: points.map((point) => point.bollingerUpper), lineStyle: { color: '#94a3b8', type: 'dashed' } },
-    { name: 'Bollinger middle', type: 'line', showSymbol: false, connectNulls: false, data: points.map((point) => point.bollingerMiddle), lineStyle: { color: '#64748b', type: 'dotted' } },
-    { name: 'Bollinger lower', type: 'line', showSymbol: false, connectNulls: false, data: points.map((point) => point.bollingerLower), lineStyle: { color: '#94a3b8', type: 'dashed' } },
+    { name: 'Close', type: 'line', showSymbol: false, connectNulls: false, data: dates.map((date) => projectOptional(quoteByDate.get(date)?.close, 'close')), lineStyle: { color: STOCK_SERIES_COLORS[0], width: 2 } },
+    { name: 'SMA20', type: 'line', showSymbol: false, connectNulls: false, data: points.map((point) => projectOptional(point.sma20, 'SMA20')), lineStyle: { color: '#16a34a' } },
+    { name: 'SMA50', type: 'line', showSymbol: false, connectNulls: false, data: points.map((point) => projectOptional(point.sma50, 'SMA50')), lineStyle: { color: '#ea580c' } },
+    { name: 'SMA200', type: 'line', showSymbol: false, connectNulls: false, data: points.map((point) => projectOptional(point.sma200, 'SMA200')), lineStyle: { color: '#6f42c1' } },
+    { name: 'Bollinger upper', type: 'line', showSymbol: false, connectNulls: false, data: points.map((point) => projectOptional(point.bollingerUpper, 'Bollinger upper')), lineStyle: { color: '#94a3b8', type: 'dashed' } },
+    { name: 'Bollinger middle', type: 'line', showSymbol: false, connectNulls: false, data: points.map((point) => projectOptional(point.bollingerMiddle, 'Bollinger middle')), lineStyle: { color: '#64748b', type: 'dotted' } },
+    { name: 'Bollinger lower', type: 'line', showSymbol: false, connectNulls: false, data: points.map((point) => projectOptional(point.bollingerLower, 'Bollinger lower')), lineStyle: { color: '#94a3b8', type: 'dashed' } },
   ], 'Price')
 }
 
 function singleMetricOption(item: TickerComparisonItemDto, key: keyof TickerTechnicalPointDto, label: string, markLineData: Record<string, number>[]) {
   const points = item.technicals?.points ?? []
   return {
-    ...baseChartOption(technicalDates(item), [{ name: label, type: 'line', showSymbol: false, connectNulls: false, data: points.map((point) => typeof point[key] === 'number' ? point[key] : null), lineStyle: { color: STOCK_SERIES_COLORS[0] }, markLine: { symbol: 'none', data: markLineData, lineStyle: { color: '#94a3b8', type: 'dashed' } } }], label),
+    ...baseChartOption(technicalDates(item), [{ name: label, type: 'line', showSymbol: false, connectNulls: false, data: points.map((point) => Decimal.isDecimal(point[key]) ? projectNumeric(point[key] as Decimal, label) : null), lineStyle: { color: STOCK_SERIES_COLORS[0] }, markLine: { symbol: 'none', data: markLineData, lineStyle: { color: '#94a3b8', type: 'dashed' } } }], label),
     yAxis: { type: 'value', min: 0, max: 100 },
   }
 }
@@ -1050,20 +1055,24 @@ function singleMetricOption(item: TickerComparisonItemDto, key: keyof TickerTech
 function macdOption(item: TickerComparisonItemDto) {
   const points = item.technicals?.points ?? []
   return baseChartOption(technicalDates(item), [
-    { name: 'MACD', type: 'line', showSymbol: false, connectNulls: false, data: points.map((point) => point.macd), lineStyle: { color: STOCK_SERIES_COLORS[0] } },
-    { name: 'Signal', type: 'line', showSymbol: false, connectNulls: false, data: points.map((point) => point.macdSignal), lineStyle: { color: '#ea580c' } },
-    { name: 'Histogram', type: 'bar', data: points.map((point) => point.macdHistogram), itemStyle: { color: '#94a3b8' } },
+    { name: 'MACD', type: 'line', showSymbol: false, connectNulls: false, data: points.map((point) => projectOptional(point.macd, 'MACD')), lineStyle: { color: STOCK_SERIES_COLORS[0] } },
+    { name: 'Signal', type: 'line', showSymbol: false, connectNulls: false, data: points.map((point) => projectOptional(point.macdSignal, 'MACD signal')), lineStyle: { color: '#ea580c' } },
+    { name: 'Histogram', type: 'bar', data: points.map((point) => projectOptional(point.macdHistogram, 'MACD histogram')), itemStyle: { color: '#94a3b8' } },
   ], 'MACD')
 }
 
 function volumeOption(item: TickerComparisonItemDto) {
-  const quoteByDate = new Map(safeArray(item.quotes).map((quote) => [quote.tradeDate, quote]))
+  const quoteByDate = new Map<string, TickerComparisonItemDto['quotes'][number]>(safeArray(item.quotes).map((quote) => [quote.tradeDate, quote]))
   const points = item.technicals?.points ?? []
   const dates = technicalDates(item)
   return baseChartOption(dates, [
-    { name: 'Volume', type: 'bar', data: dates.map((date) => quoteByDate.get(date)?.turnover ?? null), itemStyle: { color: '#94a3b8' } },
-    { name: 'Volume SMA20', type: 'line', showSymbol: false, connectNulls: false, data: points.map((point) => point.volumeSma20), lineStyle: { color: STOCK_SERIES_COLORS[0] } },
+    { name: 'Volume', type: 'bar', data: dates.map((date) => projectOptional(quoteByDate.get(date)?.turnover, 'volume')), itemStyle: { color: '#94a3b8' } },
+    { name: 'Volume SMA20', type: 'line', showSymbol: false, connectNulls: false, data: points.map((point) => projectOptional(point.volumeSma20, 'volume SMA20')), lineStyle: { color: STOCK_SERIES_COLORS[0] } },
   ], 'Volume')
+}
+
+function projectOptional(value: PresentableNumeric | null | undefined, label: string): number | null {
+  return value == null ? null : projectNumeric(value, label)
 }
 
 function ComparisonError({ error, onRetry }: { error: unknown; onRetry: () => void }) {

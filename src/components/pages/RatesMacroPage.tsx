@@ -8,6 +8,8 @@ import { downloadCsv } from '../../lib/csv'
 import { MarketShell } from '../markets/MarketShell'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '../markets/StateBlocks'
 import { CARD_SX, fmtDate, fmtNumber } from '../markets/marketUtils'
+import Decimal from 'decimal.js'
+import { formatNumeric, projectNumeric } from '../../lib/numericPresentation'
 
 const KIBOR_TENORS = ['1W', '2W', '1M', '3M', '6M', '9M', '1Y'] as const
 const DEFAULT_CHART_TENORS = ['3M', '6M', '1Y'] as const
@@ -100,11 +102,11 @@ function rangeForRatePreset(preset: RateRangePreset, minDate: string, endDate = 
 }
 
 function kiborObservations(data: KiborResponseDto): KiborObservationDto[] {
-  return data.observations ?? data.points ?? []
+  return data.points
 }
 
 function usdPkrObservations(data: UsdPkrResponseDto): NonNullable<UsdPkrResponseDto['points']> {
-  return data.observations ?? data.points ?? []
+  return data.points
 }
 
 function isKiborTenor(value: string): value is KiborTenor {
@@ -116,16 +118,16 @@ function normalizeTenorOrder(tenorOrder: string[]): KiborTenor[] {
   return orderedTenors.length > 0 ? orderedTenors : [...KIBOR_TENORS]
 }
 
-function kiborSpreadBps(bid: number | null | undefined, offer: number | null | undefined): number | null {
-  return bid == null || offer == null ? null : (offer - bid) * 100
+function kiborSpreadBps(bid: Decimal | null | undefined, offer: Decimal | null | undefined): Decimal | null {
+  return bid == null || offer == null ? null : offer.minus(bid).mul(100)
 }
 
-function fmtKiborValue(value: number | null | undefined, digits = 2): string {
-  return value == null ? UNAVAILABLE_VALUE : value.toFixed(digits)
+function fmtKiborValue(value: Decimal | null | undefined, digits = 2): string {
+  return value == null ? UNAVAILABLE_VALUE : formatNumeric(value, digits, UNAVAILABLE_VALUE)
 }
 
 function fmtKiborPercent(value: number | null | undefined): string {
-  return value == null ? UNAVAILABLE_VALUE : `${value.toFixed(2)}%`
+  return value == null ? UNAVAILABLE_VALUE : `${formatNumeric(value, 2, UNAVAILABLE_VALUE)}%`
 }
 
 function formatPercentAxisLabel(value: number | string): string {
@@ -301,7 +303,10 @@ const KiborChartSection = memo(function KiborChartSection({
   const quoteDates = useMemo(() => Array.from(new Set(points.map((point) => point.quoteDate))).sort(), [points])
   const pointsByTenorDate = useMemo(() => {
     const next = new Map<string, { bid: number | null; offer: number | null }>()
-    points.forEach((point) => next.set(`${point.tenor}|${point.quoteDate}`, { bid: point.bid, offer: point.offer }))
+    points.forEach((point) => next.set(`${point.tenor}|${point.quoteDate}`, {
+      bid: point.bid == null ? null : projectNumeric(point.bid, 'KIBOR bid chart value'),
+      offer: point.offer == null ? null : projectNumeric(point.offer, 'KIBOR offer chart value'),
+    }))
     return next
   }, [points])
   const seriesData = useMemo<KiborChartSeriesData>(() => {
@@ -452,7 +457,7 @@ const RatesTableSection = memo(function RatesTableSection({ points, tenorOrder }
       quoteDate: point.quoteDate,
       tenor: point.tenor,
       cells: [point.quoteDate, point.tenor, fmtKiborValue(point.bid), fmtKiborValue(point.offer)],
-      exportRow: [point.quoteDate, point.tenor, point.bid, point.offer] as ExportCell[],
+      exportRow: [point.quoteDate, point.tenor, point.bid?.toString(), point.offer?.toString()] as ExportCell[],
       searchText: `${point.quoteDate} ${point.tenor}`.toLowerCase(),
     }))
     .sort((a, b) => {
@@ -586,7 +591,7 @@ function UsdPkrSection({
       showSymbol: false,
       symbol: 'none',
       connectNulls: false,
-      data: points.map((point) => point.rate),
+      data: points.map((point) => projectNumeric(point.rate, 'USD/PKR chart value')),
       lineStyle: { width: 1.4, color: '#2563eb' },
       itemStyle: { color: '#2563eb' },
       emphasis: { disabled: true },
@@ -633,7 +638,7 @@ const UsdPkrRatesTableSection = memo(function UsdPkrRatesTableSection({ points }
       key: `${point.quoteDate}-usd-pkr`,
       quoteDate: point.quoteDate,
       cells: [point.quoteDate, fmtNumber(point.rate, 4), point.effectiveDate ?? UNAVAILABLE_VALUE],
-      exportRow: [point.quoteDate, point.rate, point.effectiveDate] as ExportCell[],
+      exportRow: [point.quoteDate, point.rate.toString(), point.effectiveDate] as ExportCell[],
       searchText: `${point.quoteDate} ${point.effectiveDate ?? ''}`.toLowerCase(),
     }))
     .sort((a, b) => b.quoteDate.localeCompare(a.quoteDate)), [points])

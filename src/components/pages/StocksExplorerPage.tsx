@@ -28,6 +28,7 @@ import type { MarketSummaryTickersResponse, MarketTickerDto } from '../../lib/ap
 import { MarketShell } from '../markets/MarketShell'
 import { EmptyBlock, ErrorBlock } from '../markets/StateBlocks'
 import { CARD_SX, DATA_FONT, changePctFromQuote, estimatedValue, fmtCompact, fmtNumber, fmtPct, fmtSigned, toneColor } from '../markets/marketUtils'
+import Decimal from 'decimal.js'
 
 type SortKey = 'symbol' | 'companyName' | 'section' | 'close' | 'changePct' | 'turnover' | 'estimated'
 type SortDir = 'asc' | 'desc'
@@ -59,12 +60,12 @@ function useLatestMarket() {
 function compare(a: ExplorerRow, b: ExplorerRow, key: SortKey) {
   const av = key === 'estimated' ? a.estimated : a[key]
   const bv = key === 'estimated' ? b.estimated : b[key]
-  if (typeof av === 'number' || typeof bv === 'number' || av == null || bv == null) {
-    if (av == null && bv == null) return 0
-    if (av == null) return 1
-    if (bv == null) return -1
-    return Number(av) - Number(bv)
-  }
+  if (av == null && bv == null) return 0
+  if (av == null) return 1
+  if (bv == null) return -1
+  if (typeof av === 'number' && typeof bv === 'number') return av - bv
+  if (typeof av === 'bigint' && typeof bv === 'bigint') return av > bv ? 1 : av < bv ? -1 : 0
+  if (Decimal.isDecimal(av) && Decimal.isDecimal(bv)) return av.cmp(bv)
   return String(av).localeCompare(String(bv))
 }
 
@@ -103,8 +104,8 @@ export function StocksExplorerPage() {
       .filter((row) => {
         if (movement === 'gainers') return row.changePct != null && row.changePct > 0
         if (movement === 'losers') return row.changePct != null && row.changePct < 0
-        if (movement === 'unchanged') return row.change === 0
-        if (movement === 'liquid') return row.turnover != null && row.turnover > 100_000
+        if (movement === 'unchanged') return row.change?.isZero() ?? false
+        if (movement === 'liquid') return row.turnover != null && row.turnover > 100_000n
         return true
       })
       .sort((a, b) => dir === 'asc' ? compare(a, b, sort) : -compare(a, b, sort))

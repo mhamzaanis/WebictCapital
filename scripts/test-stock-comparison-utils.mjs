@@ -3,6 +3,7 @@ import { describe, it } from 'node:test'
 import fs from 'node:fs'
 import vm from 'node:vm'
 import ts from 'typescript'
+import Decimal from 'decimal.js'
 
 function loadUtilityModule() {
   const source = fs.readFileSync(new URL('../src/lib/comparison/stockComparison.ts', import.meta.url), 'utf8')
@@ -17,7 +18,11 @@ function loadUtilityModule() {
   const context = {
     exports: module.exports,
     module,
-    require: () => ({}),
+    require: (specifier) => {
+      if (specifier === 'decimal.js') return { __esModule: true, default: Decimal }
+      if (specifier.endsWith('/api/json')) return { projectDecimal: (value) => value.toNumber() }
+      return {}
+    },
     URLSearchParams,
     console,
     Set,
@@ -60,9 +65,10 @@ describe('stock comparison selection rules', () => {
     assert.deepEqual(Array.from(utils.uniqueUppercase(['mebl', 'MEBL', ' hbl '])), ['MEBL', 'HBL'])
   })
 
-  it('allows zero and one benchmark but prevents a second', () => {
+  it('allows zero, one, and two benchmarks but prevents a third', () => {
     assert.equal(utils.canToggleBenchmark([], 'KSE100'), true)
-    assert.equal(utils.canToggleBenchmark(['KSE100'], 'KMI30'), false)
+    assert.equal(utils.canToggleBenchmark(['KSE100'], 'KMI30'), true)
+    assert.equal(utils.canToggleBenchmark(['KSE100', 'KMI30'], 'KSE30'), false)
     assert.equal(utils.canToggleBenchmark(['KSE100'], 'KSE100'), true)
   })
 
@@ -76,14 +82,14 @@ describe('stock comparison request parameters', () => {
   it('preserves repeated symbol and benchmark parameter order', () => {
     const params = utils.buildComparisonSearchParams({
       symbols: ['MEBL', 'FABL', 'HBL'],
-      benchmarks: ['KSE100'],
+      benchmarks: ['KSEALL', 'KSE100'],
       from: '2025-07-29',
       to: '2026-07-29',
     })
     assert.deepEqual(params.getAll('symbols'), ['MEBL', 'FABL', 'HBL'])
-    assert.deepEqual(params.getAll('benchmarks'), ['KSE100'])
-    assert.equal(params.get('financialYears'), '5')
-    assert.equal(params.get('include'), 'quotes,profile,equity,valuation,financials,ratios,technicals')
+    assert.deepEqual(params.getAll('benchmarks'), ['KSEALL', 'KSE100'])
+    assert.equal(params.get('financialYears'), null)
+    assert.equal(params.get('include'), null)
   })
 
   it('clamps dates before 2021-01-01', () => {

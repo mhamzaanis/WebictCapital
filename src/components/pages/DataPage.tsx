@@ -25,6 +25,7 @@ import type {
 } from '../../lib/api/types'
 import { type Dispatch, type ReactNode, type SetStateAction, useEffect, useMemo, useState } from 'react'
 import { MarketDashboardSkeleton, PriceTableSkeleton } from './CustomSkeleton'
+import { projectNumeric } from '../../lib/numericPresentation'
 import { CustomDataTable } from './CustomDataTable'
 import { FiltersBar, type MovementFilter } from './FiltersBar.tsx'
 import { MotionReveal } from '../animations/MotionReveal'
@@ -60,10 +61,15 @@ type PsxStock = {
 type PsxData = {
   date: string
   source: 'Market API'
-  market?: MarketSummaryDto
+  market?: DisplayMarketSummary
   indexSnapshot?: MarketIndexSnapshotDto | null
   total_stocks: number
   stocks: PsxStock[]
+}
+
+type DisplayMarketSummary = Omit<MarketSummaryDto, 'prevVolume' | 'currVolume'> & {
+  prevVolume: number | null
+  currVolume: number | null
 }
 
 type RankedStock = PsxStock & {
@@ -248,12 +254,12 @@ function mapMarketTicker(ticker: MarketTickerDto): PsxStock {
     company: ticker.companyName ?? ticker.symbol,
     section: ticker.section,
     industry: ticker.section,
-    turnover: ticker.turnover,
-    open: ticker.open,
-    high: ticker.high,
-    low: ticker.low,
-    last_rate: ticker.close,
-    change: ticker.change,
+    turnover: ticker.turnover == null ? null : projectNumeric(ticker.turnover, `${ticker.symbol} turnover`),
+    open: ticker.open == null ? null : projectNumeric(ticker.open, `${ticker.symbol} open`),
+    high: ticker.high == null ? null : projectNumeric(ticker.high, `${ticker.symbol} high`),
+    low: ticker.low == null ? null : projectNumeric(ticker.low, `${ticker.symbol} low`),
+    last_rate: ticker.close == null ? null : projectNumeric(ticker.close, `${ticker.symbol} close`),
+    change: ticker.change == null ? null : projectNumeric(ticker.change, `${ticker.symbol} change`),
     eps: null,
     pe: null,
     result_period: null,
@@ -280,7 +286,7 @@ function mapMarketAiSummary(aiSummary: MarketAiSummaryDto | null): DisplayMarket
     top_losers: normalizeRecordArray(aiSummary.topLosers),
     volume_leaders: normalizeRecordArray(aiSummary.volumeLeaders),
     sector_activity: normalizeRecordArray(aiSummary.sectorActivity),
-    generated_at: aiSummary.generatedAt ?? null,
+    generated_at: null,
   }
 }
 
@@ -294,7 +300,11 @@ function mapMarketData(response: {
   return {
     date: response.tradeDate,
     source: 'Market API',
-    market: response.summary,
+    market: {
+      ...response.summary,
+      prevVolume: response.summary.prevVolume == null ? null : projectNumeric(response.summary.prevVolume, 'previous volume'),
+      currVolume: response.summary.currVolume == null ? null : projectNumeric(response.summary.currVolume, 'current volume'),
+    },
     indexSnapshot: response.indexSnapshot,
     total_stocks: rows.length,
     stocks: rows,
@@ -325,22 +335,22 @@ function mapMarketIndex(index: MarketIndexDto): MarketIndexSnapshot | null {
   if (!key) return null
   const previousClose = index.prevClose
   const close = index.close
-  const change = index.change ?? (close != null && previousClose != null ? close - previousClose : null)
+  const change = index.change ?? (close != null && previousClose != null ? close.minus(previousClose) : null)
   const changePct =
     index.changePct ??
-    (change != null && previousClose != null && previousClose !== 0 ? (change / previousClose) * 100 : null)
+    (change != null && previousClose != null && !previousClose.isZero() ? change.div(previousClose).mul(100) : null)
   const hasData = [previousClose, close, change, changePct, index.high, index.low, index.volume].some((value) => value != null)
 
   return {
     key,
     label: index.displayName ?? index.code,
-    previousClose,
-    close,
-    change,
-    changePct,
-    high: index.high,
-    low: index.low,
-    volume: index.volume,
+    previousClose: previousClose == null ? null : projectNumeric(previousClose, `${index.code} previous close`),
+    close: close == null ? null : projectNumeric(close, `${index.code} close`),
+    change: change == null ? null : projectNumeric(change, `${index.code} change`),
+    changePct: changePct == null ? null : projectNumeric(changePct, `${index.code} change percentage`),
+    high: index.high == null ? null : projectNumeric(index.high, `${index.code} high`),
+    low: index.low == null ? null : projectNumeric(index.low, `${index.code} low`),
+    volume: index.volume == null ? null : projectNumeric(index.volume, `${index.code} volume`),
     hasData,
   }
 }
@@ -451,7 +461,7 @@ function getSummaryParagraphs(summary: string | null | undefined): string[] {
   const paragraphs = summary
     .split(/\n{2,}/)
     .map((part) => part.replace(/\s+/g, ' ').trim())
-    .filter((part) => !/^key points\s*[:\-]/i.test(part))
+    .filter((part) => !/^key points\s*[:-]/i.test(part))
     .filter(Boolean)
 
   return (paragraphs.length > 0 ? paragraphs : [summary.trim()]).slice(0, 3)

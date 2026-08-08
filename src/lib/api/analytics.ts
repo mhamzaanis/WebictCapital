@@ -1,3 +1,5 @@
+import Decimal from 'decimal.js'
+import { projectDecimal } from './json'
 import type { TickerQuoteDto } from './types'
 
 export type SnapshotAnalytics = {
@@ -25,62 +27,68 @@ const MIN_RETURN_OBSERVATIONS = 2
 const MIN_VOL_OBSERVATIONS = 21
 const MIN_CORRELATION_RETURNS = 20
 
-function validClose(quote: TickerQuoteDto): quote is TickerQuoteDto & { close: number } {
-  return quote.close != null && quote.close > 0
+function validClose(quote: TickerQuoteDto): quote is TickerQuoteDto & { close: Decimal } {
+  return quote.close != null && quote.close.isPositive()
 }
 
-function returns(quotes: TickerQuoteDto[]): number[] {
-  const values: number[] = []
+function returns(quotes: TickerQuoteDto[]): Decimal[] {
+  const values: Decimal[] = []
   for (let index = 1; index < quotes.length; index += 1) {
-    const previous = quotes[index - 1]
-    const current = quotes[index]
-    if (previous.close != null && previous.close > 0 && current.close != null && current.close > 0) {
-      values.push((current.close / previous.close) - 1)
-    }
+    const previous = quotes[index - 1].close
+    const current = quotes[index].close
+    if (previous?.isPositive() && current?.isPositive()) values.push(current.div(previous).minus(1))
   }
   return values
 }
 
-function sampleStd(values: number[]): number | null {
+function sampleStd(values: Decimal[]): Decimal | null {
   if (values.length < 2) return null
-  const mean = values.reduce((sum, value) => sum + value, 0) / values.length
-  const variance = values.reduce((sum, value) => sum + ((value - mean) ** 2), 0) / (values.length - 1)
-  return Math.sqrt(variance)
+  const mean = Decimal.sum(...values).div(values.length)
+  const variance = Decimal.sum(...values.map((value) => value.minus(mean).pow(2))).div(values.length - 1)
+  return variance.sqrt()
 }
 
 export function periodReturnPct(quotes: TickerQuoteDto[]): number | null {
   const valid = quotes.filter(validClose)
   if (valid.length < MIN_RETURN_OBSERVATIONS) return null
-  return ((valid[valid.length - 1].close / valid[0].close) - 1) * 100
+  return projectDecimal(valid[valid.length - 1].close.div(valid[0].close).minus(1).mul(100), 'period return')
 }
 
 export function annualizedVolatilityPct(quotes: TickerQuoteDto[]): number | null {
   const daily = returns(quotes)
   if (daily.length < MIN_VOL_OBSERVATIONS - 1) return null
   const std = sampleStd(daily)
-  return std == null ? null : std * Math.sqrt(252) * 100
+  return std == null ? null : projectDecimal(std.mul(new Decimal(252).sqrt()).mul(100), 'volatility')
 }
 
 export function maxDrawdownPct(quotes: TickerQuoteDto[]): number | null {
   const valid = quotes.filter(validClose)
   if (valid.length < MIN_RETURN_OBSERVATIONS) return null
   let peak = valid[0].close
-  let drawdown = 0
-  valid.forEach((quote) => {
-    peak = Math.max(peak, quote.close)
-    drawdown = Math.min(drawdown, (quote.close / peak - 1) * 100)
-  })
-  return drawdown
+  let drawdown = new Decimal(0)
+  for (const quote of valid) {
+    if (quote.close.gt(peak)) peak = quote.close
+    const current = quote.close.div(peak).minus(1).mul(100)
+    if (current.lt(drawdown)) drawdown = current
+  }
+  return projectDecimal(drawdown, 'maximum drawdown')
 }
 
 export function snapshotAnalytics(quotes: TickerQuoteDto[]): SnapshotAnalytics {
-  const validTurnover = quotes.filter((quote) => quote.turnover != null && quote.turnover > 0)
-  const averageSharesTraded = validTurnover.length > 0
-    ? validTurnover.reduce((sum, quote) => sum + (quote.turnover ?? 0), 0) / validTurnover.length
+  const validTurnover = quotes.flatMap((quote) => quote.turnover != null && quote.turnover > 0n ? [quote.turnover] : [])
+  const averageSharesTraded = validTurnover.length
+    ? projectDecimal(
+        new Decimal(validTurnover.reduce((sum, value) => sum + value, 0n).toString()).div(validTurnover.length),
+        'average turnover',
+      )
     : null
-  const validEstimated = quotes.filter((quote) => quote.close != null && quote.close > 0 && quote.turnover != null && quote.turnover > 0)
-  const estimatedAverageTradedValue = validEstimated.length > 0
-    ? validEstimated.reduce((sum, quote) => sum + ((quote.close ?? 0) * (quote.turnover ?? 0)), 0) / validEstimated.length
+  const estimated = quotes.flatMap((quote) =>
+    quote.close?.isPositive() && quote.turnover != null && quote.turnover > 0n
+      ? [quote.close.mul(new Decimal(quote.turnover.toString()))]
+      : [],
+  )
+  const estimatedAverageTradedValue = estimated.length
+    ? projectDecimal(Decimal.sum(...estimated).div(estimated.length), 'average traded value')
     : null
 
   return {
@@ -97,7 +105,10 @@ export function normalizedSeries(quotes: TickerQuoteDto[]) {
   const valid = quotes.filter(validClose)
   if (valid.length < 2) return []
   const first = valid[0].close
-  return valid.map((quote) => ({ date: quote.tradeDate, value: (quote.close / first) * 100 }))
+  return valid.map((quote) => ({
+    date: quote.tradeDate,
+    value: projectDecimal(quote.close.div(first).mul(100), 'normalized close'),
+  }))
 }
 
 function commonQuotes(a: TickerQuoteDto[], b: TickerQuoteDto[]) {
@@ -108,33 +119,30 @@ function commonQuotes(a: TickerQuoteDto[], b: TickerQuoteDto[]) {
   })
 }
 
-function pearson(a: number[], b: number[]): number | null {
+function pearson(a: Decimal[], b: Decimal[]): number | null {
   if (a.length !== b.length || a.length < MIN_CORRELATION_RETURNS) return null
-  const meanA = a.reduce((sum, value) => sum + value, 0) / a.length
-  const meanB = b.reduce((sum, value) => sum + value, 0) / b.length
-  let numerator = 0
-  let denomA = 0
-  let denomB = 0
+  const meanA = Decimal.sum(...a).div(a.length)
+  const meanB = Decimal.sum(...b).div(b.length)
+  let numerator = new Decimal(0)
+  let denomA = new Decimal(0)
+  let denomB = new Decimal(0)
   a.forEach((valueA, index) => {
-    const da = valueA - meanA
-    const db = b[index] - meanB
-    numerator += da * db
-    denomA += da * da
-    denomB += db * db
+    const da = valueA.minus(meanA)
+    const db = b[index].minus(meanB)
+    numerator = numerator.plus(da.mul(db))
+    denomA = denomA.plus(da.pow(2))
+    denomB = denomB.plus(db.pow(2))
   })
-  const denominator = Math.sqrt(denomA * denomB)
-  return denominator === 0 ? null : numerator / denominator
+  const denominator = denomA.mul(denomB).sqrt()
+  return denominator.isZero() ? null : projectDecimal(numerator.div(denominator), 'correlation')
 }
 
 export function comparisonAnalytics(a: TickerQuoteDto[], b: TickerQuoteDto[]): ComparisonAnalytics {
   const common = commonQuotes(a, b)
   const sharedA = common.map((item) => item.quoteA)
   const sharedB = common.map((item) => item.quoteB)
-  const returnsA = returns(sharedA)
-  const returnsB = returns(sharedB)
   const returnA = periodReturnPct(sharedA)
   const returnB = periodReturnPct(sharedB)
-
   return {
     commonObservationCount: common.length,
     returnA,
@@ -143,7 +151,7 @@ export function comparisonAnalytics(a: TickerQuoteDto[], b: TickerQuoteDto[]): C
     volatilityB: annualizedVolatilityPct(sharedB),
     drawdownA: maxDrawdownPct(sharedA),
     drawdownB: maxDrawdownPct(sharedB),
-    correlation: pearson(returnsA, returnsB),
+    correlation: pearson(returns(sharedA), returns(sharedB)),
     relativePerformancePct: returnA != null && returnB != null ? returnA - returnB : null,
   }
 }
