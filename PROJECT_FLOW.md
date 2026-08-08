@@ -114,7 +114,7 @@ The following remain intentionally present for production rollback and the curre
 
 - `src/lib/supabase.ts`
 - `src/lib/stockService.ts`
-- Supabase-mode portfolio implementation in `src/components/pages/PortfolioPage.tsx`
+- Supabase-mode portfolio implementation in `src/components/pages/SupabasePortfolioPage.tsx`
 - `src/scripts/parse_psx.py` and `src/scripts/fetch.py`
 - `.github/workflows/psxdata.yml`
 - historical schema material
@@ -130,7 +130,7 @@ VITE_PLATFORM_MODE=webict
 VITE_MARKET_API_BASE_URL=https://staging-api-origin.example
 ```
 
-Do not provide `VITE_SUPABASE_URL` or `VITE_SUPABASE_ANON_KEY` to the WebICT staging build. Backend staging prerequisites remain operational: migration 008, imported test identities/portfolios, allowed staging origin/cookies, auth cutover enabled only in staging, registration policy retained, and portfolio writes enabled only for the controlled write rehearsal.
+The market API value must be the complete API origin with a real hostname and no `/api` path. Literal placeholders are rejected. Do not provide `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, or any service-role credential to the WebICT staging build. Backend staging prerequisites remain operational: migration 008, imported test identities/portfolios, allowed staging origin/cookies, auth cutover enabled only in staging, registration policy retained, and portfolio writes enabled only for the controlled write rehearsal.
 
 Rehearse signed-out bootstrap, Google round-trip, disabled imported user, logout/CSRF, account switch, every read, mutation success, unknown outcome retry, 409 conflict, 503 gate, nullable valuation, legacy SELL neutrality, and rollback to an explicitly built Supabase-mode artifact.
 

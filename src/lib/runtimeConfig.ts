@@ -18,6 +18,9 @@ function requiredText(environment: RuntimeEnvironment, key: string): string {
 }
 
 function validateOrigin(value: string, key: string): string {
+  if (/[<>]/.test(value) || value.includes('\\://')) {
+    throw new Error(`${key} must be a complete API origin, not a placeholder.`)
+  }
   let url: URL
   try {
     url = new URL(value)
@@ -26,6 +29,9 @@ function validateOrigin(value: string, key: string): string {
   }
   if ((url.protocol !== 'https:' && url.protocol !== 'http:') || url.username || url.password || url.search || url.hash || url.pathname !== '/') {
     throw new Error(`${key} must be an absolute http(s) origin without credentials, path, query, or fragment.`)
+  }
+  if (!url.hostname || url.hostname.includes('<') || url.hostname.includes('>')) {
+    throw new Error(`${key} must contain a real hostname.`)
   }
   return url.origin
 }

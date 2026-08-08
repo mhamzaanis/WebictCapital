@@ -21,8 +21,8 @@ jobs:
     timeout-minutes: 180 
     runs-on: ubuntu-latest
     env:
-      SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || secrets.SUPABASE_URL }}
-      SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY || secrets.VITE_SUPABASE_SERVICE_KEY }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL || secrets.VITE_SUPABASE_URL }}
+      SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_KEY || secrets.VITE_SUPABASE_SERVICE_KEY }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -50,7 +50,7 @@ jobs:
             exit 1
           fi
           if [ -z "${SUPABASE_SERVICE_KEY}" ]; then
-            echo "Missing secret: set SUPABASE_SERVICE_KEY (or SUPABASE_SERVICE_ROLE_KEY) in repository secrets."
+            echo "Missing secret: set SUPABASE_SERVICE_ROLE_KEY (legacy SUPABASE_SERVICE_KEY or VITE_SUPABASE_SERVICE_KEY is temporarily supported)."
             exit 1
           fi
 

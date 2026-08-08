@@ -17,7 +17,9 @@ import type { TransitionProps } from '@mui/material/transitions'
 import { motion, useReducedMotion, AnimatePresence } from 'motion/react'
 import { forwardRef, useState, useMemo, useEffect } from 'react'
 import type { ReactElement, Ref } from 'react'
-import { fetchUniqueSymbols } from '../lib/stockService'
+import { fetchLatestMarketSummary } from '../lib/api/market'
+import { formatNumeric, projectNumeric } from '../lib/numericPresentation'
+import { getRuntimeConfig } from '../lib/runtimeConfig'
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -76,6 +78,33 @@ const SlideUp = forwardRef(function Transition(
 // ─── Formatters ────────────────────────────────────────────────────────────────
 
 const fmt = (v: number) => v.toLocaleString('en-PK')
+
+async function fetchAvailableStocks(signal: AbortSignal): Promise<WatchItem[]> {
+  if (getRuntimeConfig().platformMode === 'supabase') {
+    const { fetchUniqueSymbols } = await import('../lib/stockService')
+    return fetchUniqueSymbols()
+  }
+
+  const { tickers } = await fetchLatestMarketSummary(signal)
+  return tickers.map((ticker) => {
+    const previousClose = ticker.close != null && ticker.change != null
+      ? ticker.close.minus(ticker.change)
+      : null
+    const changePct = ticker.change != null && previousClose != null && !previousClose.isZero()
+      ? ticker.change.div(previousClose).mul(100)
+      : null
+    return {
+      symbol: ticker.symbol,
+      company: ticker.companyName ?? ticker.symbol,
+      sector: ticker.section ?? '',
+      price: ticker.close == null ? 0 : projectNumeric(ticker.close, `${ticker.symbol} watchlist close`),
+      change: ticker.change == null ? 0 : projectNumeric(ticker.change, `${ticker.symbol} watchlist change`),
+      changePct: changePct == null ? 0 : projectNumeric(changePct, `${ticker.symbol} watchlist change percentage`),
+      volume: formatNumeric(ticker.turnover, 0, '--'),
+      spark: [],
+    }
+  })
+}
 
 // ─── Sub-components ────────────────────────────────────────────────────────────
 
@@ -229,15 +258,19 @@ export function WatchlistModal({ open, onClose, watchlist, onAdd, onRemove, avai
   // Use parent-provided stocks when available; fetch internally only as fallback
   useEffect(() => {
     if (!open) return
+    const controller = new AbortController()
     if (stocksProp !== undefined) {
       setFetchedStocks(stocksProp)
-      return
+      return () => controller.abort()
     }
     setLoading(true)
-    fetchUniqueSymbols()
+    fetchAvailableStocks(controller.signal)
       .then(setFetchedStocks)
-      .catch(() => setFetchedStocks([]))
+      .catch((error: unknown) => {
+        if (!(error instanceof DOMException && error.name === 'AbortError')) setFetchedStocks([])
+      })
       .finally(() => setLoading(false))
+    return () => controller.abort()
   }, [open, stocksProp])
 
   const watchlistSymbols = useMemo(() => new Set(watchlist.map(w => w.symbol)), [watchlist])

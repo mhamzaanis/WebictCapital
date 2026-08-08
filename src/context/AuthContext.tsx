@@ -10,9 +10,8 @@ import {
   type ReactNode,
 } from 'react'
 import { getErrorMessage } from '../lib/api/errors'
-import { supabaseAuthAdapter } from '../lib/auth/supabaseAdapter'
 import type { AuthAdapter, AuthUser } from '../lib/auth/types'
-import { webictAuthAdapter } from '../lib/auth/webictAdapter'
+import { loadAuthAdapter } from '../lib/auth/adapterLoader'
 import { clearAllPrivateState, registerPrivateStateReset } from '../lib/privateState'
 import { getRuntimeConfig } from '../lib/runtimeConfig'
 
@@ -33,12 +32,12 @@ export function hasGenericAuthFailure(search: string): boolean {
   return new URLSearchParams(search).get('auth') === 'failed'
 }
 
-function selectedAdapter(): AuthAdapter {
-  return getRuntimeConfig().platformMode === 'webict' ? webictAuthAdapter : supabaseAuthAdapter
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const adapter = useMemo(() => selectedAdapter(), [])
+  const adapterPromise = useMemo(
+    () => loadAuthAdapter(getRuntimeConfig().platformMode),
+    [],
+  )
+  const adapterRef = useRef<AuthAdapter | null>(null)
   const initialAuthFailure = useMemo(() => hasGenericAuthFailure(window.location.search), [])
   const [user, setUser] = useState<AuthUser | null>(null)
   const [loading, setLoading] = useState(true)
@@ -62,6 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const controller = new AbortController()
     let mounted = true
+    let unsubscribe: () => void = () => undefined
     const params = new URLSearchParams(window.location.search)
     if (hasGenericAuthFailure(window.location.search)) {
       params.delete('auth')
@@ -69,50 +69,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`)
     }
 
-    adapter.bootstrap(controller.signal).then(
-      (next) => {
+    void (async () => {
+      try {
+        const adapter = await adapterPromise
+        if (!mounted) return
+        adapterRef.current = adapter
+        unsubscribe = adapter.subscribe((next) => {
+          if (!mounted) return
+          transitionUser(next)
+          setLoading(false)
+          if (next) setError(null)
+        })
+        const next = await adapter.bootstrap(controller.signal)
         if (!mounted) return
         transitionUser(next)
         setLoading(false)
-      },
-      (reason) => {
+      } catch (reason) {
         if (!mounted || controller.signal.aborted) return
         transitionUser(null)
         setError(getErrorMessage(reason))
         setLoading(false)
-      },
-    )
-    const unsubscribe = adapter.subscribe((next) => {
-      if (!mounted) return
-      transitionUser(next)
-      setLoading(false)
-      if (next) setError(null)
-    })
+      }
+    })()
     return () => {
       mounted = false
       controller.abort()
       unsubscribe()
     }
-  }, [adapter, transitionUser])
+  }, [adapterPromise, transitionUser])
 
   const signInWithGoogle = useCallback(async () => {
     setError(null)
     try {
+      const adapter = adapterRef.current ?? await adapterPromise
       await adapter.signInWithGoogle()
     } catch (reason) {
       setError(getErrorMessage(reason))
     }
-  }, [adapter])
+  }, [adapterPromise])
 
   const signOut = useCallback(async () => {
     setError(null)
     transitionUser(null)
     try {
+      const adapter = adapterRef.current ?? await adapterPromise
       await adapter.signOut()
     } catch (reason) {
       setError(getErrorMessage(reason))
     }
-  }, [adapter, transitionUser])
+  }, [adapterPromise, transitionUser])
 
   const clearError = useCallback(() => setError(null), [])
 

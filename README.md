@@ -18,7 +18,7 @@ VITE_SUPABASE_URL=https://project-ref.supabase.co
 VITE_SUPABASE_ANON_KEY=public-anon-key
 ```
 
-Never place a Supabase service-role key or any privileged credential in a `VITE_*` variable. Missing or invalid mode/base URL fails application initialization; there is no platform fallback and no default API origin.
+Never place a Supabase service-role key or any privileged credential in a `VITE_*` variable. If the previously identified service-key-looking value was ever real, rotate it manually and clean up the corresponding repository/deployment secret before staging. Missing or invalid mode/base URL fails application initialization; there is no platform fallback and no default API origin. The API base must be the complete origin only (for example, `https://staging-api.example`), never a placeholder or a URL containing `/api`.
 
 Production remains explicitly configured with `VITE_PLATFORM_MODE=supabase` until the coordinated cutover. A WebICT staging build uses `VITE_PLATFORM_MODE=webict` and must omit browser Supabase credentials.
 
