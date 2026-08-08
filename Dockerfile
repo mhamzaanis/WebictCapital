@@ -14,7 +14,7 @@ COPY . .
 # Vite configuration is compiled into the browser bundle. These values are
 # public build configuration, not runtime container secrets.
 ARG VITE_PLATFORM_MODE=webict
-ARG VITE_MARKET_API_BASE_URL=https://api.webictcapital.com
+ARG VITE_MARKET_API_BASE_URL=http://webictcapital.mhamzaanis.qzz.io
 ARG VITE_SUPABASE_URL=""
 ARG VITE_SUPABASE_ANON_KEY=""
 
