@@ -8,10 +8,6 @@
   },
   "routes": [
     {
-      "pattern": "preview.webictcapital.com",
-      "custom_domain": true
-    },
-    {
       "pattern": "webictcapital.com",
       "custom_domain": true
     },
@@ -22,5 +18,16 @@
   ],
   "observability": {
     "enabled": true
+  },
+  "env": {
+    "preview": {
+      "name": "webictcapital-preview",
+      "routes": [
+        {
+          "pattern": "preview.webictcapital.com",
+          "custom_domain": true
+        }
+      ]
+    }
   }
 }
