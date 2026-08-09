@@ -1,43 +1,50 @@
 /* eslint-disable react-refresh/only-export-components */
-import ReactECharts from 'echarts-for-react'
+import AddRoundedIcon from '@mui/icons-material/AddRounded'
+import BusinessRoundedIcon from '@mui/icons-material/BusinessRounded'
+import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded'
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined'
+import MoreVertRoundedIcon from '@mui/icons-material/MoreVertRounded'
+import PaidOutlinedIcon from '@mui/icons-material/PaidOutlined'
+import RemoveRoundedIcon from '@mui/icons-material/RemoveRounded'
+import ShowChartRoundedIcon from '@mui/icons-material/ShowChartRounded'
 import Decimal from 'decimal.js'
 import {
   Alert,
   Box,
   Button,
+  Chip,
+  CircularProgress,
   Container,
-  FormControl,
-  InputLabel,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Divider,
+  IconButton,
+  Menu,
   MenuItem,
-  Select,
   Stack,
+  Tab,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
+  Tabs,
   TextField,
   Typography,
 } from '@mui/material'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { MarketApiError, getErrorMessage } from '../../lib/api/errors'
 import { expectDate } from '../../lib/api/json'
 import { fetchLatestMarketSummary } from '../../lib/api/market'
 import {
-  MARKET_INDEX_CODES,
-  fetchMarketIndexHistory,
-  latestActualObservations,
-  type MarketIndexCode,
-} from '../../lib/api/marketIndexes'
-import {
   buy,
   correctLot,
-  deleteWatchlistItem,
   fetchPortfolioSnapshot,
-  putWatchlistItem,
   removePosition,
   sell,
   type PortfolioSnapshot,
@@ -46,41 +53,74 @@ import type {
   HoldingResponse,
   IsoDate,
   LotCorrectionRequest,
-  MarketIndexHistoryResponseDto,
   MarketTickerDto,
   NativeTradeRequest,
+  PortfolioActivityResponse,
   PortfolioMutationResponse,
   PositionLotResponse,
   PositionRemovalRequest,
 } from '../../lib/api/types'
 import { createMutationCommand, executeWithReconciliation } from '../../lib/portfolio/mutationCommand'
-import { formatNumeric, projectNumeric } from '../../lib/numericPresentation'
-import { registerPrivateStateReset } from '../../lib/privateState'
+import { formatNumeric } from '../../lib/numericPresentation'
+import { clearAllPrivateState, registerPrivateStateReset } from '../../lib/privateState'
 import { AuthModal } from '../AuthModal'
 
 const CARD = {
   bgcolor: 'var(--wc-surface)',
   border: '1px solid var(--wc-border)',
-  borderRadius: 2,
-  p: 2,
+  borderRadius: 2.5,
+  boxShadow: '0 12px 32px rgba(10, 46, 120, 0.045)',
 } as const
 
-type TradeDraft = { side: 'BUY' | 'SELL'; symbol: string; quantity: string; unitPrice: string; tradeDate: string }
+const TABLE_HEAD = {
+  color: 'var(--wc-text-secondary)',
+  fontSize: 11,
+  fontWeight: 700,
+  letterSpacing: '0.08em',
+  textTransform: 'uppercase',
+  borderColor: 'var(--wc-divider)',
+} as const
+
+type PortfolioTab = 'holdings' | 'activity' | 'lots'
+type TradeSide = 'BUY' | 'SELL'
+type TradeDraft = { side: TradeSide; symbol: string; quantity: string; unitPrice: string; tradeDate: string }
 type CorrectionDraft = {
-  lot: PositionLotResponse
+  lotId: string
+  symbol: string
+  expectedLotVersion: bigint
+  expectedPortfolioVersion: bigint
   quantity: string
   unitCost: string
   acquisitionDate: string
   correctionDate: string
   reason: string
 }
-type RemovalDraft = { holding: HoldingResponse; effectiveDate: string; reason: string }
+type RemovalDraft = { symbol: string; effectiveDate: string; reason: string }
+type CommandOutcome = 'succeeded' | 'conflict' | 'writes_unavailable' | 'unknown_outcome' | 'failed'
+
+export const PORTFOLIO_CONFLICT_MESSAGE = 'Your portfolio changed. Review the latest values and try again.'
+export const LOT_CORRECTION_CONFLICT_MESSAGE = 'This lot changed while you were editing it. Review the latest values before correcting it again.'
+export const PORTFOLIO_WRITES_UNAVAILABLE_MESSAGE = 'Portfolio changes are temporarily unavailable.'
+export const PORTFOLIO_AUTH_REQUIRED_MESSAGE = 'Your session has ended. Sign in to view your portfolio.'
 
 export function localCalendarDate(date = new Date()): string {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
+}
+
+export function aggregateCostBasis(holdings: readonly HoldingResponse[]): Decimal {
+  return holdings.reduce((total, holding) => total.plus(holding.totalCost), new Decimal(0))
+}
+
+export function translatePortfolioError(error: unknown): string {
+  if (error instanceof MarketApiError) {
+    if (error.status === 409) return PORTFOLIO_CONFLICT_MESSAGE
+    if (error.status === 503) return PORTFOLIO_WRITES_UNAVAILABLE_MESSAGE
+    if (error.status === 401) return PORTFOLIO_AUTH_REQUIRED_MESSAGE
+  }
+  return getErrorMessage(error)
 }
 
 function asDate(value: string, label: string): IsoDate {
@@ -91,22 +131,59 @@ function money(value: Decimal | null): string {
   return value == null ? 'N/A' : `PKR ${formatNumeric(value, 2, 'N/A')}`
 }
 
-function indexChartOption(response: MarketIndexHistoryResponseDto | null) {
-  const points = response ? latestActualObservations(response) : []
-  return {
-    animation: false,
-    tooltip: { trigger: 'axis' },
-    xAxis: { type: 'category', data: points.map((point) => point.tradeDate) },
-    yAxis: { type: 'value', scale: true },
-    dataZoom: [{ type: 'inside' }],
-    series: [{
-      name: response?.displayName ?? response?.code ?? 'Index',
-      type: 'line',
-      showSymbol: false,
-      connectNulls: false,
-      data: points.map((point) => point.close == null ? null : projectNumeric(point.close, 'portfolio index chart close')),
-    }],
+function positiveQuantity(value: string): bigint | null {
+  if (!/^\d+$/.test(value.trim())) return null
+  try {
+    const quantity = BigInt(value.trim())
+    return quantity > 0n ? quantity : null
+  } catch {
+    return null
   }
+}
+
+function validPrice(value: string): boolean {
+  try {
+    const price = new Decimal(value)
+    return price.isFinite() && !price.isNegative()
+  } catch {
+    return false
+  }
+}
+
+function availableSellQuantity(
+  lots: readonly PositionLotResponse[],
+  holding: HoldingResponse | null,
+  tradeDate: string,
+): bigint {
+  if (!holding || !tradeDate) return 0n
+  return lots.reduce(
+    (available, lot) => lot.securityId === holding.securityId && lot.acquisitionDate <= tradeDate
+      ? available + lot.quantity
+      : available,
+    0n,
+  )
+}
+
+function friendlyActivityLabel(activity: PortfolioActivityResponse): string {
+  if (activity.activityType === 'legacy_trade') {
+    return activity.side === 'SELL' ? 'Imported sale' : 'Imported purchase'
+  }
+  if (activity.activityType.includes('correction')) return 'Purchase corrected'
+  if (activity.activityType.includes('removal')) return 'Position removed'
+  if (activity.side === 'BUY') return 'Shares purchased'
+  if (activity.side === 'SELL') return 'Shares sold'
+  return 'Portfolio updated'
+}
+
+function activityDetail(activity: PortfolioActivityResponse): string | null {
+  if (activity.reason) return activity.reason
+  if (activity.beforeQuantity != null || activity.afterQuantity != null) {
+    return `Quantity ${activity.beforeQuantity?.toString() ?? 'N/A'} → ${activity.afterQuantity?.toString() ?? 'N/A'} · Cost ${money(activity.beforeUnitCost)} → ${money(activity.afterUnitCost)}`
+  }
+  if (activity.activityType === 'legacy_trade' && activity.side === 'SELL') {
+    return 'Imported historical record'
+  }
+  return null
 }
 
 export function WebictPortfolioPage() {
@@ -119,23 +196,32 @@ export function WebictPortfolioPage() {
   const [notice, setNotice] = useState<string | null>(null)
   const [writesUnavailable, setWritesUnavailable] = useState(false)
   const [retryUnknown, setRetryUnknown] = useState<(() => Promise<void>) | null>(null)
-  const [trade, setTrade] = useState<TradeDraft>({ side: 'BUY', symbol: '', quantity: '', unitPrice: '', tradeDate: localCalendarDate() })
+  const [tab, setTab] = useState<PortfolioTab>('holdings')
+  const [trade, setTrade] = useState<TradeDraft | null>(null)
   const [correction, setCorrection] = useState<CorrectionDraft | null>(null)
   const [removal, setRemoval] = useState<RemovalDraft | null>(null)
-  const [indexCode, setIndexCode] = useState<MarketIndexCode>('KSE100')
-  const [indexHistory, setIndexHistory] = useState<MarketIndexHistoryResponseDto | null>(null)
 
   const resetPrivate = useCallback(() => {
     setSnapshot(null)
     setError(null)
     setNotice(null)
     setRetryUnknown(null)
+    setTrade(null)
     setCorrection(null)
     setRemoval(null)
     setWritesUnavailable(false)
   }, [])
 
   useEffect(() => registerPrivateStateReset(resetPrivate), [resetPrivate])
+
+  const handleError = useCallback((reason: unknown) => {
+    if (reason instanceof MarketApiError && reason.status === 401) {
+      clearAllPrivateState()
+      setAuthModalOpen(true)
+    }
+    if (reason instanceof MarketApiError && reason.status === 503) setWritesUnavailable(true)
+    setError(translatePortfolioError(reason))
+  }, [])
 
   const refresh = useCallback(async (signal?: AbortSignal) => {
     setLoading(true)
@@ -156,10 +242,10 @@ export function WebictPortfolioPage() {
       return () => controller.abort()
     }
     void refresh(controller.signal).catch((reason) => {
-      if (!controller.signal.aborted) setError(getErrorMessage(reason))
+      if (!controller.signal.aborted) handleError(reason)
     })
     return () => controller.abort()
-  }, [authLoading, refresh, resetPrivate, user])
+  }, [authLoading, handleError, refresh, resetPrivate, user])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -169,204 +255,402 @@ export function WebictPortfolioPage() {
     return () => controller.abort()
   }, [])
 
-  useEffect(() => {
-    const controller = new AbortController()
-    fetchMarketIndexHistory(
-      indexCode,
-      { from: '2021-01-01', to: localCalendarDate() },
-      controller.signal,
-    ).then(setIndexHistory).catch((reason) => {
-      if (!controller.signal.aborted) setError(getErrorMessage(reason))
-    })
-    return () => controller.abort()
-  }, [indexCode])
-
   const runCommand = useCallback(async <TBody extends NativeTradeRequest | LotCorrectionRequest | PositionRemovalRequest>(
     makeBody: (mutationId: NativeTradeRequest['mutationId']) => TBody,
     transport: (body: Readonly<TBody>) => Promise<PortfolioMutationResponse | unknown>,
-  ) => {
+  ): Promise<CommandOutcome> => {
     const command = createMutationCommand(makeBody, transport)
-    const completeAttempt = async (retry: boolean) => {
-      let outcome
-      try {
-        outcome = await executeWithReconciliation(command, retry, refresh)
-      } catch (reason) {
-        setError(getErrorMessage(reason))
-        return
-      }
+    const completeAttempt = async (retry: boolean): Promise<CommandOutcome> => {
+      const outcome = await executeWithReconciliation(command, retry, refresh)
       if (outcome.kind === 'succeeded') {
         setRetryUnknown(null)
-        setNotice('Portfolio mutation completed. Server state has been refreshed.')
+        setError(null)
+        setNotice('Your portfolio has been updated.')
       } else if (outcome.kind === 'conflict') {
         setRetryUnknown(null)
-        setNotice('The portfolio changed on the server. Current versions were refreshed; review and reconfirm with a new mutation command.')
+        setNotice(null)
+        setError(PORTFOLIO_CONFLICT_MESSAGE)
       } else if (outcome.kind === 'writes_unavailable') {
         setWritesUnavailable(true)
         setRetryUnknown(null)
-        setNotice('Portfolio writes are temporarily unavailable. Read data remains visible.')
+        setError(null)
+        setNotice(PORTFOLIO_WRITES_UNAVAILABLE_MESSAGE)
       } else if (outcome.kind === 'unknown_outcome') {
-        setRetryUnknown(() => () => completeAttempt(true))
-        setError('The mutation outcome is unknown. Retry will reuse the exact UUID and frozen request body.')
+        setRetryUnknown(() => async () => { await completeAttempt(true) })
+        setNotice(null)
+        setError('We could not confirm whether this change was saved. You can safely retry the same request.')
       } else {
         setRetryUnknown(null)
-        setError(getErrorMessage(outcome.error))
+        setNotice(null)
+        handleError(outcome.error)
       }
+      return outcome.kind
     }
-    await completeAttempt(false)
-  }, [refresh])
+    return completeAttempt(false)
+  }, [handleError, refresh])
+
+  const openTrade = useCallback((side: TradeSide) => {
+    const symbol = side === 'SELL' ? snapshot?.holdings[0]?.symbol ?? '' : ''
+    setError(null)
+    setTrade({ side, symbol, quantity: '', unitPrice: '', tradeDate: localCalendarDate() })
+  }, [snapshot])
 
   const submitTrade = useCallback(async () => {
-    if (!snapshot) return
-    setError(null)
+    if (!snapshot || !trade) return
+    const quantity = positiveQuantity(trade.quantity)
+    if (quantity == null || !validPrice(trade.unitPrice)) return
+    const symbol = trade.symbol.trim().toUpperCase()
+    if (trade.side === 'SELL') {
+      const holding = snapshot.holdings.find((candidate) => candidate.symbol === symbol) ?? null
+      const available = availableSellQuantity(snapshot.lots, holding, trade.tradeDate)
+      if (available === 0n || quantity > available) return
+    }
     try {
-      const quantity = BigInt(trade.quantity)
-      const unitPrice = new Decimal(trade.unitPrice)
-      const symbol = trade.symbol.trim().toUpperCase()
-      await runCommand(
+      const outcome = await runCommand(
         (mutationId) => ({
           mutationId,
           symbol,
           quantity,
-          unitPrice,
+          unitPrice: new Decimal(trade.unitPrice),
           tradeDate: asDate(trade.tradeDate, 'tradeDate'),
           expectedPortfolioVersion: snapshot.summary.version,
         }),
         (body) => trade.side === 'BUY' ? buy(body) : sell(body),
       )
+      if (outcome === 'succeeded') setTrade(null)
     } catch (reason) {
-      setError(getErrorMessage(reason))
+      handleError(reason)
     }
-  }, [runCommand, snapshot, trade])
+  }, [handleError, runCommand, snapshot, trade])
 
   const submitCorrection = useCallback(async () => {
-    if (!snapshot || !correction || !correction.reason.trim()) return
+    if (!correction || !correction.reason.trim()) return
     try {
-      await runCommand(
+      const outcome = await runCommand(
         (mutationId) => ({
           mutationId,
           quantity: BigInt(correction.quantity),
           unitCost: new Decimal(correction.unitCost),
           acquisitionDate: asDate(correction.acquisitionDate, 'acquisitionDate'),
           correctionDate: asDate(correction.correctionDate, 'correctionDate'),
-          expectedLotVersion: correction.lot.version,
-          expectedPortfolioVersion: snapshot.summary.version,
+          expectedLotVersion: correction.expectedLotVersion,
+          expectedPortfolioVersion: correction.expectedPortfolioVersion,
           reason: correction.reason.trim(),
         }),
-        (body) => correctLot(correction.lot.id, body),
+        (body) => correctLot(correction.lotId, body),
       )
+      if (outcome === 'succeeded') setCorrection(null)
+      if (outcome === 'conflict') {
+        setCorrection(null)
+        setError(LOT_CORRECTION_CONFLICT_MESSAGE)
+      }
     } catch (reason) {
-      setError(getErrorMessage(reason))
+      handleError(reason)
     }
-  }, [correction, runCommand, snapshot])
+  }, [correction, handleError, runCommand])
 
   const submitRemoval = useCallback(async () => {
     if (!snapshot || !removal || !removal.reason.trim()) return
+    const currentHolding = snapshot.holdings.find((holding) => holding.symbol === removal.symbol)
+    if (!currentHolding) {
+      setRemoval(null)
+      setError(PORTFOLIO_CONFLICT_MESSAGE)
+      return
+    }
     try {
-      await runCommand(
+      const outcome = await runCommand(
         (mutationId) => ({
           mutationId,
           effectiveDate: asDate(removal.effectiveDate, 'effectiveDate'),
           expectedPortfolioVersion: snapshot.summary.version,
           reason: removal.reason.trim(),
         }),
-        (body) => removePosition(removal.holding.symbol, body),
+        (body) => removePosition(currentHolding.symbol, body),
       )
+      if (outcome === 'succeeded') setRemoval(null)
     } catch (reason) {
-      setError(getErrorMessage(reason))
+      handleError(reason)
     }
-  }, [removal, runCommand, snapshot])
+  }, [handleError, removal, runCommand, snapshot])
 
-  const catalogueBySymbol = useMemo(
-    () => new Map(catalogue.map((item) => [item.symbol, item])),
-    [catalogue],
-  )
-  const indexPoints = indexHistory ? latestActualObservations(indexHistory) : []
   const mutationsDisabled = writesUnavailable || loading || !snapshot
+  const selectedSellHolding = trade?.side === 'SELL'
+    ? snapshot?.holdings.find((holding) => holding.symbol === trade.symbol) ?? null
+    : null
+  const eligibleSellQuantity = trade?.side === 'SELL'
+    ? availableSellQuantity(snapshot?.lots ?? [], selectedSellHolding, trade.tradeDate)
+    : null
+  const parsedTradeQuantity = trade ? positiveQuantity(trade.quantity) : null
+  const exceedsAvailable = Boolean(
+    trade?.side === 'SELL'
+    && parsedTradeQuantity != null
+    && eligibleSellQuantity != null
+    && parsedTradeQuantity > eligibleSellQuantity,
+  )
+  const tradeReady = Boolean(
+    trade
+    && trade.symbol
+    && parsedTradeQuantity != null
+    && validPrice(trade.unitPrice)
+    && trade.tradeDate
+    && (trade.side === 'BUY' || (selectedSellHolding != null && eligibleSellQuantity != null && eligibleSellQuantity > 0n))
+    && !exceedsAvailable,
+  )
 
   return (
-    <Container maxWidth="xl" sx={{ py: { xs: 3, md: 5 } }}>
-      <Stack spacing={2}>
-        <Box>
-          <Typography variant="h4" sx={{ fontWeight: 900 }}>Portfolio</Typography>
-          <Typography color="text.secondary">Server-authoritative lots, holdings, immutable activity and watchlist. Holdings valuation only; no cash balance is defined.</Typography>
-        </Box>
-        {!user && !authLoading && <Alert severity="info" action={<Button onClick={() => setAuthModalOpen(true)}>Sign in</Button>}>Sign in to view your portfolio.</Alert>}
-        {error && <Alert severity="error">{error}</Alert>}
-        {notice && <PortfolioWriteGateNotice unavailable={writesUnavailable}>{notice}</PortfolioWriteGateNotice>}
-        {retryUnknown && <Button variant="contained" color="warning" onClick={() => void retryUnknown()}>Retry exact unknown-outcome command</Button>}
-        {snapshot && (
-          <>
-            <Box sx={CARD}>
-              <Typography variant="overline">Holdings market value</Typography>
-              <Typography variant="h4">{money(snapshot.summary.holdingsMarketValue)}</Typography>
-              <Typography color="text.secondary">Portfolio version {snapshot.summary.version.toString()} · Unpriced holdings {snapshot.summary.unpricedHoldingCount}</Typography>
+    <Box
+      component="main"
+      sx={{
+        minHeight: '100vh',
+        bgcolor: 'var(--wc-bg)',
+        pt: { xs: 'var(--wc-page-top-xs)', md: 'var(--wc-page-top-md)' },
+        pb: { xs: 'var(--wc-page-bottom-xs)', md: 'var(--wc-page-bottom-md)' },
+      }}
+    >
+      <Container maxWidth="xl" sx={{ maxWidth: '1280px !important', px: { xs: 'var(--wc-page-gutter-xs)', md: 'var(--wc-page-gutter-md)' } }}>
+        <Stack spacing={{ xs: 3, md: 4 }}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2.5} sx={{ alignItems: { sm: 'flex-end' }, justifyContent: 'space-between' }}>
+            <Box>
+              <Typography sx={{ color: 'var(--wc-primary)', fontSize: 12, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', mb: 1 }}>
+                Investments
+              </Typography>
+              <Typography component="h1" sx={{ color: 'var(--wc-text-primary)', fontFamily: 'var(--wc-font-display)', fontSize: { xs: '2.15rem', md: '3rem' }, fontWeight: 700, letterSpacing: '-0.04em', lineHeight: 1 }}>
+                My Portfolio
+              </Typography>
             </Box>
-
-            <Box sx={CARD}>
-              <Typography variant="h6" sx={{ mb: 1 }}>Record buy or sell</Typography>
-              <Stack direction={{ xs: 'column', md: 'row' }} spacing={1}>
-                <FormControl sx={{ minWidth: 110 }}><InputLabel>Side</InputLabel><Select label="Side" value={trade.side} onChange={(event) => setTrade((value) => ({ ...value, side: event.target.value as 'BUY' | 'SELL' }))}><MenuItem value="BUY">Buy</MenuItem><MenuItem value="SELL">Sell (server FIFO)</MenuItem></Select></FormControl>
-                <TextField label="Symbol" value={trade.symbol} onChange={(event) => setTrade((value) => ({ ...value, symbol: event.target.value }))} />
-                <TextField label="Quantity" value={trade.quantity} onChange={(event) => setTrade((value) => ({ ...value, quantity: event.target.value }))} />
-                <TextField label="Unit price" value={trade.unitPrice} onChange={(event) => setTrade((value) => ({ ...value, unitPrice: event.target.value }))} />
-                <TextField label="Trade date" type="date" value={trade.tradeDate} onChange={(event) => setTrade((value) => ({ ...value, tradeDate: event.target.value }))} slotProps={{ inputLabel: { shrink: true } }} />
-                <Button variant="contained" disabled={mutationsDisabled || !trade.symbol || !trade.quantity || !trade.unitPrice} onClick={() => void submitTrade()}>Confirm</Button>
+            {snapshot && (
+              <Stack direction="row" spacing={1.25} sx={{ width: { xs: '100%', sm: 'auto' } }}>
+                <Button fullWidth startIcon={<AddRoundedIcon />} variant="contained" disabled={mutationsDisabled} onClick={() => openTrade('BUY')} sx={{ minWidth: { sm: 145 } }}>
+                  Buy shares
+                </Button>
+                <Button fullWidth startIcon={<RemoveRoundedIcon />} variant="outlined" disabled={mutationsDisabled || snapshot.holdings.length === 0} onClick={() => openTrade('SELL')} sx={{ minWidth: { sm: 145 } }}>
+                  Sell shares
+                </Button>
               </Stack>
-            </Box>
+            )}
+          </Stack>
 
-            <PortfolioTables
-              snapshot={snapshot}
-              writesDisabled={mutationsDisabled}
-              onCorrect={(lot) => setCorrection({ lot, quantity: lot.quantity.toString(), unitCost: lot.unitCost.toString(), acquisitionDate: lot.acquisitionDate, correctionDate: localCalendarDate(), reason: '' })}
-              onRemove={(holding) => setRemoval({ holding, effectiveDate: localCalendarDate(), reason: '' })}
+          {!user && !authLoading && (
+            <EmptyState
+              icon={<ShowChartRoundedIcon />}
+              title="Sign in to see your investments"
+              description="Your holdings and activity are available after you sign in."
+              action={<Button variant="contained" onClick={() => setAuthModalOpen(true)}>Sign in</Button>}
             />
+          )}
+          {loading && !snapshot && <Stack direction="row" spacing={1.5} sx={{ py: 7, justifyContent: 'center', alignItems: 'center' }}><CircularProgress size={22} /><Typography color="text.secondary">Loading your portfolio…</Typography></Stack>}
+          {error && <Alert severity="error" onClose={() => setError(null)}>{error}</Alert>}
+          {notice && <PortfolioWriteGateNotice unavailable={writesUnavailable}>{notice}</PortfolioWriteGateNotice>}
+          {retryUnknown && <Button variant="contained" color="warning" onClick={() => void retryUnknown()} sx={{ alignSelf: 'flex-start' }}>Retry request</Button>}
 
-            {correction && <Box sx={CARD}><Typography variant="h6">Correct lot {correction.lot.symbol} · version {correction.lot.version.toString()}</Typography><Stack direction={{ xs: 'column', md: 'row' }} spacing={1} sx={{ mt: 1 }}><TextField label="Quantity" value={correction.quantity} onChange={(e) => setCorrection({ ...correction, quantity: e.target.value })}/><TextField label="Unit cost" value={correction.unitCost} onChange={(e) => setCorrection({ ...correction, unitCost: e.target.value })}/><TextField type="date" label="Acquisition date" value={correction.acquisitionDate} onChange={(e) => setCorrection({ ...correction, acquisitionDate: e.target.value })} slotProps={{ inputLabel: { shrink: true } }}/><TextField type="date" label="Correction date" value={correction.correctionDate} onChange={(e) => setCorrection({ ...correction, correctionDate: e.target.value })} slotProps={{ inputLabel: { shrink: true } }}/><TextField required label="Reason" value={correction.reason} onChange={(e) => setCorrection({ ...correction, reason: e.target.value })}/><Button disabled={mutationsDisabled || !correction.reason.trim()} onClick={() => void submitCorrection()}>Confirm correction</Button></Stack></Box>}
-            {removal && <Box sx={CARD}><Typography variant="h6">Remove {removal.holding.symbol} position</Typography><Typography color="text.secondary">This records immutable removal activity; history is not deleted.</Typography><Stack direction={{ xs: 'column', md: 'row' }} spacing={1} sx={{ mt: 1 }}><TextField type="date" label="Effective date" value={removal.effectiveDate} onChange={(e) => setRemoval({ ...removal, effectiveDate: e.target.value })} slotProps={{ inputLabel: { shrink: true } }}/><TextField required label="Reason" value={removal.reason} onChange={(e) => setRemoval({ ...removal, reason: e.target.value })}/><Button disabled={mutationsDisabled || !removal.reason.trim()} onClick={() => void submitRemoval()}>Confirm removal</Button></Stack></Box>}
+          {snapshot && (
+            <>
+              <PortfolioSummary snapshot={snapshot} />
 
-            <Box sx={CARD}>
-              <Typography variant="h6">Watchlist</Typography>
-              <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} sx={{ my: 1 }}>
-                <TextField select label="Catalogue symbol" value={trade.symbol} onChange={(event) => setTrade((value) => ({ ...value, symbol: event.target.value }))} sx={{ minWidth: 220 }}>{catalogue.map((ticker) => <MenuItem key={ticker.symbol} value={ticker.symbol}>{ticker.symbol} — {ticker.companyName ?? ticker.symbol}</MenuItem>)}</TextField>
-                <Button disabled={mutationsDisabled || !trade.symbol} onClick={() => void putWatchlistItem(trade.symbol).then(() => refresh()).catch((reason) => { if (reason instanceof MarketApiError && reason.status === 503) setWritesUnavailable(true); setError(getErrorMessage(reason)) })}>Add</Button>
-              </Stack>
-              {snapshot.watchlist.map((item) => {
-                const market = catalogueBySymbol.get(item.symbol)
-                return <Stack key={item.symbol} direction="row" spacing={2} sx={{ py: 0.8, alignItems: 'center' }}><Button component={Link} to={`/stocks/${item.symbol}`}>{item.symbol}</Button><Typography sx={{ flex: 1 }}>{item.companyName ?? market?.companyName ?? 'N/A'}</Typography><Typography>{money(item.latestPrice ?? market?.close ?? null)}</Typography><Typography>{market?.change == null ? 'N/A' : formatNumeric(market.change)}</Typography><Typography>{market?.turnover == null ? 'N/A' : formatNumeric(market.turnover, 0)}</Typography><Button disabled={mutationsDisabled} onClick={() => void deleteWatchlistItem(item.symbol).then(() => refresh()).catch((reason) => { if (reason instanceof MarketApiError && reason.status === 503) setWritesUnavailable(true); setError(getErrorMessage(reason)) })}>Remove</Button></Stack>
-              })}
-              <Typography variant="caption">Sparklines are intentionally omitted; ticker detail is fetched only after a symbol is opened.</Typography>
-            </Box>
+              <Box sx={{ ...CARD, overflow: 'hidden' }}>
+                <Tabs
+                  value={tab}
+                  onChange={(_event, value: PortfolioTab) => setTab(value)}
+                  aria-label="Portfolio sections"
+                  variant="scrollable"
+                  scrollButtons="auto"
+                  sx={{ px: { xs: 1, md: 2 }, borderBottom: '1px solid var(--wc-divider)', minHeight: 56 }}
+                >
+                  <Tab value="holdings" label="Holdings" />
+                  <Tab value="activity" label="Activity" />
+                  <Tab value="lots" label={<Stack direction="row" spacing={0.8} sx={{ alignItems: 'center' }}><span>Purchase lots</span><Chip label="Advanced" size="small" /></Stack>} />
+                </Tabs>
+                <Box sx={{ p: { xs: 2, md: 3 } }}>
+                  {tab === 'holdings' && (
+                    <HoldingsPanel
+                      holdings={snapshot.holdings}
+                      writesDisabled={mutationsDisabled}
+                      onBuy={() => openTrade('BUY')}
+                      onRemove={(holding) => setRemoval({ symbol: holding.symbol, effectiveDate: localCalendarDate(), reason: '' })}
+                    />
+                  )}
+                  {tab === 'activity' && <ActivityPanel activity={snapshot.activity} />}
+                  {tab === 'lots' && (
+                    <LotsPanel
+                      lots={snapshot.lots}
+                      writesDisabled={mutationsDisabled}
+                      onCorrect={(lot) => setCorrection({ lotId: lot.id, symbol: lot.symbol, expectedLotVersion: lot.version, expectedPortfolioVersion: snapshot.summary.version, quantity: lot.quantity.toString(), unitCost: lot.unitCost.toString(), acquisitionDate: lot.acquisitionDate, correctionDate: localCalendarDate(), reason: '' })}
+                    />
+                  )}
+                </Box>
+              </Box>
+            </>
+          )}
+        </Stack>
+      </Container>
 
-            <Box sx={CARD}>
-              <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}><Typography variant="h6" sx={{ flex: 1 }}>Market index history</Typography><FormControl size="small" sx={{ minWidth: 130 }}><InputLabel>Index</InputLabel><Select label="Index" value={indexCode} onChange={(event) => setIndexCode(event.target.value as MarketIndexCode)}>{MARKET_INDEX_CODES.map((code) => <MenuItem key={code} value={code}>{code}</MenuItem>)}</Select></FormControl></Stack>
-              {indexHistory && <Typography color="text.secondary">Available {indexHistory.availableRange.from}–{indexHistory.availableRange.to}; requested {indexHistory.requestedRange.from ?? 'open'}–{indexHistory.requestedRange.to ?? 'open'}; applied {indexHistory.appliedRange.from}–{indexHistory.appliedRange.to}; as of {indexHistory.asOf?.tradeDate ?? 'N/A'}; latest {indexPoints.length} actual observations.</Typography>}
-              {indexPoints.length > 0 ? <ReactECharts option={indexChartOption(indexHistory)} style={{ height: 320 }} /> : <Typography sx={{ py: 3 }}>No observations in this valid range.</Typography>}
-            </Box>
-          </>
-        )}
-      </Stack>
+      <TradeDialog
+        draft={trade}
+        catalogue={catalogue}
+        holdings={snapshot?.holdings ?? []}
+        selectedHolding={selectedSellHolding}
+        eligibleSellQuantity={eligibleSellQuantity}
+        exceedsAvailable={exceedsAvailable}
+        disabled={mutationsDisabled || !tradeReady}
+        onChange={setTrade}
+        onClose={() => setTrade(null)}
+        onSubmit={() => void submitTrade()}
+      />
+      <CorrectionDialog draft={correction} disabled={mutationsDisabled} onChange={setCorrection} onClose={() => setCorrection(null)} onSubmit={() => void submitCorrection()} />
+      <RemovalDialog draft={removal} disabled={mutationsDisabled} onChange={setRemoval} onClose={() => setRemoval(null)} onSubmit={() => void submitRemoval()} />
       <AuthModal open={authModalOpen} onClose={() => setAuthModalOpen(false)} />
-    </Container>
+    </Box>
   )
 }
 
 export function PortfolioWriteGateNotice({ unavailable, children }: { unavailable: boolean; children: React.ReactNode }) {
-  return <Alert severity={unavailable ? 'warning' : 'info'}>{children}</Alert>
+  return <Alert severity={unavailable ? 'warning' : 'success'}>{children}</Alert>
 }
 
-export function PortfolioTables({ snapshot, writesDisabled, onCorrect, onRemove }: {
-  snapshot: PortfolioSnapshot
+export function PortfolioSummary({ snapshot }: { snapshot: PortfolioSnapshot }) {
+  const companyCount = new Set(snapshot.holdings.map((holding) => holding.symbol)).size
+  const summaryItems = [
+    { label: 'Holdings value', value: money(snapshot.summary.holdingsMarketValue), icon: <PaidOutlinedIcon /> },
+    { label: 'Cost basis', value: money(aggregateCostBasis(snapshot.holdings)), icon: <ShowChartRoundedIcon /> },
+    { label: 'Companies held', value: companyCount.toLocaleString('en-PK'), icon: <BusinessRoundedIcon /> },
+    ...(snapshot.summary.unpricedHoldingCount > 0
+      ? [{ label: 'Awaiting a market price', value: snapshot.summary.unpricedHoldingCount.toLocaleString('en-PK'), icon: <ShowChartRoundedIcon /> }]
+      : []),
+  ]
+
+  return (
+    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))', lg: `repeat(${summaryItems.length}, minmax(0, 1fr))` }, gap: 1.5 }}>
+      {summaryItems.map((item) => (
+        <Box key={item.label} sx={{ ...CARD, p: { xs: 2, md: 2.5 } }}>
+          <Stack direction="row" sx={{ alignItems: 'flex-start', justifyContent: 'space-between', gap: 1 }}>
+            <Box>
+              <Typography sx={{ color: 'var(--wc-text-secondary)', fontSize: 12, fontWeight: 600, mb: 0.8 }}>{item.label}</Typography>
+              <Typography sx={{ color: 'var(--wc-text-primary)', fontFamily: 'var(--wc-font-data)', fontSize: { xs: 22, md: 25 }, fontWeight: 700, letterSpacing: '-0.025em' }}>{item.value}</Typography>
+            </Box>
+            <Box sx={{ display: 'grid', placeItems: 'center', width: 38, height: 38, borderRadius: 2, bgcolor: 'var(--wc-primary-soft)', color: 'var(--wc-primary)', '& svg': { fontSize: 20 } }}>{item.icon}</Box>
+          </Stack>
+        </Box>
+      ))}
+    </Box>
+  )
+}
+
+export function HoldingsPanel({ holdings, writesDisabled, onBuy, onRemove }: {
+  holdings: HoldingResponse[]
   writesDisabled: boolean
-  onCorrect: (lot: PositionLotResponse) => void
+  onBuy: () => void
   onRemove: (holding: HoldingResponse) => void
 }) {
-  return <Stack spacing={2}>
-    <DataTable title="Holdings" headers={['Symbol', 'Quantity', 'Total cost', 'Average unit cost', 'Latest quote', 'Market value', 'Action']} rows={snapshot.holdings.map((holding) => [<Button component={Link} to={`/stocks/${holding.symbol}`}>{holding.symbol}</Button>, holding.quantity.toString(), money(holding.totalCost), money(holding.averageUnitCost), money(holding.latestPrice), money(holding.marketValue), <Button disabled={writesDisabled} onClick={() => onRemove(holding)}>Remove position</Button>])}/>
-    <DataTable title="Lots" headers={['Symbol', 'Quantity', 'Unit cost', 'Acquisition', 'Origin', 'Lot version', 'Action']} rows={snapshot.lots.map((lot) => [lot.symbol, lot.quantity.toString(), money(lot.unitCost), lot.acquisitionDate, lot.origin, lot.version.toString(), <Button disabled={writesDisabled} onClick={() => onCorrect(lot)}>Correct</Button>])}/>
-    <DataTable title="Immutable activity" headers={['Date', 'Symbol', 'Activity', 'Position effect', 'Quantity', 'Price', 'Reason / correction detail', 'Versions']} rows={snapshot.activity.map((activity) => [activity.tradeDate, activity.symbol, `${activity.activityType}${activity.side ? ` ${activity.side}` : ''}`, activity.positionEffect === 'none' ? 'Position-neutral history' : activity.positionEffect, activity.quantity.toString(), money(activity.unitPrice), activity.reason ?? (activity.beforeQuantity != null || activity.afterQuantity != null ? `${activity.beforeQuantity?.toString() ?? 'N/A'} → ${activity.afterQuantity?.toString() ?? 'N/A'}; ${money(activity.beforeUnitCost)} → ${money(activity.afterUnitCost)}` : '—'), `${activity.portfolioVersionBefore?.toString() ?? '—'} → ${activity.portfolioVersionAfter?.toString() ?? '—'}`])}/>
-  </Stack>
+  if (holdings.length === 0) {
+    return <EmptyState icon={<BusinessRoundedIcon />} title="No holdings yet" description="Record your first purchase to start building your portfolio." action={<Button variant="contained" startIcon={<AddRoundedIcon />} disabled={writesDisabled} onClick={onBuy}>Buy shares</Button>} />
+  }
+  return (
+    <>
+      <TableContainer sx={{ display: { xs: 'none', md: 'block' } }}>
+        <Table>
+          <TableHead><TableRow>{['Company', 'Shares', 'Average cost', 'Total cost', 'Latest price', 'Market value', ''].map((header) => <TableCell key={header} sx={TABLE_HEAD} align={header && header !== 'Company' ? 'right' : 'left'}>{header}</TableCell>)}</TableRow></TableHead>
+          <TableBody>{holdings.map((holding) => <TableRow key={holding.symbol} hover><TableCell sx={{ borderColor: 'var(--wc-divider)' }}><Button component={Link} to={`/stocks/${holding.symbol}`} sx={{ px: 0, fontWeight: 800 }}>{holding.symbol}</Button><Typography variant="body2" color="text.secondary">{holding.companyName ?? 'Company name unavailable'}</Typography></TableCell><TableCell align="right">{formatNumeric(holding.quantity, 0)}</TableCell><TableCell align="right">{money(holding.averageUnitCost)}</TableCell><TableCell align="right">{money(holding.totalCost)}</TableCell><TableCell align="right">{money(holding.latestPrice)}</TableCell><TableCell align="right" sx={{ fontWeight: 700 }}>{money(holding.marketValue)}</TableCell><TableCell align="right"><HoldingActions holding={holding} disabled={writesDisabled} onRemove={onRemove} /></TableCell></TableRow>)}</TableBody>
+        </Table>
+      </TableContainer>
+      <Stack spacing={1.25} sx={{ display: { xs: 'flex', md: 'none' } }}>
+        {holdings.map((holding) => <Box key={holding.symbol} sx={{ border: '1px solid var(--wc-divider)', borderRadius: 2, p: 2 }}><Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'flex-start' }}><Box><Button component={Link} to={`/stocks/${holding.symbol}`} sx={{ px: 0, fontWeight: 800 }}>{holding.symbol}</Button><Typography variant="body2" color="text.secondary">{holding.companyName ?? 'Company name unavailable'}</Typography></Box><HoldingActions holding={holding} disabled={writesDisabled} onRemove={onRemove} /></Stack><Divider sx={{ my: 1.5 }} /><Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}><Value label="Shares" value={formatNumeric(holding.quantity, 0)} /><Value label="Average cost" value={money(holding.averageUnitCost)} /><Value label="Latest price" value={money(holding.latestPrice)} /><Value label="Market value" value={money(holding.marketValue)} strong /></Box></Box>)}
+      </Stack>
+    </>
+  )
 }
 
-function DataTable({ title, headers, rows }: { title: string; headers: string[]; rows: React.ReactNode[][] }) {
-  return <Box sx={{ ...CARD, p: 0, overflow: 'hidden' }}><Typography variant="h6" sx={{ p: 2 }}>{title}</Typography><TableContainer><Table size="small"><TableHead><TableRow>{headers.map((header) => <TableCell key={header}>{header}</TableCell>)}</TableRow></TableHead><TableBody>{rows.length ? rows.map((row, rowIndex) => <TableRow key={rowIndex}>{row.map((cell, cellIndex) => <TableCell key={cellIndex}>{cell}</TableCell>)}</TableRow>) : <TableRow><TableCell colSpan={headers.length}>No records.</TableCell></TableRow>}</TableBody></Table></TableContainer></Box>
+export function ActivityPanel({ activity }: { activity: PortfolioActivityResponse[] }) {
+  if (activity.length === 0) return <EmptyState icon={<ShowChartRoundedIcon />} title="No activity yet" description="Purchases, sales, corrections, and removals will appear here." />
+  return (
+    <Stack divider={<Divider flexItem />}>
+      <Box sx={{ mb: 1 }}><Typography variant="h6" sx={{ fontWeight: 700 }}>Activity history</Typography><Typography variant="body2" color="text.secondary">A chronological record of changes to your investments.</Typography></Box>
+      {activity.map((item) => {
+        const detail = activityDetail(item)
+        return <Stack key={item.id} direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 1, sm: 2 }} sx={{ py: 2, alignItems: { sm: 'center' } }}><Box sx={{ flex: 1 }}><Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}><Typography sx={{ fontWeight: 700 }}>{friendlyActivityLabel(item)}</Typography><Chip label={item.symbol} size="small" variant="outlined" /></Stack><Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>{item.tradeDate}{detail ? ` · ${detail}` : ''}</Typography></Box><Box sx={{ textAlign: { sm: 'right' } }}><Typography sx={{ fontFamily: 'var(--wc-font-data)', fontWeight: 700 }}>{formatNumeric(item.quantity, 0)} shares</Typography><Typography variant="body2" color="text.secondary">{money(item.unitPrice)}</Typography></Box></Stack>
+      })}
+    </Stack>
+  )
 }
+
+export function LotsPanel({ lots, writesDisabled, onCorrect }: { lots: PositionLotResponse[]; writesDisabled: boolean; onCorrect: (lot: PositionLotResponse) => void }) {
+  if (lots.length === 0) return <EmptyState icon={<ShowChartRoundedIcon />} title="No purchase lots" description="Detailed purchase lots will appear after you record a purchase." />
+  return (
+    <>
+      <Box sx={{ mb: 2 }}><Typography variant="h6" sx={{ fontWeight: 700 }}>Purchase lots</Typography><Typography variant="body2" color="text.secondary">Advanced purchase-level detail used for cost tracking.</Typography></Box>
+      <TableContainer>
+        <Table size="small">
+          <TableHead><TableRow>{['Symbol', 'Shares', 'Unit cost', 'Purchase date', ''].map((header) => <TableCell key={header} sx={TABLE_HEAD} align={header && header !== 'Symbol' ? 'right' : 'left'}>{header}</TableCell>)}</TableRow></TableHead>
+          <TableBody>{lots.map((lot) => <TableRow key={lot.id} hover><TableCell sx={{ fontWeight: 700 }}>{lot.symbol}</TableCell><TableCell align="right">{formatNumeric(lot.quantity, 0)}</TableCell><TableCell align="right">{money(lot.unitCost)}</TableCell><TableCell align="right">{lot.acquisitionDate}</TableCell><TableCell align="right"><LotActions lot={lot} disabled={writesDisabled} onCorrect={onCorrect} /></TableCell></TableRow>)}</TableBody>
+        </Table>
+      </TableContainer>
+    </>
+  )
+}
+
+function TradeDialog({ draft, catalogue, holdings, selectedHolding, eligibleSellQuantity, exceedsAvailable, disabled, onChange, onClose, onSubmit }: {
+  draft: TradeDraft | null
+  catalogue: MarketTickerDto[]
+  holdings: HoldingResponse[]
+  selectedHolding: HoldingResponse | null
+  eligibleSellQuantity: bigint | null
+  exceedsAvailable: boolean
+  disabled: boolean
+  onChange: (draft: TradeDraft | null) => void
+  onClose: () => void
+  onSubmit: () => void
+}) {
+  if (!draft) return null
+  const buying = draft.side === 'BUY'
+  return (
+    <Dialog open fullWidth maxWidth="sm" onClose={onClose}>
+      <Box component="form" onSubmit={(event) => { event.preventDefault(); onSubmit() }}>
+        <DialogTitle sx={{ fontWeight: 700 }}>{buying ? 'Buy shares' : 'Sell shares'}</DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={2.25} sx={{ pt: 1 }}>
+            {buying ? (
+              <>
+                <TextField label="Company or symbol" value={draft.symbol} onChange={(event) => onChange({ ...draft, symbol: event.target.value.toUpperCase() })} slotProps={{ htmlInput: { maxLength: 32, list: 'portfolio-symbols' } }} />
+                <datalist id="portfolio-symbols">{catalogue.map((ticker) => <option key={ticker.symbol} value={ticker.symbol}>{ticker.companyName ?? ticker.symbol}</option>)}</datalist>
+              </>
+            ) : (
+              <TextField select label="Holding" value={draft.symbol} onChange={(event) => onChange({ ...draft, symbol: event.target.value })}>{holdings.map((holding) => <MenuItem key={holding.symbol} value={holding.symbol}>{holding.symbol}{holding.companyName ? ` — ${holding.companyName}` : ''}</MenuItem>)}</TextField>
+            )}
+            <TextField label="Number of shares" value={draft.quantity} onChange={(event) => onChange({ ...draft, quantity: event.target.value })} error={exceedsAvailable || (!buying && eligibleSellQuantity === 0n)} helperText={!buying && selectedHolding && eligibleSellQuantity != null ? `${formatNumeric(eligibleSellQuantity, 0)} shares available on this date.${exceedsAvailable ? ' Enter a lower quantity.' : ''}` : 'Enter a positive whole number.'} inputMode="numeric" />
+            <TextField label="Price per share" value={draft.unitPrice} onChange={(event) => onChange({ ...draft, unitPrice: event.target.value })} helperText="PKR" inputMode="decimal" />
+            <TextField label="Trade date" type="date" value={draft.tradeDate} onChange={(event) => onChange({ ...draft, tradeDate: event.target.value })} slotProps={{ inputLabel: { shrink: true } }} />
+            {!buying && <Alert severity="info">Shares are sold from your eligible purchases in chronological order.</Alert>}
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}><Button type="button" onClick={onClose}>Cancel</Button><Button type="submit" variant="contained" disabled={disabled}>{buying ? 'Confirm purchase' : 'Confirm sale'}</Button></DialogActions>
+      </Box>
+    </Dialog>
+  )
+}
+
+function CorrectionDialog({ draft, disabled, onChange, onClose, onSubmit }: { draft: CorrectionDraft | null; disabled: boolean; onChange: (draft: CorrectionDraft | null) => void; onClose: () => void; onSubmit: () => void }) {
+  if (!draft) return null
+  const valid = positiveQuantity(draft.quantity) != null && validPrice(draft.unitCost) && Boolean(draft.reason.trim())
+  return <Dialog open fullWidth maxWidth="sm" onClose={onClose}><DialogTitle sx={{ fontWeight: 700 }}>Correct {draft.symbol} purchase</DialogTitle><DialogContent dividers><Stack spacing={2} sx={{ pt: 1 }}><TextField label="Shares" value={draft.quantity} onChange={(event) => onChange({ ...draft, quantity: event.target.value })}/><TextField label="Unit cost" value={draft.unitCost} onChange={(event) => onChange({ ...draft, unitCost: event.target.value })}/><TextField type="date" label="Purchase date" value={draft.acquisitionDate} onChange={(event) => onChange({ ...draft, acquisitionDate: event.target.value })} slotProps={{ inputLabel: { shrink: true } }}/><TextField type="date" label="Correction date" value={draft.correctionDate} onChange={(event) => onChange({ ...draft, correctionDate: event.target.value })} slotProps={{ inputLabel: { shrink: true } }}/><TextField required multiline minRows={3} label="Reason for correction" value={draft.reason} onChange={(event) => onChange({ ...draft, reason: event.target.value })}/></Stack></DialogContent><DialogActions sx={{ px: 3, py: 2 }}><Button onClick={onClose}>Cancel</Button><Button variant="contained" disabled={disabled || !valid} onClick={onSubmit}>Save correction</Button></DialogActions></Dialog>
+}
+
+function RemovalDialog({ draft, disabled, onChange, onClose, onSubmit }: { draft: RemovalDraft | null; disabled: boolean; onChange: (draft: RemovalDraft | null) => void; onClose: () => void; onSubmit: () => void }) {
+  if (!draft) return null
+  return <Dialog open fullWidth maxWidth="sm" onClose={onClose}><DialogTitle sx={{ fontWeight: 700 }}>Remove {draft.symbol} position</DialogTitle><DialogContent dividers><Stack spacing={2} sx={{ pt: 1 }}><Alert severity="warning">This closes the position while keeping its activity history.</Alert><TextField type="date" label="Effective date" value={draft.effectiveDate} onChange={(event) => onChange({ ...draft, effectiveDate: event.target.value })} slotProps={{ inputLabel: { shrink: true } }}/><TextField required multiline minRows={3} label="Reason for removal" value={draft.reason} onChange={(event) => onChange({ ...draft, reason: event.target.value })}/></Stack></DialogContent><DialogActions sx={{ px: 3, py: 2 }}><Button onClick={onClose}>Cancel</Button><Button color="error" variant="contained" disabled={disabled || !draft.reason.trim()} onClick={onSubmit}>Remove position</Button></DialogActions></Dialog>
+}
+
+function HoldingActions({ holding, disabled, onRemove }: { holding: HoldingResponse; disabled: boolean; onRemove: (holding: HoldingResponse) => void }) {
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null)
+  return <><IconButton aria-label={`Actions for ${holding.symbol}`} disabled={disabled} onClick={(event) => setAnchor(event.currentTarget)}><MoreVertRoundedIcon /></IconButton><Menu anchorEl={anchor} open={Boolean(anchor)} onClose={() => setAnchor(null)}><MenuItem onClick={() => { setAnchor(null); onRemove(holding) }}><DeleteOutlineRoundedIcon fontSize="small" sx={{ mr: 1.25 }} />Remove position</MenuItem></Menu></>
+}
+
+function LotActions({ lot, disabled, onCorrect }: { lot: PositionLotResponse; disabled: boolean; onCorrect: (lot: PositionLotResponse) => void }) {
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null)
+  return <><IconButton aria-label={`Actions for ${lot.symbol} purchase`} disabled={disabled} onClick={(event) => setAnchor(event.currentTarget)}><MoreVertRoundedIcon /></IconButton><Menu anchorEl={anchor} open={Boolean(anchor)} onClose={() => setAnchor(null)}><MenuItem onClick={() => { setAnchor(null); onCorrect(lot) }}><EditOutlinedIcon fontSize="small" sx={{ mr: 1.25 }} />Correct purchase</MenuItem></Menu></>
+}
+
+function Value({ label, value, strong = false }: { label: string; value: string; strong?: boolean }) {
+  return <Box><Typography sx={{ color: 'var(--wc-text-secondary)', fontSize: 11, mb: 0.3 }}>{label}</Typography><Typography sx={{ fontFamily: 'var(--wc-font-data)', fontSize: 13, fontWeight: strong ? 700 : 600 }}>{value}</Typography></Box>
+}
+
+function EmptyState({ icon, title, description, action }: { icon: React.ReactNode; title: string; description: string; action?: React.ReactNode }) {
+  return <Box sx={{ textAlign: 'center', py: { xs: 5, md: 7 }, px: 2 }}><Box sx={{ display: 'grid', placeItems: 'center', width: 52, height: 52, mx: 'auto', mb: 2, borderRadius: '50%', bgcolor: 'var(--wc-primary-soft)', color: 'var(--wc-primary)', '& svg': { fontSize: 25 } }}>{icon}</Box><Typography variant="h6" sx={{ fontWeight: 700, mb: 0.75 }}>{title}</Typography><Typography color="text.secondary" sx={{ maxWidth: 430, mx: 'auto', mb: action ? 2.5 : 0 }}>{description}</Typography>{action}</Box>}
