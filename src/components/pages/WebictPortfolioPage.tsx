@@ -10,6 +10,7 @@ import ShowChartRoundedIcon from '@mui/icons-material/ShowChartRounded'
 import Decimal from 'decimal.js'
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
   Chip,
@@ -23,6 +24,7 @@ import {
   IconButton,
   Menu,
   MenuItem,
+  Snackbar,
   Stack,
   Tab,
   Table,
@@ -44,7 +46,9 @@ import { fetchLatestMarketSummary } from '../../lib/api/market'
 import {
   buy,
   correctLot,
+  deleteWatchlistItem,
   fetchPortfolioSnapshot,
+  putWatchlistItem,
   removePosition,
   sell,
   type PortfolioSnapshot,
@@ -59,6 +63,7 @@ import type {
   PortfolioMutationResponse,
   PositionLotResponse,
   PositionRemovalRequest,
+  WatchlistItemResponse,
 } from '../../lib/api/types'
 import { createMutationCommand, executeWithReconciliation } from '../../lib/portfolio/mutationCommand'
 import { formatNumeric } from '../../lib/numericPresentation'
@@ -81,9 +86,17 @@ const TABLE_HEAD = {
   borderColor: 'var(--wc-divider)',
 } as const
 
-type PortfolioTab = 'holdings' | 'activity' | 'lots'
+type PortfolioTab = 'holdings' | 'activity' | 'lots' | 'watchlist'
 type TradeSide = 'BUY' | 'SELL'
-type TradeDraft = { side: TradeSide; symbol: string; quantity: string; unitPrice: string; tradeDate: string }
+type TradeDraft = {
+  side: TradeSide
+  symbol: string
+  quantity: string
+  unitPrice: string
+  commissionRate: string
+  tradeDate: string
+  quoteDate: IsoDate | null
+}
 type CorrectionDraft = {
   lotId: string
   symbol: string
@@ -97,6 +110,15 @@ type CorrectionDraft = {
 }
 type RemovalDraft = { symbol: string; effectiveDate: string; reason: string }
 type CommandOutcome = 'succeeded' | 'conflict' | 'writes_unavailable' | 'unknown_outcome' | 'failed'
+type TradeCalculation = {
+  grossUnitPrice: Decimal
+  commissionRate: Decimal
+  commissionPerShare: Decimal
+  adjustedUnitPrice: Decimal
+  grossValue: Decimal
+  totalCommission: Decimal
+  adjustedTotal: Decimal
+}
 
 export const PORTFOLIO_CONFLICT_MESSAGE = 'Your portfolio changed. Review the latest values and try again.'
 export const LOT_CORRECTION_CONFLICT_MESSAGE = 'This lot changed while you were editing it. Review the latest values before correcting it again.'
@@ -131,6 +153,10 @@ function money(value: Decimal | null): string {
   return value == null ? 'N/A' : `PKR ${formatNumeric(value, 2, 'N/A')}`
 }
 
+function moneyDetailed(value: Decimal): string {
+  return `PKR ${formatNumeric(value, 6, 'N/A')}`
+}
+
 function positiveQuantity(value: string): bigint | null {
   if (!/^\d+$/.test(value.trim())) return null
   try {
@@ -148,6 +174,50 @@ function validPrice(value: string): boolean {
   } catch {
     return false
   }
+}
+
+function validCommissionRate(value: string): boolean {
+  try {
+    const rate = new Decimal(value)
+    return rate.isFinite() && rate.greaterThanOrEqualTo(0) && rate.lessThan(100)
+  } catch {
+    return false
+  }
+}
+
+export function calculateCommissionAdjustedTrade(
+  side: TradeSide,
+  grossUnitPriceText: string,
+  commissionRateText: string,
+  quantity: bigint,
+): TradeCalculation | null {
+  if (!validPrice(grossUnitPriceText) || !validCommissionRate(commissionRateText) || quantity <= 0n) return null
+  const grossUnitPrice = new Decimal(grossUnitPriceText)
+  const commissionRate = new Decimal(commissionRateText)
+  const rateFraction = commissionRate.dividedBy(100)
+  const adjustedUnitPrice = grossUnitPrice
+    .times(side === 'BUY' ? new Decimal(1).plus(rateFraction) : new Decimal(1).minus(rateFraction))
+    .toDecimalPlaces(6, Decimal.ROUND_HALF_UP)
+  const commissionPerShare = side === 'BUY'
+    ? adjustedUnitPrice.minus(grossUnitPrice)
+    : grossUnitPrice.minus(adjustedUnitPrice)
+  const decimalQuantity = new Decimal(quantity.toString())
+  return {
+    grossUnitPrice,
+    commissionRate,
+    commissionPerShare,
+    adjustedUnitPrice,
+    grossValue: grossUnitPrice.times(decimalQuantity),
+    totalCommission: commissionPerShare.times(decimalQuantity),
+    adjustedTotal: adjustedUnitPrice.times(decimalQuantity),
+  }
+}
+
+function formatCalendarDate(value: IsoDate): string {
+  const [year, month, day] = value.split('-')
+  const monthNames: Record<string, string> = { '01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr', '05': 'May', '06': 'Jun', '07': 'Jul', '08': 'Aug', '09': 'Sep', '10': 'Oct', '11': 'Nov', '12': 'Dec' }
+  const monthName = monthNames[month]
+  return monthName ? `${day.replace(/^0/, '')} ${monthName} ${year}` : value
 }
 
 function availableSellQuantity(
@@ -191,25 +261,30 @@ export function WebictPortfolioPage() {
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [snapshot, setSnapshot] = useState<PortfolioSnapshot | null>(null)
   const [catalogue, setCatalogue] = useState<MarketTickerDto[]>([])
+  const [catalogueDate, setCatalogueDate] = useState<IsoDate | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  const [successToast, setSuccessToast] = useState<string | null>(null)
   const [writesUnavailable, setWritesUnavailable] = useState(false)
   const [retryUnknown, setRetryUnknown] = useState<(() => Promise<void>) | null>(null)
   const [tab, setTab] = useState<PortfolioTab>('holdings')
   const [trade, setTrade] = useState<TradeDraft | null>(null)
   const [correction, setCorrection] = useState<CorrectionDraft | null>(null)
   const [removal, setRemoval] = useState<RemovalDraft | null>(null)
+  const [watchlistBusy, setWatchlistBusy] = useState(false)
 
   const resetPrivate = useCallback(() => {
     setSnapshot(null)
     setError(null)
     setNotice(null)
+    setSuccessToast(null)
     setRetryUnknown(null)
     setTrade(null)
     setCorrection(null)
     setRemoval(null)
     setWritesUnavailable(false)
+    setWatchlistBusy(false)
   }, [])
 
   useEffect(() => registerPrivateStateReset(resetPrivate), [resetPrivate])
@@ -250,7 +325,10 @@ export function WebictPortfolioPage() {
   useEffect(() => {
     const controller = new AbortController()
     fetchLatestMarketSummary(controller.signal)
-      .then((response) => setCatalogue(response.tickers))
+      .then((response) => {
+        setCatalogue(response.tickers)
+        setCatalogueDate(response.tradeDate)
+      })
       .catch(() => undefined)
     return () => controller.abort()
   }, [])
@@ -265,7 +343,7 @@ export function WebictPortfolioPage() {
       if (outcome.kind === 'succeeded') {
         setRetryUnknown(null)
         setError(null)
-        setNotice('Your portfolio has been updated.')
+        setNotice(null)
       } else if (outcome.kind === 'conflict') {
         setRetryUnknown(null)
         setNotice(null)
@@ -290,15 +368,25 @@ export function WebictPortfolioPage() {
   }, [handleError, refresh])
 
   const openTrade = useCallback((side: TradeSide) => {
-    const symbol = side === 'SELL' ? snapshot?.holdings[0]?.symbol ?? '' : ''
+    const holding = side === 'SELL' ? snapshot?.holdings[0] ?? null : null
     setError(null)
-    setTrade({ side, symbol, quantity: '', unitPrice: '', tradeDate: localCalendarDate() })
+    setTrade({
+      side,
+      symbol: holding?.symbol ?? '',
+      quantity: '',
+      unitPrice: holding?.latestPrice?.toString() ?? '',
+      commissionRate: '0.15',
+      tradeDate: localCalendarDate(),
+      quoteDate: holding?.latestPrice != null ? holding.latestPriceDate : null,
+    })
   }, [snapshot])
 
   const submitTrade = useCallback(async () => {
     if (!snapshot || !trade) return
     const quantity = positiveQuantity(trade.quantity)
-    if (quantity == null || !validPrice(trade.unitPrice)) return
+    if (quantity == null) return
+    const calculation = calculateCommissionAdjustedTrade(trade.side, trade.unitPrice, trade.commissionRate, quantity)
+    if (!calculation) return
     const symbol = trade.symbol.trim().toUpperCase()
     if (trade.side === 'SELL') {
       const holding = snapshot.holdings.find((candidate) => candidate.symbol === symbol) ?? null
@@ -311,13 +399,16 @@ export function WebictPortfolioPage() {
           mutationId,
           symbol,
           quantity,
-          unitPrice: new Decimal(trade.unitPrice),
+          unitPrice: calculation.adjustedUnitPrice,
           tradeDate: asDate(trade.tradeDate, 'tradeDate'),
           expectedPortfolioVersion: snapshot.summary.version,
         }),
         (body) => trade.side === 'BUY' ? buy(body) : sell(body),
       )
-      if (outcome === 'succeeded') setTrade(null)
+      if (outcome === 'succeeded') {
+        setTrade(null)
+        setSuccessToast(trade.side === 'BUY' ? `${symbol} shares added successfully.` : `${symbol} shares sold successfully.`)
+      }
     } catch (reason) {
       handleError(reason)
     }
@@ -339,7 +430,10 @@ export function WebictPortfolioPage() {
         }),
         (body) => correctLot(correction.lotId, body),
       )
-      if (outcome === 'succeeded') setCorrection(null)
+      if (outcome === 'succeeded') {
+        setCorrection(null)
+        setSuccessToast('Purchase lot updated successfully.')
+      }
       if (outcome === 'conflict') {
         setCorrection(null)
         setError(LOT_CORRECTION_CONFLICT_MESSAGE)
@@ -367,11 +461,50 @@ export function WebictPortfolioPage() {
         }),
         (body) => removePosition(currentHolding.symbol, body),
       )
-      if (outcome === 'succeeded') setRemoval(null)
+      if (outcome === 'succeeded') {
+        setRemoval(null)
+        setSuccessToast(`${currentHolding.symbol} position removed successfully.`)
+      }
     } catch (reason) {
       handleError(reason)
     }
   }, [handleError, removal, runCommand, snapshot])
+
+  const addWatchlistSymbol = useCallback(async (ticker: MarketTickerDto) => {
+    if (!snapshot || watchlistBusy || writesUnavailable) return
+    setWatchlistBusy(true)
+    try {
+      const item = await putWatchlistItem(ticker.symbol)
+      setSnapshot((current) => current ? {
+        ...current,
+        watchlist: [...current.watchlist.filter((existing) => existing.symbol !== item.symbol), item],
+      } : current)
+      setError(null)
+      setSuccessToast(`${item.symbol} added to your watchlist.`)
+    } catch (reason) {
+      handleError(reason)
+    } finally {
+      setWatchlistBusy(false)
+    }
+  }, [handleError, snapshot, watchlistBusy, writesUnavailable])
+
+  const removeWatchlistSymbol = useCallback(async (symbol: string) => {
+    if (!snapshot || watchlistBusy || writesUnavailable) return
+    setWatchlistBusy(true)
+    try {
+      await deleteWatchlistItem(symbol)
+      setSnapshot((current) => current ? {
+        ...current,
+        watchlist: current.watchlist.filter((item) => item.symbol !== symbol),
+      } : current)
+      setError(null)
+      setSuccessToast(`${symbol} removed from your watchlist.`)
+    } catch (reason) {
+      handleError(reason)
+    } finally {
+      setWatchlistBusy(false)
+    }
+  }, [handleError, snapshot, watchlistBusy, writesUnavailable])
 
   const mutationsDisabled = writesUnavailable || loading || !snapshot
   const selectedSellHolding = trade?.side === 'SELL'
@@ -381,6 +514,9 @@ export function WebictPortfolioPage() {
     ? availableSellQuantity(snapshot?.lots ?? [], selectedSellHolding, trade.tradeDate)
     : null
   const parsedTradeQuantity = trade ? positiveQuantity(trade.quantity) : null
+  const tradeCalculation = trade && parsedTradeQuantity != null
+    ? calculateCommissionAdjustedTrade(trade.side, trade.unitPrice, trade.commissionRate, parsedTradeQuantity)
+    : null
   const exceedsAvailable = Boolean(
     trade?.side === 'SELL'
     && parsedTradeQuantity != null
@@ -391,7 +527,7 @@ export function WebictPortfolioPage() {
     trade
     && trade.symbol
     && parsedTradeQuantity != null
-    && validPrice(trade.unitPrice)
+    && tradeCalculation != null
     && trade.tradeDate
     && (trade.side === 'BUY' || (selectedSellHolding != null && eligibleSellQuantity != null && eligibleSellQuantity > 0n))
     && !exceedsAvailable,
@@ -459,6 +595,7 @@ export function WebictPortfolioPage() {
                   <Tab value="holdings" label="Holdings" />
                   <Tab value="activity" label="Activity" />
                   <Tab value="lots" label={<Stack direction="row" spacing={0.8} sx={{ alignItems: 'center' }}><span>Purchase lots</span><Chip label="Advanced" size="small" /></Stack>} />
+                  <Tab value="watchlist" label="Watchlist" />
                 </Tabs>
                 <Box sx={{ p: { xs: 2, md: 3 } }}>
                   {tab === 'holdings' && (
@@ -477,6 +614,15 @@ export function WebictPortfolioPage() {
                       onCorrect={(lot) => setCorrection({ lotId: lot.id, symbol: lot.symbol, expectedLotVersion: lot.version, expectedPortfolioVersion: snapshot.summary.version, quantity: lot.quantity.toString(), unitCost: lot.unitCost.toString(), acquisitionDate: lot.acquisitionDate, correctionDate: localCalendarDate(), reason: '' })}
                     />
                   )}
+                  {tab === 'watchlist' && (
+                    <WatchlistPanel
+                      items={snapshot.watchlist}
+                      catalogue={catalogue}
+                      disabled={mutationsDisabled || watchlistBusy}
+                      onAdd={(ticker) => void addWatchlistSymbol(ticker)}
+                      onRemove={(symbol) => void removeWatchlistSymbol(symbol)}
+                    />
+                  )}
                 </Box>
               </Box>
             </>
@@ -487,10 +633,12 @@ export function WebictPortfolioPage() {
       <TradeDialog
         draft={trade}
         catalogue={catalogue}
+        catalogueDate={catalogueDate}
         holdings={snapshot?.holdings ?? []}
         selectedHolding={selectedSellHolding}
         eligibleSellQuantity={eligibleSellQuantity}
         exceedsAvailable={exceedsAvailable}
+        calculation={tradeCalculation}
         disabled={mutationsDisabled || !tradeReady}
         onChange={setTrade}
         onClose={() => setTrade(null)}
@@ -499,6 +647,9 @@ export function WebictPortfolioPage() {
       <CorrectionDialog draft={correction} disabled={mutationsDisabled} onChange={setCorrection} onClose={() => setCorrection(null)} onSubmit={() => void submitCorrection()} />
       <RemovalDialog draft={removal} disabled={mutationsDisabled} onChange={setRemoval} onClose={() => setRemoval(null)} onSubmit={() => void submitRemoval()} />
       <AuthModal open={authModalOpen} onClose={() => setAuthModalOpen(false)} />
+      <Snackbar key={successToast} open={Boolean(successToast)} autoHideDuration={5000} onClose={(_event, reason) => { if (reason !== 'clickaway') setSuccessToast(null) }} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+        <Alert severity="success" variant="filled" onClose={() => setSuccessToast(null)} sx={{ width: '100%' }}>{successToast}</Alert>
+      </Snackbar>
     </Box>
   )
 }
@@ -587,13 +738,95 @@ export function LotsPanel({ lots, writesDisabled, onCorrect }: { lots: PositionL
   )
 }
 
-function TradeDialog({ draft, catalogue, holdings, selectedHolding, eligibleSellQuantity, exceedsAvailable, disabled, onChange, onClose, onSubmit }: {
+function WatchlistPanel({ items, catalogue, disabled, onAdd, onRemove }: {
+  items: WatchlistItemResponse[]
+  catalogue: MarketTickerDto[]
+  disabled: boolean
+  onAdd: (ticker: MarketTickerDto) => void
+  onRemove: (symbol: string) => void
+}) {
+  return (
+    <Stack spacing={2.5}>
+      <Box sx={{ maxWidth: 560 }}>
+        <SymbolAutocomplete
+          catalogue={catalogue}
+          value={null}
+          excludedSymbols={items.map((item) => item.symbol)}
+          disabled={disabled}
+          label="Add company to watchlist"
+          onSelect={(ticker) => { if (ticker && !disabled) onAdd(ticker) }}
+        />
+      </Box>
+      {items.length === 0 ? (
+        <EmptyState icon={<ShowChartRoundedIcon />} title="Your watchlist is empty" description="Add companies to keep their latest market prices close at hand." />
+      ) : (
+        <TableContainer>
+          <Table>
+            <TableHead><TableRow>{['Symbol', 'Company', 'Latest price', 'Price date', ''].map((header) => <TableCell key={header} sx={TABLE_HEAD} align={header === 'Latest price' || header === 'Price date' ? 'right' : 'left'}>{header}</TableCell>)}</TableRow></TableHead>
+            <TableBody>{items.map((item) => (
+              <TableRow key={item.symbol} hover>
+                <TableCell sx={{ fontWeight: 750 }}>{item.symbol}</TableCell>
+                <TableCell>{item.companyName ?? 'Company name unavailable'}</TableCell>
+                <TableCell align="right">{money(item.latestPrice)}</TableCell>
+                <TableCell align="right">{item.latestPriceDate ? formatCalendarDate(item.latestPriceDate) : 'N/A'}</TableCell>
+                <TableCell align="right">
+                  <Stack direction="row" spacing={1} sx={{ justifyContent: 'flex-end' }}>
+                    <Button component={Link} to={`/stocks/${item.symbol}`} size="small">Open company</Button>
+                    <Button color="error" size="small" disabled={disabled} onClick={() => onRemove(item.symbol)}>Remove</Button>
+                  </Stack>
+                </TableCell>
+              </TableRow>
+            ))}</TableBody>
+          </Table>
+        </TableContainer>
+      )}
+    </Stack>
+  )
+}
+
+function SymbolAutocomplete({ catalogue, value, excludedSymbols = [], disabled = false, label, onSelect }: {
+  catalogue: MarketTickerDto[]
+  value: MarketTickerDto | null
+  excludedSymbols?: string[]
+  disabled?: boolean
+  label: string
+  onSelect: (ticker: MarketTickerDto | null) => void
+}) {
+  const excluded = new Set(excludedSymbols)
+  return (
+    <Autocomplete
+      disabled={disabled}
+      options={catalogue.filter((ticker) => !excluded.has(ticker.symbol))}
+      value={value}
+      onChange={(_event, ticker) => onSelect(ticker)}
+      isOptionEqualToValue={(option, selected) => option.symbol === selected.symbol}
+      getOptionLabel={(ticker) => `${ticker.symbol} — ${ticker.companyName ?? 'Company name unavailable'}`}
+      filterOptions={(options, state) => {
+        const query = state.inputValue.trim().toLocaleLowerCase()
+        return options.filter((ticker) => !query
+          || ticker.symbol.toLocaleLowerCase().includes(query)
+          || (ticker.companyName ?? '').toLocaleLowerCase().includes(query))
+      }}
+      renderOption={(props, ticker) => (
+        <Box component="li" {...props} key={ticker.symbol} sx={{ display: 'block !important', py: '9px !important' }}>
+          <Typography sx={{ fontWeight: 750 }}>{ticker.symbol} — {ticker.companyName ?? 'Company name unavailable'}</Typography>
+          <Typography variant="body2" color="text.secondary">Latest: {money(ticker.close)}</Typography>
+        </Box>
+      )}
+      renderInput={(params) => <TextField {...params} label={label} placeholder="Search by symbol or company" />}
+    />
+  )
+}
+
+function TradeDialog({ draft, catalogue, catalogueDate, holdings, selectedHolding, eligibleSellQuantity, exceedsAvailable, calculation, disabled, onChange, onClose, onSubmit }: {
   draft: TradeDraft | null
   catalogue: MarketTickerDto[]
+  catalogueDate: IsoDate | null
   holdings: HoldingResponse[]
   selectedHolding: HoldingResponse | null
   eligibleSellQuantity: bigint | null
   exceedsAvailable: boolean
+  calculation: TradeCalculation | null
   disabled: boolean
   onChange: (draft: TradeDraft | null) => void
   onClose: () => void
@@ -601,6 +834,10 @@ function TradeDialog({ draft, catalogue, holdings, selectedHolding, eligibleSell
 }) {
   if (!draft) return null
   const buying = draft.side === 'BUY'
+  const selectedTicker = buying ? catalogue.find((ticker) => ticker.symbol === draft.symbol) ?? null : null
+  const quoteHelper = draft.quoteDate
+    ? `Latest close as of ${formatCalendarDate(draft.quoteDate)}`
+    : 'No recent quote is available. Enter the price manually.'
   return (
     <Dialog open fullWidth maxWidth="sm" onClose={onClose}>
       <Box component="form" onSubmit={(event) => { event.preventDefault(); onSubmit() }}>
@@ -608,17 +845,37 @@ function TradeDialog({ draft, catalogue, holdings, selectedHolding, eligibleSell
         <DialogContent dividers>
           <Stack spacing={2.25} sx={{ pt: 1 }}>
             {buying ? (
-              <>
-                <TextField label="Company or symbol" value={draft.symbol} onChange={(event) => onChange({ ...draft, symbol: event.target.value.toUpperCase() })} slotProps={{ htmlInput: { maxLength: 32, list: 'portfolio-symbols' } }} />
-                <datalist id="portfolio-symbols">{catalogue.map((ticker) => <option key={ticker.symbol} value={ticker.symbol}>{ticker.companyName ?? ticker.symbol}</option>)}</datalist>
-              </>
+              <SymbolAutocomplete
+                catalogue={catalogue}
+                value={selectedTicker}
+                label="Company or symbol"
+                onSelect={(ticker) => {
+                  if (ticker?.symbol === draft.symbol) return
+                  onChange({
+                    ...draft,
+                    symbol: ticker?.symbol ?? '',
+                    unitPrice: ticker?.close?.toString() ?? '',
+                    quoteDate: ticker?.close != null ? catalogueDate : null,
+                  })
+                }}
+              />
             ) : (
-              <TextField select label="Holding" value={draft.symbol} onChange={(event) => onChange({ ...draft, symbol: event.target.value })}>{holdings.map((holding) => <MenuItem key={holding.symbol} value={holding.symbol}>{holding.symbol}{holding.companyName ? ` — ${holding.companyName}` : ''}</MenuItem>)}</TextField>
+              <TextField select label="Holding" value={draft.symbol} onChange={(event) => {
+                const holding = holdings.find((candidate) => candidate.symbol === event.target.value) ?? null
+                onChange({
+                  ...draft,
+                  symbol: holding?.symbol ?? '',
+                  unitPrice: holding?.latestPrice?.toString() ?? '',
+                  quoteDate: holding?.latestPrice != null ? holding.latestPriceDate : null,
+                })
+              }}>{holdings.map((holding) => <MenuItem key={holding.symbol} value={holding.symbol}>{holding.symbol}{holding.companyName ? ` — ${holding.companyName}` : ''}</MenuItem>)}</TextField>
             )}
             <TextField label="Number of shares" value={draft.quantity} onChange={(event) => onChange({ ...draft, quantity: event.target.value })} error={exceedsAvailable || (!buying && eligibleSellQuantity === 0n)} helperText={!buying && selectedHolding && eligibleSellQuantity != null ? `${formatNumeric(eligibleSellQuantity, 0)} shares available on this date.${exceedsAvailable ? ' Enter a lower quantity.' : ''}` : 'Enter a positive whole number.'} inputMode="numeric" />
-            <TextField label="Price per share" value={draft.unitPrice} onChange={(event) => onChange({ ...draft, unitPrice: event.target.value })} helperText="PKR" inputMode="decimal" />
+            <TextField label="Price per share" value={draft.unitPrice} onChange={(event) => onChange({ ...draft, unitPrice: event.target.value })} helperText={quoteHelper} inputMode="decimal" />
+            <TextField label="Commission rate (%)" value={draft.commissionRate} onChange={(event) => onChange({ ...draft, commissionRate: event.target.value })} error={draft.commissionRate !== '' && !validCommissionRate(draft.commissionRate)} helperText="Enter a rate from 0 up to, but not including, 100%." inputMode="decimal" />
             <TextField label="Trade date" type="date" value={draft.tradeDate} onChange={(event) => onChange({ ...draft, tradeDate: event.target.value })} slotProps={{ inputLabel: { shrink: true } }} />
             {!buying && <Alert severity="info">Shares are sold from your eligible purchases in chronological order.</Alert>}
+            {calculation && <TradeBreakdown side={draft.side} calculation={calculation} />}
           </Stack>
         </DialogContent>
         <DialogActions sx={{ px: 3, py: 2 }}><Button type="button" onClick={onClose}>Cancel</Button><Button type="submit" variant="contained" disabled={disabled}>{buying ? 'Confirm purchase' : 'Confirm sale'}</Button></DialogActions>
@@ -627,10 +884,30 @@ function TradeDialog({ draft, catalogue, holdings, selectedHolding, eligibleSell
   )
 }
 
+function TradeBreakdown({ side, calculation }: { side: TradeSide; calculation: TradeCalculation }) {
+  const buying = side === 'BUY'
+  const rows = [
+    ['Market/execution price per share', moneyDetailed(calculation.grossUnitPrice)],
+    ['Commission rate', `${calculation.commissionRate.toString()}%`],
+    ['Commission per share', moneyDetailed(calculation.commissionPerShare)],
+    [buying ? 'Adjusted cost per share' : 'Net price per share', moneyDetailed(calculation.adjustedUnitPrice)],
+    ['Gross transaction value', moneyDetailed(calculation.grossValue)],
+    ['Total commission', moneyDetailed(calculation.totalCommission)],
+    [buying ? 'Total cost' : 'Net proceeds', moneyDetailed(calculation.adjustedTotal)],
+  ]
+  return (
+    <Box sx={{ bgcolor: 'var(--wc-primary-soft)', borderRadius: 2, p: 2 }}>
+      <Typography sx={{ fontWeight: 750, mb: 1 }}>Confirmation breakdown</Typography>
+      <Stack spacing={0.7}>{rows.map(([label, value]) => <Stack key={label} direction="row" sx={{ justifyContent: 'space-between', gap: 2 }}><Typography variant="body2" color="text.secondary">{label}</Typography><Typography variant="body2" sx={{ fontFamily: 'var(--wc-font-data)', fontWeight: 650, textAlign: 'right' }}>{value}</Typography></Stack>)}</Stack>
+      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1.25 }}>The stored portfolio cost uses the commission-adjusted price.</Typography>
+    </Box>
+  )
+}
+
 function CorrectionDialog({ draft, disabled, onChange, onClose, onSubmit }: { draft: CorrectionDraft | null; disabled: boolean; onChange: (draft: CorrectionDraft | null) => void; onClose: () => void; onSubmit: () => void }) {
   if (!draft) return null
   const valid = positiveQuantity(draft.quantity) != null && validPrice(draft.unitCost) && Boolean(draft.reason.trim())
-  return <Dialog open fullWidth maxWidth="sm" onClose={onClose}><DialogTitle sx={{ fontWeight: 700 }}>Correct {draft.symbol} purchase</DialogTitle><DialogContent dividers><Stack spacing={2} sx={{ pt: 1 }}><TextField label="Shares" value={draft.quantity} onChange={(event) => onChange({ ...draft, quantity: event.target.value })}/><TextField label="Unit cost" value={draft.unitCost} onChange={(event) => onChange({ ...draft, unitCost: event.target.value })}/><TextField type="date" label="Purchase date" value={draft.acquisitionDate} onChange={(event) => onChange({ ...draft, acquisitionDate: event.target.value })} slotProps={{ inputLabel: { shrink: true } }}/><TextField type="date" label="Correction date" value={draft.correctionDate} onChange={(event) => onChange({ ...draft, correctionDate: event.target.value })} slotProps={{ inputLabel: { shrink: true } }}/><TextField required multiline minRows={3} label="Reason for correction" value={draft.reason} onChange={(event) => onChange({ ...draft, reason: event.target.value })}/></Stack></DialogContent><DialogActions sx={{ px: 3, py: 2 }}><Button onClick={onClose}>Cancel</Button><Button variant="contained" disabled={disabled || !valid} onClick={onSubmit}>Save correction</Button></DialogActions></Dialog>
+  return <Dialog open fullWidth maxWidth="sm" onClose={onClose}><DialogTitle sx={{ fontWeight: 700 }}>Correct {draft.symbol} purchase</DialogTitle><DialogContent dividers><Stack spacing={2} sx={{ pt: 1 }}><TextField label="Shares" value={draft.quantity} onChange={(event) => onChange({ ...draft, quantity: event.target.value })}/><TextField label="Cost per share, including commission" value={draft.unitCost} onChange={(event) => onChange({ ...draft, unitCost: event.target.value })}/><TextField type="date" label="Purchase date" value={draft.acquisitionDate} onChange={(event) => onChange({ ...draft, acquisitionDate: event.target.value })} slotProps={{ inputLabel: { shrink: true } }}/><TextField type="date" label="Correction date" value={draft.correctionDate} onChange={(event) => onChange({ ...draft, correctionDate: event.target.value })} slotProps={{ inputLabel: { shrink: true } }}/><TextField required multiline minRows={3} label="Reason for correction" value={draft.reason} onChange={(event) => onChange({ ...draft, reason: event.target.value })}/></Stack></DialogContent><DialogActions sx={{ px: 3, py: 2 }}><Button onClick={onClose}>Cancel</Button><Button variant="contained" disabled={disabled || !valid} onClick={onSubmit}>Save correction</Button></DialogActions></Dialog>
 }
 
 function RemovalDialog({ draft, disabled, onChange, onClose, onSubmit }: { draft: RemovalDraft | null; disabled: boolean; onChange: (draft: RemovalDraft | null) => void; onClose: () => void; onSubmit: () => void }) {
