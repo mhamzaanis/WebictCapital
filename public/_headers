@@ -1,0 +1,5 @@
+https://preview.webictcapital.com/*
+  X-Robots-Tag: noindex, nofollow
+
+https://:version.:subdomain.workers.dev/*
+  X-Robots-Tag: noindex, nofollow

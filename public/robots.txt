@@ -1,92 +1,34 @@
-# ── Webict Capital — robots.txt ──────────────────────────────────────────────
-# https://webictcapital.com/robots.txt
+# Webict Capital crawler policy
 
-# Default: allow all legitimate search crawlers
 User-agent: *
 Allow: /
-Disallow: /api/
-Disallow: /_/
-Crawl-delay: 1
 
-# Sitemap location
-Sitemap: https://webictcapital.com/sitemap.xml
-
-# ── Google ────────────────────────────────────────────────────────────────────
-User-agent: Googlebot
+# OAI-SearchBot supports ChatGPT search discovery.
+User-agent: OAI-SearchBot
 Allow: /
 
-User-agent: Googlebot-Image
-Allow: /
-
-# ── Bing ──────────────────────────────────────────────────────────────────────
-User-agent: Bingbot
-Allow: /
-Crawl-delay: 1
-
-# ── AI training crawlers — block selectively ──────────────────────────────────
-# Block from pages with proprietary data or pre-launch content
-
+# GPTBot is OpenAI's model-training crawler.
 User-agent: GPTBot
 Disallow: /data
 Disallow: /masterclasses
 Disallow: /advisory
 
-User-agent: ChatGPT-User
-Disallow: /data
-Disallow: /masterclasses
-Disallow: /advisory
+# ChatGPT-User handles user-triggered requests; robots.txt directives may not control those requests.
 
+# Additional AI model-use and automated data crawlers covered by the owner's selective policy.
 User-agent: Google-Extended
-Disallow: /data
-Disallow: /masterclasses
-Disallow: /advisory
-
 User-agent: CCBot
-Disallow: /data
-Disallow: /masterclasses
-Disallow: /advisory
-
 User-agent: ClaudeBot
-Disallow: /data
-Disallow: /masterclasses
-Disallow: /advisory
-
 User-agent: Claude-Web
-Disallow: /data
-Disallow: /masterclasses
-Disallow: /advisory
-
 User-agent: PerplexityBot
-Disallow: /data
-Disallow: /masterclasses
-Disallow: /advisory
-
 User-agent: Bytespider
-Disallow: /data
-Disallow: /masterclasses
-Disallow: /advisory
-
 User-agent: Applebot-Extended
-Disallow: /data
-Disallow: /masterclasses
-Disallow: /advisory
-
 User-agent: cohere-ai
-Disallow: /data
-Disallow: /masterclasses
-Disallow: /advisory
-
 User-agent: anthropic-ai
-Disallow: /data
-Disallow: /masterclasses
-Disallow: /advisory
-
 User-agent: Meta-ExternalAgent
-Disallow: /data
-Disallow: /masterclasses
-Disallow: /advisory
-
 User-agent: Diffbot
 Disallow: /data
 Disallow: /masterclasses
 Disallow: /advisory
+
+Sitemap: https://webictcapital.com/sitemap.xml

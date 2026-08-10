@@ -30,6 +30,8 @@ import { EmptyBlock, ErrorBlock, LoadingBlock } from '../markets/StateBlocks'
 import { CARD_SX, DATA_FONT, fmtCompact, fmtDate, fmtNumber, fmtPct, fmtSigned, toneColor } from '../markets/marketUtils'
 import Decimal from 'decimal.js'
 import { projectNumeric } from '../../lib/numericPresentation'
+import { buildTickerSeo } from '../../lib/seo'
+import { PageMetadata } from '../../app/AppLayout'
 
 const RANGES = ['1M', '3M', '6M', '1Y', '3Y', '5Y', 'Max'] as const
 type Range = typeof RANGES[number]
@@ -139,16 +141,22 @@ export function StockDetailPage() {
   const [tab, setTab] = useState('profile')
   const [overlays, setOverlays] = useState({ sma20: true, sma50: false, sma200: false, rsi: true })
   const analytics = useMemo(() => snapshotAnalytics(data?.quotes ?? []), [data])
+  const tickerSeo = useMemo(
+    () => buildTickerSeo(data?.symbol ?? symbol, data?.companyName),
+    [data?.companyName, data?.symbol, symbol],
+  )
 
-  if (loading && !data) return <MarketShell title={symbol} subtitle="Loading ticker detail from the WebICTCapital API."><LoadingBlock /></MarketShell>
-  if (error && !data) return <MarketShell title={symbol} subtitle="Ticker detail"><ErrorBlock error={error} /></MarketShell>
-  if (!data) return <MarketShell title={symbol} subtitle="Ticker detail"><EmptyBlock title="Ticker not found" detail="The API returned no ticker detail." /></MarketShell>
+  if (loading && !data) return <><PageMetadata seo={tickerSeo} /><MarketShell title={symbol} subtitle="Loading ticker detail from the WebICTCapital API."><LoadingBlock /></MarketShell></>
+  if (error && !data) return <><PageMetadata seo={tickerSeo} /><MarketShell title={symbol} subtitle="Ticker detail"><ErrorBlock error={error} /></MarketShell></>
+  if (!data) return <><PageMetadata seo={tickerSeo} /><MarketShell title={symbol} subtitle="Ticker detail"><EmptyBlock title="Ticker not found" detail="The API returned no ticker detail." /></MarketShell></>
 
   const asOf = data.asOfQuote
   const option = priceChartOption(data.quotes, data.technicals, overlays)
 
   return (
-    <MarketShell title={`${data.symbol} - ${data.companyName ?? data.symbol}`} subtitle="Full ticker detail from API quotes, company facts, raw technical indicators, and persisted event data.">
+    <>
+      <PageMetadata seo={tickerSeo} />
+      <MarketShell title={`${data.symbol} - ${data.companyName ?? data.symbol}`} subtitle="Full ticker detail from API quotes, company facts, raw technical indicators, and persisted event data.">
       <Stack spacing={2.4}>
         <Box sx={{ ...CARD_SX, p: 2.4 }}>
           <Stack direction={{ xs: 'column', lg: 'row' }} spacing={2} sx={{ justifyContent: 'space-between' }}>
@@ -215,7 +223,8 @@ export function StockDetailPage() {
           </Box>
         </Box>
       </Stack>
-    </MarketShell>
+      </MarketShell>
+    </>
   )
 }
 

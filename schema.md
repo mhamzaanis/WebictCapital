@@ -1,1852 +1,1019 @@
-WebICT Capital canonical platform contract
+WebICT Capital canonical platform schema and operations contract
+Canonical database, ingestion, API, frontend, infrastructure, and diagnostic contract for the PSX/SBP platform.
 
-Canonical database, ingestion, API, frontend, operations, and data-qualitycontract for the PSX/SBP platform.
+Item	Current contract
+Contract revision	2026-08-10.1
+Current-state cutoff	2026-08-10, Asia/Karachi
+Database	PostgreSQL 14 or newer; PostgreSQL 18.4 used by disposable verification; query the deployed target for its exact version
+Applied schemas	public, app_identity, app_portfolio
+Business timezone	Asia/Karachi
+Logical dates	PostgreSQL date; ISO YYYY-MM-DD on the wire
+Instants	PostgreSQL timestamptz; ISO 8601 on the wire
+Price basis	Raw, unadjusted PSX prices
+Browser data access	Through the ASP.NET Core API only; never connect the browser directly to PostgreSQL
+Migration level	Migrations 001–008 applied to the current API/database target; no migration 009 exists
+Identity/portfolio import	No real Supabase export/import was performed; legacy portfolios were intentionally not migrated
+Current API gates	AUTH_CUTOVER_ENABLED=true, ALLOW_NEW_USER_REGISTRATION=true, PORTFOLIO_WRITES_ENABLED=true
+Current frontend	WebICT-mode feature branch at https://preview.webictcapital.com; main site remains unchanged pending VPS cutover
+1. Purpose and authority
+This file is the cross-project source of truth for:
 
-Item
+schemas, tables, views, columns, keys, constraints, triggers, and relationship semantics;
+the service that owns every write surface;
+the meaning of dates, timestamps, decimals, nulls, source codes, and status values;
+scraper scheduling, locking, idempotency, history, and recovery behavior;
+public and authenticated API boundaries;
+frontend consumption and exact-number rules;
+current migration/deployment state; and
+safe SQL and infrastructure diagnostics.
+Executable migration files remain authoritative for the exact DDL they introduce. This document explains the resulting schema and how every project uses it. It is not a migration runner.
 
-Contract
+1.1 Existing-database rule
+On the current deployed target, migrations 001–008 are already applied. Do not paste CREATE TABLE statements over that database and do not rerun migrations 006, 007, or 008. Verify the target and migration state before any future numbered migration.
 
-Database
+1.2 Fresh-database rule
+For a genuinely empty database:
 
-PostgreSQL 14 or newer
+establish the reviewed complete public market-data baseline;
+apply migrations/007_identity_foundation.sql once;
+apply migrations/008_portfolio_foundation.sql once;
+verify every object, constraint, index, trigger, and ownership boundary;
+seed source dimensions through importer upserts, not manual guessed IDs.
+Do not assume IF NOT EXISTS proves that a pre-existing object has the correct definition.
 
-Database schemas
+1.3 Current state that supersedes revision 2026-08-01.5
+Revision 2026-08-01.5 described migration 008 as proposed, all API gates as disabled, and the frontend as Supabase-backed. Those deployment statements are now stale.
 
-public (applied market/reference facts); app_identity (applied migration 007);
-app_portfolio (proposed migration 008, not applied in production)
+The current API/database target has app_portfolio; Google authentication and native portfolio operations work; all three gates are enabled; the WebICT frontend is deployed separately on the preview domain. The public main frontend has not yet been replaced. The optional Supabase exporter/importer remains unused with real data.
 
-Business timezone
+1.4 Distribution rule
+Keep one reviewed canonical copy. API, frontend, and scraper repositories may mirror it, but mirrors must be synchronized outputs. CI should compare the revision and preferably the exact file hash across repositories.
 
-Asia/Karachi
+2. Project and sub-project map
+local files
 
-Date/time exchange
+unused real-data path
 
-ISO 8601; PostgreSQL date for logical dates and timestamptz for instants
+unused real-data path
 
-Frontend access
-
-Public market data through the API; current identity/portfolio through Supabase
-until coordinated cutover; never connect the browser directly to PostgreSQL
-
-Schema changes
-
-Forward-only SQL migrations for existing databases; the embedded DDL below is
-the complete public market-data DDL for a fresh database, not the application
-schemas
-
-Contract revision
-
-2026-08-01.5
-
-Production migration level
-
-Migration 007 applied on 2026-08-01; migration 008 is proposed only
-
-Current price basis
-
-Raw, unadjusted PSX prices
-
-Purpose and authority
-
-This file is the cross-service source of truth for:
-
-table, view, key, relationship, and data-type semantics;
-
-which scraper owns each write surface;
-
-scheduling and dependency order;
-
-public API read models, authenticated identity/portfolio behavior, and frontend
-consumption rules;
-
-idempotency, history, freshness, and recovery behavior; and
-
-the complete public market-data schema expected by a fresh installation and the
-numbered migrations that govern application schemas.
-
-It is documentation, not a migration runner. On an existing production
-database, apply only the next reviewed numbered migration. Do not paste the
-public market-data DDL section over an existing database, and do not modify or
-rerun migrations 006 or 007.
-
-When this file, a scraper, and an API DTO disagree, stop the deployment andresolve the mismatch. Do not silently coerce one source into another semanticshape.
-
-This revision consolidates the six divergent schema copies supplied on2026-07-31. Where those copies conflicted, deployed and production-verifiedbehavior wins over older prose. In particular, the following are authoritative:
-
-the daily scheduled entrypoint is pipeline_runner.py, not a shell &&chain and not two independent schedules;
-
-company valuation requires the exact Karachi run-date quote, never the latestearlier quote;
-
-daily quote/index/summary merges are conditional and preserve timestamps onan identical rerun;
-
-migration 006 and its two quarantine tables are part of the productioncontract;
-
-ticker comparison accepts two to four stocks and up to two benchmarks; and
-
-storage code ALLSHR and public benchmark spelling KSEALL are explicitly
-distinguished below;
-
-migration 007 is applied in production while migration 008 is implemented,
-reviewed, and tested but remains proposed and unapplied; and
-
-the implemented Google-cookie and portfolio APIs remain cutover-gated while the
-production React frontend and identity/portfolio writes remain on Supabase.
-
-Distribution rule for every repository
-
-Maintain one reviewed canonical copy of this file. The scraper, API, andfrontend repositories may mirror it for local context, but their copies areread-only outputs. A project-specific agent must propose contract changesagainst the canonical file and must not silently rewrite its own copy.
-
-At minimum, CI should compare the canonical contract revision across thesecodebases:
-
-Codebase/service
-
-Contract responsibility
+PSX DPS closing rates
 
 PsxSummaryScraper
 
-Daily PSX import, index import, technical calculation, pipeline lifecycle
+KSEStocks historical indexes
+
+PSX company pages/documents
 
 TickerScraper
 
-Company/profile/equity/valuation/fundamental/event persistence
+SBP KIBOR catalogue/PDFs
 
 KiborScraper
 
-Official SBP KIBOR catalogue and PDF ingestion
+SBP FX catalogue/PDFs
 
 SbpFxRates
 
-Official SBP FX catalogue, publication, and observation ingestion
+public schema
+
+compute_technicals.py
 
 ASP.NET Core API
 
-Anonymous read-only market DTOs plus cutover-gated identity/session behavior and
-authenticated native portfolio/watchlist mutations
+app_identity
 
-React frontend
+app_portfolio
 
-Currently Supabase-backed for identity/portfolio; future WebICT mode is API-only
-for authentication and portfolio data, with chart alignment, gaps, nulls, and
-formatting preserved
+React/Vite frontend
 
-Identity and portfolio storage use dedicated application schemas and do notchange the ownership or meaning of public market facts. Their boundary andmigration status are documented later so an agent cannot assume proposedportfolio tables already exist.
+SupabaseExporter
+optional/offline
 
-Schema and implementation state
+PortfolioImporter
+optional/offline
 
-| Schema/surface | Implemented repository state | Production state |
-| --- | --- | --- |
-| public | Market/reference DDL, migrations, anonymous read APIs, and scraper writers are implemented. | Applied and authoritative for WebICT market/reference facts. |
-| app_identity | Migration 007 plus cutover-gated Google cookie/session code are implemented and verified. | Migration 007 applied 2026-08-01; its three tables were empty immediately after application; no identity import has occurred. |
-| app_portfolio | Migration 008, authenticated APIs, PortfolioImporter, and offline SupabaseExporter are implemented, reviewed, and tested. | Proposed and unapplied; objects and imported facts do not yet exist in production. |
+Cloudflare Workers
 
-Implemented code is not evidence that its proposed production objects or data
-exist. AUTH_CUTOVER_ENABLED=false, ALLOW_NEW_USER_REGISTRATION=false, and
-PORTFOLIO_WRITES_ENABLED=false remain the deployed values, and the React
-frontend continues to use Supabase.
+Traefik/Dokploy
 
-Contents
+Cloudflare Tunnel
 
-System topology
 
-Runtime services and schedules
 
-Ownership and source mapping
 
-Provenance and source codes
 
-Relational model and key semantics
+Project/sub-project	Responsibility	Database writes
+PsxSummaryScraper / pipeline_runner.py	Daily PSX orchestration and lifecycle	Daily market facts, index facts, AI brief, provenance/audit
+parse_psx.py	Closing-rate and index-source parsing/persistence	security, daily_quote, market_summary, market_index, index_daily, market_ai_summaries
+compute_technicals.py	Incremental/full raw technical calculation	technical_indicator_daily only
+TickerScraper	Company profile, equity, exact-date valuation, fundamentals, ratios, events, documents	Company relations in public
+KiborScraper	Official SBP KIBOR catalogue/PDF ingestion	kibor_rate and provenance/audit
+SbpFxRates	Official SBP FX publication/observation ingestion	fx_publication, fx_rate_observation, provenance/audit
+ASP.NET Core API	Public market reads; Google sessions; portfolio/watchlist operations	app_identity and app_portfolio only during their owned operations
+React/Vite frontend	API-only WebICT presentation and commands	No direct database access
+SupabaseExporter	Optional read-only legacy snapshot	Local sensitive files only
+PortfolioImporter	Optional reviewed cutover import	app_identity and app_portfolio in one controlled transaction
+Dokploy/Traefik/Cloudflared	Runtime routing, containers, schedules	No domain-data writes
+2.1 Research boundary
+No authoritative research schema or table is currently part of the deployed contract. The old 006_research_service_proposal.sql conflicts with the already-applied migration 006 and must never be executed under that number. Any future research persistence requires a new specification, the next free migration number, a read-only market-data role, and a separate restricted research writer. Broker execution is outside this platform.
 
-API contract
+3. Runtime services and schedules
+All schedules are interpreted in Asia/Karachi. Dokploy invokes commands in deployed containers; workers remain idle between scheduled/manual runs.
 
-Frontend contract
+Order	Service	Command	Cron	Local schedule
+1	PsxSummaryScraper	/usr/local/bin/python -u /app/pipeline_runner.py	30 17 * * 1-5	17:30 Mon–Fri
+2	KiborScraper	/usr/local/bin/python -u /app/sbp_kibor.py	10 18 * * 1-5	18:10 Mon–Fri
+3	SbpFxRates	/usr/local/bin/python -u /app/sbp_fx_rates.py --max-publications 100	40 18 * * 1-5	18:40 Mon–Fri
+4	TickerScraper	/usr/local/bin/python -u /app/psx_scraper.py --all-securities --no-json	20 19 * * 1,3,5	19:20 Mon/Wed/Fri
+Always-on services are PostgreSQL, the API, Traefik/Dokploy, and Cloudflared.
 
-Known production state and unresolved work
+pipeline_runner.py is the scheduled PSX entrypoint. It holds one pipeline advisory lock across the daily importer and technical calculator. Do not schedule the obsolete shell chain parse_psx.py && compute_technicals.py.
 
-Deployment and migration procedure
+Exit status	Scheduler meaning
+0	Success, synchronized/no change, authoritative no-data, or complete-pipeline lock collision
+1	Committed partial/retryable work
+2	Fatal failure
+128 + signal	Shutdown
+Internal 3	Importer/calculator advisory-lock collision
+4. Schema overview and relationships
+4.1 Schemas
+Schema	Purpose	State
+public	Market/reference facts, provenance, company facts, KIBOR, FX, technical indicators, migration-006 quarantine evidence	Applied and authoritative
+app_identity	Native WebICT users, Google identity mappings, authentication audit	Migration 007 applied
+app_portfolio	Portfolios, lots, immutable activity, allocation/removal snapshots, watchlists, mutation replay/audit	Migration 008 applied
+4.2 Relationship diagram
+audits
 
-Complete public market-data DDL
+sources
 
-Contract change checklist
+sources
 
-System topology
+sources
 
-flowchart LR
-    PSX["PSX DPS and KSEStocks"] --> PSXS["PSX daily + company scrapers"]
-    SBP["Official SBP catalogues and PDFs"] --> SBPS["KIBOR + FX scrapers"]
-    PSXS --> DB[(PostgreSQL)]
-    SBPS --> DB
-    DB --> API["ASP.NET Core API"]
-    API --> FE["Web frontend"]
-    SUPA["Supabase identity + portfolio (current authority)"] --> FE
-    CF[Cloudflared] --> API
+sources
 
-PostgreSQL is the durable system of record for public market/reference facts and
-the applied identity foundation. Scraper containers are workers invoked by
-Dokploy schedules. The ASP.NET Core API is the only supported browser boundary
-to PostgreSQL, and Cloudflared exposes that API without exposing PostgreSQL.
-Until coordinated cutover, the React frontend continues to use Supabase for
-identity and portfolio data; it must never connect directly to PostgreSQL.
+has
 
-Runtime services and schedules
+exact_date_parent
 
-All cron expressions below are interpreted in Asia/Karachi. Dokploy runs thecommand inside the already-deployed service container. Containers remain idlebetween jobs; internal Python schedulers must remain disabled.
+exact_date_parent
 
-Order
+versions
 
-Dokploy service
+versions
 
-Command
+versions
 
-Cron
+versions
 
-Local schedule
+events
 
-Purpose
+events
 
-1
+documents
 
-PsxSummaryScraper
+has
 
-/usr/local/bin/python -u /app/pipeline_runner.py
+summarized
 
-30 17 * * 1-5
+contains
 
-17:30 Mon–Fri
+google_identity
 
-Non-overlapping daily import followed by incremental raw-price technical calculation after committed success or partial work
+audited
 
-2
+owns
 
-KiborScraper
+owns
 
-/usr/local/bin/python -u /app/sbp_kibor.py
+contains
 
-10 18 * * 1-5
+records
 
-18:10 Mon–Fri
+allocates
 
-Official SBP KIBOR publications
+snapshots
 
-3
+deduplicates
 
-SbpFxRates
+audits
 
-/usr/local/bin/python -u /app/sbp_fx_rates.py --max-publications 100
+identifies
 
-40 18 * * 1-5
+identifies
 
-18:40 Mon–Fri
+identifies
 
-Official SBP FX publications and normalized observations
+DATA_SOURCE
 
-4
+SCRAPE_RUN
 
-TickerScraper
+DAILY_QUOTE
 
-/usr/local/bin/python -u /app/psx_scraper.py --all-securities --no-json
+INDEX_DAILY
 
-20 19 * * 1,3,5
+KIBOR_RATE
 
-19:20 Mon/Wed/Fri
+FX_PUBLICATION
 
-Company profiles, equity, valuation, fundamentals, ratios, announcements, payouts, and reports
+SECURITY
 
-The gaps reduce load on the database and upstream sites. They are operationalspacing, not a correctness mechanism: every importer must remain transactionallysafe and idempotent if jobs overlap or are retried. A job should fail fast whenits own advisory lock cannot be acquired; the PSX daily and company importersmust use distinct locks.
+DAILY_VALUATION
 
-The always-on services are PostgreSQL, the ASP.NET Core API, and Cloudflared.They do not belong in the scraper schedule.
+TECHNICAL_INDICATOR_DAILY
 
-pipeline_runner.py is the scheduled one-shot entrypoint. It holds a distinctsession advisory lock across both child processes. It runscompute_technicals.py after a committed successful or partial daily import,including a synchronized import with zero fact writes. It preserves retryableor fatal component results and does not launch a follow-up step after fatalimport failure, confirmed importer-lock contention, or shutdown.compute_technicals.py remains available on demand with --full,--symbol SYMBOL, or --dry-run; do not schedule it separately from the dailypipeline.
+COMPANY_PROFILE_VERSION
 
-Scheduler-facing exit statuses are 0 for success, synchronized/no changes,authoritative no-data, or a pipeline-lock collision where another completepipeline owns the work; 1 for committed partial/retryable work; 2 for fatalfailure; and 128 + signal for shutdown. Internal exit 3 is reserved for animporter or calculator advisory-lock collision. A child importer-lock collisionmaps to scheduler status 1 because it does not prove that a complete pipelineowns the work. A busy technical lock after a committed import maps to schedulerstatus 1 unless coverage of the newly committed quote watermark can be proven.Selecting zero affected securities is a successful idempotent technical run.
+EQUITY_PROFILE_VERSION
 
-Both PSX worker images run as UID/GID 10001. Their idle service process iscontainer_idle.py, not sleep infinity. PID 1 forwards SIGTERM/SIGINT to anactive Dokploy docker exec process and waits for its database transaction tofinish or roll back. The daily wrapper uses a 60-second grace window; thecompany wrapper must provide a bounded grace window. SIGKILL cannot be handled,so durable database checkpoints remain mandatory.
+FINANCIAL_STATEMENT
 
-Never restore the obsolete scheduled command:
+FINANCIAL_RATIO
 
-parse_psx.py && compute_technicals.py
+ANNOUNCEMENT
 
-Importer status 1 represents committed partial/retryable work and must stillbe followed by incremental technical calculation. The pipeline runner preservesthat nonzero final status after technicals complete.
+COMPANY_PAYOUT
 
-Ownership and source mapping
+FINANCIAL_REPORT_DOCUMENT
 
-PSX daily market importer
+MARKET_INDEX
 
-parse_psx.py owns the daily market facts.
+MARKET_SUMMARY
 
-Data
+MARKET_AI_SUMMARIES
 
-Authoritative source
+FX_RATE_OBSERVATION
 
-Write surface
+USER_ACCOUNT
 
-Listed symbols and company names
+EXTERNAL_LOGIN
 
-PSX DPS closing-rate publication
+AUTHENTICATION_AUDIT
+
+PORTFOLIO
+
+WATCHLIST_ITEM
+
+POSITION_LOT
+
+PORTFOLIO_ACTIVITY
+
+ACTIVITY_LOT_ALLOCATION
+
+POSITION_REMOVAL_LOT
+
+MUTATION_REQUEST
+
+MUTATION_AUDIT
+
+
+
+
+
+4.3 Storage patterns
+Pattern	Tables	Semantics
+Natural-key daily fact	daily_quote, market_summary, index_daily, daily_valuation, kibor_rate, reserved fx_rate, metal_rate	Conditional upsert; identical rerun preserves timestamps
+SCD2	Profile, equity, financial statement, financial ratio	Half-open [valid_from, valid_to); one current row per natural key
+Append/correct event history	Announcements, payouts, report documents	Never delete because later source response omits an event
+Immutable application history	Portfolio activity, allocations, removal snapshots, mutation audit	Update/delete rejected by trigger
+Mutable state with version	Portfolio, position lot, watchlist, mutation request	Ownership/provenance immutable; explicit allowed state transitions
+5. Source and write ownership
+5.1 Stable source codes
+data_source.code	Meaning
+psx_daily_import	PSX daily orchestration/audit
+psx_closing	Official PSX closing-rate PDF facts
+dps_index	Current official DPS index panels
+ksestocks_index	Historical KSEStocks index observations
+psx_company	PSX company pages/documents
+kibor	Official SBP KIBOR publications
+fx	Official SBP FX publications
+metals	Reserved future metal importer
+5.2 Source semantics
+Ticker OHLC/change/turnover comes from PSX DPS closing-rate publications.
+KSE index values never come from the closing-rate PDF.
+Current index observations use DPS panels; historical observations use KSEStocks.
+Stored index code ALLSHR is exposed publicly as KSEALL.
+daily_quote.turnover is share quantity, not PKR traded value.
+daily_valuation.market_cap is full PKR; the importer expands PSX “000s”.
+Company valuation requires an exact Karachi run-date quote.
+KIBOR bid and offer remain separate.
+SBP FX rate families and tenors remain separate.
+v_usdpkr_m2m_ready is the canonical USD/PKR analysis series.
+Raw source anomalies are retained; analytics require a separately versioned eligibility policy.
+5.3 scrape_run status
+Status	Meaning
+running	Active or abandoned run row awaiting finalization/recovery
+success	Requested components completed and committed
+partial	Valid work committed with retryable/actionable warnings
+failed	No valid completion for the requested unit
+no_data	Authoritative source/catalogue confirms no applicable data
+not_applicable is a per-ticker outcome inside sanitized notes, not a scrape_run.status. rows_written is a mutation counter, not a fact-table row count.
+
+6. public schema data dictionary
+All unqualified names in this section belong to public.
+
+6.1 Provenance and dimensions
+data_source
+Grain: one stable source identity.
+
+Column	Type	Null	Meaning
+id	smallserial	No	Primary key; database-local surrogate
+code	text	No	Stable unique source code
+name	text	No	Operator-facing name
+base_url	text	Yes	Source base URL/provenance
+scrape_run
+Grain: one importer run/audit unit for one logical date.
+
+Column	Type	Null	Meaning
+id	bigserial	No	Primary key
+source_id	smallint	No	FK → data_source.id
+run_date	date	No	Logical trade/publication/run date
+started_at, finished_at	timestamptz	Finish yes	Runtime interval
+status	text	No	`running
+rows_written	integer	No	Actual inserts/material updates/prunes counted by owner
+notes	text	Yes	Sanitized structured diagnostics
+Index: (source_id, run_date).
 
 security
+Grain: one listed/historical security symbol.
 
-Ticker OHLC, change, section, and turnover
+Column	Type	Null	Meaning
+id	bigserial	No	Primary key
+symbol	text	No	Unique stable public symbol
+company_name	text	Yes	Latest convenience name
+created_at, updated_at	timestamptz	No	Storage lifecycle
+The daily importer owns the universe. The company importer may enrich only a nonblank name under its identity contract.
 
-PSX DPS closing-rate PDF
+market_index
+Grain: one stored index dimension.
 
+Column	Type	Null	Meaning
+id	smallserial	No	Primary key
+code	text	No	Unique stored code, including ALLSHR
+display_name	text	Yes	Presentation label
+6.2 PSX daily facts and derived indicators
 daily_quote
+Primary key: (security_id, trade_date).
 
-Whole-market volume and breadth
+Column group	Type	Meaning
+security_id	bigint	FK → security.id
+trade_date	date	Logical trading date
+open, high, low, close, change	numeric	Raw official observations; nullable
+turnover	bigint	Traded-share quantity
+section	text	PSX source section/category
+source_id	smallint	FK → data_source.id
+inserted_at, updated_at	timestamptz	First storage/material-update timestamps
+Index: trade_date.
 
-PSX DPS closing-rate PDF
+technical_indicator_daily
+Primary key: (security_id, trade_date, price_basis). FK (security_id, trade_date) → daily_quote, ON DELETE CASCADE.
 
+Column group	Type	Meaning
+price_basis	text	raw or reserved adjusted; current writer uses raw
+calculation_version	text	Current formula/version marker, last audited as ta_raw_v1
+return_1d_pct, return_5d_pct, return_20d_pct	numeric	Return features
+sma_20, sma_50, sma_200	numeric	Simple moving averages
+ema_12, ema_26	numeric	Exponential moving averages
+rsi_14	numeric	Relative Strength Index
+macd, macd_signal, macd_histogram	numeric	MACD family
+atr_14	numeric	Average True Range
+bollinger_middle, bollinger_upper, bollinger_lower	numeric	Bollinger bands
+volume_sma_20	numeric	Turnover moving average
+source_updated_at	timestamptz	Exact source quote version consumed
+calculated_at	timestamptz	Changes only when result/source/version changes
 market_summary
+Primary key: trade_date.
 
-Current/latest KSE index snapshot
+Columns: prev_volume bigint, curr_volume bigint, advances integer, declines integer, unchanged integer, flu_no text, source_id smallint, inserted_at timestamptz, updated_at timestamptz.
 
-PSX DPS live index panels
-
-market_index, index_daily
-
-Historical KSE index snapshot
-
-KSEStocks Market Summary
-
-market_index, index_daily
-
-Latest complete trading-day narrative
-
-Configured LLM, using imported market facts
+This stores whole-market breadth/volume. Index-specific values belong in index_daily.
 
 market_ai_summaries
+Primary key: (trade_date, summary_type). FK trade_date → market_summary, ON DELETE CASCADE.
 
-KSE index values must never be parsed from the closing-rate PDF. The PDF isauthoritative only for ticker rows and market-wide summary fields. The currentday routes to PSX DPS index panels; a historical day routes to KSEStocks.Those routes are separate ownership scopes, not interchangeable globalsnapshots. dps_index explicitly manages KSE100, KSE100PR, ALLSHR,KSE30, KMI30, and KMIALLSHR. ksestocks_index explicitly managesKSE100, ALLSHR, KSE30, KMI30, and KMIALLSHR; KSEStocks has noKSE100PR contract. Optional codes outside the active route and rows owned byanother or unrelated source remain untouched.
+Columns: model_name, prompt_version, input_hash char(64), nullable summary, nullable error_message, JSON arrays key_points, top_gainers, top_losers, volume_leaders, sector_activity, generated_at, and status pending|completed|failed.
 
-ALLSHR is the storage/importer code used in the verified database and sourcecontracts. The comparison API currently accepts the public spelling KSEALL.The API must map that alias explicitly to ALLSHR; it must not create a secondmarket_index row, compare display names, or depend on a numeric index ID. Afuture migration may standardize the name only after all stored facts and APIclients are audited together.
-
-daily_quote.turnover is traded share quantity, not PKR traded value. A valuesuch as close * turnover is only an estimated traded-value feature and mustbe labeled as derived. OHLC rows preserve official source observations. Zero ormissing open/high/low values and apparent range anomalies are never averaged,clamped, swapped, or fabricated in the raw table; downstream models must applyan explicit, versioned eligibility policy.
-
-Backfill completeness is determined from required rows for each candidate date,not from MAX(trade_date) alone. A newer row must not hide an older hole. Eachdate commits atomically, so a stopped run resumes from remaining incompletedates. A network or parsing failure is retryable and must not be recorded as aholiday. The AI summary is skipped during historical backfill and is generatedonly for the latest complete trading date.
-
-The daily importer plans closing-rate and index repair independently. If thestored closing component is already complete and only indexes are incomplete,it does not refetch or rewrite the quotes or market summary. HTTP, parsing,required-row completeness, and persistence failures remain actionable andvisible. A prior partial audit caused only by a reviewed optional index noticecan be finalized from independently validated complete database facts withoutrepeated source churn.
-
-One exact required-index exception is reviewed and terminal. For ALLSHR on2026-07-21, both DPS and KSEStocks published open 106995.80, high 107857.74,low 106600.00, close 106568.82, change 149.03, change percent 0.14, volume1000730920, and previous close 106419.79. Because the close is 31.18 pointsbelow the published low, the observation remains invalid and is intentionallyabsent from index_daily; no value is inferred, clamped, swapped, or replacedwith KSE100PR. Only that date, canonical ALLSHR code, reviewed provider,and exact canonical numeric payload match fingerprint47b725f9da779b604cb5f0acad82055616bcdde72e5f5a70303ea07c39a04dc7.The successful psx_daily_import audit records the provider, values, reason,classification, resolution, and fingerprint in scrape_run.notes. That exactvalidated note resolves the required index component with a reviewed gap, sothe date is not automatically retried. Any changed payload is validated underthe ordinary strict rules and can either insert a corrected row or remainretryable. Operators can explicitly recheck the source withparse_psx.py --recheck-reviewed-anomalies 2026-07-21; complete closing factsare reused while the index component is fetched again.The reviewed gap resolves only the exact missing provider observation and doesnot expand its prune scope. It cannot delete a valid row owned by anotherprovider, including a DPS ALLSHR, and KSE100PR remains a distinct optionalDPS fact.
-
-The narrow recovery commandparse_psx.py --repair-dps-kse100pr 2026-07-21 fetches the official DPS panel,requires the panel as_of date to match, validates the observation normally,and conditionally merges only KSE100PR without pruning. The audited officialpayload is previous close 53642.22, high 54387.03, low 53683.37, close53704.98, volume 448767016, change 62.76, change percent 0.12, and as_of2026-07-21 15:50 Asia/Karachi. DPS supplied no open in that panel, so the storedopen remains null; the importer does not infer one. If the live panel has movedto another date, recovery fails rather than assigning newer values to the olddate.Since the DPS historical search does not return index rows, the separatereview-only fallback recovery/restore_dps_kse100pr_2026-07-21.sql uses thosesame audited official values. It is guarded, transactional, conditionallyidempotent, advisory-locked, and audited in scrape_run; it is an operationalrecovery artifact and not a migration.
-
-Incoming quote and index snapshots are normalized and deduplicated before anywrite. Rows are merged in place first. Their inserted_at is preserved, andtheir updated_at changes only when the row-wise material payload is distinct.Only a validated complete, nonempty, at-least-threshold component may thenprune same-date natural keys absent from its incoming ID set. Index pruning isfurther restricted to existing rows whose source_id and canonical code bothbelong to the explicit active provider contract. Partial, empty, undersized,mixed-provider, missing-contract, or otherwise ambiguous snapshots neverprune. Each index prune is audited with canonical code, previous source code,and reason. A genuine complete-snapshotomission deletes only that absent quote or index; quote foreign-key cascadestherefore affect only the omitted quote's dependent valuation and technicalrows. An identical complete rerun performs zero fact writes and preserves allquote children and timestamps.
-
-Technical-indicator calculator
-
-compute_technicals.py is the sole writer of technical_indicator_daily.parse_psx.py remains the owner of daily_quote; the calculator reads thattable and security but must never update, delete, or otherwise repair eithersource table. It makes no external HTTP requests and produces no JSON files.
-
-The calculator stores only price_basis = 'raw'. The schema permits anadjusted basis for a future, separately specified pipeline, but no adjustedprices currently exist and consumers must not interpret raw indicators assplit- or dividend-adjusted. calculation_version is calculation metadata, notpart of the primary key: recalculating a security with a new version replacesthe row for the same security, date, and price basis.
-
-The worker validates its source and destination columns, then holds thesession-level PostgreSQL advisory lock named psx_technical_indicators for therun. Each security is a separate transaction. Thus an interrupted or partiallyfailed run preserves completed securities and safely rediscovers unfinishedones on its next invocation. If execution is interrupted during an activesecurity, that transaction is explicitly rolled back before the advisory lockis released, so the unlock commit cannot commit partial indicator work.
-
-Initial and recovery behavior:
-
-when technical_indicator_daily is empty, every security with quote historyis processed from its first quote through its latest quote;
-
-otherwise, a security is affected when an eligible positive-close quote hasno raw technical row, its daily_quote.updated_at is distinct from thematching technical_indicator_daily.source_updated_at, or the storedcalculation version is not current. A security is also affected when anexisting raw technical row's source close becomes null, non-positive, ornon-finite;
-
---full explicitly selects all quote histories and --symbol MEBL explicitlyselects one complete history; --dry-run calculates and reports withoutwriting or deleting;
-
-every affected security is recalculated from complete quote history, not froma short lookback, so a historical correction repairs all later recursiveEMA, RSI, MACD, and ATR values; and
-
-conditional UPSERTs use IS DISTINCT FROM, so an identical rerun is a no-opand preserves calculated_at. After recalculation, every raw row whose dateis absent from the exact eligible-date set is removed, including rows whosesource quote still exists but has become null, non-positive, or non-finite.Cleanup never touches future adjusted-basis rows and is not restricted bycalculation version.
-
-Only actual trading observations participate. Rows with a null, non-finite, ornon-positive close are skipped, and calendar/weekend rows are never generated.Close drives price indicators; turnover drives the volume indicator.These recovery and transaction-safety corrections require no database migration.
-
-PSX company importer
-
-psx_scraper.py, psx_company_transform.py, and psx_company_db.py form onelogical importer. security is the shared issuer dimension; the daily importerdefines its universe and the company importer may only enrich a nonblank companyname.
-
-Component
-
-Write surface
-
-Persistence rule
-
-Profile
-
-company_profile_version
-
-SCD2, one current version per security
-
-Shares/free float
-
-equity_profile_version
-
-SCD2; market cap is deliberately excluded
-
-Market valuation
-
-daily_valuation
-
-Full-PKR market cap and nullable source P/E, only when the same security has an exact Karachi run-date quote
-
-Statements
-
-financial_statement
-
-SCD2 by security, fiscal year, and period
-
-Ratios
-
-financial_ratio
-
-SCD2 by security and fiscal year
-
-Announcements
-
-announcement
-
-Append/correct by issuer-scoped document ID, otherwise content hash
-
-Payouts/results
-
-company_payout
-
-Append/correct by stable event hash
-
-Financial-report files
-
-financial_report_document
-
-Append/correct by issuer-scoped document ID, otherwise content hash
-
-Each ticker is one transaction. A failed ticker rolls back without undoingprevious successful tickers in the same run. Missing or regressed optional datamust not replace a complete current SCD2 row. Re-importing identical content isa no-op.
-
-The transform and persistence layers distinguish persistable from complete.persistable means every field that would be stored is semantically valid;false means no version may be inserted, even on an empty database. completemeans a valid component is sufficiently complete to supersede a current SCD2row. Shares and free-float shares are nonnegative, free-float percent is in[0,100], and positive free-float shares may not exceed shares. Zero,malformed, missing, NaN, and Infinity source values are never used to infer areplacement field. A rejected equity component does not reject a separatelyvalid market cap, but that valuation still requires the exact run-date quote.
-
-daily_valuation.pe_ratio_ttm is a nullable source observation. It is not PEG,and PEG from financial_ratio.values is not a substitute. At the 2026-07-31consolidation audit, all 483 valuation rows had market capitalization and zerohad P/E, so the current importer has not populated this column. That is a knownTickerScraper extraction/transform/persistence gap, not a missing databasecolumn and not an API calculation task. Until it is fixed, APIs return null andthe frontend displays N/A. Never average, forward-fill, or copy a current P/Ebackward. Historical P/E requires a point-in-time source or a separatelyversioned calculation from earnings that were actually available on each date.
-
-Because the company job runs Monday/Wednesday/Friday, valuation observationsare intentionally sparser than daily_quote. A weekend/manual run does notattach current page values to Friday. The API must always expose the valuationasOf date independently of the quote range.
-
-Duplicate statement periods and ratio years are compared by canonical payload.Identical duplicates collapse to one record. Conflicting duplicates make theentire natural key ambiguous, so all occurrences of that period/year areomitted with an actionable warning. No source-order winner is selected.
-
-A reversed book-closure range is accepted only when genuinely distinct sourcecolumns explicitly label start/from and end/to and therefore prove a parsercolumn reversal. A shared range header is not independent evidence: itsreversed event is omitted and the warning retains the exact raw source range.
-
-For --all-securities, the importer uses the latest observeddaily_quote.section, exact reviewed aliases, and fetched page/company-nameevidence. ETF identities, rights (including names ending (R), (R1), etc.),preference and non-voting instruments, debt, warrants, derivatives, namesmarked DELISTED/XDDELISTED, and obsolete names marked CHANGED are neutralper-ticker not_applicable outcomes. Symbol suffix guessing alone must neverexclude an ordinary issuer. The canonical fetched company-page ticker mustequal the requested ticker before persistence. Classification never deletessecurity or daily_quote history; retaining historical prices avoidssurvivorship bias.
-
-The importer holds one session advisory lock and commits each tickerindependently. After each ticker it checkpoints rows_written, completed andper-outcome counts, the last completed ticker, and sanitized bounded outcomedetails in scrape_run.notes. Once a process acquires the lock, it finalizesolder still-running psx_company rows as failed/interrupted before creating anew run; a live lock owner cannot be marked stale. Normal exceptions andSIGTERM are finalized where possible. SIGKILL cannot be handled, so the latestcheckpoint is the audit trail. A rerun always re-evaluates selected tickers andrelies on idempotency rather than unsafe cursor skipping.
-
-The latest reviewed full-run snapshot (scrape_run.id = 8089) requested 649tickers: 522 succeeded, 41 were partial, zero failed, 86 were neutralnot_applicable, and 461 domain rows were written. A partial ticker does notmean its committed components are corrupt; it means at least one component wasomitted or needs review. Known warning classes are:
-
-Class
-
-Last reviewed count
-
-Required handling
-
-Empty ratio years
-
-38
-
-Omit the empty year; do not manufacture zero ratios
-
-Invalid equity values
-
-12
-
-Reject the equity component; examples include ADOS, BCML, WYETH, and PACE
-
-Missing optional titles
-
-8
-
-Omit only the malformed optional entry
-
-Reversed payout ranges
-
-2
-
-Omit unless independent labeled columns prove direction; AICL and DCR remain reviewed examples
-
-Unsupported Q5/Q6 periods
-
-2
-
-Keep omitted and investigate DSML source semantics
-
-Missing company profiles
-
-2
-
-Review source/page classification; MODAMR and PKGIR were observed
-
-Non-finite PEG
-
-1
-
-Reject the ratio value; PEG is not P/E
-
-Financial-report HTTP 404
-
-1
-
-Keep visible until an explicit source-backed no-data policy is reviewed; OLPL was observed
-
-Counts are audit snapshots, not schema invariants. A changed upstream responsemust be validated normally. Reviewed optional omissions must not make theschedule fail forever, while HTTP, identity, ambiguity, invalid numeric, andpersistence failures remain visible in sanitized scrape_run.notes.
-
-This importer does not write daily_quote, market_summary, market_index,index_daily, kibor_rate, fx_publication, or fx_rate_observation.
-
-SBP KIBOR importer
-
-sbp_kibor.py reads the official SBP publication catalogue and PDFs. It ownskibor_rate and uses the kibor data-source code. The supported source tenorsare 1W, 2W, 1M, 3M, 6M, 9M, and 1Y; each observation contains abid and offer for its publication date.
-
-Backfill candidates come from the official catalogue. Therefore weekends andholidays without a publication are not missing rows. A transient download orparse failure remains retryable. An identical re-import must not alter values ortheir updated_at timestamp.
-
-The importer keeps catalogue date, URL, declared document date, byte size,SHA-256, parser outcome, and any canonical alias in structured audit notes. Acatalogue alias stores facts only under the authoritative document date; itdoes not create a duplicate weekend row. A reviewed source anomaly is terminalno_data only for the exact pinned file and reason. If bytes change, ordinaryvalidation runs again.
-
-The following ten catalogue entries are reviewed policy, not missing work:
-
-Catalogue date
-
-Resolution
-
-Stored fact behavior
-
-2021-01-09
-
-Byte-identical Saturday alias of document date 2021-01-11
-
-Reuse/import all seven canonical Monday facts; no Saturday facts
-
-2021-02-20
-
-Byte-identical Saturday alias of 2021-02-22
-
-Reuse/import Monday facts only
-
-2021-09-06
-
-Official 2W row has offer 7.44 below bid 7.94
-
-Terminal source anomaly; do not swap or insert a partial curve
-
-2022-05-20
-
-Official 6M offer token is malformed as 14..87
-
-Terminal source anomaly; do not invent the value or insert a partial curve
-
-2023-07-15
-
-Byte-identical Saturday alias of 2023-07-17
-
-Reuse/import Monday facts only
-
-2023-07-26
-
-Official PDF is truncated and lacks a valid terminal xref/EOF
-
-Terminal source anomaly
-
-2025-07-24
-
-Official PDF is truncated and lacks a valid terminal xref/EOF
-
-Terminal source anomaly
-
-2025-07-31
-
-Official 2W row has offer 11.34 below bid 11.84
-
-Terminal source anomaly; do not swap
-
-2025-08-01
-
-Official PDF is truncated and lacks a valid terminal xref/EOF
-
-Terminal source anomaly
-
-2026-05-19
-
-Catalogue attachment is an FX Mark-to-Market document, not KIBOR
-
-Terminal dataset mismatch
-
-The reviewed run after deployment classified all ten with zero failures and asecond run selected zero pending entries. These exceptions must remainSHA-pinned and test-covered; a generic “ignore bad PDFs” rule is forbidden.
-
-SBP FX importer
-
-sbp_fx_rates.py reads official SBP catalogue entries and PDFs and uses thefx data-source code. It owns fx_publication and fx_rate_observation.
-
-One publication row records the source document and its logical dates. Its childobservations retain currency pair, tenor, and value shape. Four publicationfamilies are intentionally distinct:
-
-conversion
-
-open_market
-
-weighted_average_customer
-
-mark_to_market
-
-Consumers must retain both rate_type and tenor; rates with differentsemantics must never be blended into one series. A row contains either a singlepositive rate or a positive ordered bid/offer pair, never both.
-
-v_sbp_fx_rates is the full normalized query surface. For the platform's mainUSD/PKR chart and PSX correlation, use v_usdpkr_m2m_ready, which selects onlyMark-to-Market USD/PKR ready observations. The older generic fx_rate table isreserved for a future market-feed OHLC importer and is not populated by the SBPPDF scraper.
-
-As with KIBOR, publication discovery is catalogue-driven. A missing catalogueentry is not synthesized, and a failed download is not treated as a holiday.
-
-The FX importer extracts a label-aware declared date and verifies datasetidentity before parsing or persistence. Current/newest publications areprocessed before historical backlog; --max-publications 100 is a work bound,not a semantic limit. Download/parser failures and database persistencefailures are logged separately. The following wrong catalogue mappings arereviewed terminal rejections and produce no duplicate/mislabelled publication:
-
-Catalogue key
-
-Reviewed document identity
-
-2024-03-08 conversion
-
-Serves a Mark-to-Market document dated March 8
-
-2025-06-26 open_market
-
-Document declares June 27; canonical June 27 publication already owns the fact
-
-2026-03-13 open_market
-
-Document declares March 12; canonical March 12 publication owns the fact
-
-2026-06-01 mark_to_market
-
-Serves a weighted-average-customer sheet
-
-2026-06-04 mark_to_market
-
-Serves a weighted-average-customer sheet
-
-2026-06-05 mark_to_market
-
-Serves a weighted-average-customer sheet
-
-2026-06-11 mark_to_market
-
-Genuine Mark-to-Market sheet declares June 10; canonical June 10 publication owns the fact
-
-These entries resolve as reviewed no_data, not failed retries. A changed URLor document must pass normal identity/date validation rather than inheritingthe old exception.
-
-Relation ownership matrix
-
-Only the named owner may mutate a relation in normal operation. Migrations andreviewed recovery scripts are exceptional operator actions.
-
-Relation/view
-
-Normal writer/owner
-
-Primary readers
-
-data_source, scrape_run
-
-Each importer for its own source/run
-
-Operators
-
-security
-
-PSX daily importer; company importer may enrich only a nonblank name under its contract
-
-Company importer, API, research
-
-daily_quote, market_summary, market_index, index_daily, market_ai_summaries
-
-PSX daily importer
-
-Technical calculator, API, research
-
-technical_indicator_daily
-
-Technical calculator
-
-API, research
-
-daily_valuation, company SCD2 tables, announcements, payouts, reports
-
-PSX company importer
-
-API, research
-
-Company quarantine tables
-
-Migration 006 only
-
-Operators/auditors
-
-kibor_rate
-
-KIBOR importer
-
-API, research
-
-fx_publication, fx_rate_observation
-
-SBP FX importer
-
-Views, API, research
-
-v_sbp_fx_rates, v_usdpkr_m2m_ready
-
-Database schema/migrations
-
-API, research
-
-Generic fx_rate, metal_rate
-
-No deployed importer
-
-No production feature should assume coverage
-
-v_current_* views
-
-Database schema/migrations
-
-API and ad-hoc read-only analysis
-
-app_identity.user_account, app_identity.external_login,
-app_identity.authentication_audit
-
-ASP.NET Core identity/session code and the approved cutover importer; schema
-shape is owned by applied migration 007
-
-ASP.NET Core authentication, approved operators/auditors, and the approved
-cutover importer
-
-app_portfolio relations from migration 008 (proposed; absent from production)
-
-ASP.NET Core portfolio/watchlist code and the approved cutover importer after
-migration 008 is separately approved and applied; schema shape is owned by
-migration 008
-
-ASP.NET Core portfolio reads/mutations and approved operators/auditors after
-application
-
-Market-data scrapers must never write app_identity or app_portfolio. Browser
-clients never access any PostgreSQL schema directly and never receive database
-credentials.
-
-Provenance and source codes
-
-Every importer registers or reuses a stable data_source.code and recordsattempts in scrape_run. IDs are database-local surrogate keys; consumers usethe code.
-
-data_source.code
-
-Owner / meaning
-
-psx_daily_import
-
-Orchestration/audit record for a PSX daily import
-
-psx_closing
-
-Official PSX closing-rate PDF facts
-
-dps_index
-
-Current PSX DPS index panels
-
-ksestocks_index
-
-Historical KSEStocks index summary
-
-psx_company
-
-PSX company pages and documents
-
-kibor
-
-Official SBP KIBOR publications
-
-fx
-
-Official SBP FX publications
-
-metals
-
-Reserved for a future metal-rate importer
-
-scrape_run.status has these meanings:
-
-Status
-
-Meaning
-
-running
-
-Active lock-owning import; the next lock owner recovers an abandoned row as failed/interrupted
-
-success
-
-All requested components completed and committed
-
-partial
-
-Some components/tickers committed and warnings are recorded
-
-failed
-
-No valid completion for the requested unit of work
-
-no_data
-
-The authoritative catalogue/source confirms no applicable data; never use this for a transient error
-
-rows_written is an operational counter, not the final row count. The dailyimporter counts only actual fact inserts, material updates, and validatedcomplete-snapshot prunes; no-op conflicts count as zero. Structured notes alsosplit these counts by daily_quote, market_summary, and index_daily. Usefact-table queries to verify stored coverage.
-
-not_applicable is never a scrape_run.status; it is a neutral per-tickeroutcome stored in the structured JSON text in scrape_run.notes. A run made uponly of success and not_applicable outcomes finishes success and exits zero.Reviewed expected optional omissions are non-actionable notices. HTTP and pageidentity failures, ambiguous duplicates, invalid numeric components, andpersistence failures remain actionable warnings/failures. Notes preserve everysanitized warning detail and never include credentials.
-
-A reviewed_terminal_source_anomaly note is non-actionable only when itsprovider, logical date, canonical index code, complete canonical values, andSHA-256 fingerprint exactly match a code-reviewed policy. It recordsresolution = resolved_with_reviewed_gap; it does not manufacture a fact row.The automatic planner revalidates the structured note before treating themissing natural key as resolved.Resolution does not grant global snapshot authority and cannot prune anexisting observation from another provider.
-
-Relational model and key semantics
-
-erDiagram
-    DATA_SOURCE ||--o{ SCRAPE_RUN : audits
-    DATA_SOURCE ||--o{ DAILY_QUOTE : sources
-    DATA_SOURCE ||--o{ INDEX_DAILY : sources
-    DATA_SOURCE ||--o{ KIBOR_RATE : sources
-    DATA_SOURCE ||--o{ FX_PUBLICATION : sources
-
-    SECURITY ||--o{ DAILY_QUOTE : has
-    DAILY_QUOTE ||--o| DAILY_VALUATION : exact_date_parent
-    DAILY_QUOTE ||--o{ TECHNICAL_INDICATOR_DAILY : exact_date_parent
-    SECURITY ||--o{ COMPANY_PROFILE_VERSION : versions
-    SECURITY ||--o{ EQUITY_PROFILE_VERSION : versions
-    SECURITY ||--o{ FINANCIAL_STATEMENT : versions
-    SECURITY ||--o{ FINANCIAL_RATIO : versions
-    SECURITY ||--o{ ANNOUNCEMENT : accumulates
-    SECURITY ||--o{ COMPANY_PAYOUT : accumulates
-    SECURITY ||--o{ FINANCIAL_REPORT_DOCUMENT : accumulates
-
-    MARKET_SUMMARY ||--o{ MARKET_AI_SUMMARIES : summarized_by
-    MARKET_INDEX ||--o{ INDEX_DAILY : has
-    FX_PUBLICATION ||--|{ FX_RATE_OBSERVATION : contains
-
-Foreign keys use database-local surrogate IDs internally. Natural keys andlogical dates define public identity and idempotency.
-
-Stable dimensions and opaque IDs
-
-security.id, market_index.id, publication IDs, and event IDs are surrogatekeys. Sequence values are expected to be sparse and non-contiguous becausePostgreSQL sequences are not rolled back and conflict attempts may consumevalues. This is normal. APIs and frontend routes must identify securities bysecurity.symbol and indexes by market_index.code, never by display order orthe apparent size of an ID.
-
-Daily facts
-
-Daily-series tables use a natural entity/date key and are safe to UPSERT:
-
-Table
-
-Grain / key
-
-Notes
-
-daily_quote
-
-one security per trade_date
-
-Authoritative PSX ticker OHLC and turnover
-
-technical_indicator_daily
-
-one security, trade_date, and price basis
-
-Derived raw-price indicators; current calculation version replaces the same basis row
-
-market_summary
-
-one trade_date
-
-Market-wide breadth and volume
+Indexes support status, latest completed summary, and generation time. Historical backfill does not create AI summaries.
 
 index_daily
+Primary key: (index_id, trade_date).
 
-one index per trade_date
+Columns: prev_close, open, high, low, close, volume, change, change_pct, source-reported as_of, source_id, inserted_at, updated_at.
 
-Source is DPS or KSEStocks, never the PDF
+The source/provider contract and canonical code control pruning. A missing provider observation cannot delete another provider’s valid row.
 
+6.3 Company valuation and SCD2 facts
 daily_valuation
+Primary key: (security_id, trade_date). Exact-parent FK → daily_quote, ON DELETE CASCADE.
 
-one security per trade_date
+Columns: nullable market_cap numeric, nullable pe_ratio_ttm numeric, source_id, inserted_at, updated_at. Market cap must be nonnegative. P/E is a source field; PEG is not a substitute.
 
-Full PKR market cap and nullable source P/E; company market-cap value is multiplied by 1,000
+company_profile_version
+Primary key: id bigserial; FK security_id → security.
 
+Columns: sector, business_description, address, website, registrar, auditor, fiscal_year_end, key_people jsonb, content_hash char(64), valid_from, valid_to, is_current, inserted_at.
+
+One current row per security is enforced by a partial unique index. Current rows have null valid_to; historical rows have a later valid_to.
+
+equity_profile_version
+Primary key: id bigserial; FK security_id → security.
+
+Columns: shares bigint, free_float_shares bigint, free_float_pct numeric, hash/validity/current fields, inserted_at. Values are nonnegative, percent is 0–100, and free-float shares cannot exceed shares.
+
+financial_statement
+Primary key: id bigserial; natural current key (security_id, fiscal_year, period).
+
+Columns: sales, profit_after_tax, eps, complete normalized line_items jsonb, content hash, validity/current fields, inserted_at. Period is one of Annual, Q1, Q2, Q3, Q4.
+
+financial_ratio
+Primary key: id bigserial; natural current key (security_id, fiscal_year).
+
+Columns: values jsonb, content hash, validity/current fields, inserted_at. Sector-specific ratio sets are versioned as a whole.
+
+6.4 Company event/document history
+announcement
+Primary key: id bigserial; FK security_id → security.
+
+Columns: issuer-scoped psx_document_id, announcement_date, title, category, pdf_url, documents jsonb, fallback content_hash, first_seen, inserted_at.
+
+Unique identity is (security_id, psx_document_id) when present, otherwise (security_id, content_hash). Never recreate the obsolete global document-ID index.
+
+company_payout
+Primary key: id bigserial; FK security_id → security.
+
+Columns: announced_at, period_ended, result_type, details, book-closure start/end, optional event_hash, required content_hash, first_seen, inserted_at. Book-closure end cannot precede start.
+
+financial_report_document
+Primary key: id bigserial; FK security_id → security.
+
+Columns: report_type, period_ended_raw, nullable normalized date/year, posting_date, issuer-scoped psx_document_id, url, content_hash, first_seen, inserted_at.
+
+Annual year-only source values remain year/raw text; no date is invented.
+
+6.5 Migration-006 quarantine evidence
+psx_company_daily_valuation_quarantine
+Preserves the original valuation columns plus quarantine_reason, migration_code, quarantined_at, and original_row jsonb. It deliberately has no foreign keys so evidence survives later lifecycle changes.
+
+psx_company_equity_version_quarantine
+Preserves the original equity version, symbol, quarantine metadata, and original JSON row. It deliberately has no foreign keys.
+
+Migration 006 quarantined 613 valuation rows and three equity rows. Do not rerun it.
+
+6.6 KIBOR, FX, and reserved rate tables
 kibor_rate
+Primary key: (quote_date, tenor). Columns: bid numeric, offer numeric, source_id, inserted_at, updated_at. Canonical tenors are 1W, 2W, 1M, 3M, 6M, 9M, and 1Y.
 
-one quote_date and tenor
+fx_publication
+Primary key: id bigserial; unique (publication_date, rate_type).
 
-Bid/offer point observation
+Columns: publication/effective/settlement dates, rate_type, provider, unit, source URL/file name, pinned PDF SHA-256/size/pages, observation count, source ID, timestamps.
+
+Allowed families: conversion, open_market, weighted_average_customer, mark_to_market.
+
+fx_rate_observation
+Primary key: (publication_id, base_ccy, quote_ccy, tenor). FK publication → fx_publication, ON DELETE CASCADE.
+
+Columns: currency pair, tenor, either one positive rate or a positive ordered bid/offer pair, and timestamps. The two shapes cannot be mixed.
 
 fx_rate
-
-one date and currency pair
-
-Reserved generic OHLC surface; it has no tenor column and is not written by the SBP PDF importer
+Reserved generic market-feed OHLC table keyed by (quote_date, base_ccy, quote_ccy). No deployed SBP writer uses it because official PDF facts have rate-family and tenor semantics.
 
 metal_rate
+Reserved table keyed by (quote_date, metal, purity, unit, currency). No deployed writer currently guarantees coverage.
 
-one date/metal/purity/unit
+6.7 Views
+View	Purpose
+v_current_profile	Current profile version only
+v_current_equity	Current equity version only
+v_current_financials	Current financial-statement versions
+v_current_ratios	Current financial-ratio versions
+v_sbp_fx_rates	Full normalized, source-aware FX publication + observation surface
+v_usdpkr_m2m_ready	Canonical Mark-to-Market USD/PKR ready series
+7. app_identity schema data dictionary
+Migration 007 created this schema. Its reviewed Git blob SHA remains 490e397a208075c7a0d90a37de22aa9fd584927a.
 
-Reserved until a metal importer is deployed
+7.1 user_account
+Primary key: id uuid.
 
-Trading and publication gaps are meaningful. APIs and charts must not fabricateweekend or holiday observations and must not linearly interpolate them unless aseparate analytical feature explicitly requests it.
+Column	Type	Null	Meaning
+id	uuid	No	Permanent WebICT user ID
+email	text	Yes	Profile field; maximum 320 characters; never an identity key
+email_verified	boolean	No	Profile verification state
+display_name	text	Yes	Profile name, maximum 256
+avatar_url	text	Yes	Profile image URL, maximum 2048
+status	text	No	active or disabled
+created_at, updated_at	timestamptz	No	Storage lifecycle
+last_login_at	timestamptz	Yes	Latest successful login
+A delete-protection trigger requires disabling rather than deleting a user.
 
-Missing data, source anomalies, zero values, and null values are differentstates. Raw facts remain unchanged. Any imputation, smoothing, corporate-actionadjustment, liquidity filter, or outlier treatment belongs in a separatelyversioned analytical feature and never overwrites these source tables.
+7.2 external_login
+Primary key: generated bigint id; FK user_id → user_account, ON DELETE RESTRICT.
 
-Versioned facts (SCD2)
+Columns: provider, canonical issuer, Google subject, optional provider email, optional legacy Supabase identity UUID, creation/update/login timestamps.
 
-company_profile_version, equity_profile_version, financial_statement, andfinancial_ratio use half-open validity intervals [valid_from, valid_to).Exactly one current row exists per natural key, enforced by partial uniqueindexes.
+Constraints:
 
-Import result
+provider is exactly google;
+issuer is exactly https://accounts.google.com;
+subject is nonblank and at most 255 characters;
+(provider, issuer, subject) is unique;
+one Google login per WebICT user;
+legacy Supabase identity ID is unique when present.
+Email is not used to link an unknown subject.
 
-Required behavior
+7.3 authentication_audit
+Primary key: generated bigint id; nullable FK user_id → user_account, ON DELETE SET NULL.
 
-New persistable content
+Columns: bounded event_type, event_at, bounded request_id, and object-shaped metadata jsonb limited to 4096 UTF-8 bytes. Indexes support user/time and event/time investigations.
 
-Insert a current row; invalid content is rejected even when no current row exists
+Audit metadata must be sanitized and must never contain OAuth tokens, cookies, credentials, raw claims, or secrets.
 
-Identical content_hash
+8. app_portfolio schema data dictionary
+Migration 008 is applied to the current target. This schema has no cash table.
 
-No write
+8.1 import_batch
+Optional legacy cutover batch; unused by the real deployment path so far.
 
-Incomplete/regressed payload
+Primary key: id uuid; unique manifest SHA-256.
 
-Preserve current row and report a warning
+Columns: source, manifest version/hash, export instant, running/completed/failed status, user/identity/buy/sell/watchlist counts, started/finished timestamps, bounded manifest metadata, bounded error details.
 
-Same-day corrected content
+Identity, source counts, and completed batches are immutable. User count must be positive and identity count must equal user count.
 
-Update the current row because date precision cannot represent two same-day versions
+8.2 portfolio
+Primary key: id uuid; FK user_id → app_identity.user_account; optional FK import_batch_id.
 
-Later corrected content
-
-Close the current interval and insert a new current row
-
-Run date older than valid_from
-
-Reject the change
-
-Current-value API reads filter is_current = true. Historical/restatement readsreturn validity fields and order by valid_from; they must not infer versionsfrom updated_at.
-
-Event and document history
-
-Announcements, payouts, and financial-report documents are not deleted merelybecause a later source response omits them. Stable source identifiers permitmetadata correction while preserving first_seen. Content hashes provide thefallback identity where no source identifier exists.
-
-PSX document IDs are issuer-scoped. Unique keys therefore includesecurity_id; a global unique document-ID index is invalid for this schema.
-
-Timestamp meaning
-
-Field
-
-Meaning
-
-inserted_at / first_seen
-
-First successful observation; preserve it during corrections
-
-updated_at on conditional importers
-
-Last material stored-value change
-
-valid_from / valid_to
-
-Business validity for SCD2 history
-
-generated_at
-
-AI-summary generation time
-
-source_updated_at on a technical row
-
-daily_quote.updated_at used by that calculation
-
-calculated_at
-
-First insert or most recent material indicator/version/source change; identical recalculation preserves it
-
-scrape_run.started_at / finished_at
-
-Operational run lifecycle
-
-The daily importer uses row-wise IS DISTINCT FROM predicates fordaily_quote, market_summary, and index_daily, and a material-changepredicate for market_index. An identical accepted rerun therefore preservesevery fact timestamp. A corrected quote changes daily_quote.updated_at; thatis the source watermark that selects the security for technical recalculation.
-
-API contract
-
-The ASP.NET Core API owns connection pooling, public market reads,
-cutover-gated identity/session behavior, and authenticated native portfolio and
-watchlist mutations. It uses one shared NpgsqlDataSource; repositories execute
-parameterized queries. /health is a liveness endpoint and intentionally does
-not make deployment health depend on a temporary database outage. Multi-query
-public response composition uses a read-only repeatable-read transaction so
-ranges, as-of rows, and child sections come from one PostgreSQL snapshot.
-Public market endpoints remain anonymous and read-only; they never perform
-scraper or portfolio writes. Portfolio writes are separate authenticated,
-CSRF-protected transactions.
-
-Existing read surfaces
-
-Consumer use
-
-API surface
-
-Primary database read set
-
-Latest daily market page
-
-GET /api/market-summary/latest/tickers (canonical)
-
-GET /market-summary (compatibility alias)
-
-market_summary, daily_quote, market_ai_summaries, index_daily, market_index
-
-Single ticker
-
-GET /api/tickers/{symbol}
-
-Security, quotes, raw technical_indicator_daily, valuation, current/versioned company facts, and events
-
-Ticker comparison
-
-GET /api/tickers/compare?symbols=MEBL&symbols=HBL&benchmarks=KSE100
-
-Quotes, raw technicals, profile, equity, valuation, statements, ratios, and optional benchmark history for two to four symbols
-
-Standalone market-index history
-
-GET /api/market-indexes/{code}/history?from={date}&to={date}
-
-market_index dimension and ascending index_daily observations
-
-KIBOR curve/history
-
-GET /api/rates/kibor (canonical)
-
-GET /rates/kibor (compatibility alias)
-
-kibor_rate bid/offer observations by publication quote_date and canonical tenor
-
-Canonical USD/PKR
-
-GET /api/rates/usd-pkr (canonical)
-
-GET /rates/usd-pkr (compatibility alias)
-
-v_usdpkr_m2m_ready point rates and publication metadata only
-
-MarketSummaryController explicitly maps both
-GET /api/market-summary/latest/tickers and GET /market-summary to the same
-GetLatestTickers action and MarketSummaryTickersResponse. The /api route is the
-canonical compatibility route retained from earlier production documentation;
-/market-summary is the short alias. Both routes are anonymous and GET-only.
-POST, PUT, PATCH, and DELETE return HTTP 405. With data, both return identical
-HTTP 200 response content anchored to the newest market_summary date; when no
-market_summary row exists, both return HTTP 404 with the same
-"No market summary tickers were found." message. Repository/infrastructure
-failures remain server errors. Neither route may be silently removed during the
-Supabase/frontend migration.
-
-MarketSummaryService opens one connection and one read-only repeatable-read
-transaction before selecting the newest market_summary row. The ticker rows,
-completed AI summary, and index rows receive that same connection and
-transaction and use the selected date. No component opens an unrelated snapshot.
-
-Single-ticker query parameters:
-
-Parameter
-
-Contract
-
-from, to
-
-Optional inclusive quote range; from <= to; a lower bound before 2021-01-01 resolves to 2021-01-01; maximum resolved span is 10 years
-
-include
-
-Comma-separated subset of quotes,profile,equity,valuation,financials,ratios,announcements,payouts,reports,technicals; omitted means all sections
-
-financialYears
-
-Integer from 1 through 20; omitted defaults to 5
-
-eventLimit
-
-Integer from 1 through 100; omitted defaults to 20 for bounded event/document lists
-
-includeRestatements
-
-When true, include historical SCD2 versions with validity metadata
-
-Symbols are trimmed and normalized to uppercase. Unknown symbols return HTTP404; malformed ranges, includes, limits, duplicates, or comparisons returnRFC-compatible ProblemDetails with HTTP 400. A requested section with no datais represented by its documented empty/null shape; infrastructure failures arenot converted into successful empty responses.
-
-Comparison-specific parameters:
-
-Parameter
-
-Contract
-
-symbols
-
-Two to four distinct symbols; repeated parameters and comma-separated values are accepted; response order follows normalized request order
-
-benchmark, benchmarks
-
-Zero to two distinct benchmarks; repeated benchmarks and comma-separated values are accepted
-
-from, to
-
-Optional inclusive shared range with the same lower-bound and 10-year rules as ticker detail
-
-include
-
-Subset of quotes,profile,equity,valuation,financials,ratios,technicals; omitted means all comparison sections
-
-financialYears
-
-Integer from 1 through 20; omitted defaults to 5
-
-The public benchmark allow-list is KSE100, KSE30, KMI30, and KSEALL.KSEALL maps to stored market_index.code = 'ALLSHR'; all other codes resolvedirectly by market_index.code. Unsupported codes return HTTP 400. A supportedbenchmark with no dimension/history returns HTTP 404 and identifies everyunresolved code. Stock and benchmark order follows the request. Numeric IDs anddisplay order are never part of the contract.
-
-The default comparison date range is resolved from the requested stock symbols,not from benchmark coverage, so stock charts remain comparable. Benchmarksretain genuine missing dates inside that range.
-
-Standalone market-index history contract
-
-`GET /api/market-indexes/{code}/history?from={date}&to={date}` is the canonical
-anonymous, GET-only history route. The public code allow-list is `KSE100`,
-`KSE30`, `KMI30`, and `KSEALL`; `KSEALL` maps to the existing stored `ALLSHR`
-dimension. Unsupported public codes return HTTP 400 ProblemDetails. A supported
-code whose dimension or complete history is absent returns HTTP 404
-ProblemDetails.
-
-`from` and `to` are optional inclusive ISO date-only values. An omitted `to`
-resolves to the latest available observation. An omitted `from` resolves to one
-calendar year before the resolved `to`. The applied lower bound is clamped to
-`2021-01-01`; `from > to` and an applied range longer than ten years return HTTP
-400. A valid applied range with no observations returns HTTP 200 with an empty
-`points` array and null `asOf`. Points are ascending actual observations;
-weekends, holidays, and other missing dates are not fabricated.
-
-The response is `MarketIndexHistoryResponseDto = {code, displayName,
-availableRange, requestedRange, appliedRange, asOf, points}`.
-`availableRange` and `appliedRange` reuse `DateRangeDto = {from, to}`;
-`requestedRange = {from: date|null, to: date|null}` preserves omissions; and
-`asOf` plus each point reuse `BenchmarkPointDto = {tradeDate, open, high, low,
-close, volume, change, changePct}`. A separate top-level history DTO is required
-because comparison benchmark items do not carry requested and applied ranges;
-the point DTO is shared so decimal and int64 semantics do not diverge.
-
-Valuation is an as-of object, not a value to smear over every quote. It carriesdaily_valuation.trade_date as asOf; a quote-level valuation join uses bothsecurity_id and exact trade_date. peRatioTtm remains nullable. The APIdoes not calculate P/E from PEG, EPS, current market cap, or frontend inputs.
-
-The single-ticker response exposes technicals as priceBasis,calculationVersion, nullable asOf, and ascending points. Each point carriestradeDate plus the persisted return, moving-average, RSI, MACD, ATR, Bollinger,and volume-SMA decimal fields. The public contract is fixed to raw andta_raw_v1; clients cannot select another basis or version. asOf is the lastactual row inside the inclusive requested range. The API does not forward-fillor search before from. A requested technical section with no matching rows isan empty raw/ta_raw_v1 series; an unrequested section is null. The comparisonresponse reuses the same series DTO for every requested security and the sharedrequested range.
-
-Technical-indicator API semantics
-
-Technical indicators are a derived read surface, never a replacement for theauthoritative quote series. When an API endpoint exposes them, it must join bysecurity_id and trade_date, filter price_basis = 'raw' andcalculation_version = 'ta_raw_v1', and return the basis and version in the DTOor in unambiguous response metadata. APIs must not silently label raw values asadjusted.
-
-Indicator rows align to actual eligible trading observations. Warm-up valuesare null rather than zero: returns require their stated lag, SMA/Bollinger andvolume SMA require complete windows, EMA requires its initialization period,RSI requires 14 changes, ATR requires 14 true ranges, and MACD signal requiresnine available MACD values. Return and RSI fields are percentage values alreadyexpressed on a 0–100 scale where applicable; consumers must not multiply them by100 again. Missing turnover produces a null volume_sma_20 until the rolling20-observation window is complete again.
-
-ta_raw_v1 formulas are:
-
-Column
-
-Exact formula / initialization
-
-return_1d_pct, return_5d_pct, return_20d_pct
-
-((current close / close N trading observations earlier) - 1) * 100
-
-sma_20, sma_50, sma_200
-
-Arithmetic mean of the last N closes; complete N-observation window only
-
-ema_12, ema_26
-
-Adjust-false recursion with alpha = 2 / (N + 1) and EMA[0] = close[0]; hidden until N observations exist
-
-macd
-
-ema_12 - ema_26; first available with ema_26
-
-macd_signal
-
-Adjust-false EMA(9) of available MACD values, initialized at the first MACD and hidden until nine MACD values exist
-
-macd_histogram
-
-macd - macd_signal
-
-rsi_14
-
-Wilder gain/loss means seeded from the first 14 close changes, then (previous_average * 13 + current) / 14; RSI is 100 - 100 / (1 + average_gain / average_loss)
-
-atr_14
-
-True range is max(high-low, abs(high-previous_close), abs(low-previous_close)); first observation uses high-low. Wilder ATR is seeded by the first 14 true ranges, then (previous_atr * 13 + current_true_range) / 14
-
-bollinger_middle
-
-sma_20
-
-bollinger_upper, bollinger_lower
-
-sma_20 +/- 2 * population_stddev(last 20 closes), with population divisor 20 (ddof=0)
-
-volume_sma_20
-
-Arithmetic mean of the last 20 turnover observations; all 20 must be present
-
-For RSI, zero average loss with positive average gain is 100, zero average gainwith positive average loss is 0, and a completely flat gain/loss window is 50.All non-finite calculation results are persisted as null.
-
-Rates API contract
-
-Rates endpoints use the existing schema without a migration. Repositories readthese canonical surfaces:
-
-Feature
-
-Canonical read surface
-
-Required filters/dimensions
-
-KIBOR curve/history
-
-kibor_rate
-
-quote_date, tenor; return bid and offer separately
-
-Main USD/PKR series
-
-v_usdpkr_m2m_ready
-
-Optional date range only
-
-FX explorer
-
-v_sbp_fx_rates
-
-Preserve and expose rate_type, tenor, base_ccy, and quote_ccy
-
-FX publication provenance
-
-fx_publication joined to observations
-
-Use when the client requests source document metadata
-
-Do not map SBP bid/offer data into OHLC fields, average a spread into a rate, orcombine rate families. API decimals must remain decimals; do not convert themthrough binary floating point.
-
-The canonical routes for new consumers are `GET /api/rates/kibor` and
-`GET /api/rates/usd-pkr`. The retained compatibility aliases are
-`GET /rates/kibor` and `GET /rates/usd-pkr`. Each canonical route and its alias
-map to the same controller action and exact DTO. All four surfaces are anonymous
-and GET-only; POST, PUT, PATCH, and DELETE return HTTP 405.
-
-The deployed query names recorded by the API project are startDate andendDate, both optional, inclusive, date-only values. The KIBOR route does notaccept a tenor filter; every successful response is constrained to the built-incanonical set 1W, 2W, 1M, 3M, 6M, 9M, 1Y. When both dates are omitted, thecurrently deployed default is 2025-01-01 through 2025-12-31. Unknown queryarguments, invalid dates, or startDate > endDate return HTTP 400ProblemDetails.
-
-GET /api/rates/kibor returns tenorOrder, ascending observations, and alatestCurve built from one common latest quoteDate inside the applied range;it never selects a different latest date for each tenor. Bid and offer remainseparate nullable decimals and are never averaged.
-
-GET /api/rates/usd-pkr uses the same deployed date parameter names/default.It reads exclusively from v_usdpkr_m2m_ready and identifies the response aspair USD/PKR, rate type mark_to_market, tenor ready, label “SBPMark-to-Market — Ready”, and unit “PKR per USD”. Each ascending point containsquoteDate, decimal rate, nullable effectiveDate, and—where the deployedDTO exposes it—source publication updatedAt. asOf is the final actual point.The endpoint must not query generic fx_rate or mix other rate types, pairs, orM2M tenors.
-
-Both responses expose available/requested or applied ranges according to theirDTOs, preserve genuine missing publication dates, and return HTTP 200 with emptypoint arrays and null asOf/asOfDate for a valid empty range. Configurationand database failures remain failures rather than empty success.
-
-An approved future improvement is to replace the fixed 2025 default withendDate = latest available source date and startDate = one year before that,clamping KIBOR to its earliest available 2021-01-04. That behavior is notdeployed merely because it is documented as a recommendation; changing itrequires API tests, OpenAPI updates, and frontend coordination. Do not re-addthe older from/to or tenors API contract accidentally.
-
-Authentication API contract
-
-The implemented authentication surface is cutover-gated. These are the actual
-controller and middleware paths:
-
-| Method and path | Authentication | Implemented contract |
-| --- | --- | --- |
-| GET /api/auth/google/start?returnUrl={url} | Anonymous | Returns 503 while AUTH_CUTOVER_ENABLED=false; otherwise validates the same-origin frontend return URL and starts the Google challenge with HTTP 302. Invalid return URLs return HTTP 400 ProblemDetails. |
-| GET /signin-google | Google middleware only | Authorized Google redirect target. This is not a controller completion endpoint and frontend code does not call it directly. |
-| GET /api/auth/google/callback | Five-minute external cookie | Validates the Google provider marker and return URL, resolves the WebICT user, clears the external cookie, issues the application cookie on success, and redirects only to the validated frontend URL. Failures use the generic auth=failed redirect. |
-| GET /api/auth/me | Application cookie | Returns {id, email, emailVerified, displayName, avatarUrl}. |
-| GET /api/auth/csrf | Anonymous | Returns {headerName, token}; headerName is X-CSRF-TOKEN and the response also establishes the readable antiforgery cookie. |
-| POST /api/auth/logout | Application cookie plus CSRF | Clears the application cookie and returns HTTP 204. |
-
-Google identity ownership is the canonical issuer
-https://accounts.google.com plus the nonblank Google subject, whose maximum
-length is 255 characters. The subject is the external identity key. Email,
-emailVerified, displayName, and avatarUrl are profile fields only; email is
-never used to discover, merge, or link an unknown identity. Disabled users and
-unknown identities cannot obtain a session while new registration is disabled.
-AUTH_CUTOVER_ENABLED=false prevents Google completion from issuing a new WebICT
-application session. When cutover is later enabled,
-ALLOW_NEW_USER_REGISTRATION=false permits only pre-imported external identities;
-enabling registration separately permits only genuinely new post-cutover users.
-
-The host-only WebICTCapital.Auth cookie is HTTP-only, SameSite=Lax, Secure in
-production, non-sliding, non-persistent, and bounded to eight hours. The
-host-only WebICTCapital.External cookie is HTTP-only, SameSite=Lax, Secure in
-production, scoped to /api/auth, and bounded to five minutes. Google tokens are
-not saved. The application cookie contains the WebICT UUID identifiers, not raw
-Google principals or profile claims. AuthSchemes.Application has the exact
-internal value WebICTApplication. That scheme string is a server implementation
-detail; frontend clients depend on the cookie and HTTP API behavior, not the
-scheme name.
-
-Browser requests that need either cookie use credentials: "include". Every
-state-changing route sends the request token returned by /api/auth/csrf in the
-X-CSRF-TOKEN header. An unauthenticated cookie challenge returns HTTP 401
-ProblemDetails and an authorization denial returns HTTP 403 ProblemDetails.
-Invalid CSRF returns HTTP 400 ProblemDetails. The current /api/auth/me branch
-for a cookie whose user is no longer active returns a bare HTTP 401; consumers
-must treat either 401 representation as signed out.
-
-Production requires an exact HTTPS FRONTEND_ORIGIN for credentialed CORS and
-return-URL validation, a restricted AllowedHosts value naming the public API
-host, and explicitly trusted Traefik CIDRs in TRUSTED_PROXY_NETWORKS. The API
-processes one X-Forwarded-For/X-Forwarded-Proto hop before CORS and
-authentication; arbitrary clients cannot supply trusted forwarded values.
-Google Cloud registers https://<API_HOST>/signin-google, not the React origin
-unless it is also the API host. ASP.NET Data Protection uses application name
-WebICTCapitalApi and a persistent, non-root-writable Dokploy volume at
-/var/lib/webictcapital-api/dataprotection-keys. See
-docs/IDENTITY_MIGRATION.md and DOKPLOY.md for operator detail.
-
-Authenticated portfolio API contract
-
-All /api/portfolio routes require the application cookie and recheck that its
-NameIdentifier UUID belongs to an active app_identity.user_account. No route,
-query, or request DTO accepts user_id. All mutations require X-CSRF-TOKEN.
-The controller exposes the following exact routes:
-
-`PORTFOLIO_WRITES_ENABLED` is an independent emergency gate and defaults to
-`false`. It gates the four POST mutations plus watchlist PUT and DELETE. After
-authentication, CSRF validation, and ordinary request validation, a disabled
-gate returns HTTP 503 ProblemDetails and the action performs no database write.
-Authenticated portfolio reads, `/api/auth/csrf`, `/api/auth/me`, logout, and
-anonymous market reads remain available. Staging and cutover must set the gate
-to `true` explicitly; returning it to `false` stops later native writes without
-deleting, reversing, or rewriting existing history.
-
-| Method and path | Request | Success response |
-| --- | --- | --- |
-| GET /api/portfolio | None | HTTP 200 PortfolioSummaryResponse. |
-| GET /api/portfolio/lots | None | HTTP 200 array of PositionLotResponse. |
-| GET /api/portfolio/holdings | None | HTTP 200 array of HoldingResponse. |
-| GET /api/portfolio/activity?limit=100 | Optional limit from 1 through 500 | HTTP 200 array of PortfolioActivityResponse. |
-| GET /api/portfolio/watchlist | None | HTTP 200 array of WatchlistItemResponse. |
-| PUT /api/portfolio/watchlist/{symbol} | No body | HTTP 200 WatchlistItemResponse containing the actual latest quote/date read by the write transaction. |
-| DELETE /api/portfolio/watchlist/{symbol} | No body | HTTP 204, including when already absent or removed. |
-| POST /api/portfolio/buys | NativeTradeRequest | HTTP 201 PortfolioMutationResponse. |
-| POST /api/portfolio/sells | NativeTradeRequest | HTTP 201 PortfolioMutationResponse. |
-| POST /api/portfolio/lots/{lotId}/corrections | LotCorrectionRequest | HTTP 201 LotCorrectionResponse. |
-| POST /api/portfolio/positions/{symbol}/remove | PositionRemovalRequest | HTTP 201 PortfolioMutationResponse. |
-
-The exact camel-case request DTOs are:
-
-NativeTradeRequest = {mutationId: UUID, symbol: string, quantity: positive
-int64 whole shares, unitPrice: nonnegative decimal(20,6), tradeDate: date,
-expectedPortfolioVersion: positive int64}.
-
-LotCorrectionRequest = {mutationId: UUID, quantity: positive int64 whole
-shares, unitCost: nonnegative decimal(20,6), acquisitionDate: date,
-correctionDate: date, expectedLotVersion: positive int64,
-expectedPortfolioVersion: positive int64, reason: nonblank UTF-8 text of at
-most 1024 bytes}.
-
-PositionRemovalRequest = {mutationId: UUID, effectiveDate: date,
-expectedPortfolioVersion: positive int64, reason: nonblank UTF-8 text of at
-most 1024 bytes}.
-
-The exact camel-case response DTOs are:
-
-PortfolioSummaryResponse = {id: UUID, name: string, baseCurrency: string,
-status: string, isDefault: boolean, version: int64, holdingsMarketValue: decimal,
-unpricedHoldingCount: int32, createdAt: instant, updatedAt: instant}.
-
-PositionLotResponse = {id: UUID, securityId: int64, symbol: string, quantity:
-int64, unitCost: decimal, acquisitionDate: date, origin: string, version: int64,
-sourceCreatedAt: instant|null, createdAt: instant, updatedAt: instant}.
-
-HoldingResponse = {securityId: int64, symbol: string, companyName: string|null,
-quantity: int64, totalCost: decimal, averageUnitCost: decimal, latestPrice:
-decimal|null, latestPriceDate: date|null, marketValue: decimal|null}.
-
-PortfolioActivityResponse = {id: UUID, securityId: int64, symbol: string,
-activityType: string, sourceKind: string, side: string|null, positionEffect:
-string, quantity: int64, unitPrice: decimal|null, tradeDate: date,
-legacySupabaseTradeId: int64|null, sourceCreatedAt: instant|null,
-allocationMethod: string|null, hasReliableLotAllocation: boolean|null,
-createdAt: instant, reason: string|null, beforeQuantity: int64|null,
-afterQuantity: int64|null, beforeUnitCost: decimal|null, afterUnitCost:
-decimal|null, beforeAcquisitionDate: date|null, afterAcquisitionDate: date|null,
-portfolioVersionBefore: int64|null, portfolioVersionAfter: int64|null,
-lotVersionBefore: int64|null, lotVersionAfter: int64|null}.
-
-WatchlistItemResponse = {securityId: int64, symbol: string, companyName:
-string|null, latestPrice: decimal|null, latestPriceDate: date|null, createdAt:
-instant, updatedAt: instant}.
-
-PortfolioMutationResponse = {activityId: UUID, portfolioVersion: int64}.
-
-LotCorrectionResponse = {activityId: UUID, portfolioVersion: int64, lotVersion:
-int64}.
-
-Logical dates are ISO date-only values and instants use ISO 8601. ASP.NET Core
-emits `decimal` and `long` values as exact JSON numeric tokens; it does not
-coerce them through binary floating point or globally convert them to strings.
-IDs, quantities, versions, prices, costs, rates, and valuations retain their
-exact wire representation. WebICT frontend code must use a lossless JSON parser
-for these fields rather than native `response.json()`, and mutation payloads
-must serialize financial decimals and int64 values without first coercing them
-through JavaScript `Number`. Date-only values remain ISO calendar-date strings.
-No portfolio response has a cash field.
-
-Native sells lock the active default portfolio and relevant security/lot state,
-reject overselling, consider only lots acquired on or before tradeDate, and
-allocate FIFO by acquisitionDate, createdAt, then lot UUID. Allocation rows
-snapshot allocated quantity, unit cost, and acquisition date. A later correction
-therefore cannot rewrite sold-share cost basis. Lot correction activity preserves
-immutable before/after quantity, cost, acquisition date, lot versions, portfolio
-versions, affected lot, effective date, and reason. Position removal preserves
-per-lot quantity/cost/acquisition snapshots in PostgreSQL, closes rather than
-deletes the lots, and exposes its aggregate immutable activity through the
-activity response.
-
-The four POST operations require a nonempty client-generated mutationId and
-current portfolio/lot versions. Exact replay of the same operation and canonical
-request returns the original activity/version result; reuse with different
-input returns HTTP 409. Stale versions and oversells also return 409. Validation
-errors return 400, missing portfolios/securities/lots/positions return 404, and
-missing or inactive identity returns 401; controller domain errors use
-ProblemDetails. Authorization denial returns 403 ProblemDetails, and missing or
-invalid CSRF returns 400 ProblemDetails. Watchlist PUT/DELETE are naturally idempotent and require no
-mutation UUID.
-
-When `PORTFOLIO_WRITES_ENABLED=false`, an otherwise authenticated and valid
-request to any of the six mutation routes returns HTTP 503 ProblemDetails and
-commits zero writes. This operational response does not weaken authentication,
-CSRF, mutation-key replay, optimistic version, or domain validation rules.
-
-Surviving imported Supabase BUY rows become legacy opening lots and determine
-initial holdings. Imported SELL rows remain visible as position-neutral legacy
-history and are never subtracted again or assigned invented lot allocations or
-realized profit. Native activity uses the new transactional semantics. The model
-contains no cash balance, cash ledger, or synthetic cash entry. Detailed schema,
-transaction, and cutover behavior remains in docs/PORTFOLIO_MIGRATION.md and
-docs/CUTOVER_EXPORT_CONTRACT.md rather than duplicating migration 008 SQL here.
-
-API consistency and performance
-
-Use market_summary.trade_date as the authoritative date for a complete dailymarket response, then query quotes, indexes, and a completed AI summary forthat same date. Do not independently choose MAX(trade_date) from every table.
-
-The index snapshot returned with a market day must use that requested marketdate, not the globally latest index date.
-
-Join daily_valuation by both security and quote date.
-
-Default company reads to current SCD2 rows; expose restatements only when therequest asks for them.
-
-Bound event results and date spans. Add pagination before exposing unboundedhistorical event collections.
-
-Use a repeatable-read transaction or an equivalent single-snapshot query whencomposing a response from several tables.
-
-Never return DATABASE_URL, scraper notes containing credentials, contenthashes, or internal lock identifiers to public clients.
-
-Frontend contract
-
-The frontend consumes API DTOs, not database rows. Database names in this tableexplain lineage only.
-
-Screen/feature
-
-API data needed
-
-Display rules
-
-Market overview
-
-Latest market summary, same-date indexes/tickers, completed AI brief
-
-Show the trade date and source freshness; omit a missing/failed AI brief without hiding market facts
-
-Stock catalogue and selection
-
-GET /api/market-summary/latest/tickers for searchable current symbols and latest market values; GET /api/tickers/{symbol} after selection
-
-Populate the selector from the summary response, then fetch detail only for the selected symbol; do not issue an N+1 detail request for every ticker
-
-Ticker detail
-
-Quotes, raw technical indicators, as-of valuation, current profile/equity, fundamentals, ratios, announcements, payouts, reports
-
-Route by uppercase symbol; show available and requested quote ranges; label indicators as raw and preserve warm-up nulls
-
-Ticker comparison
-
-Two to four stock items plus zero to two optional benchmark series on one shared stock range
-
-Preserve requested order; align by actual trade date; preserve gaps; label technical basis, valuation asOf, and fiscal period/year
-
-Market-index history
-
-GET /api/market-indexes/{code}/history for KSE100, KSE30, KMI30, or KSEALL
-
-Use requested/applied/available ranges; preserve ascending actual observations and missing trading dates; never expose stored ALLSHR as a second public code
-
-KIBOR
-
-GET /api/rates/kibor tenor-level bid/offer curve and history
-
-Keep canonical tenor order; show distinct Bid and Offer series/legends; never collapse or average the spread
-
-USD/PKR
-
-GET /api/rates/usd-pkr backed only by v_usdpkr_m2m_ready
-
-Label “SBP Mark-to-Market — Ready”, unit “PKR per USD”; display quote/effective dates and source freshness
-
-FX explorer
-
-Full normalized FX surface through the API
-
-Require/label rate type and tenor; render either a rate or bid/offer pair
-
-Frontend numeric rules:
-
-parse API JSON with a lossless parser rather than native response.json() where
-financial decimals or int64 values are present; retain exact JSON numeric tokens
-for IDs, quantities, versions, prices, costs, rates, and valuations;
-
-treat prices, ratios, rates, EPS, market capitalization, and percentages asdecimal values; format only at presentation time;
-
-market_cap is full PKR, not thousands of PKR;
-
-free_float_pct is already a percentage value and must not be divided by 100;
-
-turnover and index volume are whole-number quantities;
-
-null means unavailable/not applicable, not zero; and
-
-date-only values must not shift under browser timezone conversion. Displaylogical dates as their ISO calendar date and render instants inAsia/Karachi unless the user explicitly selects another timezone.
-
-The browser must never calculate or impute authoritative P/E, KIBOR, FX,technical indicators, financial statements, or benchmark history. Inparticular, PEG is not P/E. While peRatioTtm remains absent, render N/A withits valuation asOf date rather than hiding the entire valuation card.
-
-Chart rules:
-
-align observations by actual logical date; do not create weekend rows;
-
-connect or leave gaps only according to an explicitly documented visualoption; never persist an interpolated value;
-
-label raw price series as unadjusted and never imply total return;
-
-keep stock and benchmark axes/normalization explicit; if the frontend usesnormalized performance, show the base date and formula; and
-
-pass request cancellation signals for changing chart ranges and retain thelast successful view while a replacement request is loading.
-
-Identity and portfolio frontend transition
-
-The production React frontend still uses Supabase for identity and portfolio
-data. No real export/import or frontend cutover has occurred. After coordinated
-cutover, WebICT mode must use this API only for authentication, portfolio, and
-watchlist data; it must not silently fall back to Supabase writes after WebICT
-mode is selected.
-
-Credentialed requests set credentials: "include". Before each state-changing
-request, the client obtains {headerName, token} from GET /api/auth/csrf with
-credentials included, then returns token in the X-CSRF-TOKEN request header.
-No API request accepts user_id; ownership comes only from the application
-cookie. A client-generated mutation UUID is created once per logical buy, sell,
-correction, or removal and reused unchanged for retries of that request. The
-client refreshes portfolio state after every successful mutation and after HTTP
-409 before deciding whether to retry with current versions.
-
-Date-only fields stay ISO calendar-date strings and must not pass through a
-timezone conversion that changes the date. Decimal prices, costs, quantities,
-and values remain decimals through transport and display logic rather than
-binary-floating-point approximations. The client must serialize portfolio
-mutation decimals and int64 values without first passing them through JavaScript
-`Number`. Portfolio responses have no cash field; the UI must not display an
-absent migrated cash balance as zero.
-
-The final switch is one coordinated operation: freeze Supabase writes, take the
-final repeatable-read export, validate exact-byte checksums, approve/apply
-migration 008, dry-run and execute the import, reconcile every mapped value,
-then enable the separately approved API/frontend mode. Until that sequence is
-complete, Supabase remains authoritative and writable.
-
-For cache validation, future API work may derive ETags or Last-Modified valuesfrom a response-level version/freshness calculation. It must not blindly use onetable's updated_at for a response composed from multiple tables.
-
-Known production state and unresolved work
-
-The following is a dated audit ledger, not immutable schema. Re-run theverification queries after each deployment/backfill and update the observationdate instead of silently deleting an old caveat.
-
-Verified healthy invariants
-
-At the last supplied audits through 2026-07-24:
-
-daily_quote had no duplicate natural keys, non-finite numeric values, highbelow low, or negative turnover;
-
-daily_valuation had no row without its exact quote and no remainingmisattributed pre-insertion trade date;
-
-index_daily had no duplicate natural keys, high-below-low, open/closeoutside range, percentage mismatch, or previous-close reconciliation failureamong stored rows;
-
-540,184 eligible positive-close quote rows had zero missing and zero staleraw ta_raw_v1 technical rows; and
-
-migration 006 quarantine counts were 613 valuation rows and three equityrows, with zero remaining stale valuation candidates.
-
-These checks establish relational and calculation consistency. They do notclaim that every upstream observation is economically clean or every tradingsession has every optional index.
-
-Raw PSX quote anomalies
-
-A broad range check flagged 18,024 historical daily_quote rows where close wasoutside the published high/low and 245 where open was outside the range. Manyare official zero/missing-OHLC representations for illiquid, suspended,delisted, GEM, right, preference, or otherwise unusual instruments; they arenot automatically 18,024 corrupt records. The raw table preserves them.
-
-Required follow-up is to add a separate, versioned quality/eligibility layer foranalytics and modeling. Do not “repair” these rows with averages. Models shouldexclude or flag observations using explicit rules for positive finite OHLC,turnover, instrument class, suspension/limit state, and minimum trailingliquidity.
-
-Historical index gaps
-
-Against 1,375 observed market sessions through 2026-07-24, the last audit was:
-
-Stored index code
-
-Present
-
-Missing
-
-First
-
-Last
-
-ALLSHR
-
-1,331
-
-44
-
-2021-01-01
-
-2026-07-24
-
-KMI30
-
-1,353
-
-22
-
-2021-01-01
-
-2026-07-24
-
-KMIALLSHR
-
-1,328
-
-47
-
-2021-01-01
-
-2026-07-24
-
-KSE100
-
-1,349
-
-26
-
-2021-01-01
-
-2026-07-24
-
-KSE30
-
-1,351
-
-24
-
-2021-01-01
-
-2026-07-24
-
-The exact reviewed ALLSHR gap on 2026-07-21 is intentional. Other gapsremain backfill work. Surmaya Financials was identified as a possible secondaryhistorical source but is not yet an authoritative writer. Before using it,capture source provenance, stage rows outside canonical facts, compare againstofficial/primary observations, review discrepancies, and approve an additivemigration or controlled importer. Interns may research and document evidence;they must not directly edit production fact tables.
-
-Valuation and P/E coverage
-
-The supplied audit contained 483 daily_valuation rows, all with market cap andnone with pe_ratio_ttm; observed dates were 2026-07-20 through2026-07-21. MEBL had two market-cap rows; FABL and HBL had one each. Thismeans both P/E population and newer exact-date valuation freshness needoperational verification after enabling the company schedule. Existing marketcaps are not evidence that historical P/E exists.
-
-SBP coverage
-
-KIBOR reviewed aliases/anomalies and FX catalogue mismatches documented aboveare intentional gaps, not empty spaces to fill. The FX backlog is processednewest-first in bounded batches. v_usdpkr_m2m_ready is usable only for datesactually present in its canonical source; research requiring a longer windowmust exclude the feature until completeness for that window is proven.
-
-Identity, portfolios, and research boundaries
-
-Migration 007_identity_foundation.sql was applied to production on 2026-08-01.Its app_identity.user_account, app_identity.external_login, andapp_identity.authentication_audit tables were empty immediately afterapplication, and all reviewed constraints, indexes, and delete protection wereverified. Authentication remains disabled with AUTH_CUTOVER_ENABLED=false andALLOW_NEW_USER_REGISTRATION=false. No Supabase identities or portfolios havebeen imported.
-
-Native portfolio writes also remain disabled with
-`PORTFOLIO_WRITES_ENABLED=false`. This is independent of the authentication
-cutover flag. No real export or import has run, and the React frontend remains
-on Supabase.
-
-Migration 008_portfolio_foundation.sql and its API/importer implementation are
-implemented, reviewed, and tested, but the migration remains a proposal and has
-not been applied to production. Supabase remains authoritative and writable
-until the final freeze and authoritative export. The legacy portfolio source is
-a hybrid model: surviving BUY rows are authoritative current open lots; SELL
-rows are sale-history events whose position effect was already applied by
-destructive BUY-row rewrites in the old frontend. Imported SELL rows must
-therefore not be subtracted from imported BUY lots. Original BUY IDs and
-timestamps do not represent complete immutable acquisition history.
-
-The proposed migration preserves native correction history as immutablebefore/after quantity, cost, acquisition date, affected lot, reason, lotversions, and portfolio versions. Native FIFO sale allocations snapshotallocated quantity, unit cost, and acquisition date before open-lot statechanges. PostgreSQL composite ownership constraints and deferred triggersrequire activities, lots, allocations, portfolios, securities, mutation auditusers, sale totals, and removal totals to agree. Native mutation dates obey theAsia/Karachi logical date and imported dates/timestamps cannot exceed thebatch export instant.
-
-POST buy, sell, lot-correction, and position-removal requests require aclient-generated UUID. The database stores the operation and canonical requestfingerprint in the same transaction. Exact replay returns the original activityand versions; reusing a key for changed input is a conflict. Watchlist PUT andDELETE remain naturally idempotent.
-
-There is no source cash balance in Supabase tables, auth metadata, or the
-current portfolio frontend. Migration and API code must not invent, infer,
-average, or initialize cash. Current portfolio value is holdings-only. The
-React frontend remains on Supabase until a later explicitly reviewed frontend
-migration phase. No real export or import has occurred. Do not drop the old
-Supabase project or recreate or link users from email. Browser clients must
-never receive a database credential.
-
-Cutover export and import boundary
-
-The manifest describes exactly four deterministic data files: users.json,
-google-identities.json, user-trades.json, and watchlists.json. Each manifest
-entry records the SHA-256 of the exact file bytes. The exporter reads the source
-column public.user_trades.trade_type and writes it as JSON property type. Because
-the audited public.watchlists source has no updated_at column, exported
-updatedAt is null and the importer uses createdAt as the target updated time.
-
-Users are not filtered out when source status changes. A deleted user, a user
-banned at the exporter transaction timestamp, an unconfirmed user, or an
-anonymous user exports with status disabled; all others export active. Disabled
-imported users remain unable to receive an active WebICT application session.
-The export/import contract requires a nonempty user file and exactly one
-unambiguous Google identity per user. The permanent identity remains the
-Supabase user UUID plus canonical Google issuer/subject, never email.
-
-SupabaseExporter is a separate offline source tool. It reads auth.users,
-auth.identities, public.user_trades, and public.watchlists in one REPEATABLE READ,
-READ ONLY transaction. PortfolioImporter consumes local reviewed files only.
-Its dry-run uses a nonblocking advisory lock and a REPEATABLE READ, READ ONLY
-target transaction while committing zero writes; a real import uses one
-SERIALIZABLE target transaction and exact value reconciliation. Sensitive real
-exports are never committed or copied into the normal API image/container. The
-normal image contains PortfolioImporter for operator-only execution and excludes
-SupabaseExporter. See docs/CUTOVER_EXPORT_CONTRACT.md for the exact file schema
-and commands.
-
-The psx_trading_bot phase-one research migration was a proposal only and wasnot executed. Its filename 006_research_service_proposal.sql now conflictswith the already-applied production migration 006. If research persistence isapproved later, re-audit and renumber it to the next free migration; keep theresearch reader read-only and use a distinct writer role. No broker executionbelongs in this platform contract.
-
-Only creation/connection setup for webict_research_ro was reported; noauthoritative research schema, research tables, grants, or default privilegeswere applied. Do not assume that role can read market tables or write researchmetadata. Any credential ever pasted into chat or documentation must be rotatedand kept only in the deployment secret store.
-
-Deployment and migration procedure
-
-Existing production database
-
-Production is post-migration-007 as of 2026-08-01. Migration 008 remains
-unapplied. This documentation consolidation does not authorize a database
-change. Never infer migration state from filenames in one repository; verify
-the target database and the project migration ledger.
-
-Migration
-
-Production state
-
-Purpose
-
-001
-
-Applied
-
-Initial PSX company persistence
-
-002
-
-Applied
-
-Company idempotency and issuer-scoped identity corrections
-
-003
-
-Applied
-
-Company constraints and persistence hardening
-
-004
-
-Applied
-
-Normalized SBP FX publications, observations, and views
-
-005
-
-Applied
-
-Raw technical-indicator persistence
-
-006
-
-Applied 2026-07-21
-
-Guarded company valuation/equity cleanup and quarantine
-
-007
-
-Applied 2026-08-01
-
-Additive app_identity foundation; all three tables were empty immediately after application
-
-008
-
-Proposed only
-
-Additive app_portfolio foundation and offline cutover importer contract
-
-For historical public-schema context only, the commands through migration 005
-were:
-
-psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f migrations/001_psx_company_persistence.sql
-psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f migrations/002_psx_company_idempotency.sql
-psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f migrations/003_psx_company_constraints.sql
-psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f migrations/004_sbp_fx_persistence.sql
-psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f migrations/005_technical_indicators.sql
-
-Migration 005_technical_indicators.sql creates technical_indicator_daily, its
-(security_id, trade_date, price_basis) primary key, raw/adjusted basis check,
-quote foreign key with cascade delete, and trade-date index. Production has
-already applied migration 005; the embedded fresh-install DDL below is scoped to
-the complete public market-data state. Application schemas remain governed by
-their numbered migration files.
-
-Migration 006_psx_company_cleanup.sql was a production-audit-guarded,forward-only transaction. The confirmedpre-fix audit found 1,113 valuation rows, of which exactly 613 used atrade_date earlier than their Karachi insertion date (maximum error 2,017days), plus the exact current ADOS id=10, BCML id=73, and WYETH id=630equity rows encoded in the migration. It aborts unless all 613 valuationcandidates belong to data_source.code = 'psx_company' and all three fullyguarded equity rows match. It creates recoverable quarantine tables, assertsquarantine and delete counts match, asserts no valuation candidate remains,then adds and validatesck_equity_version_free_float_not_above_shares. Any count/source mismatchrolls back the entire transaction, including quarantine-table creation. It doesnot modify securities, quotes, technical indicators, profiles, statements,ratios, announcements, payouts, reports, KIBOR, FX, or indexes.
-
-Production applied migration 006 successfully on 2026-07-21. It quarantined613 daily_valuation rows and three equity_profile_version rows, left 482valid valuation rows and zero stale valuation candidates, and validatedck_equity_version_free_float_not_above_shares. Migration 006 must not beexecuted again.
-
-Production applied migration 007_identity_foundation.sql successfully on
-2026-08-01. Its three app_identity tables were empty immediately afterward.
-Migration 007 must not be modified, replaced, or rerun; its reviewed Git blob
-SHA is 490e397a208075c7a0d90a37de22aa9fd584927a. Authentication remains
-cutover-gated and no identity or portfolio import has occurred.
-
-Migration 008_portfolio_foundation.sql is implemented, reviewed, tested,
-forward-only, and additive, but remains a proposed and unapplied production
-migration. Do not apply it without separate operator approval. It creates
-app_portfolio storage only; it creates no cash table and does not alter public
-market facts or migration 007.
-
-The phase-two importer reads reviewed local files only. Its dry-run uses anonblocking advisory lock and a read-only target transaction to validate bothfiles and target conflicts with zero writes. Completed identical batchesundergo exact value reconciliation, not count-only acceptance. A separateadministrative Supabase exporter uses one repeatable-read read-only source snapshotand writes deterministic private files plus exact-byte checksums, with themanifest last. Run the real exporter only after the final write freeze; nevercommit exports or copy them into the normal API container.
-
-Running these files through DBeaver is also valid when connected to the intendeddatabase and public schema, auto-commit behavior is understood, and the wholefile is executed with stop-on-error behavior. Never apply a migration whileassuming that IF NOT EXISTS validates an incompatible pre-existing object;run the verification queries after deployment.
-
-Minimum post-migration checks:
-
-SELECT current_database(), current_schema();
-
-SELECT to_regclass('public.fx_publication')       AS fx_publication,
-       to_regclass('public.fx_rate_observation')  AS fx_rate_observation,
-       to_regclass('public.v_sbp_fx_rates')       AS v_sbp_fx_rates,
-       to_regclass('public.v_usdpkr_m2m_ready')   AS v_usdpkr_m2m_ready,
-       to_regclass('public.technical_indicator_daily') AS technical_indicator_daily,
-       to_regclass('public.psx_company_daily_valuation_quarantine')
-           AS valuation_quarantine,
-       to_regclass('public.psx_company_equity_version_quarantine')
-           AS equity_quarantine;
-
-SELECT conname, convalidated
-FROM pg_constraint
-WHERE conrelid IN (
-    'public.scrape_run'::regclass,
-    'public.fx_publication'::regclass,
-    'public.fx_rate_observation'::regclass,
-    'public.technical_indicator_daily'::regclass,
-    'public.equity_profile_version'::regclass
+Columns: name, fixed PKR base currency, active|disabled|archived status, default flag, native|supabase_import origin, optimistic version bigint, timestamps.
+
+At most one active default portfolio exists per user. Ownership, origin, import provenance, and creation time are immutable.
+
+8.3 position_lot
+Primary key: id uuid; FKs to portfolio, public.security, and optional import batch. Composite unique (id, portfolio_id, security_id) supports ownership-safe references.
+
+Columns: positive whole-share quantity, numeric(20,6) unit cost, acquisition date, open|sold|removed status, legacy_opening|native_buy origin, optional legacy trade/import/source timestamp, optimistic version, created/updated/closed timestamps.
+
+Open lots have null closed_at; sold/removed lots retain history with a close timestamp. Rows cannot be deleted.
+
+8.4 portfolio_activity
+Primary key: id uuid; FKs to portfolio, security, optional owned lot, and optional import batch.
+
+Activity types:
+
+legacy_opening;
+legacy_sale;
+native_buy;
+native_sell;
+lot_correction;
+position_removal.
+Core columns record source kind, side, position effect, quantity, price, trade/effective date, optional legacy provenance, reason, correction before/after quantity/cost/acquisition dates, portfolio versions, lot versions, and creation timestamp.
+
+Rows are append-only. Native activity increments the portfolio version exactly once. Corrections also increment the lot version exactly once and preserve complete before/after snapshots. Legacy sales are position-neutral because the legacy frontend had already rewritten BUY rows.
+
+8.5 activity_lot_allocation
+Primary key: (activity_id, lot_id); composite FKs ensure the native sale, lot, portfolio, and security agree.
+
+Columns: allocated quantity, unit_cost_at_allocation, acquisition_date_at_allocation, creation time. Allocation is limited to the locked open lot quantity and snapshots exact pre-change cost/date. Deferred triggers require allocation total to equal sale quantity and reject lots acquired after the sale date.
+
+Rows are append-only.
+
+8.6 position_removal_lot
+Primary key: (activity_id, lot_id); composite FKs ensure removal activity and lot ownership agree.
+
+Columns: removed quantity, cost/date snapshots, creation time. Deferred triggers require snapshot totals to equal removal activity and reject an effective date earlier than an affected acquisition.
+
+Rows are append-only.
+
+8.7 watchlist_item
+Primary key: generated bigint id; FKs to user, public.security, and optional import batch. Unique (user_id, security_id).
+
+Columns: active|removed status, native/import origin, optional legacy ID/source timestamps, creation/update timestamps. Add/restore/remove are idempotent state transitions. Ownership/provenance cannot change and rows cannot be deleted.
+
+8.8 mutation_request
+Primary key: (portfolio_id, mutation_id); composite portfolio/user FK and optional activity/result FK.
+
+Columns: operation type, canonical 64-hex request fingerprint, reserved|completed status, result activity/portfolio/lot versions, creation/completion timestamps.
+
+The mutation UUID cannot be all-zero. Exact replay returns the original completed result. Reusing the UUID for changed input is a conflict. Completed requests and request identity are immutable.
+
+8.9 mutation_audit
+Primary key: generated bigint id; ownership-safe portfolio/user FK and optional security FK.
+
+Columns: bounded mutation type/request ID, object-shaped bounded metadata, occurrence timestamp. Rows are append-only and indexed by portfolio/time and user/time.
+
+8.10 Trigger/function catalogue
+Function family	Purpose
+reject_delete	Blocks physical deletion of portfolio, lot, watchlist, import batch, and mutation request
+reject_immutable_change	Blocks update/delete of activity, allocations, removal snapshots, and mutation audit
+guard_*_update	Keeps identity, ownership, provenance, fingerprints, and completed results immutable
+validate_*_time	Enforces export-instant limits and Karachi current-date rules
+validate_allocation_snapshot	Locks open lot and validates allocation quantity/cost/date
+validate_removal_snapshot	Validates exact open-lot removal snapshot
+validate_native_sale_allocations	Deferred exact sale-total and acquisition-date validation
+validate_position_removal_lots	Deferred exact removal-total and date validation
+9. Cross-schema application semantics
+9.1 Identity
+Google subject + canonical issuer owns identity.
+Email is profile data only.
+Disabled users cannot obtain an active session.
+New registration is currently enabled, but this is an operational/product decision and should be reconsidered before main-site promotion.
+9.2 Portfolio
+Portfolio value is holdings-only.
+Native buys create open lots and immutable activity atomically.
+Native sells are oversell-protected and allocate eligible lots FIFO by acquisition date, creation time, then UUID.
+Corrections update retained open-lot state while activity preserves before/after facts.
+Position removal closes and snapshots lots; it does not delete them.
+Portfolio/lot versions prevent stale overwrites.
+Mutation UUID/fingerprint protects retries.
+Reasons are nonblank and at most 1024 UTF-8 bytes.
+9.3 Frontend commission
+Commission is not a separate database field. The frontend defaults to 0.15%, calculates with decimal arithmetic, and sends an adjusted unitPrice:
+
+buy stored unit price  = displayed gross price × (1 + rate / 100)
+sell stored unit price = displayed gross price × (1 - rate / 100)
+Only the adjusted price is persisted. Original displayed price, fee rate, broker fee, and taxes cannot be reconstructed. A future auditable fee model requires a new API specification and migration.
+
+10. API and frontend consumption contract
+10.1 Anonymous market routes
+Route	Purpose
+GET /health	Health probe
+GET /api/market-summary/latest/tickers	Canonical latest summary/ticker catalogue
+GET /market-summary	Compatibility alias
+GET /api/tickers/{symbol}	Selected ticker detail
+GET /api/tickers/compare	Two–four stocks and zero–two benchmarks
+GET /api/market-indexes/{code}/history	KSE100, KSE30, KMI30, public KSEALL history
+GET /api/rates/kibor	Canonical KIBOR
+GET /rates/kibor	Compatibility alias
+GET /api/rates/usd-pkr	Canonical SBP M2M-ready USD/PKR
+GET /rates/usd-pkr	Compatibility alias
+Canonical/alias market-summary and rates actions are anonymous and GET-only. Unsupported mutation verbs return 405.
+
+10.2 Authentication routes
+Route	Purpose
+GET /api/auth/google/start	Start challenge after return-URL validation
+GET /signin-google	Exact Google middleware redirect target
+GET /api/auth/google/callback	Complete external-cookie flow and issue application cookie
+GET /api/auth/me	Supported WebICT profile
+GET /api/auth/csrf	Antiforgery cookie and X-CSRF-TOKEN value
+POST /api/auth/logout	CSRF-protected logout
+Google callback registration is exactly https://api.webictcapital.com/signin-google for the current domain.
+
+10.3 Portfolio routes
+Route	Purpose
+GET /api/portfolio	Default portfolio summary
+GET /api/portfolio/lots	Open lots
+GET /api/portfolio/holdings	Aggregated holdings/current quote valuation
+GET /api/portfolio/activity	Immutable activity, limit 1–500
+GET /api/portfolio/watchlist	Active watchlist/latest quote
+PUT /api/portfolio/watchlist/{symbol}	Idempotent add/restore
+DELETE /api/portfolio/watchlist/{symbol}	Idempotent removal
+POST /api/portfolio/buys	Native buy
+POST /api/portfolio/sells	FIFO native sell
+POST /api/portfolio/lots/{lotId}/corrections	Lot correction
+POST /api/portfolio/positions/{symbol}/remove	Position removal
+Ownership comes only from the application cookie NameIdentifier; no request accepts user_id. All mutations require a fresh CSRF token. The internal authentication scheme is WebICTApplication.
+
+10.4 Exact numeric/date rules
+API decimals and int64 values are exact JSON numeric tokens.
+WebICT frontend uses lossless JSON, Decimal, and bigint rather than native floating-point coercion.
+Null means unavailable/not applicable, not zero.
+Date-only values remain calendar dates and must not shift under browser timezone conversion.
+Market cap is full PKR.
+Free-float percent is already a percentage and is not divided by 100.
+Public market responses may use public caching; authenticated portfolio responses do not use that cache.
+10.5 Frontend modes
+VITE_PLATFORM_MODE is mandatory and fail-closed:
+
+webict: WebICT API for market/auth/portfolio/watchlist;
+supabase: explicit legacy rollback adapter.
+WebICT mode must not initialize or call Supabase. The current WebICT feature branch is deployed at preview.webictcapital.com; webictcapital.com remains on the unchanged main deployment until the VPS/cutover plan completes.
+
+11. Migration ledger
+Migration	Current state	Purpose
+001	Applied	Initial PSX company persistence
+002	Applied	Company idempotency and issuer-scoped identity corrections
+003	Applied	Company constraints and persistence hardening
+004	Applied	Normalized SBP FX publications, observations, views
+005	Applied	Raw technical indicators
+006	Applied 2026-07-21	Guarded company valuation/equity cleanup and quarantine
+007	Applied 2026-08-01	app_identity foundation
+008	Applied to current target by 2026-08-10	app_portfolio foundation and optional cutover contract
+009	Does not exist	Next number is unallocated
+Migration files are forward-only. Never edit applied files. The DBeaver command history is evidence of what was run, not a reusable installation script.
+
+12. Data-quality ledger
+Last supplied dated audits reported:
+
+540,184 eligible positive-close quotes with zero missing/stale raw ta_raw_v1 technical rows;
+migration-006 quarantine counts of 613 valuations and three equity rows;
+18,024 raw quotes with close outside published range and 245 with open outside range, preserved as raw observations;
+483 valuation rows with market cap and zero P/E rows at that audit point;
+index coverage through 2026-07-24 as below.
+Stored index	Present	Missing	First	Last
+ALLSHR	1,331	44	2021-01-01	2026-07-24
+KMI30	1,353	22	2021-01-01	2026-07-24
+KMIALLSHR	1,328	47	2021-01-01	2026-07-24
+KSE100	1,349	26	2021-01-01	2026-07-24
+KSE30	1,351	24	2021-01-01	2026-07-24
+The exact ALLSHR source anomaly on 2026-07-21 is intentionally absent and pinned by fingerprint 47b725f9da779b604cb5f0acad82055616bcdde72e5f5a70303ea07c39a04dc7.
+
+Audit counts are observations, not invariants. Rerun the queries below and record a new date before making a current completeness claim.
+
+13. Safe DBeaver diagnostic workflow
+13.1 Safety rules
+For investigation, begin with a read-only transaction:
+
+BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY;
+SET LOCAL statement_timeout = '60s';
+SET LOCAL lock_timeout = '5s';
+
+-- Run read-only diagnostics here.
+
+ROLLBACK;
+Confirm the database and user before every session.
+Do not run migration DDL from this diagnostics section.
+Do not use DBeaver “auto-commit” for reviewed multi-statement migrations.
+If any transaction statement fails, issue ROLLBACK before continuing.
+Avoid selecting raw auth metadata, emails, Google subjects, cookies, credentials, or full scraper notes unless the incident requires it.
+Use EXPLAIN (ANALYZE, BUFFERS) only when executing the query is safe; plain EXPLAIN does not run it.
+13.2 Connection identity
+SELECT
+    current_database() AS database_name,
+    current_user AS database_user,
+    current_schema() AS current_schema,
+    current_setting('server_version') AS server_version,
+    current_setting('TimeZone') AS session_timezone,
+    pg_is_in_recovery() AS is_read_replica,
+    clock_timestamp() AS database_time;
+Expected application logic uses Asia/Karachi explicitly for business dates even if a session timezone differs.
+
+13.3 Schema/object existence
+SELECT
+    to_regnamespace('public') AS public_schema,
+    to_regnamespace('app_identity') AS identity_schema,
+    to_regnamespace('app_portfolio') AS portfolio_schema,
+    to_regclass('public.daily_quote') AS daily_quote,
+    to_regclass('public.technical_indicator_daily') AS technicals,
+    to_regclass('public.fx_publication') AS fx_publication,
+    to_regclass('public.v_usdpkr_m2m_ready') AS usdpkr_view,
+    to_regclass('app_identity.user_account') AS user_account,
+    to_regclass('app_identity.external_login') AS external_login,
+    to_regclass('app_portfolio.portfolio') AS portfolio,
+    to_regclass('app_portfolio.position_lot') AS position_lot,
+    to_regclass('app_portfolio.portfolio_activity') AS portfolio_activity,
+    to_regclass('app_portfolio.mutation_request') AS mutation_request;
+Every expected value should be non-null.
+
+13.4 Complete column inventory
+SELECT
+    table_schema,
+    table_name,
+    ordinal_position,
+    column_name,
+    data_type,
+    udt_name,
+    is_nullable,
+    column_default
+FROM information_schema.columns
+WHERE table_schema IN ('public', 'app_identity', 'app_portfolio')
+ORDER BY table_schema, table_name, ordinal_position;
+13.5 Constraints
+SELECT
+    ns.nspname AS schema_name,
+    rel.relname AS table_name,
+    con.conname,
+    con.contype,
+    con.convalidated,
+    pg_get_constraintdef(con.oid, true) AS definition
+FROM pg_constraint AS con
+JOIN pg_class AS rel ON rel.oid = con.conrelid
+JOIN pg_namespace AS ns ON ns.oid = rel.relnamespace
+WHERE ns.nspname IN ('public', 'app_identity', 'app_portfolio')
+ORDER BY ns.nspname, rel.relname, con.conname;
+convalidated should be true for ordinary applied constraints.
+
+13.6 Indexes
+SELECT schemaname, tablename, indexname, indexdef
+FROM pg_indexes
+WHERE schemaname IN ('public', 'app_identity', 'app_portfolio')
+ORDER BY schemaname, tablename, indexname;
+13.7 Triggers
+SELECT
+    event_object_schema,
+    event_object_table,
+    trigger_name,
+    action_timing,
+    event_manipulation,
+    action_statement
+FROM information_schema.triggers
+WHERE event_object_schema IN ('public', 'app_identity', 'app_portfolio')
+ORDER BY event_object_schema, event_object_table, trigger_name, event_manipulation;
+13.8 Functions and views
+SELECT
+    ns.nspname AS schema_name,
+    p.proname AS function_name,
+    pg_get_function_identity_arguments(p.oid) AS arguments,
+    pg_get_function_result(p.oid) AS result_type
+FROM pg_proc AS p
+JOIN pg_namespace AS ns ON ns.oid = p.pronamespace
+WHERE ns.nspname IN ('app_identity', 'app_portfolio')
+ORDER BY ns.nspname, p.proname, arguments;
+
+SELECT schemaname, viewname, definition
+FROM pg_views
+WHERE schemaname IN ('public', 'app_identity', 'app_portfolio')
+ORDER BY schemaname, viewname;
+13.9 Table sizes, dead rows, and vacuum state
+SELECT
+    schemaname,
+    relname AS table_name,
+    n_live_tup,
+    n_dead_tup,
+    pg_size_pretty(pg_total_relation_size(relid)) AS total_size,
+    last_analyze,
+    last_autoanalyze,
+    last_vacuum,
+    last_autovacuum
+FROM pg_stat_user_tables
+WHERE schemaname IN ('public', 'app_identity', 'app_portfolio')
+ORDER BY pg_total_relation_size(relid) DESC;
+Statistics are estimates. Use targeted count(*) only where exact counts are operationally necessary.
+
+13.10 Database activity and long-running queries
+SELECT
+    pid,
+    usename,
+    application_name,
+    client_addr,
+    state,
+    wait_event_type,
+    wait_event,
+    clock_timestamp() - query_start AS query_age,
+    left(query, 500) AS query_preview
+FROM pg_stat_activity
+WHERE datname = current_database()
+  AND pid <> pg_backend_pid()
+  AND state <> 'idle'
+ORDER BY query_start;
+13.11 Blocked sessions
+SELECT
+    pid AS blocked_pid,
+    usename,
+    clock_timestamp() - query_start AS blocked_for,
+    pg_blocking_pids(pid) AS blocking_pids,
+    wait_event_type,
+    wait_event,
+    left(query, 500) AS blocked_query
+FROM pg_stat_activity
+WHERE datname = current_database()
+  AND cardinality(pg_blocking_pids(pid)) > 0
+ORDER BY query_start;
+Do not terminate sessions until the owning job and transaction impact are understood.
+
+13.12 Database counters
+SELECT
+    datname,
+    numbackends,
+    xact_commit,
+    xact_rollback,
+    blks_read,
+    blks_hit,
+    temp_files,
+    temp_bytes,
+    deadlocks,
+    stats_reset
+FROM pg_stat_database
+WHERE datname = current_database();
+13.13 Logging, timeout, and RLS settings
+SELECT name, setting, unit, source
+FROM pg_settings
+WHERE name IN (
+    'statement_timeout',
+    'lock_timeout',
+    'idle_in_transaction_session_timeout',
+    'log_min_duration_statement',
+    'log_lock_waits',
+    'deadlock_timeout',
+    'timezone'
 )
-ORDER BY conrelid::regclass::text, conname;
+ORDER BY name;
 
-Operational coverage checks (read-only):
+SELECT
+    ns.nspname AS schema_name,
+    rel.relname AS table_name,
+    rel.relrowsecurity AS row_level_security,
+    rel.relforcerowsecurity AS force_row_level_security
+FROM pg_class AS rel
+JOIN pg_namespace AS ns ON ns.oid = rel.relnamespace
+WHERE ns.nspname IN ('public', 'app_identity', 'app_portfolio')
+  AND rel.relkind = 'r'
+ORDER BY ns.nspname, rel.relname;
+The API enforces application ownership and does not rely on browser-accessible PostgreSQL RLS. An unexpected RLS setting can therefore change API behavior and must be investigated.
 
--- Technical coverage must be complete for eligible raw closes.
+14. Scraper and market-data diagnostics
+14.1 Latest run per source
+WITH ranked AS (
+    SELECT
+        ds.code,
+        sr.id,
+        sr.run_date,
+        sr.started_at,
+        sr.finished_at,
+        sr.status,
+        sr.rows_written,
+        row_number() OVER (
+            PARTITION BY ds.code
+            ORDER BY sr.started_at DESC, sr.id DESC
+        ) AS rn
+    FROM public.scrape_run AS sr
+    JOIN public.data_source AS ds ON ds.id = sr.source_id
+)
+SELECT code, id, run_date, started_at, finished_at, status, rows_written
+FROM ranked
+WHERE rn = 1
+ORDER BY code;
+14.2 Recent failures and partial runs
+SELECT
+    ds.code,
+    sr.id,
+    sr.run_date,
+    sr.started_at,
+    sr.finished_at,
+    sr.status,
+    sr.rows_written,
+    left(sr.notes, 2000) AS notes_preview
+FROM public.scrape_run AS sr
+JOIN public.data_source AS ds ON ds.id = sr.source_id
+WHERE sr.status IN ('failed', 'partial')
+ORDER BY sr.started_at DESC
+LIMIT 100;
+Review notes for source/date/component classification. Never paste unsanitized notes into public tickets.
+
+14.3 Stale running rows
+SELECT
+    ds.code,
+    sr.id,
+    sr.run_date,
+    sr.started_at,
+    clock_timestamp() - sr.started_at AS running_for,
+    sr.rows_written
+FROM public.scrape_run AS sr
+JOIN public.data_source AS ds ON ds.id = sr.source_id
+WHERE sr.status = 'running'
+  AND sr.finished_at IS NULL
+  AND sr.started_at < clock_timestamp() - interval '2 hours'
+ORDER BY sr.started_at;
+A stale row is audit evidence. Confirm no live advisory-lock owner before any recovery action.
+
+14.4 Market freshness summary
+SELECT
+    (SELECT max(trade_date) FROM public.market_summary) AS latest_market_summary,
+    (SELECT max(trade_date) FROM public.daily_quote) AS latest_quote,
+    (SELECT max(trade_date) FROM public.index_daily) AS latest_index,
+    (SELECT max(trade_date) FROM public.technical_indicator_daily
+      WHERE price_basis = 'raw') AS latest_raw_technical,
+    (SELECT max(trade_date) FROM public.daily_valuation) AS latest_valuation,
+    (SELECT max(quote_date) FROM public.kibor_rate) AS latest_kibor,
+    (SELECT max(quote_date) FROM public.v_usdpkr_m2m_ready) AS latest_usdpkr;
+Different datasets legitimately have different schedules. Compare each date with its source calendar rather than forcing equality.
+
+14.5 Per-session component counts
+SELECT
+    ms.trade_date,
+    (SELECT count(*) FROM public.daily_quote q
+      WHERE q.trade_date = ms.trade_date) AS quote_rows,
+    (SELECT count(*) FROM public.index_daily i
+      WHERE i.trade_date = ms.trade_date) AS index_rows,
+    EXISTS (
+        SELECT 1
+        FROM public.market_ai_summaries a
+        WHERE a.trade_date = ms.trade_date
+          AND a.summary_type = 'daily_market_close'
+          AND a.status = 'completed'
+    ) AS completed_ai_summary
+FROM public.market_summary AS ms
+ORDER BY ms.trade_date DESC
+LIMIT 60;
+AI summary absence is expected for historical backfill.
+
+14.6 Missing required index codes on known sessions
+WITH required(code) AS (
+    VALUES ('KSE100'), ('KSE30'), ('ALLSHR'), ('KMI30'), ('KMIALLSHR')
+)
+SELECT ms.trade_date, required.code
+FROM public.market_summary AS ms
+CROSS JOIN required
+JOIN public.market_index AS mi ON mi.code = required.code
+LEFT JOIN public.index_daily AS id
+  ON id.index_id = mi.id
+ AND id.trade_date = ms.trade_date
+WHERE id.index_id IS NULL
+ORDER BY ms.trade_date DESC, required.code;
+Interpret provider contracts and the reviewed 2026-07-21 ALLSHR exception before classifying a gap as an error.
+
+14.7 Technical coverage
 WITH eligible AS (
-    SELECT *
-    FROM daily_quote
+    SELECT security_id, trade_date, updated_at
+    FROM public.daily_quote
     WHERE close IS NOT NULL
       AND close > 0
       AND close::text NOT IN ('NaN', 'Infinity', '-Infinity')
@@ -1862,833 +1029,466 @@ SELECT
           )
     ) AS stale_technical_rows
 FROM eligible
-LEFT JOIN technical_indicator_daily AS ti
+LEFT JOIN public.technical_indicator_daily AS ti
   ON ti.security_id = eligible.security_id
  AND ti.trade_date = eligible.trade_date
  AND ti.price_basis = 'raw';
+Expected missing/stale counts are zero after a healthy pipeline.
 
--- Valuation coverage and the known P/E population gap.
+14.8 Raw quote range anomalies
+SELECT
+    count(*) FILTER (
+        WHERE high IS NOT NULL AND low IS NOT NULL
+          AND close IS NOT NULL
+          AND (close > high OR close < low)
+    ) AS close_outside_range,
+    count(*) FILTER (
+        WHERE high IS NOT NULL AND low IS NOT NULL
+          AND open IS NOT NULL
+          AND (open > high OR open < low)
+    ) AS open_outside_range,
+    count(*) FILTER (WHERE turnover < 0) AS negative_turnover
+FROM public.daily_quote;
+Nonzero range anomalies are raw-source observations requiring classification, not automatic updates.
+
+14.9 Valuation health
 SELECT
     count(*) AS valuation_rows,
     count(market_cap) AS market_cap_rows,
     count(pe_ratio_ttm) AS pe_rows,
-    min(trade_date) AS first_valuation_date,
-    max(trade_date) AS latest_valuation_date
-FROM daily_valuation;
+    min(trade_date) AS first_date,
+    max(trade_date) AS latest_date
+FROM public.daily_valuation;
 
--- Must always return zero.
 SELECT count(*) AS valuation_without_exact_quote
-FROM daily_valuation AS v
-LEFT JOIN daily_quote AS q
+FROM public.daily_valuation AS v
+LEFT JOIN public.daily_quote AS q
   USING (security_id, trade_date)
 WHERE q.security_id IS NULL;
 
 SELECT count(*) AS misattributed_valuation_dates
-FROM daily_valuation
+FROM public.daily_valuation
 WHERE trade_date < (inserted_at AT TIME ZONE 'Asia/Karachi')::date;
+The last two counts must be zero.
 
--- Quarantine evidence from applied migration 006.
+14.10 SCD2 current-row invariants
 SELECT
-    (SELECT count(*) FROM psx_company_daily_valuation_quarantine)
-        AS valuation_quarantine,
-    (SELECT count(*) FROM psx_company_equity_version_quarantine)
-        AS equity_quarantine;
+    'company_profile_version' AS relation,
+    security_id::text AS natural_key,
+    count(*) FILTER (WHERE is_current) AS current_rows
+FROM public.company_profile_version
+GROUP BY security_id
+HAVING count(*) FILTER (WHERE is_current) <> 1
 
--- Historical index coverage by canonical stored code.
-WITH sessions AS (
-    SELECT count(*) AS n FROM market_summary
+UNION ALL
+
+SELECT
+    'equity_profile_version',
+    security_id::text,
+    count(*) FILTER (WHERE is_current)
+FROM public.equity_profile_version
+GROUP BY security_id
+HAVING count(*) FILTER (WHERE is_current) <> 1
+
+UNION ALL
+
+SELECT
+    'financial_statement',
+    concat_ws(':', security_id, fiscal_year, period),
+    count(*) FILTER (WHERE is_current)
+FROM public.financial_statement
+GROUP BY security_id, fiscal_year, period
+HAVING count(*) FILTER (WHERE is_current) <> 1
+
+UNION ALL
+
+SELECT
+    'financial_ratio',
+    concat_ws(':', security_id, fiscal_year),
+    count(*) FILTER (WHERE is_current)
+FROM public.financial_ratio
+GROUP BY security_id, fiscal_year
+HAVING count(*) FILTER (WHERE is_current) <> 1;
+Expected result: no rows.
+
+14.11 KIBOR coverage and latest common curve
+SELECT
+    min(quote_date) AS first_date,
+    max(quote_date) AS latest_date,
+    count(*) AS tenor_observations,
+    count(DISTINCT quote_date) AS publication_dates
+FROM public.kibor_rate;
+
+WITH latest AS (
+    SELECT max(quote_date) AS quote_date
+    FROM public.kibor_rate
+)
+SELECT k.quote_date, k.tenor, k.bid, k.offer
+FROM public.kibor_rate AS k
+JOIN latest USING (quote_date)
+ORDER BY array_position(
+    ARRAY['1W','2W','1M','3M','6M','9M','1Y']::text[],
+    k.tenor
+);
+14.12 FX coverage
+SELECT
+    rate_type,
+    min(publication_date) AS first_date,
+    max(publication_date) AS latest_date,
+    count(*) AS publications,
+    sum(observation_count) AS declared_observations
+FROM public.fx_publication
+GROUP BY rate_type
+ORDER BY rate_type;
+
+SELECT
+    min(quote_date) AS first_usdpkr_ready,
+    max(quote_date) AS latest_usdpkr_ready,
+    count(*) AS observations
+FROM public.v_usdpkr_m2m_ready;
+15. Identity diagnostics
+15.1 Counts by user status
+SELECT status, count(*)
+FROM app_identity.user_account
+GROUP BY status
+ORDER BY status;
+15.2 Google mapping cardinality
+SELECT
+    u.id AS user_id,
+    u.status,
+    count(l.id) AS google_login_count
+FROM app_identity.user_account AS u
+LEFT JOIN app_identity.external_login AS l
+  ON l.user_id = u.id
+ AND l.provider = 'google'
+GROUP BY u.id, u.status
+HAVING count(l.id) <> 1
+ORDER BY u.id;
+For the current Google-only product, expected result is no rows. Do not print subjects/emails merely to count mappings.
+
+15.3 Recent authentication events
+SELECT
+    id,
+    user_id,
+    event_type,
+    event_at,
+    request_id,
+    octet_length(metadata::text) AS metadata_bytes
+FROM app_identity.authentication_audit
+ORDER BY event_at DESC, id DESC
+LIMIT 200;
+Inspect metadata only when needed and only in a secured operator session.
+
+15.4 Active user without active default portfolio
+SELECT u.id AS user_id
+FROM app_identity.user_account AS u
+LEFT JOIN app_portfolio.portfolio AS p
+  ON p.user_id = u.id
+ AND p.status = 'active'
+ AND p.is_default
+WHERE u.status = 'active'
+GROUP BY u.id
+HAVING count(p.id) <> 1
+ORDER BY u.id;
+Expected result is no rows for fully initialized native users.
+
+16. Portfolio diagnostics
+16.1 Portfolio/user overview
+SELECT
+    u.status AS user_status,
+    p.status AS portfolio_status,
+    p.origin,
+    p.is_default,
+    count(*) AS portfolios
+FROM app_portfolio.portfolio AS p
+JOIN app_identity.user_account AS u ON u.id = p.user_id
+GROUP BY u.status, p.status, p.origin, p.is_default
+ORDER BY u.status, p.status, p.origin, p.is_default;
+16.2 Open holdings reconstructed from lots
+SELECT
+    l.portfolio_id,
+    s.symbol,
+    sum(l.quantity) AS quantity,
+    sum(l.quantity * l.unit_cost) AS total_cost,
+    sum(l.quantity * l.unit_cost) / NULLIF(sum(l.quantity), 0) AS average_unit_cost,
+    min(l.acquisition_date) AS first_acquisition,
+    max(l.acquisition_date) AS latest_acquisition,
+    count(*) AS open_lots
+FROM app_portfolio.position_lot AS l
+JOIN public.security AS s ON s.id = l.security_id
+WHERE l.status = 'open'
+GROUP BY l.portfolio_id, s.symbol
+ORDER BY l.portfolio_id, s.symbol;
+16.3 Latest quote valuation for open holdings
+WITH holdings AS (
+    SELECT portfolio_id, security_id, sum(quantity) AS quantity
+    FROM app_portfolio.position_lot
+    WHERE status = 'open'
+    GROUP BY portfolio_id, security_id
+), latest_quote AS (
+    SELECT DISTINCT ON (security_id)
+        security_id, trade_date, close
+    FROM public.daily_quote
+    WHERE close IS NOT NULL
+    ORDER BY security_id, trade_date DESC
 )
 SELECT
-    mi.code,
-    sessions.n AS market_sessions,
-    count(id.trade_date) AS observations,
-    sessions.n - count(id.trade_date) AS missing,
-    min(id.trade_date) AS first_date,
-    max(id.trade_date) AS latest_date
-FROM market_index AS mi
-CROSS JOIN sessions
-LEFT JOIN index_daily AS id ON id.index_id = mi.id
-WHERE mi.code IN ('KSE100', 'KSE30', 'ALLSHR', 'KMI30', 'KMIALLSHR')
-GROUP BY mi.code, sessions.n
-ORDER BY mi.code;
-
--- No abandoned company runs should remain after a healthy lock-owning run.
-SELECT count(*) AS unfinished_company_runs
-FROM scrape_run AS sr
-JOIN data_source AS ds ON ds.id = sr.source_id
-WHERE ds.code = 'psx_company'
-  AND sr.status = 'running'
-  AND sr.finished_at IS NULL;
-
--- Canonical rate coverage, without inventing publication dates.
-SELECT min(quote_date), max(quote_date), count(*) FROM kibor_rate;
-SELECT min(quote_date), max(quote_date), count(*) FROM v_usdpkr_m2m_ready;
-
-Deploy scraper/API code only after its required migrations are present. Eachservice must validate the tables, columns, unique indexes, and requiredvalidated constraints it owns before any network or backfill work begins. Thecompany importer specifically verifiesck_equity_version_free_float_not_above_shares.
-
-Fresh database
-
-For a new empty database, establish the complete public market-data schema with
-the DDL below, then apply migrations/007_identity_foundation.sql to establish
-the applied application identity schema. Seed data_source through the importers'
-normal UPSERT logic. The embedded DDL intentionally contains no app_identity or
-app_portfolio objects, does not schedule jobs, create application users, grant
-privileges, or expose a network port. Apply migration 008 only after its separate
-operator approval; this contract does not authorize that production change.
-
-Complete public market-data DDL (fresh installations only)
-
-Compatibility marker for existing schema-extraction tests only; this is not a
-complete-database claim: Complete PostgreSQL schema (fresh installations only)
-
--- ============================================================================
--- Market Data Warehouse — schema.sql  (PostgreSQL 14+)
--- ============================================================================
--- Design goals
---   1. Scalable: PSX closing rates + company fundamentals today; KIBOR, USD/PKR,
---      gold & silver later. Adding a new daily series = one small table.
---   2. No redundancy for daily scrapes: every time-series table is keyed by
---      (entity, date). Re-running the same day UPSERTs in place.
---   3. Keep history when values change: slowly-changing facts (profile,
---      financials, ratios, share structure) are versioned (SCD2). A new row is
---      written ONLY when a content hash changes; otherwise the run is a no-op.
---
--- Two storage patterns
---   A) DAILY SERIES  -> PK ends in the observation date; ON CONFLICT DO UPDATE.
---   B) VERSIONED (SCD2) -> (natural_key..., content_hash, valid_from, valid_to,
---      is_current). One "current" row per key; superseded rows are retained.
---
--- content_hash: sha256 hex of the meaningful fields, computed in the scraper
--- (Python: hashlib.sha256(canonical_json.encode()).hexdigest()). Keeping it in
--- the app avoids a pgcrypto dependency and stays deterministic across engines.
--- ============================================================================
-
--- ---------------------------------------------------------------------------
--- 0. Provenance / run tracking (optional but cheap; good for debugging)
--- ---------------------------------------------------------------------------
-
-CREATE TABLE data_source (
-    id        smallserial PRIMARY KEY,
-    code      text UNIQUE NOT NULL,          -- stable codes documented above
-    name      text NOT NULL,
-    base_url  text
-);
-
-CREATE TABLE scrape_run (
-    id           bigserial PRIMARY KEY,
-    source_id    smallint NOT NULL REFERENCES data_source(id),
-    run_date     date NOT NULL,              -- logical trade/observation date
-    started_at   timestamptz NOT NULL DEFAULT now(),
-    finished_at  timestamptz,
-    status       text NOT NULL DEFAULT 'running',
-    rows_written integer NOT NULL DEFAULT 0,
-    notes        text,
-    CONSTRAINT ck_scrape_run_status
-        CHECK (status IN ('running', 'success', 'partial', 'failed', 'no_data'))
-);
-CREATE INDEX idx_scrape_run_source_date ON scrape_run (source_id, run_date);
-
-
--- ---------------------------------------------------------------------------
--- 1. Dimensions (stable entities referenced by many facts)
--- ---------------------------------------------------------------------------
-
--- One row per listed symbol. symbol is the stable natural key.
-CREATE TABLE security (
-    id            bigserial PRIMARY KEY,
-    symbol        text UNIQUE NOT NULL,       -- 'MEBL'
-    company_name  text,                       -- latest seen name (convenience)
-    created_at    timestamptz NOT NULL DEFAULT now(),
-    updated_at    timestamptz NOT NULL DEFAULT now()
-);
-
--- One row per stored market index (KSE100, ALLSHR, KMIALLSHR, ...).
--- Public API alias KSEALL maps to stored code ALLSHR.
-CREATE TABLE market_index (
-    id            smallserial PRIMARY KEY,
-    code          text UNIQUE NOT NULL,       -- 'KSE100'
-    display_name  text
-);
-
-
--- ---------------------------------------------------------------------------
--- 2. PSX daily series (from the closing-rate PDF)  [pattern A]
--- ---------------------------------------------------------------------------
-
--- Per-symbol daily OHLC bar. This is the authoritative daily price row.
-CREATE TABLE daily_quote (
-    security_id  bigint NOT NULL REFERENCES security(id),
-    trade_date   date   NOT NULL,
-    open         numeric,
-    high         numeric,
-    low          numeric,
-    close        numeric,
-    turnover     bigint,
-    change       numeric,
-    section      text,                        -- PSX sector/section label from the PDF
-    source_id    smallint REFERENCES data_source(id),
-    inserted_at  timestamptz NOT NULL DEFAULT now(),
-    updated_at   timestamptz NOT NULL DEFAULT now(),
-    PRIMARY KEY (security_id, trade_date)
-);
-CREATE INDEX idx_daily_quote_date ON daily_quote (trade_date);
-
--- Derived technical indicators. compute_technicals.py owns this table and
--- reads daily_quote without modifying it. The active implementation writes
--- raw prices only; adjusted is reserved for a future separately defined feed.
-CREATE TABLE technical_indicator_daily (
-    security_id         bigint NOT NULL,
-    trade_date          date NOT NULL,
-    price_basis         text NOT NULL DEFAULT 'raw',
-    calculation_version text NOT NULL,
-
-    return_1d_pct       numeric,
-    return_5d_pct       numeric,
-    return_20d_pct      numeric,
-
-    sma_20              numeric,
-    sma_50              numeric,
-    sma_200             numeric,
-    ema_12              numeric,
-    ema_26              numeric,
-
-    rsi_14              numeric,
-    macd                numeric,
-    macd_signal         numeric,
-    macd_histogram      numeric,
-    atr_14              numeric,
-
-    bollinger_middle    numeric,
-    bollinger_upper     numeric,
-    bollinger_lower     numeric,
-    volume_sma_20       numeric,
-
-    source_updated_at   timestamptz NOT NULL,
-    calculated_at       timestamptz NOT NULL DEFAULT now(),
-
-    PRIMARY KEY (security_id, trade_date, price_basis),
-
-    CONSTRAINT fk_technical_daily_quote
-        FOREIGN KEY (security_id, trade_date)
-        REFERENCES daily_quote (security_id, trade_date)
-        ON DELETE CASCADE,
-
-    CONSTRAINT ck_technical_price_basis
-        CHECK (price_basis IN ('raw', 'adjusted'))
-);
-
-CREATE INDEX idx_technical_indicator_date
-    ON technical_indicator_daily (trade_date);
-
--- Whole-market breadth/volume for the day. (KSE100/KSE30 header figures are
--- intentionally NOT stored here — they live in index_daily to avoid duplication.)
-CREATE TABLE market_summary (
-    trade_date   date PRIMARY KEY,
-    prev_volume  bigint,
-    curr_volume  bigint,
-    advances     integer,
-    declines     integer,
-    unchanged    integer,
-    flu_no       text,
-    source_id    smallint REFERENCES data_source(id),
-    inserted_at  timestamptz NOT NULL DEFAULT now(),
-    updated_at   timestamptz NOT NULL DEFAULT now()
-);
-
--- One generated market brief per trade date and summary type.
--- Historical backfills do not create summaries. Only the latest complete
--- imported trade date can create or update the daily_market_close summary.
-CREATE TABLE IF NOT EXISTS market_ai_summaries (
-    trade_date       date NOT NULL
-                     REFERENCES market_summary(trade_date) ON DELETE CASCADE,
-    summary_type     text NOT NULL DEFAULT 'daily_market_close',
-    model_name       text NOT NULL,
-    prompt_version   text NOT NULL,
-    input_hash       char(64) NOT NULL,
-    summary          text,
-    error_message    text,
-    key_points       jsonb NOT NULL DEFAULT '[]'::jsonb,
-    top_gainers      jsonb NOT NULL DEFAULT '[]'::jsonb,
-    top_losers       jsonb NOT NULL DEFAULT '[]'::jsonb,
-    volume_leaders   jsonb NOT NULL DEFAULT '[]'::jsonb,
-    sector_activity  jsonb NOT NULL DEFAULT '[]'::jsonb,
-    generated_at     timestamptz NOT NULL DEFAULT now(),
-    status           text NOT NULL DEFAULT 'pending'
-                     CHECK (status IN ('pending', 'completed', 'failed')),
-    PRIMARY KEY (trade_date, summary_type)
-);
-
-CREATE INDEX idx_market_ai_summaries_status
-    ON market_ai_summaries (status);
-
-CREATE INDEX idx_market_ai_summaries_latest_completed
-    ON market_ai_summaries (summary_type, trade_date DESC)
-    WHERE status = 'completed';
-
-CREATE INDEX idx_market_ai_summaries_generated_at
-    ON market_ai_summaries (generated_at DESC);
-
--- Per-index daily values (from the DPS site panel).
-CREATE TABLE index_daily (
-    index_id     smallint NOT NULL REFERENCES market_index(id),
-    trade_date   date NOT NULL,
-    prev_close   numeric,
-    open         numeric,
-    high         numeric,
-    low          numeric,
-    close        numeric,
-    volume       bigint,
-    change       numeric,
-    change_pct   numeric,
-    as_of        timestamptz,    -- exact snapshot time reported by the site
-    source_id    smallint REFERENCES data_source(id),
-    inserted_at  timestamptz NOT NULL DEFAULT now(),
-    updated_at   timestamptz NOT NULL DEFAULT now(),
-    PRIMARY KEY (index_id, trade_date)
-);
-CREATE INDEX idx_index_daily_date ON index_daily (trade_date);
-
-
--- ---------------------------------------------------------------------------
--- 3. Company page — daily vs. structural split
--- ---------------------------------------------------------------------------
-
--- DAILY [pattern A]: values that move every day with price.
--- market cap and source P/E are price-sensitive, so they belong here,
--- NOT in the versioned equity/financial tables (otherwise every day = new row).
--- Company-page source convention: PSX labels market cap as "Market Cap (000's)".
--- The importer multiplies that source value by 1000; market_cap is full PKR.
--- A valuation is written only when the exact Karachi run date already exists
--- in daily_quote. On weekends, holidays, or a failed closing import it is
--- skipped rather than attaching a current value to an older trading date.
-CREATE TABLE daily_valuation (
-    security_id    bigint NOT NULL REFERENCES security(id),
-    trade_date     date NOT NULL,
-    market_cap     numeric,
-    pe_ratio_ttm   numeric,
-    source_id      smallint REFERENCES data_source(id),
-    inserted_at    timestamptz NOT NULL DEFAULT now(),
-    updated_at     timestamptz NOT NULL DEFAULT now(),
-    PRIMARY KEY (security_id, trade_date),
-    CONSTRAINT fk_daily_valuation_quote
-        FOREIGN KEY (security_id, trade_date)
-        REFERENCES daily_quote (security_id, trade_date)
-        ON DELETE CASCADE,
-    CONSTRAINT ck_daily_valuation_market_cap
-        CHECK (market_cap IS NULL OR market_cap >= 0)
-);
-CREATE INDEX idx_daily_valuation_date ON daily_valuation (trade_date);
-
--- VERSIONED [pattern B]: company profile (sector, description, people, etc.).
--- Changes rarely; one current row per security, superseded rows retained.
-CREATE TABLE company_profile_version (
-    id                    bigserial PRIMARY KEY,
-    security_id           bigint NOT NULL REFERENCES security(id),
-    sector                text,
-    business_description  text,
-    address               text,
-    website               text,
-    registrar             text,
-    auditor               text,
-    fiscal_year_end       text,
-    key_people            jsonb,        -- [{"name":..,"designation":..}, ...]
-    content_hash          char(64) NOT NULL,
-    valid_from            date NOT NULL,   -- run date this version first appeared
-    valid_to              date,            -- NULL while current
-    is_current            boolean NOT NULL DEFAULT true,
-    inserted_at           timestamptz NOT NULL DEFAULT now(),
-    CONSTRAINT ck_profile_version_interval
-        CHECK (valid_to IS NULL OR valid_to > valid_from),
-    CONSTRAINT ck_profile_version_current
-        CHECK (
-            (is_current AND valid_to IS NULL)
-            OR (NOT is_current AND valid_to IS NOT NULL)
-        )
-);
-CREATE UNIQUE INDEX uq_profile_current
-    ON company_profile_version (security_id) WHERE is_current;
-CREATE INDEX idx_profile_hist ON company_profile_version (security_id, valid_from);
-
--- VERSIONED [pattern B]: share structure (shares outstanding / free float).
--- Structural, not daily — market_cap deliberately excluded (see daily_valuation).
-CREATE TABLE equity_profile_version (
-    id                 bigserial PRIMARY KEY,
-    security_id        bigint NOT NULL REFERENCES security(id),
-    shares             bigint,
-    free_float_shares  bigint,
-    free_float_pct     numeric,
-    content_hash       char(64) NOT NULL,
-    valid_from         date NOT NULL,
-    valid_to           date,
-    is_current         boolean NOT NULL DEFAULT true,
-    inserted_at        timestamptz NOT NULL DEFAULT now(),
-    CONSTRAINT ck_equity_version_values
-        CHECK (
-            (shares IS NULL OR shares >= 0)
-            AND (free_float_shares IS NULL OR free_float_shares >= 0)
-            AND (free_float_pct IS NULL OR free_float_pct BETWEEN 0 AND 100)
-        ),
-    CONSTRAINT ck_equity_version_free_float_not_above_shares
-        CHECK (
-            shares IS NULL
-            OR free_float_shares IS NULL
-            OR free_float_shares <= shares
-        ),
-    CONSTRAINT ck_equity_version_interval
-        CHECK (valid_to IS NULL OR valid_to > valid_from),
-    CONSTRAINT ck_equity_version_current
-        CHECK (
-            (is_current AND valid_to IS NULL)
-            OR (NOT is_current AND valid_to IS NOT NULL)
-        )
-);
-CREATE UNIQUE INDEX uq_equity_current
-    ON equity_profile_version (security_id) WHERE is_current;
-CREATE INDEX idx_equity_hist ON equity_profile_version (security_id, valid_from);
-
--- Audit/quarantine tables created by migration 006. They intentionally have no
--- foreign keys, so recovery evidence survives later lifecycle changes.
-CREATE TABLE psx_company_daily_valuation_quarantine (
-    security_id          bigint NOT NULL,
-    trade_date           date NOT NULL,
-    market_cap           numeric,
-    pe_ratio_ttm         numeric,
-    source_id            smallint,
-    inserted_at          timestamptz NOT NULL,
-    updated_at           timestamptz NOT NULL,
-    quarantine_reason    text NOT NULL,
-    migration_code       text NOT NULL,
-    quarantined_at       timestamptz NOT NULL DEFAULT now(),
-    original_row         jsonb NOT NULL
-);
-
-CREATE TABLE psx_company_equity_version_quarantine (
-    id                   bigint NOT NULL,
-    security_id          bigint NOT NULL,
-    symbol               text NOT NULL,
-    shares               bigint,
-    free_float_shares    bigint,
-    free_float_pct       numeric,
-    content_hash         char(64) NOT NULL,
-    valid_from           date NOT NULL,
-    valid_to             date,
-    is_current           boolean NOT NULL,
-    inserted_at          timestamptz NOT NULL,
-    quarantine_reason    text NOT NULL,
-    migration_code       text NOT NULL,
-    quarantined_at       timestamptz NOT NULL DEFAULT now(),
-    original_row         jsonb NOT NULL
-);
-
--- VERSIONED [pattern B]: financial statements, keyed by (security, fy, period).
--- New quarters simply INSERT; unchanged reappearances no-op; restatements make
--- a new version and keep the old one. This is the main "keep history" table.
-CREATE TABLE financial_statement (
-    id                bigserial PRIMARY KEY,
-    security_id       bigint NOT NULL REFERENCES security(id),
-    fiscal_year       integer NOT NULL,
-    period            text NOT NULL,
-    sales             numeric,
-    profit_after_tax  numeric,
-    eps               numeric,
-    line_items        jsonb,                  -- complete normalized source matrix
-    content_hash      char(64) NOT NULL,
-    valid_from        date NOT NULL,
-    valid_to          date,
-    is_current        boolean NOT NULL DEFAULT true,
-    inserted_at       timestamptz NOT NULL DEFAULT now(),
-    CONSTRAINT ck_financial_statement_period
-        CHECK (period IN ('Annual', 'Q1', 'Q2', 'Q3', 'Q4')),
-    CONSTRAINT ck_financial_statement_interval
-        CHECK (valid_to IS NULL OR valid_to > valid_from),
-    CONSTRAINT ck_financial_statement_current
-        CHECK (
-            (is_current AND valid_to IS NULL)
-            OR (NOT is_current AND valid_to IS NOT NULL)
-        )
-);
-CREATE UNIQUE INDEX uq_fin_current
-    ON financial_statement (security_id, fiscal_year, period) WHERE is_current;
-CREATE INDEX idx_fin_hist
-    ON financial_statement (security_id, fiscal_year, period, valid_from);
-
--- VERSIONED [pattern B]: ratios, keyed by (security, fiscal_year).
--- Row set differs by sector, so values are stored as JSONB and versioned whole.
--- Query a specific ratio with:  values->>'Net Profit Margin (%)'
-CREATE TABLE financial_ratio (
-    id            bigserial PRIMARY KEY,
-    security_id   bigint NOT NULL REFERENCES security(id),
-    fiscal_year   integer NOT NULL,
-    values        jsonb NOT NULL,             -- {"Net Profit Margin (%)":21.18, ...}
-    content_hash  char(64) NOT NULL,
-    valid_from    date NOT NULL,
-    valid_to      date,
-    is_current    boolean NOT NULL DEFAULT true,
-    inserted_at   timestamptz NOT NULL DEFAULT now(),
-    CONSTRAINT ck_financial_ratio_interval
-        CHECK (valid_to IS NULL OR valid_to > valid_from),
-    CONSTRAINT ck_financial_ratio_current
-        CHECK (
-            (is_current AND valid_to IS NULL)
-            OR (NOT is_current AND valid_to IS NOT NULL)
-        )
-);
-CREATE UNIQUE INDEX uq_ratio_current
-    ON financial_ratio (security_id, fiscal_year) WHERE is_current;
-CREATE INDEX idx_ratio_hist ON financial_ratio (security_id, fiscal_year, valid_from);
-
--- EVENT HISTORY: announcements accumulate and are never removed. Stable-ID
--- rows may receive corrected metadata; first_seen remains immutable.
--- Dedup by PSX document id when present; otherwise by a content hash
--- (some board-meeting rows are image-only and have no PDF/document id).
-CREATE TABLE announcement (
-    id                bigserial PRIMARY KEY,
-    security_id       bigint NOT NULL REFERENCES security(id),
-    psx_document_id   text,
-    announcement_date date,
-    title             text NOT NULL,
-    category          text,                   -- Financial Results|Board Meetings|Others
-    pdf_url           text,
-    documents         jsonb NOT NULL DEFAULT '[]'::jsonb,
-    content_hash      char(64),               -- hash(security,date,title,category) for null-id rows
-    first_seen        date NOT NULL,
-    inserted_at       timestamptz NOT NULL DEFAULT now()
-);
-
--- Document IDs are issuer-scoped; do not recreate the old global uq_ann_docid.
-CREATE UNIQUE INDEX uq_ann_security_docid
-    ON announcement (security_id, psx_document_id)
-    WHERE psx_document_id IS NOT NULL;
-CREATE UNIQUE INDEX uq_ann_hash
-    ON announcement (security_id, content_hash) WHERE psx_document_id IS NULL;
-CREATE INDEX idx_ann_security_date ON announcement (security_id, announcement_date DESC);
-
--- EVENT HISTORY: company payout/result declarations are never removed.
--- announced_at is interpreted as an Asia/Karachi wall time. event_hash covers
--- stable event fields; content_hash also covers correction-prone details.
-CREATE TABLE company_payout (
-    id                  bigserial PRIMARY KEY,
-    security_id         bigint NOT NULL REFERENCES security(id),
-    announced_at        timestamptz NOT NULL,
-    period_ended        date,
-    result_type         text,
-    details             text,
-    book_closure_start  date,
-    book_closure_end    date,
-    event_hash          char(64),
-    content_hash        char(64) NOT NULL,
-    first_seen          date NOT NULL,
-    inserted_at         timestamptz NOT NULL DEFAULT now(),
-    CONSTRAINT ck_company_payout_book_closure
-        CHECK (
-            book_closure_start IS NULL
-            OR book_closure_end IS NULL
-            OR book_closure_end >= book_closure_start
-        )
-);
-CREATE UNIQUE INDEX uq_company_payout_hash
-    ON company_payout (security_id, content_hash);
-CREATE UNIQUE INDEX uq_company_payout_event_hash
-    ON company_payout (security_id, event_hash)
-    WHERE event_hash IS NOT NULL;
-CREATE INDEX idx_company_payout_security_announced
-    ON company_payout (security_id, announced_at DESC);
-
--- EVENT HISTORY: issuer financial-report documents are never removed. Rows
--- with a stable PSX document ID may receive corrected metadata while preserving
--- first_seen. Annual periods containing only a year retain period_ended_raw and
--- fiscal_year; no period-end date is inferred. IDs are text because legacy IDs
--- can be alphanumeric (for example, MEBL_Q4_2016).
-CREATE TABLE financial_report_document (
-    id                     bigserial PRIMARY KEY,
-    security_id            bigint NOT NULL REFERENCES security(id),
-    report_type            text NOT NULL,
-    period_ended_raw       text NOT NULL,
-    normalized_period_end  date,
-    fiscal_year            integer,
-    posting_date           date,
-    psx_document_id        text,
-    url                    text,
-    content_hash           char(64) NOT NULL,
-    first_seen             date NOT NULL,
-    inserted_at            timestamptz NOT NULL DEFAULT now()
-);
-CREATE UNIQUE INDEX uq_fin_report_document_id
-    ON financial_report_document (security_id, psx_document_id)
-    WHERE psx_document_id IS NOT NULL;
-CREATE UNIQUE INDEX uq_fin_report_hash_fallback
-    ON financial_report_document (security_id, content_hash)
-    WHERE psx_document_id IS NULL;
-CREATE INDEX idx_fin_report_security_posting
-    ON financial_report_document (security_id, posting_date DESC);
-
-
--- ---------------------------------------------------------------------------
--- 4. Rates: KIBOR / FX / metals
--- ---------------------------------------------------------------------------
--- KIBOR, generic FX OHLC, and metals use daily-series keys. Official SBP FX
--- publications use a normalized publication header plus currency/tenor facts
--- because several semantically different datasets can exist on the same date.
-
--- KIBOR by tenor (1W, 2W, 1M, 3M, 6M, 9M, 1Y, ...).
-CREATE TABLE kibor_rate (
-    quote_date   date NOT NULL,
-    tenor        text NOT NULL,
-    bid          numeric,
-    offer        numeric,
-    source_id    smallint REFERENCES data_source(id),
-    inserted_at  timestamptz NOT NULL DEFAULT now(),
-    updated_at   timestamptz NOT NULL DEFAULT now(),
-    PRIMARY KEY (quote_date, tenor)
-);
-
--- Generic market-feed FX OHLC quotes, keyed by date and pair (no tenor). The
--- official SBP PDF importer does not
--- write here because those publications are point rates with distinct
--- semantics and, for M2M, multiple tenors.
-CREATE TABLE fx_rate (
-    quote_date   date NOT NULL,
-    base_ccy     char(3) NOT NULL,            -- 'USD'
-    quote_ccy    char(3) NOT NULL,            -- 'PKR'
-    open         numeric,
-    high         numeric,
-    low          numeric,
-    close        numeric,
-    bid          numeric,
-    offer        numeric,
-    source_id    smallint REFERENCES data_source(id),
-    inserted_at  timestamptz NOT NULL DEFAULT now(),
-    updated_at   timestamptz NOT NULL DEFAULT now(),
-    PRIMARY KEY (quote_date, base_ccy, quote_ccy)
-);
-
--- One metadata row for each official SBP FX PDF. Keeping document and date
--- metadata here avoids repeating it for every currency/tenor observation.
-CREATE TABLE fx_publication (
-    id                 bigserial PRIMARY KEY,
-    publication_date   date NOT NULL,
-    rate_type          text NOT NULL,
-    effective_date     date,
-    settlement_date    date,
-    provider           text NOT NULL,
-    unit               text NOT NULL,
-    source_url         text NOT NULL,
-    file_name          text NOT NULL,
-    pdf_sha256         char(64) NOT NULL,
-    pdf_size_bytes     integer NOT NULL,
-    pdf_pages          smallint NOT NULL,
-    observation_count  integer NOT NULL,
-    source_id          smallint NOT NULL REFERENCES data_source(id),
-    inserted_at        timestamptz NOT NULL DEFAULT now(),
-    updated_at         timestamptz NOT NULL DEFAULT now(),
-    CONSTRAINT uq_fx_publication_date_type
-        UNIQUE (publication_date, rate_type),
-    CONSTRAINT ck_fx_publication_rate_type
-        CHECK (rate_type IN (
-            'conversion', 'open_market',
-            'weighted_average_customer', 'mark_to_market'
-        )),
-    CONSTRAINT ck_fx_publication_provider CHECK (btrim(provider) <> ''),
-    CONSTRAINT ck_fx_publication_unit CHECK (btrim(unit) <> ''),
-    CONSTRAINT ck_fx_publication_source_url
-        CHECK (source_url ~ '^https://(www\.)?sbp\.org\.pk/'),
-    CONSTRAINT ck_fx_publication_pdf_sha256
-        CHECK (pdf_sha256 ~ '^[0-9a-f]{64}$'),
-    CONSTRAINT ck_fx_publication_pdf_size CHECK (pdf_size_bytes > 0),
-    CONSTRAINT ck_fx_publication_pdf_pages CHECK (pdf_pages > 0),
-    CONSTRAINT ck_fx_publication_observation_count
-        CHECK (observation_count > 0)
-);
-CREATE INDEX idx_fx_publication_type_date
-    ON fx_publication (rate_type, publication_date DESC);
-
--- Normalized point-rate observations. Single-rate publications use rate;
--- buying/selling publications use bid/offer. The two shapes cannot be mixed.
-CREATE TABLE fx_rate_observation (
-    publication_id  bigint NOT NULL
-                    REFERENCES fx_publication(id) ON DELETE CASCADE,
-    base_ccy        char(3) NOT NULL,
-    quote_ccy       char(3) NOT NULL DEFAULT 'PKR',
-    tenor           text NOT NULL DEFAULT 'spot',
-    rate            numeric,
-    bid             numeric,
-    offer           numeric,
-    inserted_at     timestamptz NOT NULL DEFAULT now(),
-    updated_at      timestamptz NOT NULL DEFAULT now(),
-    PRIMARY KEY (publication_id, base_ccy, quote_ccy, tenor),
-    CONSTRAINT ck_fx_observation_base_ccy
-        CHECK (base_ccy ~ '^[A-Z]{3}$'),
-    CONSTRAINT ck_fx_observation_quote_ccy
-        CHECK (quote_ccy ~ '^[A-Z]{3}$'),
-    CONSTRAINT ck_fx_observation_pair CHECK (base_ccy <> quote_ccy),
-    CONSTRAINT ck_fx_observation_tenor CHECK (btrim(tenor) <> ''),
-    CONSTRAINT ck_fx_observation_value_shape
-        CHECK (
-            (rate IS NOT NULL AND rate > 0 AND bid IS NULL AND offer IS NULL)
-            OR
-            (rate IS NULL AND bid IS NOT NULL AND bid > 0
-             AND offer IS NOT NULL AND offer > 0 AND bid <= offer)
-        )
-);
-CREATE INDEX idx_fx_observation_pair_tenor
-    ON fx_rate_observation (base_ccy, quote_ccy, tenor, publication_id);
-
--- Precious metals — gold & silver, by purity and unit.
-CREATE TABLE metal_rate (
-    quote_date   date NOT NULL,
-    metal        text NOT NULL,               -- 'GOLD','SILVER'
-    purity       text NOT NULL,               -- '24K','22K','999', ...
-    unit         text NOT NULL,               -- 'tola','10g','gram','ounce'
-    currency     char(3) NOT NULL DEFAULT 'PKR',
-    price        numeric NOT NULL,
-    source_id    smallint REFERENCES data_source(id),
-    inserted_at  timestamptz NOT NULL DEFAULT now(),
-    updated_at   timestamptz NOT NULL DEFAULT now(),
-    PRIMARY KEY (quote_date, metal, purity, unit, currency)
-);
-
-
--- ---------------------------------------------------------------------------
--- 5. Convenience views (current version only)
--- ---------------------------------------------------------------------------
-
-CREATE VIEW v_current_profile AS
-    SELECT * FROM company_profile_version WHERE is_current;
-
-CREATE VIEW v_current_equity AS
-    SELECT * FROM equity_profile_version WHERE is_current;
-
-CREATE VIEW v_current_financials AS
-    SELECT * FROM financial_statement WHERE is_current;
-
-CREATE VIEW v_current_ratios AS
-    SELECT * FROM financial_ratio WHERE is_current;
-
--- Full source-aware FX surface. Consumers must retain rate_type and tenor.
-CREATE VIEW v_sbp_fx_rates AS
+    h.portfolio_id,
+    s.symbol,
+    h.quantity,
+    q.trade_date AS latest_price_date,
+    q.close AS latest_price,
+    h.quantity * q.close AS market_value
+FROM holdings AS h
+JOIN public.security AS s ON s.id = h.security_id
+LEFT JOIN latest_quote AS q ON q.security_id = h.security_id
+ORDER BY h.portfolio_id, s.symbol;
+16.4 Recent immutable activity
 SELECT
-    p.publication_date AS quote_date,
-    p.rate_type,
-    o.base_ccy,
-    o.quote_ccy,
-    o.tenor,
-    o.rate,
-    o.bid,
-    o.offer,
-    p.effective_date,
-    p.settlement_date,
-    p.provider,
-    p.source_id,
-    p.updated_at AS publication_updated_at,
-    o.updated_at AS rate_updated_at
-FROM fx_publication AS p
-INNER JOIN fx_rate_observation AS o ON o.publication_id = p.id;
-
--- Canonical USD/PKR series for correlation with PSX market data.
-CREATE VIEW v_usdpkr_m2m_ready AS
+    a.portfolio_id,
+    a.id AS activity_id,
+    s.symbol,
+    a.activity_type,
+    a.source_kind,
+    a.position_effect,
+    a.quantity,
+    a.unit_price,
+    a.trade_date,
+    a.portfolio_version_before,
+    a.portfolio_version_after,
+    a.created_at
+FROM app_portfolio.portfolio_activity AS a
+JOIN public.security AS s ON s.id = a.security_id
+ORDER BY a.created_at DESC, a.id DESC
+LIMIT 200;
+16.5 Native sale allocation reconciliation
 SELECT
-    p.publication_date AS quote_date,
-    o.rate,
-    p.source_id,
-    p.effective_date,
+    a.id AS activity_id,
+    a.portfolio_id,
+    a.quantity AS sale_quantity,
+    coalesce(sum(x.quantity), 0) AS allocated_quantity
+FROM app_portfolio.portfolio_activity AS a
+LEFT JOIN app_portfolio.activity_lot_allocation AS x
+  ON x.activity_id = a.id
+WHERE a.activity_type = 'native_sell'
+GROUP BY a.id, a.portfolio_id, a.quantity
+HAVING coalesce(sum(x.quantity), 0) <> a.quantity;
+Expected result: no rows.
+
+16.6 Position-removal reconciliation
+SELECT
+    a.id AS activity_id,
+    a.portfolio_id,
+    a.quantity AS removed_quantity,
+    coalesce(sum(r.quantity), 0) AS snapshotted_quantity
+FROM app_portfolio.portfolio_activity AS a
+LEFT JOIN app_portfolio.position_removal_lot AS r
+  ON r.activity_id = a.id
+WHERE a.activity_type = 'position_removal'
+GROUP BY a.id, a.portfolio_id, a.quantity
+HAVING coalesce(sum(r.quantity), 0) <> a.quantity;
+Expected result: no rows.
+
+16.7 Stale reserved mutation requests
+SELECT
+    portfolio_id,
+    mutation_id,
+    user_id,
+    operation_type,
+    created_at,
+    clock_timestamp() - created_at AS reserved_for
+FROM app_portfolio.mutation_request
+WHERE status = 'reserved'
+  AND created_at < clock_timestamp() - interval '5 minutes'
+ORDER BY created_at;
+Investigate application/transaction logs before any action. A reserved row may belong to an in-flight transaction only if it is visible after commit; ordinary rollback removes it.
+
+16.8 Watchlist state
+SELECT
+    w.user_id,
+    w.status,
+    w.origin,
+    count(*) AS items,
+    max(w.updated_at) AS latest_update
+FROM app_portfolio.watchlist_item AS w
+GROUP BY w.user_id, w.status, w.origin
+ORDER BY w.user_id, w.status, w.origin;
+16.9 User-specific investigation template
+Replace the UUID in one secured session. Do not paste user profile values into tickets.
+
+WITH target AS (
+    SELECT '00000000-0000-0000-0000-000000000000'::uuid AS user_id
+)
+SELECT
+    p.id AS portfolio_id,
+    p.status,
+    p.is_default,
+    p.version,
+    p.created_at,
     p.updated_at
-FROM fx_publication AS p
-INNER JOIN fx_rate_observation AS o ON o.publication_id = p.id
-WHERE p.rate_type = 'mark_to_market'
-  AND o.base_ccy = 'USD'
-  AND o.quote_ccy = 'PKR'
-  AND o.tenor = 'ready'
-  AND o.rate IS NOT NULL;
+FROM app_portfolio.portfolio AS p
+JOIN target AS t ON t.user_id = p.user_id;
 
+WITH target AS (
+    SELECT '00000000-0000-0000-0000-000000000000'::uuid AS user_id
+)
+SELECT
+    a.id,
+    s.symbol,
+    a.activity_type,
+    a.quantity,
+    a.unit_price,
+    a.trade_date,
+    a.created_at
+FROM app_portfolio.portfolio_activity AS a
+JOIN app_portfolio.portfolio AS p ON p.id = a.portfolio_id
+JOIN public.security AS s ON s.id = a.security_id
+JOIN target AS t ON t.user_id = p.user_id
+ORDER BY a.created_at DESC;
+17. Infrastructure and log diagnostics
+PostgreSQL tables do not contain Docker, Traefik, Cloudflared, or API process logs. Use the deployment host for those.
 
--- ============================================================================
--- 6. UPSERT PATTERNS  (reference — run from the scraper)
--- ============================================================================
--- Pattern A — conditional daily-series merge. Example: daily_quote.
---
---   INSERT INTO daily_quote (security_id, trade_date, open, high, low, close,
---                            turnover, change, section, source_id)
---   VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
---   ON CONFLICT (security_id, trade_date) DO UPDATE
---       SET open=EXCLUDED.open, high=EXCLUDED.high, low=EXCLUDED.low,
---           close=EXCLUDED.close, turnover=EXCLUDED.turnover,
---           change=EXCLUDED.change, section=EXCLUDED.section,
---           source_id=EXCLUDED.source_id,
---           updated_at=now()
---   WHERE (daily_quote.open, daily_quote.high, daily_quote.low,
---          daily_quote.close, daily_quote.turnover, daily_quote.change,
---          daily_quote.section, daily_quote.source_id)
---      IS DISTINCT FROM
---         (EXCLUDED.open, EXCLUDED.high, EXCLUDED.low, EXCLUDED.close,
---          EXCLUDED.turnover, EXCLUDED.change, EXCLUDED.section,
---          EXCLUDED.source_id);
---
--- Merge a validated complete snapshot before deleting target-date keys absent
--- from its incoming ID set. Never prune for partial, empty, undersized, or
--- ambiguous input. index_daily additionally requires an explicit provider
--- contract and may delete only absent codes owned by that same source_id;
--- cross-provider and out-of-contract rows are preserved, and every deletion is
--- audited. The same conditional-update shape applies to index_daily
--- and market_summary; market_index display names also update only on change.
--- Other owning importers define the corresponding conditional behavior for
--- daily_valuation, kibor_rate, fx_rate, and metal_rate.
--- technical_indicator_daily additionally uses a row-wise IS DISTINCT FROM
--- predicate and changes calculated_at only when its version, indicator values,
--- or source_updated_at materially differ.
---
--- ----------------------------------------------------------------------------
--- Pattern B — versioned insert-on-change, executed under SELECT ... FOR UPDATE.
---
--- Net effect per natural key:
---   * brand-new persistable value    -> insert one current row
---   * structurally invalid value     -> reject, including on an empty database
---   * unchanged content_hash         -> zero writes
---   * incomplete/regressed payload   -> preserve current row and warn
---   * changed on the same run date   -> update current row in place
---   * changed on a later run date    -> close current row, insert new current row
---   * run date older than valid_from -> reject
---
--- The same behavior covers company_profile_version, equity_profile_version,
--- financial_statement, and financial_ratio. The database constraints enforce
--- one current row and a valid [valid_from, valid_to) interval.
---
--- ----------------------------------------------------------------------------
--- Announcements — never deleted; stable-ID metadata may be corrected:
---
---   INSERT INTO announcement (security_id, psx_document_id, announcement_date,
---                             title, category, pdf_url, documents, content_hash,
---                             first_seen)
---   VALUES (...)
---   ON CONFLICT (security_id, psx_document_id)
---       WHERE psx_document_id IS NOT NULL
---   DO UPDATE SET announcement_date = EXCLUDED.announcement_date,
---                 title = EXCLUDED.title,
---                 category = EXCLUDED.category,
---                 pdf_url = EXCLUDED.pdf_url,
---                 documents = EXCLUDED.documents
---   WHERE the correction-prone columns are distinct;
---
--- Null-document-ID rows use (security_id, content_hash) and DO NOTHING.
--- ============================================================================
+17.1 Discover current containers
+sudo docker ps --format 'table {{.Names}}\t{{.Status}}' \
+  | grep -Ei 'webictcapital|cloudflared|traefik'
+17.2 API logs
+API_ID="$(sudo docker ps -q --filter 'name=webictcapital-api' | head -n1)"
+sudo docker logs --since 30m --timestamps "$API_ID"
+Use exact --since/--until windows when correlating a browser request or Cloudflare Ray ID.
 
-Contract change checklist
+17.3 Worker logs
+WORKER_ID="$(sudo docker ps -q --filter 'name=webictcapital-dailypsxsummary' | head -n1)"
+sudo docker logs --since 2h --timestamps "$WORKER_ID"
+Change the name filter for ticker, KIBOR, or FX services. A container may be idle and still healthy between jobs.
 
-Every future change to this file must answer all of the following:
+17.4 PostgreSQL container logs
+DB_ID="$(sudo docker ps -q --filter 'name=webictcapital-database' | head -n1)"
+sudo docker logs --since 30m --timestamps "$DB_ID"
+Correlate connection failures, restarts, recovery, checkpoints, deadlocks, and out-of-disk errors with the API/scraper timestamp. Do not publish logs containing connection strings or user data.
 
-Is the change documentation-only, code-only, an operational recovery, or aforward-only migration?
+17.5 Cloudflared and Traefik
+CLOUDFLARED_ID="$(sudo docker ps -q --filter 'name=webictcapital-cloudflared' | head -n1)"
+sudo docker logs --since 30m --timestamps "$CLOUDFLARED_ID"
 
-Which service owns the write and which services consume it?
+sudo tail -n 300 /etc/dokploy/traefik/dynamic/access.log
+Current trust chain:
 
-Does it change a natural key, source identity, date meaning, unit, nullmeaning, price basis, calculation version, or API field?
+Cloudflared network webictcapital-cloudflared-b1gqqp, last observed subnet 172.24.0.0/16;
+Traefik trusts that controlled subnet on the HTTP entrypoint;
+API trusts the controlled Traefik-facing dokploy-network, last configured as 10.0.1.0/24;
+API accepts one forwarded hop.
+Recheck CIDRs after recreating networks or moving to the VPS.
 
-Are existing rows migrated, quarantined, retained, or intentionally leftuntouched?
+17.6 Resource pressure and restarts
+sudo docker stats --no-stream
 
+sudo docker inspect "$API_ID" \
+  --format 'status={{.State.Status}} health={{if .State.Health}}{{.State.Health.Status}}{{end}} restarts={{.RestartCount}} started={{.State.StartedAt}}'
+17.7 Public smoke checks
+curl -fsS https://api.webictcapital.com/health
+
+curl -i \
+  -H 'Origin: https://preview.webictcapital.com' \
+  https://api.webictcapital.com/api/market-summary/latest/tickers
+The CORS response should name the exact origin and allow credentials where appropriate.
+
+For Google OAuth, confirm the authorization request contains:
+
+redirect_uri=https://api.webictcapital.com/signin-google
+An HTTP callback indicates proxy-forwarding trust is broken.
+
+17.8 Symptom-to-investigation map
+Symptom	First checks
+Market request network error	Browser request URL, DNS, Cloudflare response/Ray ID, CORS headers, API health, Traefik/Cloudflared logs
+HTTP 404 from API hostname	Confirm tunnel public-hostname route and actual API controller path; test /health separately
+HTTP 400 on mutation	Inspect ProblemDetails; validate DTO/date/decimal fields and fresh CSRF cookie/header
+HTTP 401 after Google callback	Check Secure application cookie, API Data Protection volume, exact frontend origin, active user_account, Google mapping, and /api/auth/me
+Google redirect_uri_mismatch	Inspect generated redirect_uri; it must be HTTPS and exactly /signin-google; verify proxy trust and Google Console entry
+HTTP 409 portfolio conflict	Refresh portfolio/lot versions; inspect mutation UUID/fingerprint state; check oversell/date-eligible lots; never resend changed data under the same UUID
+HTTP 503 portfolio mutation	Check PORTFOLIO_WRITES_ENABLED; auth and CSRF may still be healthy
+HTTP 503 Google start/completion	Check AUTH_CUTOVER_ENABLED
+Unknown Google identity rejected	Check ALLOW_NEW_USER_REGISTRATION and whether the subject already has an external_login row; never match by email
+Intermittent HTTP 502	Correlate Cloudflare Ray/time with API health, restarts, host resources, Traefik access, Cloudflared, and database logs
+Empty P/E	Check daily_valuation.pe_ratio_ttm coverage; do not substitute PEG or calculate in frontend
+Missing chart points	Check actual source publication/trading dates and reviewed gaps before classifying as data loss
+17.9 Intermittent Cloudflare 502
+If origin_bad_gateway returns:
+
+record UTC timestamp, Ray ID, route, and retry-after;
+check API health/restarts/resource pressure;
+inspect API logs for the exact window;
+inspect Traefik access logs;
+inspect Cloudflared reconnect/origin errors;
+check host network and database connection availability;
+do not classify it as a frontend bug without origin evidence.
+18. Current deployment and security contract
+18.1 Domains
+Domain	Current role
+api.webictcapital.com	Home-server API through Cloudflare Tunnel until VPS move
+preview.webictcapital.com	WebICT frontend feature branch
+webictcapital.com	Existing main frontend, intentionally unchanged
+The current frontend uses a full cross-origin API base URL. Do not replace it with relative /api unless a same-origin proxy is deliberately implemented and tested.
+
+18.2 API environment names
+ASPNETCORE_ENVIRONMENT
+DATABASE_URL
+AUTH_CUTOVER_ENABLED
+ALLOW_NEW_USER_REGISTRATION
+PORTFOLIO_WRITES_ENABLED
+FRONTEND_ORIGIN
+GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_SECRET
+DATA_PROTECTION_KEYS_PATH
+TRUSTED_PROXY_NETWORKS
+AllowedHosts
+For preview, FRONTEND_ORIGIN is the exact preview HTTPS origin and AllowedHosts includes the public API hostname.
+
+18.3 Cookies and CSRF
+WebICTCapital.Auth: host-only, HTTP-only, SameSite=Lax, Secure in production, bounded to eight hours.
+WebICTCapital.External: host-only, HTTP-only, SameSite=Lax, Secure in production, /api/auth, bounded to five minutes.
+Google tokens are not saved.
+Every mutation/logout obtains a fresh token from /api/auth/csrf and sends X-CSRF-TOKEN.
+Data Protection uses application name WebICTCapitalApi and persistent path /var/lib/webictcapital-api/dataprotection-keys.
+18.4 Secrets
+Never place database credentials, Google client secrets, LLM keys, Supabase service-role keys, Cloudflare tunnel tokens, cookies, or OAuth tokens in source, Vite variables, logs, documentation, or chat.
+
+Credential-shaped values were exposed during troubleshooting. Rotate every value that may have been real and verify that none entered Git history.
+
+19. Optional exporter/importer status
+The tools remain implemented and tested, but the operator chose not to migrate existing Supabase portfolios.
+
+No real export was run.
+No real import was run.
+Existing Supabase portfolio history is absent from app_portfolio.
+Native WebICT identities/portfolios can be created through enabled registration.
+The exporter remains a separate read-only administrative CLI.
+The importer consumes local reviewed files only.
+Real export artifacts must never enter the repository or normal API image.
+Last legacy Supabase user audit: 167 total users, with zero currently banned, deleted, unconfirmed, or anonymous at that audit time. This was a source snapshot, not an import result.
+
+Verify that no real batch was imported:
+
+SELECT
+    count(*) AS import_batches,
+    count(*) FILTER (WHERE status = 'completed') AS completed_batches,
+    max(finished_at) AS latest_finished_batch
+FROM app_portfolio.import_batch;
+For the chosen native-start path, expected counts are zero.
+
+If the import path is ever revived, legacy BUYs are opening lots and legacy SELLs are position-neutral history; no cash is inferred.
+
+20. Change and troubleshooting checklist
+Every future change must answer:
+
+Which project owns the write?
+Which schema/relation/API/frontend feature consumes it?
+Does it change a natural key, source identity, date meaning, unit, null meaning, price basis, calculation version, or wire type?
+Is it documentation-only, code-only, an operational recovery, or a new forward-only migration?
 Are identical reruns still no-ops with stable timestamps?
-
 Can partial, empty, mixed-provider, or ambiguous input delete facts?
+Are history, ownership, idempotency, CSRF, and optimistic versions preserved?
+Are scraper, database, API, exact-number, frontend-isolation, and routing tests updated?
+Has the canonical revision been advanced and mirrored?
+Have secret scans and deployment smoke tests passed?
+No agent or operator may declare the platform healthy from process exit codes alone. Completion requires fact coverage, constraint state, source freshness, endpoint checks, authenticated behavior, and infrastructure evidence appropriate to the change.
 
-Are scraper, disposable-PostgreSQL, API, OpenAPI, and frontend tests updatedtogether where applicable?
-
-Has the canonical contract revision been advanced and synchronized to everyrepository without modifying already-applied migrations?
-
-No agent may declare the platform “all good” from scraper exit codes alone.Completion requires fact coverage, constraint, freshness, and endpoint checksappropriate to the changed surface.

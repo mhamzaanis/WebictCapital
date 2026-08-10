@@ -509,18 +509,17 @@ export function HomePage() {
                       letterSpacing: '-0.045em',
                     }}
                   >
-                    Markets reward those
+                    PSX research, data
                     <br />
-                    who see{' '}
+                    and market{' '}
                     <Box component="span" sx={{ color: 'var(--wc-primary)' }}>
-                      beyond the obvious
+                      intelligence
                     </Box>
                     .
                   </Typography>
                   <Typography sx={{ mt: 3, color: 'var(--wc-text-secondary)', fontSize: { xs: 15.5, md: 16 }, lineHeight: 1.75, maxWidth: 690 }}>
-                    Webict Capital is a research-driven investing community for the Pakistan Stock Exchange.
-                    We help investors move past noise, develop independent thinking, and transform raw information
-                    into actionable market intelligence.
+                    Research Pakistan Stock Exchange companies with daily market data, financial statements, ratios,
+                    technical indicators, stock comparisons, KIBOR and USD/PKR data, and portfolio tools.
                   </Typography>
                 </Box>
 
@@ -594,17 +593,17 @@ export function HomePage() {
                 {[
                   {
                     title: 'Research Focus',
-                    body: 'We believe disciplined research is the foundation of every sound investment decision. Our approach prioritises depth over speed — understanding businesses, sectors, and cycles before forming a view.',
+                    body: 'Bring company, sector, and market data together to examine PSX businesses across multiple analytical views before forming your own conclusions.',
                     // icon: BarChartRoundedIcon,
                   },
                   {
                     title: 'Differentiation',
-                    body: 'The market is full of opinions. Our edge is independence. We filter out consensus noise and build perspectives grounded in data, logic, and long-term thinking — not headlines or herd sentiment.',
+                    body: 'Compare daily observations, financial statements, ratios, and technical indicators using consistent data instead of relying on market noise.',
                     // icon: AccountBalanceOutlinedIcon,
                   },
                   {
                     title: 'Information into Intelligence',
-                    body: 'Raw data is everywhere. What matters is how you read it. We teach investors to connect the dots — turning market signals, financial statements, and macro trends into clear, confident action.',
+                    body: 'Connect market signals, company financials, comparison data, KIBOR, and USD/PKR observations to build a more complete research view.',
                     // icon: SchoolOutlinedIcon,
                   },
                 ].map((item) => {
@@ -706,17 +705,17 @@ export function HomePage() {
                       mb: 2,
                     }}
                   >
-                    Start Your Journey
+                    Research with context
                   </Typography>
                   <Typography variant="h2" sx={{ color: '#ffffff', fontSize: { xs: '2rem', md: '3rem' }, lineHeight: 1.05, fontWeight: 700, letterSpacing: '-0.035em' }}>
-                    Shape Your Mind.{' '}
+                    Turn data into{' '}
                     <Box component="span" sx={{ color: '#a8c5ff', fontStyle: 'italic' }}>
-                      Then Shape Markets.
+                      perspective.
                     </Box>
                   </Typography>
                   <Typography sx={{ mt: 2.2, color: 'rgba(255,255,255,0.78)', fontSize: 15.5, lineHeight: 1.75, maxWidth: 600, mx: 'auto' }}>
-                    Investing mastery begins with how you think — not which stock you pick. Join a community
-                    built around research discipline, independent analysis, and long-term conviction.
+                    Explore PSX companies with daily market data, financial statements, ratios, technical indicators,
+                    macro rates, comparison tools, and a private portfolio workspace.
                   </Typography>
                 </Box>
               </Box>

@@ -4,279 +4,57 @@ import { Helmet } from 'react-helmet-async'
 import { Outlet, useLocation } from 'react-router-dom'
 import { Footer } from '../components/layout/Footer'
 import { NavBar } from '../components/layout/NavBar'
+import {
+  SOCIAL_IMAGE_HEIGHT,
+  SOCIAL_IMAGE_WIDTH,
+  selectRouteSeo,
+  type PageSeo,
+} from '../lib/seo'
 
-const SITE_URL = 'https://webictcapital.com'
-const DEFAULT_IMAGE = `${SITE_URL}/herosection.webp`
 const TWITTER_HANDLE = '@webictcapital'
 
-type PageSeo = {
-  title: string
-  description: string
-  structuredData?: Record<string, unknown>
-}
+export function PageMetadata({ seo }: { seo: PageSeo }) {
+  return (
+    <Helmet>
+      <title>{seo.title}</title>
+      <meta name="description" content={seo.description} />
+      <meta name="robots" content={seo.robots} />
+      <link rel="canonical" href={seo.canonicalUrl} />
 
-const SEO_BY_PATH: Record<string, PageSeo> = {
-  '/': {
-    title: 'Webict Capital | PSX Stock Market Education & Investing Courses Pakistan',
-    description:
-      "Pakistan's leading investing education platform. Learn PSX stock market fundamentals, portfolio strategy, and risk management through structured masterclasses, daily market data, and a comprehensive investing glossary.",
-    structuredData: {
-      '@context': 'https://schema.org',
-      '@type': 'WebPage',
-      name: 'Webict Capital - Home',
-      url: `${SITE_URL}/`,
-      description: "Pakistan's structured investing education platform for PSX investors.",
-      publisher: {
-        '@type': 'Organization',
-        name: 'Webict Capital',
-        url: `${SITE_URL}/`,
-        logo: `${SITE_URL}/favicon.svg`,
-      },
-    },
-  },
-  '/about': {
-    title: 'About Webict Capital | PSX Investing Education in Karachi, Pakistan',
-    description:
-      'Learn about Webict Capital - a Karachi-based investing education platform helping PSX investors build long-term, research-driven discipline through structured programs and practical market knowledge.',
-    structuredData: {
-      '@context': 'https://schema.org',
-      '@type': 'AboutPage',
-      name: 'About Webict Capital',
-      url: `${SITE_URL}/about`,
-      description:
-        'Webict Capital is a Karachi-based investing education platform focused on PSX stock market education.',
-      publisher: {
-        '@type': 'Organization',
-        name: 'Webict Capital',
-        url: `${SITE_URL}/`,
-      },
-    },
-  },
-  '/data': {
-    title: 'PSX Market Intelligence | Pakistan Stock Exchange Data',
-    description:
-      'Explore API-backed Pakistan Stock Exchange market intelligence including index snapshots, breadth, movers, sector analytics, and daily stock observations.',
-    structuredData: {
-      '@context': 'https://schema.org',
-      '@type': 'DataCatalog',
-      name: 'PSX Daily Market Data',
-      url: `${SITE_URL}/data`,
-      description: 'Daily Pakistan Stock Exchange closing rates, KSE-100 figures, and per-stock data.',
-      publisher: {
-        '@type': 'Organization',
-        name: 'Webict Capital',
-        url: `${SITE_URL}/`,
-      },
-      temporalCoverage: '2024/..',
-      spatialCoverage: 'Pakistan',
-    },
-  },
-  '/data/stocks': {
-    title: 'PSX Stocks Explorer | Webict Capital Markets',
-    description:
-      'Search, filter, sort, compare, and export latest Pakistan Stock Exchange stock observations from the WebICTCapital market API.',
-    structuredData: {
-      '@context': 'https://schema.org',
-      '@type': 'DataCatalog',
-      name: 'PSX Stocks Explorer',
-      url: `${SITE_URL}/data/stocks`,
-      publisher: { '@type': 'Organization', name: 'Webict Capital', url: `${SITE_URL}/` },
-    },
-  },
-  '/data/compare': {
-    title: 'PSX Stock Comparison | Webict Capital Markets',
-    description:
-      'Compare two PSX securities using raw historical observations, normalized performance, volatility, drawdown, and common-date analytics.',
-    structuredData: {
-      '@context': 'https://schema.org',
-      '@type': 'WebApplication',
-      name: 'PSX Stock Comparison',
-      url: `${SITE_URL}/data/compare`,
-      provider: { '@type': 'Organization', name: 'Webict Capital', url: `${SITE_URL}/` },
-    },
-  },
-  '/data/rates': {
-    title: 'KIBOR Rates | Webict Capital Markets',
-    description:
-      'Track canonical SBP KIBOR bid/offer observations from the WebICTCapital API.',
-    structuredData: {
-      '@context': 'https://schema.org',
-      '@type': 'Dataset',
-      name: 'Pakistan KIBOR Rates',
-      url: `${SITE_URL}/data/rates`,
-      publisher: { '@type': 'Organization', name: 'Webict Capital', url: `${SITE_URL}/` },
-    },
-  },
-  '/data/rates/usd-pkr': {
-    title: 'USD/PKR Rates | Webict Capital Markets',
-    description:
-      'Track SBP Mark-to-Market Ready USD/PKR observations.',
-    structuredData: {
-      '@context': 'https://schema.org',
-      '@type': 'Dataset',
-      name: 'USD/PKR Mark-to-Market Ready Rates',
-      url: `${SITE_URL}/data/rates/usd-pkr`,
-      publisher: { '@type': 'Organization', name: 'Webict Capital', url: `${SITE_URL}/` },
-    },
-  },
-  '/portfolio': {
-    title: 'My PSX Portfolio | Webict Capital',
-    description:
-      'Track PSX holdings, immutable portfolio activity, lots, valuations, and watchlists through WebICT Capital’s secure portfolio experience.',
-    structuredData: {
-      '@context': 'https://schema.org',
-      '@type': 'WebApplication',
-      name: 'Webict Capital Portfolio',
-      url: `${SITE_URL}/portfolio`,
-      applicationCategory: 'FinanceApplication',
-      provider: { '@type': 'Organization', name: 'Webict Capital', url: `${SITE_URL}/` },
-    },
-  },
-  '/glossary': {
-    title: 'PSX Investing Glossary | Key Stock Market Terms Explained',
-    description:
-      'Browse clear, practical definitions of core investing and Pakistan Stock Exchange terms - from P/E ratio and dividend yield to liquidity, market cap, and sector analysis concepts.',
-    structuredData: {
-      '@context': 'https://schema.org',
-      '@type': 'DefinedTermSet',
-      name: 'PSX Investing Glossary',
-      url: `${SITE_URL}/glossary`,
-      description: 'Comprehensive glossary of investing terms for Pakistan Stock Exchange investors.',
-      publisher: {
-        '@type': 'Organization',
-        name: 'Webict Capital',
-        url: `${SITE_URL}/`,
-      },
-    },
-  },
-  '/masterclasses': {
-    title: 'PSX Investing Masterclasses | Structured Learning Tracks by Webict Capital',
-    description:
-      'Explore Webict Capital masterclass seasons covering PSX market foundations, portfolio construction, risk controls, sector rotation, entry and exit discipline, and long-term investing workflows.',
-    structuredData: {
-      '@context': 'https://schema.org',
-      '@type': 'ItemList',
-      name: 'Webict Capital Masterclasses',
-      url: `${SITE_URL}/masterclasses`,
-      description: 'Structured investing education seasons for Pakistan Stock Exchange investors.',
-      itemListElement: [
-        {
-          '@type': 'ListItem',
-          position: 1,
-          item: {
-            '@type': 'Course',
-            name: 'Season 01: Foundations of Confident Investing',
-            description:
-              'Learn PSX market structure, risk management, fundamental analysis, and build a personal investment framework.',
-            url: `${SITE_URL}/masterclasses`,
-            provider: {
-              '@type': 'Organization',
-              name: 'Webict Capital',
-            },
-          },
-        },
-        {
-          '@type': 'ListItem',
-          position: 2,
-          item: {
-            '@type': 'Course',
-            name: 'Season 02: Portfolio Strategy and Execution',
-            description:
-              'Master portfolio construction, sector rotation, entry and exit discipline, and review systems for long-term consistency.',
-            url: `${SITE_URL}/masterclasses`,
-            provider: {
-              '@type': 'Organization',
-              name: 'Webict Capital',
-            },
-          },
-        },
-      ],
-    },
-  },
-  '/sip-calculator': {
-    title: 'SIP Calculator | Estimate Your Systematic Investment Plan Returns | Webict Capital',
-    description:
-      'Use Webict Capital\'s free SIP calculator to project how your monthly investments grow over time. Adjust monthly amount, expected return rate, and investment period to estimate your future wealth.',
-    structuredData: {
-      '@context': 'https://schema.org',
-      '@type': 'WebApplication',
-      name: 'SIP Calculator by Webict Capital',
-      url: `${SITE_URL}/sip-calculator`,
-      description:
-        'Free online SIP (Systematic Investment Plan) calculator for Pakistan investors. Estimate portfolio growth with compound returns.',
-      applicationCategory: 'FinanceApplication',
-      provider: {
-        '@type': 'Organization',
-        name: 'Webict Capital',
-        url: `${SITE_URL}/`,
-      },
-    },
-  },
-  '/advisory': {
-    title: 'Investment Advisory | Webict Capital - Coming Soon',
-    description:
-      'Discover upcoming advisory services from Webict Capital - focused strategy sessions, personalized PSX market reviews, and actionable portfolio guidance tailored for Pakistan investors.',
-    structuredData: {
-      '@context': 'https://schema.org',
-      '@type': 'Service',
-      name: 'Webict Capital Investment Advisory',
-      url: `${SITE_URL}/advisory`,
-      description:
-        'Upcoming personalized investment advisory service for PSX investors from Webict Capital.',
-      provider: {
-        '@type': 'Organization',
-        name: 'Webict Capital',
-        url: `${SITE_URL}/`,
-      },
-      areaServed: { '@type': 'Country', name: 'Pakistan' },
-      serviceType: 'Investment Advisory',
-    },
-  },
+      <meta property="og:type" content={seo.ogType} />
+      <meta property="og:site_name" content="Webict Capital" />
+      <meta property="og:locale" content="en_PK" />
+      <meta property="og:title" content={seo.title} />
+      <meta property="og:description" content={seo.description} />
+      <meta property="og:url" content={seo.canonicalUrl} />
+      <meta property="og:image" content={seo.imageUrl} />
+      <meta property="og:image:width" content={String(SOCIAL_IMAGE_WIDTH)} />
+      <meta property="og:image:height" content={String(SOCIAL_IMAGE_HEIGHT)} />
+      <meta property="og:image:alt" content={seo.imageAlt} />
+
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:site" content={TWITTER_HANDLE} />
+      <meta name="twitter:creator" content={TWITTER_HANDLE} />
+      <meta name="twitter:title" content={seo.title} />
+      <meta name="twitter:description" content={seo.description} />
+      <meta name="twitter:image" content={seo.imageUrl} />
+      <meta name="twitter:image:alt" content={seo.imageAlt} />
+
+      {seo.structuredData && (
+        <script type="application/ld+json">{JSON.stringify(seo.structuredData)}</script>
+      )}
+    </Helmet>
+  )
 }
 
 export function AppLayout() {
   const { pathname } = useLocation()
   const reduceMotion = useReducedMotion()
-  const seo = pathname.startsWith('/stocks/')
-    ? {
-        title: `${pathname.split('/').pop()?.toUpperCase() ?? 'PSX Stock'} Detail | Webict Capital Markets`,
-        description: 'API-backed PSX ticker detail with raw price history, technical indicators, company facts, and descriptive analytics.',
-      }
-    : SEO_BY_PATH[pathname] ?? SEO_BY_PATH['/']
-  const canonicalUrl = pathname === '/' ? SITE_URL : `${SITE_URL}${pathname}`
+  const seo = selectRouteSeo(pathname)
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'var(--wc-bg)' }}>
-      <Helmet>
-        {/* Primary */}
-        <title>{seo.title}</title>
-        <meta name="description" content={seo.description} />
-        <link rel="canonical" href={canonicalUrl} />
-
-        {/* Open Graph */}
-        <meta property="og:type" content="website" />
-        <meta property="og:site_name" content="Webict Capital" />
-        <meta property="og:locale" content="en_PK" />
-        <meta property="og:title" content={seo.title} />
-        <meta property="og:description" content={seo.description} />
-        <meta property="og:url" content={canonicalUrl} />
-        <meta property="og:image" content={DEFAULT_IMAGE} />
-        <meta property="og:image:alt" content="Webict Capital - PSX Investing Education Platform" />
-
-        {/* Twitter / X */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:site" content={TWITTER_HANDLE} />
-        <meta name="twitter:creator" content={TWITTER_HANDLE} />
-        <meta name="twitter:title" content={seo.title} />
-        <meta name="twitter:description" content={seo.description} />
-        <meta name="twitter:image" content={DEFAULT_IMAGE} />
-        <meta name="twitter:image:alt" content="Webict Capital - PSX Investing Education" />
-
-        {/* Per-page structured data */}
-        {seo.structuredData && (
-          <script type="application/ld+json">{JSON.stringify(seo.structuredData)}</script>
-        )}
-      </Helmet>
+      <PageMetadata seo={seo} />
       <NavBar />
       <AnimatePresence mode="wait" initial={false}>
         <Box
