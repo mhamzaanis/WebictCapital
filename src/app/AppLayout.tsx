@@ -71,6 +71,23 @@ const SEO_BY_PATH: Record<string, PageSeo> = {
       spatialCoverage: 'Pakistan',
     },
   },
+  '/research': {
+    title: 'PSX Equity Research Notes | Webict Capital',
+    description:
+      'Read Webict Capital equity research notes covering Pakistan Stock Exchange companies, operating performance, earnings scenarios, and valuation context.',
+    structuredData: {
+      '@context': 'https://schema.org',
+      '@type': 'CollectionPage',
+      name: 'Webict Capital Research',
+      url: `${SITE_URL}/research`,
+      description: 'Independent equity research notes from Webict Capital for Pakistan Stock Exchange investors.',
+      publisher: {
+        '@type': 'Organization',
+        name: 'Webict Capital',
+        url: `${SITE_URL}/`,
+      },
+    },
+  },
   '/glossary': {
     title: 'PSX Investing Glossary | Key Stock Market Terms Explained',
     description:

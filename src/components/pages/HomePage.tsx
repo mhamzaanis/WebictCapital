@@ -2,6 +2,7 @@ import { useRef, useState, type FormEvent } from 'react'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import BarChartRoundedIcon from '@mui/icons-material/BarChartRounded'
 import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined'
+import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined'
 import SchoolOutlinedIcon from '@mui/icons-material/SchoolOutlined'
 import { Box, Button, Container, InputBase, Stack, Typography } from '@mui/material'
 import {
@@ -12,6 +13,7 @@ import {
   useSpring,
 } from 'motion/react'
 import { Link as RouterLink } from 'react-router-dom'
+import { researchNotes } from '../../content/researchData'
 import { MotionReveal } from '../animations/MotionReveal'
 
 const WEB3FORMS_ACCESS_KEY = '6f47bd12-e704-4f13-a5ae-63255ad5bfcd'
@@ -345,6 +347,52 @@ function ProductCard({ product, index }: { product: (typeof PRODUCTS)[number]; i
   )
 }
 
+function ResearchShortcutCard() {
+  const [latestNote] = researchNotes
+
+  return (
+    <MotionReveal>
+      <Box
+        component="section"
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', md: 'auto minmax(0, 1fr) auto' },
+          gap: { xs: 2.2, md: 3.5 },
+          alignItems: 'center',
+          p: { xs: 2.5, md: 3.3 },
+          border: '1px solid #cad8ef',
+          borderRadius: '10px',
+          bgcolor: '#f7faff',
+          boxShadow: 'var(--wc-shadow-card)',
+        }}
+      >
+        <Box sx={{ width: 50, height: 50, borderRadius: '7px', bgcolor: 'var(--wc-primary)', color: '#fff', display: 'grid', placeItems: 'center' }}>
+          <DescriptionOutlinedIcon sx={{ fontSize: 25 }} />
+        </Box>
+        <Box>
+          <Typography sx={{ color: 'var(--wc-primary)', fontSize: 10.5, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+            Latest research · {latestNote.date}
+          </Typography>
+          <Typography variant="h2" sx={{ mt: 0.65, color: 'var(--wc-text-primary)', fontSize: { xs: '1.45rem', md: '1.9rem' }, lineHeight: 1.12 }}>
+            {latestNote.company} — {latestNote.title}
+          </Typography>
+          <Typography sx={{ mt: 0.85, color: 'var(--wc-text-secondary)', fontSize: 13.5, lineHeight: 1.7, maxWidth: 760 }}>
+            {latestNote.summary}
+          </Typography>
+        </Box>
+        <Button
+          component={RouterLink}
+          to="/research"
+          endIcon={<ArrowForwardIcon sx={{ fontSize: 17 }} />}
+          sx={{ color: '#fff', bgcolor: 'var(--wc-primary)', fontSize: 13, fontWeight: 800, whiteSpace: 'nowrap', '&:hover': { bgcolor: 'var(--wc-primary-dark)' } }}
+        >
+          Read note
+        </Button>
+      </Box>
+    </MotionReveal>
+  )
+}
+
 function NewsletterBand() {
   const [newsletterResult, setNewsletterResult] = useState('')
   const [isSubmittingNewsletter, setIsSubmittingNewsletter] = useState(false)
@@ -641,6 +689,8 @@ export function HomePage() {
             </Box>
 
             <MarketGlance />
+
+            <ResearchShortcutCard />
 
             <Box component="section">
               <MotionReveal>
